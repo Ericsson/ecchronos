@@ -25,16 +25,40 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RepairLockFactoryImpl implements RepairLockFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairLockFactoryImpl.class);
+    private static final int MIN_LOCKS_PER_RESOURCE = 1;
+    private static final AtomicInteger CONFIGURED_LOCKS_PER_RESOURCE = new AtomicInteger(MIN_LOCKS_PER_RESOURCE);
 
-    private static final int LOCKS_PER_RESOURCE = 1;
+    private final ThreadLocal<Integer> myLockCounter = ThreadLocal.withInitial(() -> 0);
+
+    /**
+     * Configure the global locks per resource value.
+     * Should be called once at application startup before any repair jobs are created.
+     *
+     * @param locksPerResource the number of concurrent locks per resource.
+     */
+    public static void configure(final int locksPerResource)
+    {
+        if (locksPerResource < MIN_LOCKS_PER_RESOURCE)
+        {
+            throw new IllegalArgumentException("locksPerResource must be at least 1");
+        }
+        CONFIGURED_LOCKS_PER_RESOURCE.set(locksPerResource);
+        LOG.info("RepairLockFactory configured with {} locks per resource", locksPerResource);
+    }
+
+    private int getLocksPerResource()
+    {
+        return CONFIGURED_LOCKS_PER_RESOURCE.get();
+    }
 
     @Override
     public final LockFactory.DistributedLock getLock(final LockFactory lockFactory,
@@ -43,9 +67,10 @@ public class RepairLockFactoryImpl implements RepairLockFactory
                                                      final int priority,
                                                      final UUID nodeId) throws LockException
     {
+        int locksPerResource = getLocksPerResource();
         for (RepairResource repairResource : repairResources)
         {
-            if (!lockFactory.sufficientNodesForLocking(repairResource.getResourceName(LOCKS_PER_RESOURCE)))
+            if (!lockFactory.sufficientNodesForLocking(repairResource.getResourceName(locksPerResource)))
             {
                 throw new LockException(repairResource + " not lockable. Repair will be retried later.");
             }
@@ -72,10 +97,11 @@ public class RepairLockFactoryImpl implements RepairLockFactory
     private void validateNoCachedFailures(final UUID nodeId, final LockFactory lockFactory, final Set<RepairResource> repairResources)
                                                                                                                     throws LockException
     {
+        int locksPerResource = getLocksPerResource();
         for (RepairResource repairResource : repairResources)
         {
             Optional<LockException> cachedException = lockFactory.getCachedFailure(nodeId, repairResource.getDataCenter(),
-                    repairResource.getResourceName(LOCKS_PER_RESOURCE));
+                    repairResource.getResourceName(locksPerResource));
             if (cachedException.isPresent())
             {
                 LockException e = cachedException.get();
@@ -124,31 +150,36 @@ public class RepairLockFactoryImpl implements RepairLockFactory
                                                                                      throws LockException
     {
         LockFactory.DistributedLock myLock;
-
         String dataCenter = repairResource.getDataCenter();
+        int locksPerResource = getLocksPerResource();
 
-        String resource = repairResource.getResourceName(LOCKS_PER_RESOURCE);
-        try
+        int startLock = myLockCounter.get();
+        for (int i = 0; i < locksPerResource; i++)
         {
-            myLock = lockFactory.tryLock(dataCenter, resource, priority, metadata, nodeId);
-
-            if (myLock != null)
+            int lockNumber = ((startLock + i) % locksPerResource) + 1;
+            String resource = repairResource.getResourceName(lockNumber);
+            try
             {
-                return myLock;
-            }
+                myLock = lockFactory.tryLock(dataCenter, resource, priority, metadata, nodeId);
 
-            String msg = String.format("Lock resources exhausted for %s", repairResource);
-            LOG.warn(msg);
-            throw new LockException(msg);
+                if (myLock != null)
+                {
+                    myLockCounter.set((lockNumber) % locksPerResource);
+                    return myLock;
+                }
+            }
+            catch (LockException e)
+            {
+                LOG.debug("Lock ({} in datacenter {}) got error, trying next lock",
+                        resource,
+                        dataCenter,
+                        e);
+            }
         }
-        catch (LockException e)
-        {
-            LOG.debug("Lock ({} in datacenter {}) got error",
-                    resource,
-                    dataCenter,
-                    e);
-            throw e;
-        }
+
+        String msg = String.format("Lock resources exhausted for %s", repairResource);
+        LOG.warn(msg);
+        throw new LockException(msg);
     }
 
     static class TemporaryLockHolder implements AutoCloseable
