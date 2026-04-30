@@ -54,7 +54,6 @@ public class IncrementalRepairJob extends ScheduledRepairJob
     private final ReplicationState myReplicationState;
     private final CassandraMetrics myCassandraMetrics;
 
-    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     IncrementalRepairJob(final Builder builder)
     {
         super(builder.myConfiguration, builder.myNodeId, builder.myTableReference, builder.myJmxProxyFactory,

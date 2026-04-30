@@ -65,6 +65,7 @@ import javax.management.RuntimeMBeanException;
 /**
  * Class used to construct repair scheduler.
  */
+@SuppressWarnings("PMD.GodClass")
 public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 {
     private static final int DEFAULT_TERMINATION_WAIT_IN_SECONDS = 10;
