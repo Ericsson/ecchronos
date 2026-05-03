@@ -27,7 +27,8 @@ from typing import Optional
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-MAX_CHECK = 10
+# Fix: allow slower CI environments more time for ecChronos to become ready.
+MAX_CHECK = 30
 STARTUP_WAIT_TIME = 10
 
 
