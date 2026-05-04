@@ -175,4 +175,69 @@ public class TestDistributedJmxProxyFactoryImpl
         verify(mockMBeanServerConnection).invoke(any(ObjectName.class), eq("getRepairStats"),
                 any(Object[].class), any(String[].class));
     }
+
+    @Test
+    public void testIsRepairActiveInProgressReturnsTrue() throws Exception
+    {
+        when(mockMBeanServerConnection.invoke(
+                any(ObjectName.class),
+                eq("getParentRepairStatus"),
+                eq(new Object[]{42}),
+                any(String[].class)))
+                .thenReturn(Arrays.asList("IN_PROGRESS"));
+
+        assertTrue(distributedJmxProxy.isRepairActive(nodeId, 42));
+    }
+
+    @Test
+    public void testIsRepairActiveCompletedReturnsFalse() throws Exception
+    {
+        when(mockMBeanServerConnection.invoke(
+                any(ObjectName.class),
+                eq("getParentRepairStatus"),
+                eq(new Object[]{42}),
+                any(String[].class)))
+                .thenReturn(Arrays.asList("COMPLETED", "Repair completed successfully"));
+
+        assertFalse(distributedJmxProxy.isRepairActive(nodeId, 42));
+    }
+
+    @Test
+    public void testIsRepairActiveFailedReturnsFalse() throws Exception
+    {
+        when(mockMBeanServerConnection.invoke(
+                any(ObjectName.class),
+                eq("getParentRepairStatus"),
+                eq(new Object[]{42}),
+                any(String[].class)))
+                .thenReturn(Arrays.asList("FAILED", "Repair failed due to error"));
+
+        assertFalse(distributedJmxProxy.isRepairActive(nodeId, 42));
+    }
+
+    @Test
+    public void testIsRepairActiveNullStatusReturnsFalse() throws Exception
+    {
+        when(mockMBeanServerConnection.invoke(
+                any(ObjectName.class),
+                eq("getParentRepairStatus"),
+                eq(new Object[]{42}),
+                any(String[].class)))
+                .thenReturn(null);
+
+        assertFalse(distributedJmxProxy.isRepairActive(nodeId, 42));
+    }
+
+    @Test
+    public void testIsRepairActiveExceptionReturnsTrue() throws Exception
+    {
+        when(mockMBeanServerConnection.invoke(
+                any(ObjectName.class),
+                eq("getParentRepairStatus"),
+                eq(new Object[]{42}),
+                any(String[].class)))
+                .thenThrow(new RuntimeException("JMX connection lost"));
+
+        assertTrue(distributedJmxProxy.isRepairActive(nodeId, 42));
+    }
 }
