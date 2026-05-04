@@ -32,7 +32,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
@@ -50,10 +49,11 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     private static final Logger LOG = LoggerFactory.getLogger(ScheduleManagerImpl.class);
 
     static final long DEFAULT_RUN_DELAY_IN_MS = TimeUnit.SECONDS.toMillis(30);
+    public static final int DEFAULT_KEEP_ALIVE_TIME = 60;
+    public static final int DEFAULT_TIMEOUT = 5;
 
     private final Map<UUID, ScheduledJobQueue> myQueue = new ConcurrentHashMap<>();
-    private final Collection<UUID> myNodeIDList;
-    private final AtomicReference<ScheduledJob> currentExecutingJob = new AtomicReference<>();
+    private final ConcurrentHashMap<UUID, ScheduledJob> currentExecutingJobs = new ConcurrentHashMap<>();
     private final Set<RunPolicy> myRunPolicies = Sets.newConcurrentHashSet();
     private final Map<UUID, ScheduledFuture<?>> myRunFuture = new ConcurrentHashMap<>();
     private final Map<UUID, JobRunTask> myRunTasks = new ConcurrentHashMap<>();
@@ -65,10 +65,12 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
     private ScheduleManagerImpl(final Builder builder)
     {
-        myNodeIDList = builder.myNodeIDList;
+        Collection<UUID> nodeIDList = builder.myNodeIDList;
         myNativeConnectionProvider = builder.myNativeConnectionProvider;
         myExecutor  = new ScheduledThreadPoolExecutor(
-                myNodeIDList.size(), new ThreadFactoryBuilder().setNameFormat("TaskExecutor-%d").build());
+                nodeIDList.size(), new ThreadFactoryBuilder().setNameFormat("TaskExecutor-%d").build());
+        myExecutor.setKeepAliveTime(DEFAULT_KEEP_ALIVE_TIME, TimeUnit.SECONDS);
+        myExecutor.allowCoreThreadTimeOut(true);
         myLockFactory = builder.myLockFactory;
         myRunIntervalInMs = builder.myRunIntervalInMs;
     }
@@ -80,21 +82,10 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     @Override
     public void createScheduleFutureForNodeIDList(final Collection<UUID> nodeIDList)
     {
-        myExecutor.setCorePoolSize(nodeIDList.size());
         LOG.debug("Total nodes found: {}", nodeIDList.size());
         for (UUID nodeID : nodeIDList)
         {
-            if (myRunTasks.get(nodeID) == null)
-            {
-                JobRunTask myRunTask = new JobRunTask(nodeID);
-                ScheduledFuture<?> scheduledFuture = myExecutor.scheduleWithFixedDelay(myRunTask,
-                        myRunIntervalInMs,
-                        myRunIntervalInMs,
-                        TimeUnit.MILLISECONDS);
-                myRunTasks.put(nodeID, myRunTask);
-                myRunFuture.put(nodeID, scheduledFuture);
-                LOG.debug("JobRunTask created for node {}", nodeID);
-            }
+            createScheduleFutureForNode(nodeID);
         }
     }
 
@@ -105,32 +96,35 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     @Override
     public void createScheduleFutureForNode(final UUID nodeID)
     {
-        if (myRunTasks.get(nodeID) == null)
+        myRunTasks.computeIfAbsent(nodeID, id ->
         {
-            JobRunTask myRunTask = new JobRunTask(nodeID);
-            myExecutor.setCorePoolSize(myRunTasks.size());
-
-            ScheduledFuture<?> scheduledFuture = myExecutor.scheduleWithFixedDelay(myRunTask,
+            JobRunTask runTask = new JobRunTask(id);
+            int requiredSize = myRunTasks.size() + 1;
+            if (myExecutor.getCorePoolSize() < requiredSize)
+            {
+                myExecutor.setCorePoolSize(requiredSize);
+            }
+            ScheduledFuture<?> scheduledFuture = myExecutor.scheduleWithFixedDelay(runTask,
                     myRunIntervalInMs,
                     myRunIntervalInMs,
                     TimeUnit.MILLISECONDS);
-            myRunTasks.put(nodeID, myRunTask);
-            myRunFuture.put(nodeID, scheduledFuture);
-            myExecutor.setCorePoolSize(myRunTasks.size());
-            LOG.debug("JobRunTask created for new node {}", nodeID);
-        }
-        else
-        {
-            LOG.debug("JobRunTask already exists for new node {}", nodeID);
-        }
+            myRunFuture.put(id, scheduledFuture);
+            LOG.debug("JobRunTask created for node {}", id);
+            return runTask;
+        });
     }
     @Override
     public String getCurrentJobStatus()
     {
-        ScheduledJob job = currentExecutingJob.get();
-        if (job != null)
+        Set<Map.Entry<UUID, ScheduledJob>> jobs = currentExecutingJobs.entrySet();
+        if (!jobs.isEmpty())
         {
-            return job.getJobId().toString();
+            String result = "";
+            for (Map.Entry<UUID, ScheduledJob> job : jobs)
+            {
+                result += job.getValue().getJobId() + " on node " + job.getKey() + ", ";
+            }
+            return result;
         }
         else
         {
@@ -168,18 +162,17 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             final UUID nodeID,
             final ScheduledJob job)
     {
-        ScheduledJobQueue queue = myQueue.get(nodeID);
-        if (queue == null)
-        {
-            myQueue.put(nodeID, new ScheduledJobQueue(new DefaultJobComparator()));
-        }
-        myQueue.get(nodeID).add(job);
+        myQueue.computeIfAbsent(nodeID, k -> new ScheduledJobQueue(new DefaultJobComparator())).add(job);
     }
 
     @Override
     public void deschedule(final UUID nodeID, final ScheduledJob job)
     {
-        myQueue.get(nodeID).remove(job);
+        ScheduledJobQueue queue = myQueue.get(nodeID);
+        if (queue != null)
+        {
+            queue.remove(job);
+        }
     }
 
     @Override
@@ -190,7 +183,35 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             future.cancel(false);
         }
         myExecutor.shutdown();
+        try
+        {
+            if (!myExecutor.awaitTermination(DEFAULT_TIMEOUT, TimeUnit.MINUTES))
+            {
+                LOG.warn("Executor did not terminate within timeout, forcing shutdown");
+                myExecutor.shutdownNow();
+            }
+        }
+        catch (InterruptedException e)
+        {
+            LOG.warn("Interrupted while waiting for executor termination", e);
+            myExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
         myRunPolicies.clear();
+    }
+
+    @Override
+    public void removeScheduleFutureForNode(final UUID nodeID)
+    {
+        ScheduledFuture<?> future = myRunFuture.remove(nodeID);
+        if (future != null)
+        {
+            future.cancel(false);
+        }
+        myRunTasks.remove(nodeID);
+        myQueue.remove(nodeID);
+        myExecutor.setCorePoolSize(Math.max(1, myRunTasks.size()));
+        LOG.info("Removed schedule future and queue for node {}", nodeID);
     }
 
     /**
@@ -282,11 +303,11 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 }
                 if (validate(next))
                 {
-                    currentExecutingJob.set(next);
+                    currentExecutingJobs.put(nodeID, next);
                     tryRunTasks(next, tickStart);
                 }
             }
-            currentExecutingJob.set(null);
+            currentExecutingJobs.remove(nodeID);
         }
 
         private boolean validate(final ScheduledJob job)

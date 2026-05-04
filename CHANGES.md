@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Recomended general improvments - Issue #1489
 * Don't log unexpected error when updating reoair config for a new node - Issue #1487
 * Make HangPreventingTask check actual repair status - Issue #1501
 * Repair non-system keyspaces with names begining with system - Issue #1486

@@ -55,4 +55,10 @@ public interface ScheduleManager
      * @param nodeIDList
      */
     void createScheduleFutureForNodeIDList(Collection<UUID> nodeIDList);
+
+    /**
+     * Remove the ScheduledFuture and associated resources for the given nodeID.
+     * @param nodeID the node to remove
+     */
+    void removeScheduleFutureForNode(UUID nodeID);
 }
