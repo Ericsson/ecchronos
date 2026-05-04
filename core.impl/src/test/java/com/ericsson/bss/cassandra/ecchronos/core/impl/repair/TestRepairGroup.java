@@ -138,7 +138,7 @@ public class TestRepairGroup
                 .withRepairWarningTime(RUN_INTERVAL_IN_DAYS * 2, TimeUnit.DAYS)
                 .withRepairErrorTime(GC_GRACE_DAYS_IN_DAYS, TimeUnit.DAYS)
                 .build();
-        when(myJmxProxyFactory.getMyHeathCheckInterval()).thenReturn(10);
+        when(myJmxProxyFactory.getMaxWaitTimeInMinutes()).thenReturn(40);
     }
 
     @After

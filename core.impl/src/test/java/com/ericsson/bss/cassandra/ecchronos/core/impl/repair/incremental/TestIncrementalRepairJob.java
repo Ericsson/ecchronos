@@ -279,7 +279,7 @@ public class TestIncrementalRepairJob
         ImmutableSet<DriverNode> replicas = ImmutableSet.of(node1, node2);
         doReturn(replicas).when(myReplicationState).getReplicas(myTableReference, mockNode);
         IncrementalRepairJob job = getIncrementalRepairJob();
-        when(myJmxProxyFactory.getMyHeathCheckInterval()).thenReturn(10);
+        when(myJmxProxyFactory.getMaxWaitTimeInMinutes()).thenReturn(40);
 
         assertThat(job).isNotNull();
         Iterator<ScheduledTask> iterator = job.iterator();
