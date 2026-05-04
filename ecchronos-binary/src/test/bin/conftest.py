@@ -15,6 +15,7 @@
 #
 
 import pytest
+import os
 import global_variables as global_vars
 import subprocess
 from cass_config import CassandraCluster
@@ -79,6 +80,7 @@ class EcchronosFixture:
             ecchronos_config = EcchronosConfig()
         ecchronos_config.modify_configuration()
         volumes = self._define_volumes(ecchronos_config.container_mounts)
+        os.makedirs(f"{global_vars.HOST_LOGS_PATH}/{ecchronos_config.instance_name}", exist_ok=True)
         try:
             logger.info(f"Starting ecChronos-agent-{suffix}")
             env = {"SERVER_ADDRESS": "0.0.0.0"}

@@ -3,6 +3,8 @@
 ## Version 1.0.0 (Not yet Released)
 
 * Don't log unexpected error when updating reoair config for a new node - Issue #1487
+* Repair non-system keyspaces with names begining with system - Issue #1486
+* Repair schedules in LATE/OVERDUE status - Issue #1479
 * Process multiple jobs per scheduler tick to improve throughput - Issue #1479
 * Add host id to alarms - Issue #1491
 * Fix alarm not raised when CQL session is broken - Issue #1477
