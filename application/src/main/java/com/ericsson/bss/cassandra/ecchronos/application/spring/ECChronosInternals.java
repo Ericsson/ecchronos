@@ -23,6 +23,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.DistributedJmxProxyFac
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.JolokiaNotificationController;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.CASLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.RepairLockFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.ScheduleManagerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.HostStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.ReplicatedTableProviderImpl;
@@ -137,6 +138,8 @@ public class ECChronosInternals implements Closeable
 
         CasLockFactoryConfig casLockFactoryConfig = configuration.getLockFactory()
                 .getCasLockFactoryConfig();
+
+        RepairLockFactoryImpl.configure(casLockFactoryConfig.getLocksPerResource());
 
         myLockFactory = CASLockFactory.builder()
                 .withNativeConnectionProvider(nativeConnectionProvider)

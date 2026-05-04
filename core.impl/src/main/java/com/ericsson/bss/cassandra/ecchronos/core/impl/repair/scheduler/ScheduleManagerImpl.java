@@ -283,7 +283,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 if (validate(next))
                 {
                     currentExecutingJob.set(next);
-                    tryRunTasks(next);
+                    tryRunTasks(next, tickStart);
                 }
             }
             currentExecutingJob.set(null);
@@ -303,19 +303,22 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             return true;
         }
 
-        private boolean tryRunTasks(
-                final ScheduledJob next)
+        private boolean tryRunTasks(final ScheduledJob next, final long tickStart)
         {
             boolean hasRun = false;
 
             for (ScheduledTask task : next)
             {
-                if (!validate(next))
+                if (System.currentTimeMillis() - tickStart > myRunIntervalInMs)
                 {
-                    LOG.debug("Job {} was stopped, will continue later", next);
                     break;
                 }
                 hasRun |= tryRunTask(next, task);
+            }
+
+            if (hasRun)
+            {
+                next.refreshState();
             }
 
             return hasRun;

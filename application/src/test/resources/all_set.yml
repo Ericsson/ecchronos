@@ -140,3 +140,4 @@ lock_factory:
     keyspace: ecc
     cache_expiry_time_in_seconds: 100
     consistencySerial: "LOCAL"
+    locks_per_resource: 3

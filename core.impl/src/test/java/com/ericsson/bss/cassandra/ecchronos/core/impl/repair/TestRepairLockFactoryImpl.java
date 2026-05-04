@@ -35,6 +35,7 @@ import java.util.Optional;
 
 import java.util.UUID;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -45,12 +46,19 @@ import com.google.common.collect.Sets;
 public class TestRepairLockFactoryImpl
 {
     private static final int LOCKS_PER_RESOURCE = 1;
+    private static final RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
 
     @Mock
     private LockFactory mockLockFactory;
 
     @Mock
     private LockFactory.DistributedLock mockLock;
+
+    @BeforeClass
+    public static void init()
+    {
+        RepairLockFactoryImpl.configure(LOCKS_PER_RESOURCE);
+    }
 
     @Before
     public void setup()
@@ -61,7 +69,6 @@ public class TestRepairLockFactoryImpl
     @Test
     public void testNothingToLockThrowsException()
     {
-        RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
         Map<String, String> metadata = Collections.singletonMap("metadatakey", "metadatavalue");
         int priority = 1;
 
@@ -73,7 +80,6 @@ public class TestRepairLockFactoryImpl
     public void testSingleLock() throws LockException
     {
         RepairResource repairResource = new RepairResource("DC1", "my-resource");
-        RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
         Map<String, String> metadata = Collections.singletonMap("metadatakey", "metadatavalue");
         int priority = 1;
 
@@ -88,7 +94,6 @@ public class TestRepairLockFactoryImpl
     public void testSingleLockNotSufficientNodes() throws LockException
     {
         RepairResource repairResource = new RepairResource("DC1", "my-resource");
-        RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
         Map<String, String> metadata = Collections.singletonMap("metadatakey", "metadatavalue");
         int priority = 1;
 
@@ -103,7 +108,6 @@ public class TestRepairLockFactoryImpl
     public void testSingleLockFailing() throws LockException
     {
         RepairResource repairResource = new RepairResource("DC1", "my-resource");
-        RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
         Map<String, String> metadata = Collections.singletonMap("metadatakey", "metadatavalue");
         int priority = 1;
 
@@ -119,7 +123,6 @@ public class TestRepairLockFactoryImpl
     {
         RepairResource repairResource = new RepairResource("DC1", "my-resource-dc1");
         RepairResource repairResource2 = new RepairResource("DC2", "my-resource-dc2");
-        RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
         Map<String, String> metadata = Collections.singletonMap("metadatakey", "metadatavalue");
         int priority = 1;
 
@@ -137,7 +140,6 @@ public class TestRepairLockFactoryImpl
     {
         RepairResource repairResourceDc1 = new RepairResource("DC1", "my-resource-dc1");
         RepairResource repairResourceDc2 = new RepairResource("DC2", "my-resource-dc2");
-        RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
         Map<String, String> metadata = Collections.singletonMap("metadatakey", "metadatavalue");
         int priority = 1;
 
@@ -156,7 +158,6 @@ public class TestRepairLockFactoryImpl
     {
         RepairResource repairResourceDc1 = new RepairResource("DC1", "my-resource-dc1");
         RepairResource repairResourceDc2 = new RepairResource("DC2", "my-resource-dc2");
-        RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
         Map<String, String> metadata = Collections.singletonMap("metadatakey", "metadatavalue");
         int priority = 1;
 
@@ -172,7 +173,6 @@ public class TestRepairLockFactoryImpl
     {
         RepairResource repairResourceDc1 = new RepairResource("DC1", "my-resource-dc1");
         RepairResource repairResourceDc2 = new RepairResource("DC2", "my-resource-dc2");
-        RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
         Map<String, String> metadata = Collections.singletonMap("metadatakey", "metadatavalue");
         int priority = 1;
 
@@ -191,7 +191,6 @@ public class TestRepairLockFactoryImpl
     {
         RepairResource repairResourceDc1 = new RepairResource("DC1", "my-resource-dc1");
         RepairResource repairResourceDc2 = new RepairResource("DC2", "my-resource-dc2");
-        RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
         Map<String, String> metadata = Collections.singletonMap("metadatakey", "metadatavalue");
         int priority = 1;
 
@@ -213,7 +212,6 @@ public class TestRepairLockFactoryImpl
     {
         RepairResource repairResourceDc1 = new RepairResource("DC1", "my-resource-dc1");
         RepairResource repairResourceDc2 = new RepairResource("DC2", "my-resource-dc2");
-        RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
         Map<String, String> metadata = Collections.singletonMap("metadatakey", "metadatavalue");
         int priority = 1;
 

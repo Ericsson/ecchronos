@@ -15,6 +15,7 @@
 #
 
 import pytest
+import os
 import global_variables as global_vars
 import logging
 from conftest import run_ecctool_state_nodes, assert_nodes_size_is_equal, run_ecctool_run_repair, run_ecctool_repairs
@@ -110,7 +111,7 @@ def test_lock_concurrency(install_cassandra_cluster, test_environment):
 
             # Wait for jobs to be finished in both instances within a time limit
             try:
-                wait_for_repairs_completion(executor)
+                wait_for_repairs_completion(executor, install_cassandra_cluster)
             except Exception as e:
                 logger.error(f"Timeout: Repairs did not complete within 5 minutes")
                 pytest.fail(f"Repairs did not complete within 5 minutes: {e}")
@@ -133,13 +134,21 @@ def all_repairs_completed(statuses):
 
 
 @retry(stop=stop_after_delay(600), wait=wait_fixed(10), retry=retry_if_result(lambda x: not x))
-def wait_for_repairs_completion(executor):
+def wait_for_repairs_completion(executor, cassandra_cluster):
     """Wait for all repairs to complete in both datacenters"""
     params = ["-c", "4"]
     future_ecc_dc1 = executor.submit(verify_repair_completed, ECC_INSTANCE_NAME_DC1, params)
     future_ecc_dc2 = executor.submit(verify_repair_completed, ECC_INSTANCE_NAME_DC2, params)
+    future_locks = executor.submit(cassandra_cluster.run_cql, "CONSISTENCY ALL; SELECT * FROM ecchronos.lock;")
+
     output_ecc_dc1, _ = future_ecc_dc1.result()
     output_ecc_dc2, _ = future_ecc_dc2.result()
+    locks_output = future_locks.result()
+    logger.info(f"Locks state:\n{locks_output}")
+
+    locks_file = os.path.join(global_vars.HOST_LOGS_PATH, "locks.txt")
+    with open(locks_file, "a") as f:
+        f.write(locks_output)
 
     ecc_dc1_statuses = handle_repair_output(output_ecc_dc1)
     ecc_dc2_statuses = handle_repair_output(output_ecc_dc2)

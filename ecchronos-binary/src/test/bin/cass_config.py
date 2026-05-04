@@ -319,6 +319,19 @@ class CassandraCluster:
             ]
         )
 
+    def run_cql(self, query):
+        command = ["docker", "exec", self.container_id, "cqlsh", "-e", query]
+        result = subprocess.run(
+            command,
+            timeout=DEFAULT_WAIT_TIME_IN_SECS,
+            encoding="utf-8",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(f"CQL query failed: {result.stderr}")
+        return result.stdout
+
     def stop_extra_node(self):
         try:
             if self._extra_node != None:
