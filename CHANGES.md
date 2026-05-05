@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Add -XX:+ExitOnOutOfMemoryError in jvm.options - Issue #1520
 * Rethrow is OOM is root cause in DistributedJmxProxyFactoryImpl - Issue #1520
 * Recomended general improvments - Issue #1489
 * Don't log unexpected error when updating reoair config for a new node - Issue #1487

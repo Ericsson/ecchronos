@@ -22,6 +22,15 @@
 # https://bugs.java.com/bugdatabase/view_bug.do?bug_id=6858051
 #-XX:ParallelGCThreads=1
 
+##########################
+# OUT OF MEMORY HANDLING #
+##########################
+
+# Force the JVM to exit immediately on OutOfMemoryError.
+# Without this, only the affected thread dies and the process
+# continues in a degraded state.
+-XX:+ExitOnOutOfMemoryError
+
 #################
 # HEAP SETTINGS #
 #################
