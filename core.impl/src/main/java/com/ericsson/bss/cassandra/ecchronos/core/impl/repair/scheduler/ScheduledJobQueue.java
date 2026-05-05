@@ -20,7 +20,9 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.PriorityQueue;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.AbstractIterator;
 import org.slf4j.Logger;
@@ -122,7 +124,10 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
     public final synchronized Iterator<ScheduledJob> iterator()
     {
         myJobQueues.values().forEach(q -> q.forEach(ScheduledJob::refreshState));
-        Iterator<ScheduledJob> baseIterator = new ManyToOneIterator<>(myJobQueues.values(), myComparator);
+        List<PriorityQueue<ScheduledJob>> snapshots = myJobQueues.values().stream()
+                .map(PriorityQueue::new)
+                .collect(Collectors.toList());
+        Iterator<ScheduledJob> baseIterator = new ManyToOneIterator<>(snapshots, myComparator);
 
         return new RunnableJobIterator(baseIterator);
     }
