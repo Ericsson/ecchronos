@@ -157,6 +157,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                 }
                 catch (InstanceNotFoundException | IOException | InterruptedException e)
                 {
+                    rethrowIfOutOfMemory(e);
                     LOG.error("Unable to add StorageService listener in node {}", nodeID, e);
                     ret = false;
                 }
@@ -202,6 +203,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                        | AttributeNotFoundException
                        | UncheckedJmxAdapterException e)
                 {
+                    rethrowIfOutOfMemory(e);
                     LOG.error("Unable to get live nodes for node {}", nodeID, e);
                 }
             }
@@ -246,6 +248,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                        | AttributeNotFoundException
                        | UncheckedJmxAdapterException e)
                 {
+                    rethrowIfOutOfMemory(e);
                     LOG.error("Unable to get unreachable nodes for node {}", nodeID, e);
                 }
             }
@@ -293,6 +296,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                 }
                 catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException | UncheckedJmxAdapterException e)
                 {
+                    rethrowIfOutOfMemory(e);
                     LOG.error("Unable to repair node {}", nodeID, e);
                 }
             }
@@ -334,6 +338,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                 }
                 catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException | UncheckedJmxAdapterException e)
                 {
+                    rethrowIfOutOfMemory(e);
                     LOG.error("Unable to terminate repair sessions for node {}", nodeID, e);
                 }
             }
@@ -376,6 +381,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                 }
                 catch (InstanceNotFoundException | ListenerNotFoundException | IOException | UncheckedJmxAdapterException e)
                 {
+                    rethrowIfOutOfMemory(e);
                     LOG.error("Unable to remove StorageService listener for node {}", nodeID, e);
                 }
             }
@@ -431,6 +437,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                        | MalformedObjectNameException
                        | UncheckedJmxAdapterException e)
                 {
+                    rethrowIfOutOfMemory(e);
                     LOG.error("Unable to retrieve disk space usage for table {} in node {}", tableReference,
                             nodeID,
                             e);
@@ -438,6 +445,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                 catch (RuntimeMBeanException
                        | InstanceNotFoundException e)
                 {
+                    rethrowIfOutOfMemory(e);
                     // This exception can occur when a table is about to be changed, but has not finished doing so,
                     // before we try to fetch data from it. Just return the default value for the time being.
                     LOG.warn("Unable to retrieve disk space usage for {} (bean not yet ready)", tableReference);
@@ -482,16 +490,19 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
             }
             catch (MBeanException | ReflectionException | IOException | UncheckedJmxAdapterException e)
             {
+                rethrowIfOutOfMemory(e);
                 LOG.error("Unable to get maxRepaired for table {} in node {}", tableReference, nodeID, e);
             }
             catch (ClassCastException e)
             {
+                rethrowIfOutOfMemory(e);
                 LOG.error("ClassCastException when getting maxRepaired for table {} in node {} (Jolokia enabled: {})",
                         tableReference, nodeID, isJolokiaEnabled, e);
             }
             catch (RuntimeMBeanException
                    | InstanceNotFoundException e)
             {
+                rethrowIfOutOfMemory(e);
                 // This exception can occur when a table is about to be changed, but has not finished doing so,
                 // before we try to fetch data from it. Just return the default value for the time being.
                 LOG.warn("Unable to get maxRepaired for {} (bean not yet ready)", tableReference);
@@ -615,17 +626,20 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                        | MalformedObjectNameException
                        | UncheckedJmxAdapterException e)
                 {
+                    rethrowIfOutOfMemory(e);
                     LOG.error("Unable to retrieve percent repaired for {} in node {}",
                             tableReference, nodeID, e);
                 }
                 catch (ClassCastException e)
                 {
+                    rethrowIfOutOfMemory(e);
                     LOG.error("ClassCastException when getting percent repaired for table {} in node {} (Jolokia enabled: {})",
                             tableReference, nodeID, isJolokiaEnabled, e);
                 }
                 catch (RuntimeMBeanException
                        | InstanceNotFoundException e)
                 {
+                    rethrowIfOutOfMemory(e);
                     // This exception can occur when a table is about to be changed, but has not finished doing so
                     // before we try to fetch data from it. Just return the default value for the time being.
                     LOG.warn("Unable to retrieve PercentRepaired for {} (bean not yet ready)", tableReference);
@@ -657,6 +671,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                        | IOException
                        | UncheckedJmxAdapterException e)
                 {
+                    rethrowIfOutOfMemory(e);
                     LOG.error("Unable to retrieve node status for {}", nodeID, e);
                 }
             }
@@ -690,6 +705,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                 }
                 catch (Exception e)
                 {
+                    rethrowIfOutOfMemory(e);
                     LOG.warn("Unable to check active repair status for command {} on node {}, assuming still active",
                             command, nodeID, e);
                     return true;
@@ -736,6 +752,20 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
             else
             {
                 LOG.info("Node {} is not managed by local instance, cannot mark as unavailable", nodeID);
+            }
+        }
+
+        private static void rethrowIfOutOfMemory(final Throwable t)
+        {
+            Throwable cause = t;
+            while (cause != null)
+            {
+                if (cause instanceof OutOfMemoryError)
+                {
+                    LOG.error("Rethrowing OutOfMemoryError", t);
+                    throw (OutOfMemoryError) cause;
+                }
+                cause = cause.getCause();
             }
         }
 
