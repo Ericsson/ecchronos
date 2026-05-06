@@ -2,6 +2,8 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+## Version 1.0.0-beta5
+
 * Add -XX:+ExitOnOutOfMemoryError in jvm.options - Issue #1520
 * Rethrow is OOM is root cause in DistributedJmxProxyFactoryImpl - Issue #1520
 * Recomended general improvments - Issue #1489
