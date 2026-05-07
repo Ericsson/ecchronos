@@ -80,6 +80,7 @@ public final class CASLockFactory implements LockFactory, Closeable
     private static final String TABLE_LOCK_PRIORITY = "lock_priority";
     private static final int REFRESH_INTERVAL_RATIO = 10;
     private static final int DEFAULT_LOCK_TIME_IN_SECONDS = 600;
+    private static final int MINIMUM_LOCK_TIME_IN_SECONDS = 30;
     private static final long PRIORITY_CACHE_EXPIRE_SECONDS = 2L;
     private static final int LOCK_REFRESHER_POOL_SIZE = 2;
 
@@ -158,11 +159,26 @@ public final class CASLockFactory implements LockFactory, Closeable
                 .orElse(null);
         if (tableMetadata == null || tableMetadata.getOptions() == null)
         {
-            LOG.warn("Could not parse default ttl of {}.{}", myCasLockProperties.getKeyspaceName(), TABLE_LOCK);
+            LOG.warn("Could not parse default ttl of {}.{}, using default {}s",
+                    myCasLockProperties.getKeyspaceName(), TABLE_LOCK, DEFAULT_LOCK_TIME_IN_SECONDS);
             return DEFAULT_LOCK_TIME_IN_SECONDS;
         }
         Map<CqlIdentifier, Object> tableOptions = tableMetadata.getOptions();
-        return (Integer) tableOptions.get(CqlIdentifier.fromInternal("default_time_to_live"));
+        Object ttlValue = tableOptions.get(CqlIdentifier.fromInternal("default_time_to_live"));
+        if (ttlValue == null)
+        {
+            LOG.warn("No default_time_to_live found for {}.{}, using default {}s",
+                    myCasLockProperties.getKeyspaceName(), TABLE_LOCK, DEFAULT_LOCK_TIME_IN_SECONDS);
+            return DEFAULT_LOCK_TIME_IN_SECONDS;
+        }
+        int ttl = (Integer) ttlValue;
+        if (ttl < MINIMUM_LOCK_TIME_IN_SECONDS)
+        {
+            LOG.warn("default_time_to_live for {}.{} is {}s, using minimum {}s",
+                    myCasLockProperties.getKeyspaceName(), TABLE_LOCK, ttl, MINIMUM_LOCK_TIME_IN_SECONDS);
+            return MINIMUM_LOCK_TIME_IN_SECONDS;
+        }
+        return ttl;
     }
 
     @Override
