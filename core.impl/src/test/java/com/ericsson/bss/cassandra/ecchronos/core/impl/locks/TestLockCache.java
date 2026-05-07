@@ -136,7 +136,9 @@ public class TestLockCache
 
     private void assertGetLockThrowsException(String resource, LockException expectedException)
     {
-        assertThatThrownBy(() -> myLockCache.getLock(DATA_CENTER, resource, PRIORITY, METADATA)).isSameAs(expectedException);
+        assertThatThrownBy(() -> myLockCache.getLock(DATA_CENTER, resource, PRIORITY, METADATA))
+                .isInstanceOf(LockException.class)
+                .satisfies(thrown -> assertThat(thrown == expectedException || thrown.getCause() == expectedException).isTrue());
         assertThat(myLockCache.getCachedFailure(DATA_CENTER, resource)).isNotEmpty();
     }
 

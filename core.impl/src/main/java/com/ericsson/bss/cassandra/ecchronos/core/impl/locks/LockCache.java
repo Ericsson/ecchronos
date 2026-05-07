@@ -86,7 +86,7 @@ public final class LockCache
     private void throwCachedLockException(final LockException e) throws LockException
     {
         LOG.debug("Encountered cached locking failure, throwing exception", e);
-        throw e;
+        throw new LockException("Cached: " + e.getMessage(), e);
     }
 
     private Optional<LockException> getCachedFailure(final LockKey lockKey)
