@@ -26,7 +26,6 @@ public final class CASLockFactoryCacheContext
     private final Map<UUID, LockCache> myLockCache;
     private final long myLockUpdateTimeInSeconds;
     private final int myFailedLockRetryAttempts;
-    private final Object myLock = new Object();
 
     public CASLockFactoryCacheContext(final Builder builder)
     {
@@ -37,18 +36,12 @@ public final class CASLockFactoryCacheContext
 
     public LockCache getLockCache(final UUID uuid)
     {
-        synchronized (myLock)
-        {
-            return myLockCache.get(uuid);
-        }
+        return myLockCache.get(uuid);
     }
 
     public void addLockCache(final UUID uuid, final LockCache lockCache)
     {
-        synchronized (myLock)
-        {
-            myLockCache.put(uuid, lockCache);
-        }
+        myLockCache.putIfAbsent(uuid, lockCache);
     }
 
     public long getLockUpdateTimeInSeconds()
