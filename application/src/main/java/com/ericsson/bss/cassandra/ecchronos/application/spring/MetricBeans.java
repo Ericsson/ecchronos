@@ -68,6 +68,7 @@ public class MetricBeans
             {
                 createPrometheusMeterRegistry(metricConfig);
             }
+            bindSystemMetrics();
         }
         createStatusLoggerMeterRegistry();
     }
@@ -105,6 +106,14 @@ public class MetricBeans
         myPrometheusMeterRegistry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
         myPrometheusMeterRegistry.config().meterFilter(meterFilter);
         myCompositeMeterRegistry.add(myPrometheusMeterRegistry);
+    }
+
+    private void bindSystemMetrics()
+    {
+        new io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics().bindTo(myCompositeMeterRegistry);
+        new io.micrometer.core.instrument.binder.jvm.JvmGcMetrics().bindTo(myCompositeMeterRegistry);
+        new io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics().bindTo(myCompositeMeterRegistry);
+        new io.micrometer.core.instrument.binder.system.ProcessorMetrics().bindTo(myCompositeMeterRegistry);
     }
 
     private void createStatusLoggerMeterRegistry()
