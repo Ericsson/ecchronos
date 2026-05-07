@@ -350,6 +350,12 @@ public class TestUtils
             return Collections.emptyList();
         }
 
+        @Override
+        public boolean isRepairActive(int command)
+        {
+            return false;
+        }
+
     }
 
     public static CountDownLatch startRepair(final RepairTask repairTask, final boolean assertFailed, final MockedJmxProxy proxy)

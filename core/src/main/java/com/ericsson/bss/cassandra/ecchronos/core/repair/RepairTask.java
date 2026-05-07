@@ -46,7 +46,7 @@ public abstract class RepairTask implements NotificationListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairTask.class);
     private static final Pattern RANGE_PATTERN = Pattern.compile("\\((-?[0-9]+),(-?[0-9]+)\\]");
-    private static final int HEALTH_CHECK_INTERVAL = 10;
+    private static final int HEALTH_CHECK_INTERVAL_MINUTES = 1;
     private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(
             new ThreadFactoryBuilder().setNameFormat("HangPreventingTask-%d").build());
     private final CountDownLatch myLatch = new CountDownLatch(1);
@@ -258,7 +258,7 @@ public abstract class RepairTask implements NotificationListener
             myHangPreventFuture.cancel(false);
         }
         // Schedule the first check to happen after 10 minutes
-        myHangPreventFuture = myExecutor.schedule(new HangPreventingTask(), HEALTH_CHECK_INTERVAL,
+        myHangPreventFuture = myExecutor.schedule(new HangPreventingTask(), HEALTH_CHECK_INTERVAL_MINUTES,
                 TimeUnit.MINUTES);
     }
 
@@ -363,41 +363,51 @@ public abstract class RepairTask implements NotificationListener
 
     private final class HangPreventingTask implements Runnable
     {
-        private static final int MAX_CHECKS = 3;
+        private static final int MAX_WAIT_MINUTES = 40;
         private static final String NORMAL_STATUS = "NORMAL";
-        private int checkCount = 0;
+        private final long startTime = System.currentTimeMillis();
 
         @Override
         public void run()
         {
             try (JmxProxy proxy = myJmxProxyFactory.connect())
             {
-                if (checkCount < MAX_CHECKS)
+                String nodeStatus = proxy.getNodeStatus();
+                if (!NORMAL_STATUS.equals(nodeStatus))
                 {
-                    String nodeStatus = proxy.getNodeStatus();
-                    if (!NORMAL_STATUS.equals(nodeStatus))
-                    {
-                        LOG.error("Local Cassandra node is down, aborting repair task.");
-                        myLastError = new ScheduledJobException("Local Cassandra node is down");
-                        proxy.forceTerminateAllRepairSessions();
-                        myLatch.countDown(); // Signal to abort the repair task
-                    }
-                    else
-                    {
-                        checkCount++;
-                        myHangPreventFuture = myExecutor.schedule(this, HEALTH_CHECK_INTERVAL, TimeUnit.MINUTES);
-                    }
+                    // Node state is not normal, terminate the repair directly
+                    LOG.error("Local Cassandra node is down, aborting repair task.");
+                    myLastError = new ScheduledJobException("Local Cassandra node is down");
+                    proxy.forceTerminateAllRepairSessions();
+                    myLatch.countDown();
+                }
+                else if (!proxy.isRepairActive(myCommand))
+                {
+                    // No repair is active, assume notification was lost
+                    LOG.warn("Repair-{} of {} is no longer active, notification may have been lost",
+                            myCommand, myTableReference);
+                    myLatch.countDown();
+                }
+                else if (System.currentTimeMillis() - startTime >= TimeUnit.MINUTES.toMillis(MAX_WAIT_MINUTES))
+                {
+                    // Repair takes too long, force termination of sessions
+                    LOG.error("Repair-{} of {} still active after {} minutes, forcing termination",
+                            myCommand, myTableReference, MAX_WAIT_MINUTES);
+                    proxy.forceTerminateAllRepairSessions();
+                    myLatch.countDown();
                 }
                 else
                 {
-                    // After 3 successful checks or 30 minutes if still task is running terminate all repair sessions
-                    proxy.forceTerminateAllRepairSessions();
-                    myLatch.countDown();
+                    LOG.debug("Repair-{} still in status {}. Will recheck in {} minutes",
+                            myCommand, nodeStatus, HEALTH_CHECK_INTERVAL_MINUTES);
+                    myHangPreventFuture = myExecutor.schedule(this,
+                            HEALTH_CHECK_INTERVAL_MINUTES, TimeUnit.MINUTES);
                 }
             }
             catch (IOException e)
             {
-                LOG.error("Unable to check node status or prevent hanging repair task {}", this, e);
+                LOG.error("Unable to check node status or prevent hanging repair task for Repair-{} of {}",
+                        myCommand, myTableReference, e);
             }
         }
     }

@@ -1,6 +1,12 @@
 # Changes
 
+## Version 6.1.9
+
+* Repair non-system keyspaces with names begining with system - Issue #1486
+
 ## Version 6.1.8
+
+* Make HangPreventingTask check actual repair status - Issue #1501
 
 ## Version 6.1.7
 

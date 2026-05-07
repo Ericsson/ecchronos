@@ -117,4 +117,12 @@ public interface JmxProxy extends Closeable
      * @return A string representing the node's status.
      */
     String getNodeStatus();
+
+    /**
+     * Checks if a repair command is still actively running on the local node.
+     *
+     * @param command The repair command number returned by {@link #repairAsync}.
+     * @return true if the repair is still active, false if it has completed or is unknown.
+     */
+    boolean isRepairActive(int command);
 }

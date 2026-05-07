@@ -350,6 +350,31 @@ public final class JmxProxyFactoryImpl implements JmxProxyFactory
                 return "Unknown";
             }
         }
+
+        @Override
+        public boolean isRepairActive(final int command)
+        {
+            try
+            {
+                @SuppressWarnings("unchecked")
+                List<String> status = (List<String>) myMbeanServerConnection.invoke(
+                        myStorageServiceObject,
+                        "getParentRepairStatus",
+                        new Object[]{command},
+                        new String[]{int.class.getName()});
+
+                LOG.debug("Parent repair session {} status: {}", command, status);
+
+                return status != null && "IN_PROGRESS".equals(status.get(0));
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Unable to check active repair status for command {}, assuming still active",
+                        command, e);
+                return true;
+            }
+        }
+
     }
 
     public static Builder builder()
