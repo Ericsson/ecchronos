@@ -27,6 +27,8 @@ import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnecti
 import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.state.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
@@ -35,9 +37,11 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -76,9 +80,11 @@ public final class CASLockFactory implements LockFactory, Closeable
     private static final String TABLE_LOCK_PRIORITY = "lock_priority";
     private static final int REFRESH_INTERVAL_RATIO = 10;
     private static final int DEFAULT_LOCK_TIME_IN_SECONDS = 600;
+    private static final long PRIORITY_CACHE_EXPIRE_SECONDS = 2L;
 
     private final HostStates myHostStates;
     private final CASLockFactoryCacheContext myCasLockFactoryCacheContext;
+    private final Cache<String, List<NodePriority>> myPriorityCache;
 
     private final CASLockProperties myCasLockProperties;
     private final CASLockStatement myCasLockStatement;
@@ -103,6 +109,11 @@ public final class CASLockFactory implements LockFactory, Closeable
 
         verifySchemasExists();
         myCacheExpiryTimeInSeconds = builder.getCacheExpiryTimeInSecond();
+
+        myPriorityCache = Caffeine.newBuilder()
+                .expireAfterWrite(PRIORITY_CACHE_EXPIRE_SECONDS, TimeUnit.SECONDS)
+                .executor(Runnable::run)
+                .build();
 
         myCasLockFactoryCacheContext = buildCasLockFactoryCacheContext();
 
@@ -286,7 +297,8 @@ public final class CASLockFactory implements LockFactory, Closeable
             LOG.warn("Not sufficient nodes to lock resource {}", resource);
             throw new LockException("Not sufficient nodes to lock");
         }
-        CASLock casLock = new CASLock(resource, priority, metadata, nodeId, myCasLockStatement); // NOSONAR
+        List<NodePriority> priorities = getPrioritiesForResource(resource);
+        CASLock casLock = new CASLock(resource, priority, metadata, nodeId, myCasLockStatement, priorities); // NOSONAR
         if (casLock.lock())
         {
             return casLock;
@@ -295,6 +307,25 @@ public final class CASLockFactory implements LockFactory, Closeable
         {
             throw new LockException(String.format("Unable to lock resource %s in datacenter %s", resource, dataCenter));
         }
+    }
+
+    List<NodePriority> getPrioritiesForResource(final String resource)
+    {
+        return myPriorityCache.get(resource, this::fetchPriorities);
+    }
+
+    private List<NodePriority> fetchPriorities(final String resource)
+    {
+        List<NodePriority> nodePriorities = new ArrayList<>();
+        ResultSet resultSet = myCasLockStatement.execute(
+                myCasLockStatement.getGetPriorityStatement().bind(resource));
+        for (Row row : resultSet)
+        {
+            nodePriorities.add(new NodePriority(
+                    row.getUuid(CASLockStatement.COLUMN_NODE),
+                    row.getInt(CASLockStatement.COLUMN_PRIORITY)));
+        }
+        return nodePriorities;
     }
 
     private Set<Node> getNodesForResource(final String resource) throws UnsupportedEncodingException

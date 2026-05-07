@@ -336,7 +336,8 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
                             1,
                             metadata,
                             nodeId,
-                            myLockFactory.getCasLockStatement()));
+                            myLockFactory.getCasLockStatement(),
+                            List.of()));
 
             Thread.sleep(100);
 
@@ -364,7 +365,8 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
                 1,
                 metadata,
                 nodeId,
-                myLockFactory.getCasLockStatement()))
+                myLockFactory.getCasLockStatement(),
+                List.of()))
         {
             for (int i = 0; i < 10; i++)
             {

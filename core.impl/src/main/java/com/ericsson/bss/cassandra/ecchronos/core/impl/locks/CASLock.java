@@ -15,7 +15,6 @@
 package com.ericsson.bss.cassandra.ecchronos.core.impl.locks;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory.DistributedLock;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -29,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.core.cql.Row;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 
 /**
@@ -59,15 +57,14 @@ class CASLock implements DistributedLock, Runnable
             final int priority,
             final Map<String, String> metadata,
             final UUID uuid,
-            final CASLockStatement casLockStatement)
+            final CASLockStatement casLockStatement,
+            final List<NodePriority> nodePriorities)
     {
         myResource = resource;
         myPriority = priority;
         myMetadata = metadata;
         myUuid = uuid;
         myCasLockStatement = casLockStatement;
-
-        List<NodePriority> nodePriorities = computePriorities();
 
         myLocallyHighestPriority = nodePriorities.stream()
                 .filter(n -> n.getUuid().equals(myUuid))
@@ -181,24 +178,6 @@ class CASLock implements DistributedLock, Runnable
     {
         return myCasLockStatement.execute(
                 myCasLockStatement.getLockStatement().bind(myResource, myUuid, myMetadata)).wasApplied();
-    }
-
-    private List<NodePriority> computePriorities()
-    {
-        List<NodePriority> nodePriorities = new ArrayList<>();
-
-        ResultSet resultSet = myCasLockStatement.execute(
-                myCasLockStatement.getGetPriorityStatement().bind(myResource));
-
-        for (Row row : resultSet)
-        {
-            int priority = row.getInt(CASLockStatement.COLUMN_PRIORITY);
-            UUID hostId = row.getUuid(CASLockStatement.COLUMN_NODE);
-
-            nodePriorities.add(new NodePriority(hostId, priority));
-        }
-
-        return nodePriorities;
     }
 
     int getFailedAttempts()
