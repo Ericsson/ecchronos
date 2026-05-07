@@ -36,8 +36,7 @@ public class RepairLockFactoryImpl implements RepairLockFactory
     private static final Logger LOG = LoggerFactory.getLogger(RepairLockFactoryImpl.class);
     private static final int MIN_LOCKS_PER_RESOURCE = 1;
     private static final AtomicInteger CONFIGURED_LOCKS_PER_RESOURCE = new AtomicInteger(MIN_LOCKS_PER_RESOURCE);
-
-    private final ThreadLocal<Integer> myLockCounter = ThreadLocal.withInitial(() -> 0);
+    private static final AtomicInteger LOCK_COUNTER = new AtomicInteger(0);
 
     /**
      * Configure the global locks per resource value.
@@ -153,7 +152,7 @@ public class RepairLockFactoryImpl implements RepairLockFactory
         String dataCenter = repairResource.getDataCenter();
         int locksPerResource = getLocksPerResource();
 
-        int startLock = myLockCounter.get();
+        int startLock = LOCK_COUNTER.getAndIncrement();
         for (int i = 0; i < locksPerResource; i++)
         {
             int lockNumber = ((startLock + i) % locksPerResource) + 1;
@@ -164,7 +163,6 @@ public class RepairLockFactoryImpl implements RepairLockFactory
 
                 if (myLock != null)
                 {
-                    myLockCounter.set((lockNumber) % locksPerResource);
                     return myLock;
                 }
             }
