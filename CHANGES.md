@@ -2,6 +2,8 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Add JVM and system metrics via Micrometer binders - Issue #1530
+
 ## Version 1.0.0-beta5
 
 * Add -XX:+ExitOnOutOfMemoryError in jvm.options - Issue #1520
