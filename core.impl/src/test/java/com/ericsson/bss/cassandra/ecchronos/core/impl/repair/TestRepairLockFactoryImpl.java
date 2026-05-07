@@ -45,7 +45,7 @@ import com.google.common.collect.Sets;
 @RunWith(MockitoJUnitRunner.class)
 public class TestRepairLockFactoryImpl
 {
-    private static final int LOCKS_PER_RESOURCE = 1;
+    private static final int LOCKS_PER_RESOURCE = 3;
     private static final RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
 
     @Mock
