@@ -18,7 +18,6 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.VnodeRepairGroupFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
@@ -58,17 +57,15 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
     private final RepairHistory myRepairHistory;
     private final Map<ScheduledTask, Set<LongTokenRange>> myTasks;
     private final int myTotalTokens;
-    private final TimeBasedRunPolicy myTimeBasedRunPolicy;
 
     private VnodeOnDemandRepairJob(final Builder builder)
     {
         super(builder.configuration, builder.jmxProxyFactory, builder.repairConfiguration,
                 builder.repairLockType, builder.onFinishedHook, builder.tableRepairMetrics, builder.ongoingJob,
-                builder.currentNode, builder.myTimeBasedRunPolicy);
+                builder.currentNode);
         myRepairHistory = Preconditions.checkNotNull(builder.repairHistory,
                 "Repair history must be set");
         myTotalTokens = getOngoingJob().getTokens().size();
-        myTimeBasedRunPolicy = builder.myTimeBasedRunPolicy;
         myTasks = createRepairTasks(getOngoingJob().getTokens(), getOngoingJob().getRepairedTokens(), builder.currentNode);
     }
 
@@ -76,13 +73,6 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
                                                                       final Set<LongTokenRange> repairedTokens,
                                                                       final Node currentNode)
     {
-        // Check if repair is blocked by time-based run policy
-        if (myTimeBasedRunPolicy != null && !myTimeBasedRunPolicy.shouldRun(getTableReference(), currentNode))
-        {
-            LOG.debug("Repair tasks creation skipped for {} - blocked by time-based run policy", getTableReference());
-            return new ConcurrentHashMap<>();
-        }
-
         Map<LongTokenRange, ImmutableSet<DriverNode>> remainingTokenRanges = filterRemainingTokenRanges(tokenRanges, repairedTokens);
         List<VnodeRepairState> vnodeRepairStates = createVnodeRepairStates(remainingTokenRanges);
         List<ReplicaRepairGroup> repairGroups = generateRepairGroups(vnodeRepairStates);
@@ -145,7 +135,6 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
                 .withRepairHistory(myRepairHistory)
                 .withJobId(getJobId())
                 .withNode(currentNode)
-                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .build(ScheduledJob.Priority.HIGHEST.getValue());
     }
 
@@ -218,12 +207,6 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
             setFailed(true);
             return ScheduledJob.State.FAILED;
         }
-        // Check if repair is blocked by time-based run policy
-        if (myTimeBasedRunPolicy != null && !myTimeBasedRunPolicy.shouldRun(getTableReference(), getCurrentNode()))
-        {
-            LOG.debug("Repair job with id {} is blocked by time-based run policy", getJobId());
-            return ScheduledJob.State.BLOCKED;
-        }
         return myTasks.isEmpty() ? ScheduledJob.State.FINISHED : ScheduledJob.State.RUNNABLE;
     }
 
@@ -263,7 +246,6 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
         private RepairHistory repairHistory;
         private OngoingJob ongoingJob;
         private Node currentNode;
-        private TimeBasedRunPolicy myTimeBasedRunPolicy;
 
         public final Builder withNode(final Node node)
         {
@@ -310,18 +292,6 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
         public final Builder withOngoingJob(final OngoingJob anOngoingJob)
         {
             this.ongoingJob = anOngoingJob;
-            return this;
-        }
-
-        /**
-         * Build with TimeBasedRunPolicy.
-         *
-         * @param timeBasedRunPolicy TimeBasedRunPolicy.
-         * @return Builder
-         */
-        public Builder withTimeBasedRunPolicy(final TimeBasedRunPolicy timeBasedRunPolicy)
-        {
-            myTimeBasedRunPolicy = timeBasedRunPolicy;
             return this;
         }
 
