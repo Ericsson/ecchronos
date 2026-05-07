@@ -129,13 +129,27 @@ class CASLock implements DistributedLock, Runnable
         if (future != null)
         {
             future.cancel(true);
-            myCasLockStatement.execute(
-                    myCasLockStatement.getRemoveLockStatement().bind(myResource, myUuid));
+            try
+            {
+                myCasLockStatement.execute(
+                        myCasLockStatement.getRemoveLockStatement().bind(myResource, myUuid));
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Failed to release lock for resource '{}', will expire by TTL", myResource, e);
+            }
 
             if (myLocallyHighestPriority <= myPriority)
             {
-                myCasLockStatement.execute(
-                        myCasLockStatement.getRemoveLockPriorityStatement().bind(myResource, myUuid));
+                try
+                {
+                    myCasLockStatement.execute(
+                            myCasLockStatement.getRemoveLockPriorityStatement().bind(myResource, myUuid));
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Failed to remove lock priority for resource '{}', will expire by TTL", myResource, e);
+                }
             }
             else
             {
