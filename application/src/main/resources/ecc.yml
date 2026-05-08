@@ -496,10 +496,10 @@ lock_factory:
     ## which may not be enough throughput to complete all jobs within the repair interval,
     ## resulting in LATE/OVERDUE statuses.
     ##
-    ## Default: 2
-    ## Recommendation: start with 2-3 and increase if jobs are still falling behind.
+    ## Default: 3
+    ## Recommendation: start with 3 and increase if jobs are still falling behind.
     ## Monitor compaction throughput, read latencies, and pending compactions to ensure
     ## the cluster can handle the additional parallel repair load.
     ##
-    locks_per_resource: 2
+    locks_per_resource: 3
 

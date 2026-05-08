@@ -41,7 +41,7 @@ public class TestCasLockFactoryConfig
         CasLockFactoryConfig casLockFactoryConfig = getCasLockFactoryConfig("nothing_set.yml");
         assertThat(casLockFactoryConfig.getKeyspaceName()).isEqualTo("ecchronos");
         assertThat(casLockFactoryConfig.getFailureCacheExpiryTimeInSeconds()).isEqualTo(30L);
-        assertThat(casLockFactoryConfig.getLocksPerResource()).isEqualTo(1);
+        assertThat(casLockFactoryConfig.getLocksPerResource()).isEqualTo(3);
     }
 
     private CasLockFactoryConfig getCasLockFactoryConfig(final String fileName) throws IOException
