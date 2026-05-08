@@ -23,10 +23,11 @@ public class CasLockFactoryConfig
     private static final long DEFAULT_EXPIRY_TIME_IN_SECONDS = 30L;
     private static final String DEFAULT_KEYSPACE_NAME = "ecchronos";
     private static final int MIN_LOCKS_PER_RESOURCE = 1;
+    private static final int DEFAULT_LOCKS_PER_RESOURCE = 3;
     private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
     private long myExpiryTimeInSeconds = DEFAULT_EXPIRY_TIME_IN_SECONDS;
     private ConsistencyType myConsistencySerial = ConsistencyType.SERIAL;
-    private int myLocksPerResource = MIN_LOCKS_PER_RESOURCE;
+    private int myLocksPerResource = DEFAULT_LOCKS_PER_RESOURCE;
 
     public final long getFailureCacheExpiryTimeInSeconds()
     {
