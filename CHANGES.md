@@ -2,7 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
-*Lock improvments - Issue #1534
+* Lock improvments - Issue #1534
 * Remove Rejections from OnDemandJobs - Issue #1529
 * Change default value for locks_per_resource to 3 - Issue #1532
 * Add JVM and system metrics via Micrometer binders - Issue #1530
