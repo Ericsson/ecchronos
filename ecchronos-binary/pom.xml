@@ -183,8 +183,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-
         </plugins>
     </build>
 
@@ -285,14 +283,11 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <executable>python</executable>
+                                    <!-- FIX: run pytest from venv and expose venv/bin on PATH so subprocess tools like behave are found -->
+                                    <executable>bash</executable>
                                     <arguments>
-                                    <argument>-m</argument>
-                                        <argument>pytest</argument>
-                                        <argument>test_ecchronos.py</argument>
-                                        <argument>-s</argument>
-                                        <argument>-v</argument>
-                                        <argument>--tb=short</argument>
+                                        <argument>-c</argument>
+                                        <argument>export PATH="$PWD/venv/bin:$PATH" &amp;&amp; ./venv/bin/python -m pytest test_ecchronos.py -s -v --tb=short</argument>
                                     </arguments>
                                     <workingDirectory>${project.build.directory}/test</workingDirectory>
                                     <environmentVariables>
@@ -302,8 +297,6 @@
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
                                     </environmentVariables>
-                                    <redirectOutput>true</redirectOutput>
-                                    <redirectErrorStream>true</redirectErrorStream>
                                 </configuration>
                             </execution>
                         </executions>
@@ -394,8 +387,6 @@
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
                                     </environmentVariables>
-                                    <redirectOutput>true</redirectOutput>
-                                    <redirectErrorStream>true</redirectErrorStream>
                                 </configuration>
                             </execution>
                         </executions>

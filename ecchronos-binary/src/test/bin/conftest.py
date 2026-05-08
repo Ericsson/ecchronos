@@ -27,7 +27,8 @@ from typing import Optional
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-MAX_CHECK = 10
+# Fix: allow slower CI environments more time for ecChronos to become ready.
+MAX_CHECK = 30
 STARTUP_WAIT_TIME = 10
 
 
@@ -47,6 +48,51 @@ class TestFixture:
             self.cassandra_cluster.create_cluster()
 
             logger.info("Configuring ecChronos")
+            self.cassandra_cluster.schedule_keyspaces = [
+                {
+                    "name": "test",
+                    "tables": [
+                        {
+                            "name": "table1",
+                            "interval": {"time": 1, "unit": "days"},
+                            "initial_delay": {"time": 1, "unit": "hours"},
+                            "unwind_ratio": 0.1,
+                            "alarm": {
+                                "warn": {"time": 4, "unit": "days"},
+                                "error": {"time": 8, "unit": "days"},
+                            },
+                        }
+                    ],
+                },
+                {
+                    "name": "test2",
+                    "tables": [
+                        {"name": "table1", "repair_type": "incremental"},
+                        {"name": "table2", "repair_type": "parallel_vnode"},
+                    ],
+                },
+                {
+                    "name": "system_auth",
+                    "tables": [
+                        {"name": "network_permissions", "enabled": False},
+                        {"name": "resource_role_permissons_index", "enabled": False},
+                        {"name": "role_members", "enabled": False},
+                        {"name": "role_permissions", "enabled": False},
+                        {"name": "roles", "enabled": False},
+                    ],
+                },
+                {
+                    "name": "ecchronos",
+                    "tables": [
+                        {"name": "lock", "enabled": False},
+                        {"name": "lock_priority", "enabled": False},
+                        {"name": "on_demand_repair_status", "enabled": False},
+                        {"name": "reject_configuration", "enabled": False},
+                        {"name": "repair_history", "enabled": False},
+                    ],
+                },
+            ]
+
             ecc_config = EcchronosConfig(context=self.cassandra_cluster)
             ecc_config.modify_configuration()
 

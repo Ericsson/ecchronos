@@ -24,6 +24,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -49,7 +50,10 @@ public class TestCsvMeterRegistry
                 metricsFolder.getRoot().getAbsoluteFile());
         assertThat(csvMeterRegistry).isNotNull();
         csvMeterRegistry.start();
-        csvMeterRegistry.gauge("test", 1.0);
+
+        AtomicInteger gaugeValue = new AtomicInteger(1);
+        csvMeterRegistry.gauge("test", gaugeValue);
+
         csvMeterRegistry.report();
         assertThat(getCsvMetricValue("test", 1)).isEqualTo(1.0);
     }
@@ -61,7 +65,10 @@ public class TestCsvMeterRegistry
                 metricsFolder.getRoot().getAbsoluteFile());
         assertThat(csvMeterRegistry).isNotNull();
         csvMeterRegistry.start();
-        csvMeterRegistry.gauge("test", 1.0);
+
+        AtomicInteger gaugeValue = new AtomicInteger(1);
+        csvMeterRegistry.gauge("test", gaugeValue);
+
         csvMeterRegistry.report();
         assertThat(getCsvMetricValue("test", 1)).isEqualTo(1.0);
     }
@@ -69,7 +76,7 @@ public class TestCsvMeterRegistry
     private double getCsvMetricValue(String metric, int csvPos) throws IOException
     {
         String metricFile = metric + ".csv";
-        try(BufferedReader bufferedReader = new BufferedReader(
+        try (BufferedReader bufferedReader = new BufferedReader(
                 new FileReader(new File(metricsFolder.getRoot(), metricFile))))
         {
             bufferedReader.readLine(); // CSV header
