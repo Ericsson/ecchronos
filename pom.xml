@@ -108,7 +108,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- Spring boot -->
-        <org.springframework.boot.spring-boot.version>3.5.1</org.springframework.boot.spring-boot.version>
+        <org.springframework.boot.spring-boot.version>3.5.14</org.springframework.boot.spring-boot.version>
         <org.springframework.spring.version>6.2.18</org.springframework.spring.version>
         <org.springdoc.openapi-starter-webmvc-ui.version>2.8.17</org.springdoc.openapi-starter-webmvc-ui.version>
         <jakarta.servlet-api.version>6.1.0</jakarta.servlet-api.version>
@@ -134,7 +134,7 @@
         <org.yaml.snakeyaml.version>2.6</org.yaml.snakeyaml.version>
 
         <!-- Other -->
-        <io.netty.version>4.1.132.Final</io.netty.version>
+        <io.netty.version>4.1.133.Final</io.netty.version>
 
         <!-- Tests -->
         <awaitility.version>4.3.0</awaitility.version>
