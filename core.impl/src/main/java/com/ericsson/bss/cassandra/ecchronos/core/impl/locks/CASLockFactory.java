@@ -27,6 +27,8 @@ import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnecti
 import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.state.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
@@ -35,9 +37,11 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -68,6 +72,7 @@ import java.util.concurrent.TimeUnit;
  * WITH default_time_to_live = 600 AND gc_grace_seconds = 0;
  * </pre>
  */
+@SuppressWarnings("PMD.GodClass")
 public final class CASLockFactory implements LockFactory, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CASLockFactory.class);
@@ -76,9 +81,13 @@ public final class CASLockFactory implements LockFactory, Closeable
     private static final String TABLE_LOCK_PRIORITY = "lock_priority";
     private static final int REFRESH_INTERVAL_RATIO = 10;
     private static final int DEFAULT_LOCK_TIME_IN_SECONDS = 600;
+    private static final int MINIMUM_LOCK_TIME_IN_SECONDS = 30;
+    private static final long PRIORITY_CACHE_EXPIRE_SECONDS = 2L;
+    private static final int LOCK_REFRESHER_POOL_SIZE = 2;
 
     private final HostStates myHostStates;
     private final CASLockFactoryCacheContext myCasLockFactoryCacheContext;
+    private final Cache<String, List<NodePriority>> myPriorityCache;
 
     private final CASLockProperties myCasLockProperties;
     private final CASLockStatement myCasLockStatement;
@@ -91,7 +100,8 @@ public final class CASLockFactory implements LockFactory, Closeable
         myCasLockProperties = new CASLockProperties(
                 builder.getNativeConnectionProvider().getConnectionType(),
                 builder.getKeyspaceName(),
-                Executors.newSingleThreadScheduledExecutor(
+                Executors.newScheduledThreadPool(
+                        LOCK_REFRESHER_POOL_SIZE,
                         new ThreadFactoryBuilder().setNameFormat("LockRefresher-%d").build()),
                 builder.getConsistencyType(),
                 builder.getNativeConnectionProvider().getCqlSession());
@@ -103,6 +113,11 @@ public final class CASLockFactory implements LockFactory, Closeable
 
         verifySchemasExists();
         myCacheExpiryTimeInSeconds = builder.getCacheExpiryTimeInSecond();
+
+        myPriorityCache = Caffeine.newBuilder()
+                .expireAfterWrite(PRIORITY_CACHE_EXPIRE_SECONDS, TimeUnit.SECONDS)
+                .executor(Runnable::run)
+                .build();
 
         myCasLockFactoryCacheContext = buildCasLockFactoryCacheContext();
 
@@ -145,11 +160,26 @@ public final class CASLockFactory implements LockFactory, Closeable
                 .orElse(null);
         if (tableMetadata == null || tableMetadata.getOptions() == null)
         {
-            LOG.warn("Could not parse default ttl of {}.{}", myCasLockProperties.getKeyspaceName(), TABLE_LOCK);
+            LOG.warn("Could not parse default ttl of {}.{}, using default {}s",
+                    myCasLockProperties.getKeyspaceName(), TABLE_LOCK, DEFAULT_LOCK_TIME_IN_SECONDS);
             return DEFAULT_LOCK_TIME_IN_SECONDS;
         }
         Map<CqlIdentifier, Object> tableOptions = tableMetadata.getOptions();
-        return (Integer) tableOptions.get(CqlIdentifier.fromInternal("default_time_to_live"));
+        Object ttlValue = tableOptions.get(CqlIdentifier.fromInternal("default_time_to_live"));
+        if (ttlValue == null)
+        {
+            LOG.warn("No default_time_to_live found for {}.{}, using default {}s",
+                    myCasLockProperties.getKeyspaceName(), TABLE_LOCK, DEFAULT_LOCK_TIME_IN_SECONDS);
+            return DEFAULT_LOCK_TIME_IN_SECONDS;
+        }
+        int ttl = (Integer) ttlValue;
+        if (ttl < MINIMUM_LOCK_TIME_IN_SECONDS)
+        {
+            LOG.warn("default_time_to_live for {}.{} is {}s, using minimum {}s",
+                    myCasLockProperties.getKeyspaceName(), TABLE_LOCK, ttl, MINIMUM_LOCK_TIME_IN_SECONDS);
+            return MINIMUM_LOCK_TIME_IN_SECONDS;
+        }
+        return ttl;
     }
 
     @Override
@@ -286,7 +316,8 @@ public final class CASLockFactory implements LockFactory, Closeable
             LOG.warn("Not sufficient nodes to lock resource {}", resource);
             throw new LockException("Not sufficient nodes to lock");
         }
-        CASLock casLock = new CASLock(resource, priority, metadata, nodeId, myCasLockStatement); // NOSONAR
+        List<NodePriority> priorities = getPrioritiesForResource(resource);
+        CASLock casLock = new CASLock(resource, priority, metadata, nodeId, myCasLockStatement, priorities); // NOSONAR
         if (casLock.lock())
         {
             return casLock;
@@ -295,6 +326,25 @@ public final class CASLockFactory implements LockFactory, Closeable
         {
             throw new LockException(String.format("Unable to lock resource %s in datacenter %s", resource, dataCenter));
         }
+    }
+
+    List<NodePriority> getPrioritiesForResource(final String resource)
+    {
+        return myPriorityCache.get(resource, this::fetchPriorities);
+    }
+
+    private List<NodePriority> fetchPriorities(final String resource)
+    {
+        List<NodePriority> nodePriorities = new ArrayList<>();
+        ResultSet resultSet = myCasLockStatement.execute(
+                myCasLockStatement.getGetPriorityStatement().bind(resource));
+        for (Row row : resultSet)
+        {
+            nodePriorities.add(new NodePriority(
+                    row.getUuid(CASLockStatement.COLUMN_NODE),
+                    row.getInt(CASLockStatement.COLUMN_PRIORITY)));
+        }
+        return nodePriorities;
     }
 
     private Set<Node> getNodesForResource(final String resource) throws UnsupportedEncodingException

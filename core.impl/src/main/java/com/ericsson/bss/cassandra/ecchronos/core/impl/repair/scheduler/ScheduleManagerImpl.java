@@ -31,6 +31,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -260,6 +261,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
      */
     private final class JobRunTask implements Runnable
     {
+        public static final int JITTER_NUMBER = 2;
         private final UUID nodeID;
         private final Node myNode;
 
@@ -371,6 +373,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 {
                     LOG.warn("Unable to get schedule lock on task {} in node {}", task, nodeID, e);
                 }
+                job.setRunnableIn(ThreadLocalRandom.current().nextLong(myRunIntervalInMs, myRunIntervalInMs * JITTER_NUMBER));
                 return false;
             }
             catch (Exception e)
@@ -379,6 +382,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 {
                     LOG.warn("Unable to get schedule lock on task {} in node {}", task, nodeID, e);
                 }
+                job.setRunnableIn(ThreadLocalRandom.current().nextLong(myRunIntervalInMs, myRunIntervalInMs * JITTER_NUMBER));
                 return false;
             }
         }
