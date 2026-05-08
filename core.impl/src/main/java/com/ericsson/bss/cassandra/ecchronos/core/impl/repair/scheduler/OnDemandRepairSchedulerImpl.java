@@ -21,7 +21,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandStatus;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OngoingJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.VnodeOnDemandRepairJob;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
@@ -76,7 +75,6 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
     private final RepairHistory myRepairHistory;
     private final OnDemandStatus myOnDemandStatus;
     private final Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
-    private final TimeBasedRunPolicy myTimeBasedRunPolicy;
 
     private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(
             new ThreadFactoryBuilder().setNameFormat("OngoingJobsScheduler-%d").build());
@@ -94,7 +92,6 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         myOnDemandStatus = builder.onDemandStatus;
         myExecutor.scheduleAtFixedRate(() -> getOngoingStartedJobsForAllNodes(), 0, ONGOING_JOBS_PERIOD_SECONDS, TimeUnit.SECONDS);
         myRepairConfigurationFunction = builder.myRepairConfigurationFunction;
-        myTimeBasedRunPolicy = builder.myTimeBasedRunPolicy;
     }
 
     private void getOngoingStartedJobsForAllNodes()
@@ -360,7 +357,6 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
                 .withRepairHistory(myRepairHistory)
                 .withOngoingJob(ongoingJob)
                 .withNode(node)
-                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .build();
     }
 
@@ -377,7 +373,6 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
                 .withReplicationState(myReplicationState)
                 .withOngoingJob(ongoingJob)
                 .withNode(node)
-                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .build();
     }
 
@@ -414,7 +409,6 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         private RepairHistory repairHistory;
         private OnDemandStatus onDemandStatus;
         private Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
-        private TimeBasedRunPolicy myTimeBasedRunPolicy;
 
         /**
          * Build on demand repair scheduler with JMX proxy factory.
@@ -533,18 +527,6 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         public Builder withOnDemandStatus(final OnDemandStatus theOnDemandStatus)
         {
             this.onDemandStatus = theOnDemandStatus;
-            return this;
-        }
-
-        /**
-         * Build with TimeBasedRunPolicy.
-         *
-         * @param timeBasedRunPolicy TimeBasedRunPolicy.
-         * @return Builder
-         */
-        public Builder withTimeBasedRunPolicy(final TimeBasedRunPolicy timeBasedRunPolicy)
-        {
-            myTimeBasedRunPolicy = timeBasedRunPolicy;
             return this;
         }
 

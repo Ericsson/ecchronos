@@ -35,7 +35,8 @@ public class RepairLockFactoryImpl implements RepairLockFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairLockFactoryImpl.class);
     private static final int MIN_LOCKS_PER_RESOURCE = 1;
-    private static final AtomicInteger CONFIGURED_LOCKS_PER_RESOURCE = new AtomicInteger(MIN_LOCKS_PER_RESOURCE);
+    private static final int DEFAULT_LOCKS_PER_RESOURCE = 3;
+    private static final AtomicInteger CONFIGURED_LOCKS_PER_RESOURCE = new AtomicInteger(DEFAULT_LOCKS_PER_RESOURCE);
     private static final AtomicInteger LOCK_COUNTER = new AtomicInteger(0);
 
     /**

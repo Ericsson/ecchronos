@@ -136,7 +136,6 @@ public class ECChronos implements Closeable
                 .withRepairHistory(repairHistoryService)
                 .withRepairConfigurationFunction(repairConfigurationProvider::get)
                 .withOnDemandStatus(new OnDemandStatus(nativeConnectionProvider))
-                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .build();
 
         ThreadPoolTaskConfig threadPoolTaskConfig = configuration.getConnectionConfig().getThreadPoolTaskConfig();
