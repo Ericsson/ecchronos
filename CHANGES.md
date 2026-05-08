@@ -2,6 +2,8 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+## Version 1.0.0-beta6
+
 * Lock improvments - Issue #1534
 * Remove Rejections from OnDemandJobs - Issue #1529
 * Change default value for locks_per_resource to 3 - Issue #1532
