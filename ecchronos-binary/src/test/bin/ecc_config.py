@@ -222,22 +222,63 @@ class EcchronosConfig:
             )
         )
 
+    def _default_test_schedule_keyspaces(self):
+        return [
+            {
+                "name": "test",
+                "tables": [
+                    {
+                        "name": "table1",
+                        "interval": {"time": 1, "unit": "days"},
+                        "initial_delay": {"time": 1, "unit": "hours"},
+                        "unwind_ratio": 0.1,
+                    },
+                    {"name": "table3", "enabled": False},
+                ],
+            },
+            {
+                "name": "test2",
+                "tables": [
+                    {"name": "table1", "repair_type": "incremental"},
+                    {"name": "table2", "repair_type": "parallel_vnode"},
+                ],
+            },
+            {
+                "name": "system_auth",
+                "tables": [
+                    {"name": "network_permissions", "enabled": False},
+                    {"name": "resource_role_permissons_index", "enabled": False},
+                    {"name": "role_members", "enabled": False},
+                    {"name": "role_permissions", "enabled": False},
+                    {"name": "roles", "enabled": False},
+                ],
+            },
+            {
+                "name": "ecchronos",
+                "tables": [
+                    {"name": "lock", "enabled": False},
+                    {"name": "lock_priority", "enabled": False},
+                    {"name": "on_demand_repair_status", "enabled": False},
+                    {"name": "reject_configuration", "enabled": False},
+                    {"name": "repair_history", "enabled": True},
+                ],
+            },
+        ]
+
     def _modify_schedule_configuration(self):
         data = self._read_yaml_data(global_vars.SCHEDULE_YAML_FILE_PATH)
 
         if data is None:
-            return
+            data = {}
 
-        if self._has_schedule_overrides() and isinstance(data, dict):
-            for keyspace in data.get("keyspaces") or []:
-                if not isinstance(keyspace, dict):
-                    continue
+        data["keyspaces"] = self._default_test_schedule_keyspaces()
+
+        if self._has_schedule_overrides():
+            for keyspace in data["keyspaces"]:
                 if keyspace.get("name") != "test":
                     continue
 
                 for table in keyspace.get("tables") or []:
-                    if not isinstance(table, dict):
-                        continue
                     if table.get("name") != "table1":
                         continue
 

@@ -13,7 +13,6 @@ Feature: API for repairs
     When I send a POST request
     Then the response is bad request
 
-
   Scenario: Get repair status for all repairs
     Given I have a json schema repairs
     And I use the url localhost:8080/repair-management/repairs
@@ -58,7 +57,7 @@ Feature: API for repairs
     Given I have a json schema repairs
     And I use the url localhost:8080/repair-management/repairs?keyspace=test&table=table3&all=true
     When I send a POST request
-    Then the repair request failed
+    Then the response is successful
 
   Scenario: Run repair to force disabled table
     Given I have a json schema repairs
