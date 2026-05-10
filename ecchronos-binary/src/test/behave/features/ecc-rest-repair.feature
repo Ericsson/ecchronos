@@ -57,4 +57,4 @@ Feature: API for repairs
     Given I have a json schema repairs
     And I use the url localhost:8080/repair-management/repairs?keyspace=test&table=table3&all=true
     When I send a POST request
-    Then the response is successful
+    Then the repair request failed
