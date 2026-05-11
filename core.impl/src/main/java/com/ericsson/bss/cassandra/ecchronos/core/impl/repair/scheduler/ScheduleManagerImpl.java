@@ -200,6 +200,10 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             myExecutor.shutdownNow();
             Thread.currentThread().interrupt();
         }
+        myRunFuture.clear();
+        myRunTasks.clear();
+        myQueue.clear();
+        currentExecutingJobs.clear();
         myRunPolicies.clear();
     }
 
