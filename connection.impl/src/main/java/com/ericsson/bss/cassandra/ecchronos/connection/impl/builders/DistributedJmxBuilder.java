@@ -240,34 +240,36 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
                 jmxConnector = jolokiaJmxConnectionProvider.newJMXConnector(jmxUrl, createJMXEnv());
 
                 ExecutorService exec = Executors.newSingleThreadExecutor();
-                Future future = exec.submit(() ->
-                {
-                    try
-                    {
-                        jmxConnector.connect();
-                    }
-                    catch (IOException e)
-                    {
-                        LOG.error("Jolokia connection IOException during connect()", e);
-                        throw new IllegalStateException("Failed to connect to Jolokia", e);
-                    }
-                });
                 try
                 {
-                    if (future != null)
+                    Future<?> future = exec.submit(() ->
                     {
-                        future.get(JMX_JOLOKIA_CONNECTION_TIMEOUT, TimeUnit.SECONDS);
-                    }
+                        try
+                        {
+                            jmxConnector.connect();
+                        }
+                        catch (IOException e)
+                        {
+                            LOG.error("Jolokia connection IOException during connect()", e);
+                            throw new IllegalStateException("Failed to connect to Jolokia", e);
+                        }
+                    });
+                    future.get(JMX_JOLOKIA_CONNECTION_TIMEOUT, TimeUnit.SECONDS);
                 }
                 catch (TimeoutException | InterruptedException | ExecutionException e)
                 {
-                    future.cancel(true);
                     LOG.error("Jolokia connection failed with timeout or execution error", e);
+                    closeQuietly(jmxConnector);
                     throw new IOException("Jolokia connection failed", e);
+                }
+                finally
+                {
+                    exec.shutdownNow();
                 }
                // Verify MBeanServerConnection is available
                 if (jmxConnector.getMBeanServerConnection() == null)
                 {
+                    closeQuietly(jmxConnector);
                     throw new IOException("MBeanServerConnection is null after Jolokia connection");
                 }
             }
@@ -284,10 +286,12 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
             {
                 LOG.info("Connected JMX for {}", jmxUrl);
                 myEccNodesSync.updateNodeStatus(NodeStatus.AVAILABLE, node.getDatacenter(), node.getHostId());
-                myJMXConnections.put(Objects.requireNonNull(node.getHostId()), jmxConnector);
+                JMXConnector oldConnector = myJMXConnections.put(Objects.requireNonNull(node.getHostId()), jmxConnector);
+                closeQuietly(oldConnector);
             }
             else
             {
+                closeQuietly(jmxConnector);
                 myEccNodesSync.updateNodeStatus(NodeStatus.UNAVAILABLE, node.getDatacenter(), node.getHostId());
             }
         }
@@ -429,6 +433,21 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
 
         return true;
     }
+    private static void closeQuietly(final JMXConnector connector)
+    {
+        if (connector != null)
+        {
+            try
+            {
+                connector.close();
+            }
+            catch (IOException e)
+            {
+                LOG.debug("Failed to close JMX connector", e);
+            }
+        }
+    }
+
     public final DistributedNativeConnectionProvider getNativeConnectionProvider()
     {
         return myNativeConnectionProvider;
