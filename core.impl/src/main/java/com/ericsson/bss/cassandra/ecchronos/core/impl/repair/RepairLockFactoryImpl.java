@@ -67,15 +67,6 @@ public class RepairLockFactoryImpl implements RepairLockFactory
                                                      final int priority,
                                                      final UUID nodeId) throws LockException
     {
-        int locksPerResource = getLocksPerResource();
-        for (RepairResource repairResource : repairResources)
-        {
-            if (!lockFactory.sufficientNodesForLocking(repairResource.getResourceName(locksPerResource)))
-            {
-                throw new LockException(repairResource + " not lockable. Repair will be retried later.");
-            }
-        }
-
         if (repairResources.isEmpty())
         {
             String msg = String.format("No datacenters to lock for %s", this);

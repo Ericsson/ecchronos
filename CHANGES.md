@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Remove sufficientNodesForLocking pre-check and catch driver exceptions instead - Issue #1468
 * Improve "Running Task" log message to reduce noise and add repair progress context - Issue #1470
 
 ## Version 1.0.0-beta6

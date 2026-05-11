@@ -57,15 +57,6 @@ public interface LockFactory
     Map<String, String> getLockMetadata(String resource) throws LockException;
 
     /**
-     * Checks if local_quorum is met.
-     *
-     * @param resource The data center resource.
-     *                 i.e "RepairResource-DC1-1".
-     * @return boolean Indicates if local_quorum is met.
-     */
-    boolean sufficientNodesForLocking(String resource);
-
-    /**
      * Utility method to return a cached lock exception if one is available.
      *
      * @param dataCenter The data center the lock is for or null if it's a global lock.

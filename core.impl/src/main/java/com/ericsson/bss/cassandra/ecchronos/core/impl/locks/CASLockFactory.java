@@ -16,16 +16,13 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.locks;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.DriverException;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
-import com.datastax.oss.driver.api.core.metadata.Metadata;
-import com.datastax.oss.driver.api.core.metadata.Node;
-import com.datastax.oss.driver.api.core.metadata.TokenMap;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.state.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -35,16 +32,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -72,7 +63,6 @@ import java.util.concurrent.TimeUnit;
  * WITH default_time_to_live = 600 AND gc_grace_seconds = 0;
  * </pre>
  */
-@SuppressWarnings("PMD.GodClass")
 public final class CASLockFactory implements LockFactory, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CASLockFactory.class);
@@ -85,7 +75,6 @@ public final class CASLockFactory implements LockFactory, Closeable
     private static final long PRIORITY_CACHE_EXPIRE_SECONDS = 2L;
     private static final int LOCK_REFRESHER_POOL_SIZE = 2;
 
-    private final HostStates myHostStates;
     private final CASLockFactoryCacheContext myCasLockFactoryCacheContext;
     private final Cache<String, List<NodePriority>> myPriorityCache;
 
@@ -93,7 +82,6 @@ public final class CASLockFactory implements LockFactory, Closeable
     private final CASLockStatement myCasLockStatement;
     private final DistributedNativeConnectionProvider myNativeConnectionProvider;
     private final long myCacheExpiryTimeInSeconds;
-    private final String myLocalDatacenter;
 
     CASLockFactory(final CASLockFactoryBuilder builder)
     {
@@ -106,10 +94,7 @@ public final class CASLockFactory implements LockFactory, Closeable
                 builder.getConsistencyType(),
                 builder.getNativeConnectionProvider().getCqlSession());
 
-        myHostStates = builder.getHostStates();
         myNativeConnectionProvider = builder.getNativeConnectionProvider();
-
-        myLocalDatacenter = builder.getLocalDatacenter();
 
         verifySchemasExists();
         myCacheExpiryTimeInSeconds = builder.getCacheExpiryTimeInSecond();
@@ -227,27 +212,7 @@ public final class CASLockFactory implements LockFactory, Closeable
         }
     }
 
-    @Override
-    public boolean sufficientNodesForLocking(final String resource)
-    {
-        try
-        {
-            Set<Node> nodes = getNodesForResource(resource);
 
-            int quorum = nodes.size() / 2 + 1;
-            int liveNodes = liveNodes(nodes);
-
-            LOG.trace("Live nodes {}, quorum: {}", liveNodes, quorum);
-
-            return liveNodes >= quorum;
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            LOG.warn("Unable to encode resource bytes", e);
-        }
-
-        return false;
-    }
 
     @Override
     public Optional<LockException> getCachedFailure(final UUID nodeID, final String dataCenter, final String resource)
@@ -311,20 +276,23 @@ public final class CASLockFactory implements LockFactory, Closeable
     {
         LOG.trace("Trying lock for {} - {}", dataCenter, resource);
 
-        if (!sufficientNodesForLocking(resource))
+        try
         {
-            LOG.warn("Not sufficient nodes to lock resource {}", resource);
-            throw new LockException("Not sufficient nodes to lock");
+            List<NodePriority> priorities = getPrioritiesForResource(resource);
+            CASLock casLock = new CASLock(resource, priority, metadata, nodeId, myCasLockStatement, priorities); // NOSONAR
+            if (casLock.lock())
+            {
+                return casLock;
+            }
+            else
+            {
+                throw new LockException(String.format("Unable to lock resource %s in datacenter %s", resource, dataCenter));
+            }
         }
-        List<NodePriority> priorities = getPrioritiesForResource(resource);
-        CASLock casLock = new CASLock(resource, priority, metadata, nodeId, myCasLockStatement, priorities); // NOSONAR
-        if (casLock.lock())
+        catch (DriverException e)
         {
-            return casLock;
-        }
-        else
-        {
-            throw new LockException(String.format("Unable to lock resource %s in datacenter %s", resource, dataCenter));
+            LOG.warn("Unable to lock resource {}, not enough nodes available", resource, e);
+            throw new LockException("Not enough nodes available to lock resource " + resource, e);
         }
     }
 
@@ -347,48 +315,9 @@ public final class CASLockFactory implements LockFactory, Closeable
         return nodePriorities;
     }
 
-    private Set<Node> getNodesForResource(final String resource) throws UnsupportedEncodingException
-    {
-        Set<Node> dataCenterNodes = new HashSet<>();
 
-        Metadata metadata = myCasLockProperties.getSession().getMetadata();
-        TokenMap tokenMap = metadata.getTokenMap()
-                .orElseThrow(() -> new IllegalStateException("Couldn't get token map, is it disabled?"));
-        Set<Node> nodes = tokenMap.getReplicas(
-                myCasLockProperties.getKeyspaceName(), ByteBuffer.wrap(resource.getBytes("UTF-8")));
 
-        if (myCasLockProperties.getSerialConsistencyLevel() == ConsistencyLevel.LOCAL_SERIAL)
-        {
-            Iterator<Node> iterator = nodes.iterator();
 
-            while (iterator.hasNext())
-            {
-                Node node = iterator.next();
-
-                if (myLocalDatacenter.equals(node.getDatacenter()))
-                {
-                    dataCenterNodes.add(node);
-                }
-            }
-
-            return dataCenterNodes;
-        }
-
-        return nodes;
-    }
-
-    private int liveNodes(final Collection<Node> nodes)
-    {
-        int live = 0;
-        for (Node node : nodes)
-        {
-            if (myHostStates.isUp(node))
-            {
-                live++;
-            }
-        }
-        return live;
-    }
 
     private void verifySchemasExists()
     {
