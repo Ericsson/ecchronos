@@ -29,11 +29,9 @@ public class CASLockFactoryBuilder
     private static final ConsistencyType DEFAULT_CONSISTENCY_SERIAL = ConsistencyType.SERIAL;
 
     private DistributedNativeConnectionProvider myNativeConnectionProvider;
-    private HostStates myHostStates;
     private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
     private long myCacheExpiryTimeInSeconds = DEFAULT_EXPIRY_TIME_IN_SECONDS;
     private ConsistencyType myConsistencyType = DEFAULT_CONSISTENCY_SERIAL;
-    private String myLocalDatacenter = "datacenter1";
 
     public final CASLockFactoryBuilder withNativeConnectionProvider(final DistributedNativeConnectionProvider nativeConnectionProvider)
     {
@@ -41,9 +39,21 @@ public class CASLockFactoryBuilder
         return this;
     }
 
+    /**
+     * @deprecated HostStates is no longer used by CASLockFactory. This method is a no-op.
+     */
+    @Deprecated
     public final CASLockFactoryBuilder withHostStates(final HostStates hostStates)
     {
-        myHostStates = hostStates;
+        return this;
+    }
+
+    /**
+     * @deprecated Local datacenter is no longer used by CASLockFactory. This method is a no-op.
+     */
+    @Deprecated
+    public final CASLockFactoryBuilder withLocalDatacenter(final String localDatacenter)
+    {
         return this;
     }
 
@@ -72,22 +82,12 @@ public class CASLockFactoryBuilder
             throw new IllegalArgumentException("Native connection provider cannot be null");
         }
 
-        if (myHostStates == null)
-        {
-            throw new IllegalArgumentException("Host states cannot be null");
-        }
-
         return new CASLockFactory(this);
     }
 
     public final DistributedNativeConnectionProvider getNativeConnectionProvider()
     {
         return myNativeConnectionProvider;
-    }
-
-    public final HostStates getHostStates()
-    {
-        return myHostStates;
     }
 
     public final String getKeyspaceName()
@@ -103,16 +103,5 @@ public class CASLockFactoryBuilder
     public final ConsistencyType getConsistencyType()
     {
         return myConsistencyType;
-    }
-
-    public final CASLockFactoryBuilder withLocalDatacenter(final String localDatacenter)
-    {
-        myLocalDatacenter = localDatacenter;
-        return this;
-    }
-
-    public final String getLocalDatacenter()
-    {
-        return myLocalDatacenter;
     }
 }
