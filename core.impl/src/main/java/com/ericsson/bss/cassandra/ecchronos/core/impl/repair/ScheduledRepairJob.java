@@ -152,5 +152,14 @@ public abstract class ScheduledRepairJob extends ScheduledJob
         return Objects.hash(super.hashCode(), myTableReference, myJmxProxyFactory, myRepairConfiguration,
                 myRepairPolicies, myTableRepairMetrics, myRepairLockType);
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString()
+    {
+        return String.format("Repair job of %s", myTableReference);
+    }
 }
 
