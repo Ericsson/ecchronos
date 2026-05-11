@@ -134,33 +134,37 @@ public class RepairGroup extends ScheduledTask
     {
         LOG.debug("Table {} running repair job {}", myTableReference, myReplicaRepairGroup);
         boolean successful = true;
-        for (RepairTask repairTask : getRepairTasks(nodeID))
+        Collection<RepairTask> tasks = getRepairTasks(nodeID);
+        try
         {
-            if (!shouldContinue())
+            for (RepairTask repairTask : tasks)
             {
-                LOG.info("Repair of {} was stopped by policy, will continue later", this);
-                successful = false;
-                break;
-            }
-            try
-            {
-                repairTask.execute();
-            }
-            catch (ScheduledJobException e)
-            {
-                LOG.warn("Encountered issue when running repair task {}", repairTask, e);
-                LOG.debug("", e);
-                successful = false;
-                if (e.getCause() instanceof InterruptedException)
+                if (!shouldContinue())
                 {
-                    LOG.info("{} thread was interrupted", this);
+                    LOG.info("Repair of {} was stopped by policy, will continue later", this);
+                    successful = false;
                     break;
                 }
+                try
+                {
+                    repairTask.execute();
+                }
+                catch (ScheduledJobException e)
+                {
+                    LOG.warn("Encountered issue when running repair task {}", repairTask, e);
+                    LOG.debug("", e);
+                    successful = false;
+                    if (e.getCause() instanceof InterruptedException)
+                    {
+                        LOG.info("{} thread was interrupted", this);
+                        break;
+                    }
+                }
             }
-            finally
-            {
-                repairTask.cleanup();
-            }
+        }
+        finally
+        {
+            tasks.forEach(RepairTask::cleanup);
         }
 
         return successful;
