@@ -159,6 +159,7 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
     @Override
     public void postExecute(final boolean successful, final ScheduledTask task)
     {
+        Set<LongTokenRange> repairedTokenSet = myTasks.remove(task);
         if (!successful)
         {
             LOG.error("Error running {}", task);
@@ -166,7 +167,6 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
         }
         else
         {
-            Set<LongTokenRange> repairedTokenSet = myTasks.remove(task);
             getOngoingJob().finishRanges(repairedTokenSet);
         }
 
