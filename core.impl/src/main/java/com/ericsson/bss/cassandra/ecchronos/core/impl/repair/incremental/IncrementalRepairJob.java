@@ -61,12 +61,7 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         myNode = Preconditions.checkNotNull(builder.myNode, "Node must be set");
         myReplicationState = Preconditions.checkNotNull(builder.myReplicationState, "Replication state must be set");
         myCassandraMetrics = Preconditions.checkNotNull(builder.myCassandraMetrics, "Cassandra metrics must be set");
-        setLastSuccessfulRun();
-    }
-
-    private void setLastSuccessfulRun()
-    {
-        myLastSuccessfulRun = myCassandraMetrics.getMaxRepairedAt(myNode.getHostId(), getTableReference());
+        myLastSuccessfulRun = myCassandraMetrics.getMaxRepairedAt(myNode.getHostId(), builder.myTableReference);
         LOG.debug("{} - last successful run: {}", this, myLastSuccessfulRun);
     }
 
