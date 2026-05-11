@@ -38,6 +38,7 @@ import javax.management.remote.JMXServiceURL;
 import javax.rmi.ssl.SslRMIClientSocketFactory;
 
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -199,36 +200,41 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
         }
     }
 
+    private String defineHost(final Node node) throws UnknownHostException
+    {
+        String host = node.getBroadcastRpcAddress().get().getAddress().getHostAddress();
+        if (NO_BROADCAST_ADDRESS.equals(host))
+        {
+            host = node.getListenAddress().get().getHostString();
+        }
+        if (myIpTranslator.isActive())
+        {
+            host = myIpTranslator.getInternalIp(host);
+        }
+        if (myReverseDNSResolution)
+        {
+            host = ReverseDNS.fromHostString(host);
+        }
+        if (host.contains(":") && !host.startsWith("[") && !host.endsWith("]"))
+        {
+            // Use square brackets to surround IPv6 addresses
+            host = "[" + host + "]";
+        }
+        return host;
+    }
+
     /***
      * Creates a JMX connection to the host.
      * @param node the node to connect with.
      */
-    public void reconnect(final Node node) throws EcChronosException //NOPMD CyclomaticComplexity
+    public void reconnect(final Node node) throws EcChronosException
     {
         try
         {
-            String host = node.getBroadcastRpcAddress().get().getAddress().getHostAddress();
-            if (NO_BROADCAST_ADDRESS.equals(host))
-            {
-                host = node.getListenAddress().get().getHostString();
-            }
-            if (myIpTranslator.isActive())
-            {
-                host = myIpTranslator.getInternalIp(host);
-            }
+            String host = defineHost(node);
             JMXServiceURL jmxUrl;
             Integer port;
             JMXConnector jmxConnector;
-
-            if (myReverseDNSResolution)
-            {
-                host = ReverseDNS.fromHostString(host);
-            }
-            if (host.contains(":") && !host.startsWith("[") && !host.endsWith("]"))
-            {
-                // Use square brackets to surround IPv6 addresses
-                host = "[" + host + "]";
-            }
 
             if (isJolokiaEnabled)
             {
@@ -240,30 +246,35 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
                 jmxConnector = jolokiaJmxConnectionProvider.newJMXConnector(jmxUrl, createJMXEnv());
 
                 ExecutorService exec = Executors.newSingleThreadExecutor();
-                Future future = exec.submit(() ->
-                {
-                    try
-                    {
-                        jmxConnector.connect();
-                    }
-                    catch (IOException e)
-                    {
-                        LOG.error("Jolokia connection IOException during connect()", e);
-                        throw new IllegalStateException("Failed to connect to Jolokia", e);
-                    }
-                });
                 try
                 {
-                    if (future != null)
+                    Future<?> future = exec.submit(() ->
+                    {
+                        try
+                        {
+                            jmxConnector.connect();
+                        }
+                        catch (IOException e)
+                        {
+                            LOG.error("Jolokia connection IOException during connect()", e);
+                            throw new IllegalStateException("Failed to connect to Jolokia", e);
+                        }
+                    });
+                    try
                     {
                         future.get(JMX_JOLOKIA_CONNECTION_TIMEOUT, TimeUnit.SECONDS);
                     }
+                    catch (TimeoutException | InterruptedException | ExecutionException e)
+                    {
+                        future.cancel(true);
+                        closeConnector(jmxConnector);
+                        LOG.error("Jolokia connection failed with timeout or execution error", e);
+                        throw new IOException("Jolokia connection failed", e);
+                    }
                 }
-                catch (TimeoutException | InterruptedException | ExecutionException e)
+                finally
                 {
-                    future.cancel(true);
-                    LOG.error("Jolokia connection failed with timeout or execution error", e);
-                    throw new IOException("Jolokia connection failed", e);
+                    exec.shutdownNow();
                 }
                // Verify MBeanServerConnection is available
                 if (jmxConnector.getMBeanServerConnection() == null)
@@ -284,10 +295,12 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
             {
                 LOG.info("Connected JMX for {}", jmxUrl);
                 myEccNodesSync.updateNodeStatus(NodeStatus.AVAILABLE, node.getDatacenter(), node.getHostId());
-                myJMXConnections.put(Objects.requireNonNull(node.getHostId()), jmxConnector);
+                JMXConnector oldConnector = myJMXConnections.put(Objects.requireNonNull(node.getHostId()), jmxConnector);
+                closeConnector(oldConnector);
             }
             else
             {
+                closeConnector(jmxConnector);
                 myEccNodesSync.updateNodeStatus(NodeStatus.UNAVAILABLE, node.getDatacenter(), node.getHostId());
             }
         }
@@ -437,5 +450,20 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
     public final ConcurrentHashMap<UUID, JMXConnector> getJMXConnections()
     {
         return myJMXConnections;
+    }
+
+    private static void closeConnector(final JMXConnector connector)
+    {
+        if (connector != null)
+        {
+            try
+            {
+                connector.close();
+            }
+            catch (IOException e)
+            {
+                LOG.warn("Failed to close JMX connector", e);
+            }
+        }
     }
 }
