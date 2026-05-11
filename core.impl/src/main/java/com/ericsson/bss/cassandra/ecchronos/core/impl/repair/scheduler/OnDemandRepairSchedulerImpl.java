@@ -312,7 +312,10 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         synchronized (myLock)
         {
             ScheduledJob job = myScheduledJobs.remove(id);
-            myScheduleManager.deschedule(hostId, job);
+            if (job != null)
+            {
+                myScheduleManager.deschedule(hostId, job);
+            }
         }
     }
 

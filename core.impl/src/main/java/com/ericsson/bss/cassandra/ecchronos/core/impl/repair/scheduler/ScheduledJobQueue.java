@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.utils.converter.ManyToOneIterator;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumMap;
@@ -95,6 +96,10 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
      */
     public synchronized void remove(final ScheduledJob job)
     {
+        if (job == null)
+        {
+            return;
+        }
         LOG.debug("Removing job: {}", job);
         myJobQueues.get(job.getPriority()).remove(job);
     }
@@ -124,12 +129,33 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
     public final synchronized Iterator<ScheduledJob> iterator()
     {
         myJobQueues.values().forEach(q -> q.forEach(ScheduledJob::refreshState));
+        purgeFinishedJobs();
         List<PriorityQueue<ScheduledJob>> snapshots = myJobQueues.values().stream()
                 .map(PriorityQueue::new)
                 .collect(Collectors.toList());
         Iterator<ScheduledJob> baseIterator = new ManyToOneIterator<>(snapshots, myComparator);
 
         return new RunnableJobIterator(baseIterator);
+    }
+
+    private void purgeFinishedJobs()
+    {
+        List<ScheduledJob> finishedJobs = new ArrayList<>();
+        for (PriorityQueue<ScheduledJob> queue : myJobQueues.values())
+        {
+            queue.removeIf(job ->
+            {
+                ScheduledJob.State state = job.getState();
+                if (state == ScheduledJob.State.FINISHED || state == ScheduledJob.State.FAILED)
+                {
+                    LOG.info("{}: {}, descheduling", job, state);
+                    finishedJobs.add(job);
+                    return true;
+                }
+                return false;
+            });
+        }
+        finishedJobs.forEach(ScheduledJob::finishJob);
     }
 
     private class RunnableJobIterator extends AbstractIterator<ScheduledJob>
