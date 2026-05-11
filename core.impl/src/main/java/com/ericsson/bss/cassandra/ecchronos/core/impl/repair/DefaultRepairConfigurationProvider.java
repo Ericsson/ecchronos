@@ -199,6 +199,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
                 myWorkerManager.broadcastEvent(new CloseEvent(keyspaceMetadata));
             }
         }
+        myService.shutdownNow();
     }
 
     /**

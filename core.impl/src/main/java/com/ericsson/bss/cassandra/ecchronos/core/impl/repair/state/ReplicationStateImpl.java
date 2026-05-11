@@ -25,8 +25,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.Node;
@@ -47,10 +49,19 @@ public class ReplicationStateImpl implements ReplicationState
 {
     private static final Logger LOG = LoggerFactory.getLogger(ReplicationStateImpl.class);
 
-    private static final Map<String, ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>>>
-            KEYSPACE_REPLICATION_CACHE = new ConcurrentHashMap<>();
-    private static final Map<String, ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>>>
-            CLUSTER_WIDE_KEYSPACE_REPLICATION_CACHE = new ConcurrentHashMap<>();
+    private static final long CACHE_EXPIRE_MINUTES = 60;
+    private static final int CACHE_MAX_SIZE = 1000;
+
+    private static final Cache<String, ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>>>
+            KEYSPACE_REPLICATION_CACHE = Caffeine.newBuilder()
+            .maximumSize(CACHE_MAX_SIZE)
+            .expireAfterAccess(CACHE_EXPIRE_MINUTES, TimeUnit.MINUTES)
+            .build();
+    private static final Cache<String, ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>>>
+            CLUSTER_WIDE_KEYSPACE_REPLICATION_CACHE = Caffeine.newBuilder()
+            .maximumSize(CACHE_MAX_SIZE)
+            .expireAfterAccess(CACHE_EXPIRE_MINUTES, TimeUnit.MINUTES)
+            .build();
 
     private final NodeResolver myNodeResolver;
     private final CqlSession mySession;
@@ -153,7 +164,13 @@ public class ReplicationStateImpl implements ReplicationState
                 false,
                 currentNode);
 
-        return KEYSPACE_REPLICATION_CACHE.compute(keyspace, (k, v) -> !replication.equals(v) ? replication : v);
+        ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> cached = KEYSPACE_REPLICATION_CACHE.getIfPresent(keyspace);
+        if (cached == null || !replication.equals(cached))
+        {
+            KEYSPACE_REPLICATION_CACHE.put(keyspace, replication);
+            return replication;
+        }
+        return cached;
     }
 
     /**
@@ -180,8 +197,13 @@ public class ReplicationStateImpl implements ReplicationState
                 true,
                 currentNode);
 
-        return CLUSTER_WIDE_KEYSPACE_REPLICATION_CACHE
-                .compute(keyspace, (k, v) -> !replication.equals(v) ? replication : v);
+        ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> cached = CLUSTER_WIDE_KEYSPACE_REPLICATION_CACHE.getIfPresent(keyspace);
+        if (cached == null || !replication.equals(cached))
+        {
+            CLUSTER_WIDE_KEYSPACE_REPLICATION_CACHE.put(keyspace, replication);
+            return replication;
+        }
+        return cached;
     }
 
     private ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> buildTokenMap(

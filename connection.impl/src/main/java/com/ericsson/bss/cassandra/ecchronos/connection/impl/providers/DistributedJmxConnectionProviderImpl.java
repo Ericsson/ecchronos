@@ -135,6 +135,17 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
         LOG.info("Connection expired or disconnected with node Id {}, attempting reconnection", nodeID);
         try
         {
+            if (connector != null)
+            {
+                try
+                {
+                    connector.close();
+                }
+                catch (IOException e)
+                {
+                    LOG.debug("Failed to close stale JMX connector for node {}", nodeID, e);
+                }
+            }
             LOG.info("Attempting to create JMX connection with node {}", node.getHostId());
             myDistributedJmxBuilder.reconnect(node);
             connector = myJMXConnections.get(nodeID);
@@ -163,9 +174,9 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
     @Override
     public void close() throws IOException
     {
-        for (Node node : myNativeConnectionProvider.getNodes().values())
+        for (UUID nodeID : new java.util.ArrayList<>(myJMXConnections.keySet()))
         {
-            close(node.getHostId());
+            close(nodeID);
         }
     }
 
@@ -180,9 +191,10 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
     @Override
     public void close(final UUID nodeID) throws IOException
     {
-        if (myJMXConnections.get(nodeID) != null)
+        JMXConnector connector = myJMXConnections.remove(nodeID);
+        if (connector != null)
         {
-            myJMXConnections.get(nodeID).close();
+            connector.close();
         }
     }
 

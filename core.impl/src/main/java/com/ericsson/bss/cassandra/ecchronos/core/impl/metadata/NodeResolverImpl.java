@@ -16,11 +16,12 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.metadata;
 
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.NodeResolver;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.net.InetAddress;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
@@ -28,8 +29,17 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 
 public class NodeResolverImpl implements NodeResolver
 {
-    private final ConcurrentMap<InetAddress, DriverNode> addressToNodeMap = new ConcurrentHashMap<>();
-    private final ConcurrentMap<UUID, DriverNode> idToNodeMap = new ConcurrentHashMap<>();
+    private static final int MAX_CACHE_SIZE = 500;
+    private static final long EXPIRE_MINUTES = 60;
+
+    private final Cache<InetAddress, DriverNode> addressToNodeMap = Caffeine.newBuilder()
+            .maximumSize(MAX_CACHE_SIZE)
+            .expireAfterAccess(EXPIRE_MINUTES, TimeUnit.MINUTES)
+            .build();
+    private final Cache<UUID, DriverNode> idToNodeMap = Caffeine.newBuilder()
+            .maximumSize(MAX_CACHE_SIZE)
+            .expireAfterAccess(EXPIRE_MINUTES, TimeUnit.MINUTES)
+            .build();
 
     private final CqlSession session;
 
@@ -41,16 +51,19 @@ public class NodeResolverImpl implements NodeResolver
     @Override
     public final Optional<DriverNode> fromIp(final InetAddress inetAddress)
     {
-        DriverNode node = addressToNodeMap.get(inetAddress);
+        DriverNode node = addressToNodeMap.getIfPresent(inetAddress);
 
         if (node == null)
         {
-            node = addressToNodeMap.computeIfAbsent(inetAddress, address -> lookup(inetAddress));
+            node = lookup(inetAddress);
+            if (node != null)
+            {
+                addressToNodeMap.put(inetAddress, node);
+            }
         }
         else if (!inetAddress.equals(node.getPublicAddress()))
         {
-            // IP mapping is wrong, we should remove the old entry and retry
-            addressToNodeMap.remove(inetAddress, node);
+            addressToNodeMap.invalidate(inetAddress);
             return fromIp(inetAddress);
         }
 
@@ -65,10 +78,14 @@ public class NodeResolverImpl implements NodeResolver
 
     private DriverNode resolve(final UUID nodeId)
     {
-        DriverNode node = idToNodeMap.get(nodeId);
+        DriverNode node = idToNodeMap.getIfPresent(nodeId);
         if (node == null)
         {
-            node = idToNodeMap.computeIfAbsent(nodeId, this::lookup);
+            node = lookup(nodeId);
+            if (node != null)
+            {
+                idToNodeMap.put(nodeId, node);
+            }
         }
 
         return node;

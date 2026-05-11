@@ -143,6 +143,7 @@ public class NodeWorkerManager
                 myRepairScheduler.removeAllConfigurationsForNode(node.getHostId());
                 NodeWorker nodeWorker = myWorkers.remove(node.getHostId());
                 myThreadPool.stop(nodeWorker);
+                myThreadPool.setCorePoolSize(Math.max(1, myWorkers.size()));
             }
         }
     }
@@ -155,6 +156,7 @@ public class NodeWorkerManager
 
     public final void shutdown()
     {
+        myWorkers.clear();
         myThreadPool.shutdown();
     }
 

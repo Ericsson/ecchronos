@@ -109,14 +109,11 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
     @Override
     public void postExecute(final boolean successful, final ScheduledTask task)
     {
+        myTasks.remove(task);
         if (!successful)
         {
             LOG.error("Error running {}", task);
             setFailed(true);
-        }
-        else
-        {
-            myTasks.remove(task);
         }
         super.postExecute(successful, task);
     }

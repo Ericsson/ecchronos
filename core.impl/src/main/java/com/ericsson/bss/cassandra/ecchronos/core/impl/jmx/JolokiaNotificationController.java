@@ -37,7 +37,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -72,6 +73,7 @@ public class JolokiaNotificationController
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final CertificateHandler myCertificateHandler;
+    private volatile HttpClient myHttpClient;
 
     private final DistributedNativeConnectionProvider myNativeConnectionProvider;
     private final int myJolokiaPort;
@@ -95,17 +97,27 @@ public class JolokiaNotificationController
 
     private HttpClient buildHttpClient()
     {
-        HttpClient.Builder builder = HttpClient.newBuilder()
-                .connectTimeout(java.time.Duration.ofSeconds(HTTP_TIMEOUT_SECONDS));
-        if (myCertificateHandler != null)
+        if (myHttpClient == null)
         {
-            SSLContext sslContext = myCertificateHandler.getSSLContext();
-            if (sslContext != null)
+            synchronized (this)
             {
-                builder.sslContext(sslContext);
+                if (myHttpClient == null)
+                {
+                    HttpClient.Builder builder = HttpClient.newBuilder()
+                            .connectTimeout(java.time.Duration.ofSeconds(HTTP_TIMEOUT_SECONDS));
+                    if (myCertificateHandler != null)
+                    {
+                        SSLContext sslContext = myCertificateHandler.getSSLContext();
+                        if (sslContext != null)
+                        {
+                            builder.sslContext(sslContext);
+                        }
+                    }
+                    myHttpClient = builder.build();
+                }
             }
         }
-        return builder.build();
+        return myHttpClient;
     }
 
     public final void addStorageServiceListener(final UUID nodeID, final NotificationListener listener) throws IOException, InterruptedException
@@ -154,9 +166,23 @@ public class JolokiaNotificationController
 
     private final class NotificationRunTask implements Runnable
     {
+        private static final int MAX_NOTIFICATION_HISTORY = 1000;
         private final UUID myNodeID;
         private final String myNotificationID;
-        private final Set<Integer> notificationController = new HashSet<>();
+        private final Set<Integer> notificationController = new LinkedHashSet<>()
+        {
+            @Override
+            public boolean add(final Integer e)
+            {
+                if (size() >= MAX_NOTIFICATION_HISTORY)
+                {
+                    Iterator<Integer> it = iterator();
+                    it.next();
+                    it.remove();
+                }
+                return super.add(e);
+            }
+        };
         private int consecutiveFailures = 0;
 
         private NotificationRunTask(final UUID nodeID, final String notificationID)
@@ -468,6 +494,23 @@ public class JolokiaNotificationController
 
     public final void close()
     {
+        // Remove remote Jolokia notifications
+        for (Map.Entry<UUID, Map<String, ScheduledFuture<?>>> nodeEntry : myNotificationMonitors.entrySet())
+        {
+            UUID nodeID = nodeEntry.getKey();
+            for (String notificationID : nodeEntry.getValue().keySet())
+            {
+                try
+                {
+                    removeJolokiaNotification(nodeID, notificationID);
+                }
+                catch (Exception e)
+                {
+                    LOG.debug("Failed to remove remote Jolokia notification {} for node {}", notificationID, nodeID, e);
+                }
+            }
+        }
+
         // Cancel all notification monitors
         synchronized (myNotificationMonitors)
         {
@@ -480,6 +523,10 @@ public class JolokiaNotificationController
             }
             myNotificationMonitors.clear();
         }
+
+        myNodeListenersMap.clear();
+        myJolokiaRelationshipListeners.clear();
+        myClientIdMap.clear();
 
         // Shutdown executor
         myNotificationExecutor.shutdown();

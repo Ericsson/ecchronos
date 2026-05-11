@@ -216,6 +216,11 @@ public class ECChronosInternals implements Closeable
 
         myCassandraMetrics.close();
 
+        if (myMetricInspector != null)
+        {
+            myMetricInspector.stopInspection();
+        }
+
         if (myTableRepairMetricsImpl != null)
         {
             myTableRepairMetricsImpl.close();
@@ -225,6 +230,9 @@ public class ECChronosInternals implements Closeable
         {
             myTableStorageStatesImpl.close();
         }
+
+        myHostStatesImpl.close();
+        myLockFactory.close();
 
         if (myJolokiaNotificationController != null)
         {
