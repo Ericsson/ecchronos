@@ -44,6 +44,11 @@ public final class CASLockFactoryCacheContext
         myLockCache.putIfAbsent(uuid, lockCache);
     }
 
+    public void removeLockCache(final UUID uuid)
+    {
+        myLockCache.remove(uuid);
+    }
+
     public long getLockUpdateTimeInSeconds()
     {
         return myLockUpdateTimeInSeconds;

@@ -192,6 +192,11 @@ public final class CASLockFactory implements LockFactory, Closeable
                 throw new LockException("Node " + nodeId + " is not managed by local instance");
             }
         }
+        else if (!myNativeConnectionProvider.getNodes().keySet().contains(nodeId))
+        {
+            myCasLockFactoryCacheContext.removeLockCache(nodeId);
+            throw new LockException("Node " + nodeId + " is no longer managed by local instance");
+        }
     }
 
     @Override
