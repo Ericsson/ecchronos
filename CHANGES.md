@@ -2,6 +2,8 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Improve "Running Task" log message to reduce noise and add repair progress context - Issue #1470
+
 ## Version 1.0.0-beta6
 
 * Lock improvments - Issue #1534
