@@ -13,7 +13,6 @@ Feature: API for repairs
     When I send a POST request
     Then the response is bad request
 
-
   Scenario: Get repair status for all repairs
     Given I have a json schema repairs
     And I use the url localhost:8080/repair-management/repairs
