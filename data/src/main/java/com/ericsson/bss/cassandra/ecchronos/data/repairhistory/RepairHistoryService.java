@@ -171,7 +171,6 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
     public List<RepairHistoryData> getRepairHistoryByTimePeriod(final RepairHistoryData repairHistoryData)
     {
         ResultSet resultSet = getRepairHistoryInfo(repairHistoryData);
-        List<Row> rows = StreamSupport.stream(resultSet.spliterator(), false).collect(Collectors.toList());
 
         Instant queryStartedAt = repairHistoryData.getStartedAt();
         Instant queryFinishedAt = repairHistoryData.getFinishedAt();
@@ -179,27 +178,22 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
         LocalDate queryStartDate = queryStartedAt.atZone(ZoneId.of(UNIVERSAL_TIMEZONE)).toLocalDate();
         LocalDate queryFinishDate = queryFinishedAt.atZone(ZoneId.of(UNIVERSAL_TIMEZONE)).toLocalDate();
 
-        List<RepairHistoryData> filteredHistoryData = rows.stream()
+        return StreamSupport.stream(resultSet.spliterator(), false)
                 .filter(row ->
                 {
-                    // Extract the started and finished timestamps from the row
                     Instant startedAt = row.get(COLUMN_STARTED_AT, Instant.class);
                     Instant finishedAt = row.get(COLUMN_FINISHED_AT, Instant.class);
 
-                    // Convert the row start and finish times to local dates
                     LocalDate rowStartDate = startedAt.atZone(ZoneId.of(UNIVERSAL_TIMEZONE)).toLocalDate();
                     LocalDate rowFinishDate = finishedAt.atZone(ZoneId.of(UNIVERSAL_TIMEZONE)).toLocalDate();
 
                     LOG.debug("Filtering row: startedAt={}, finishedAt={}, queryStartedAt={}, queryFinishedAt={}",
                             startedAt, finishedAt, queryStartedAt, queryFinishedAt);
 
-                    // Check if the row is within the date range
                     return !rowFinishDate.isBefore(queryStartDate) && !rowStartDate.isAfter(queryFinishDate);
                 })
                 .map(row -> convertRowToRepairHistoryData(row, repairHistoryData.getLookBackTimeInMilliseconds()))
                 .collect(Collectors.toList());
-
-        return filteredHistoryData;
     }
 
     /**
@@ -216,9 +210,8 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
     {
         LOG.info("Fetching repair history for status: {}", repairHistoryData.getStatus());
         ResultSet resultSet = getRepairHistoryInfo(repairHistoryData);
-        List<Row> rows = StreamSupport.stream(resultSet.spliterator(), false).collect(Collectors.toList());
 
-        List<RepairHistoryData> filteredHistoryData = rows.stream()
+        return StreamSupport.stream(resultSet.spliterator(), false)
                 .filter(row ->
                 {
                     String status = row.getString(COLUMN_STATUS);
@@ -229,8 +222,6 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
                 })
                 .map(row -> convertRowToRepairHistoryData(row, repairHistoryData.getLookBackTimeInMilliseconds()))
                 .collect(Collectors.toList());
-
-        return filteredHistoryData;
     }
 
     /**
@@ -252,10 +243,8 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
         LOG.info("Fetching repair history with look back start time: {}", lookBackStartTime);
 
         ResultSet resultSet = getRepairHistoryInfo(repairHistoryData);
-        List<Row> rows = StreamSupport.stream(resultSet.spliterator(), false).collect(Collectors.toList());
 
-        // Filter rows based on the look back time
-        List<RepairHistoryData> filteredHistoryData = rows.stream()
+        return StreamSupport.stream(resultSet.spliterator(), false)
                 .filter(row ->
                 {
                     Instant startedAt = row.get(COLUMN_STARTED_AT, Instant.class);
@@ -264,7 +253,6 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
                     long startedAtInMillis = startedAt.toEpochMilli();
                     long finishedAtInMillis = finishedAt.toEpochMilli();
 
-                    // Ensure either startedAt or finishedAt falls within the lookback period
                     boolean withinLookBackPeriod = (startedAtInMillis >= lookBackStartTime || finishedAtInMillis >= lookBackStartTime);
 
                     LOG.debug("Row startedAt: {}, finishedAt: {}, within look back period: {}", startedAt, finishedAt,
@@ -273,8 +261,6 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
                 })
                 .map(row -> convertRowToRepairHistoryData(row, lookBackTimeInMillis))
                 .collect(Collectors.toList());
-
-        return filteredHistoryData;
     }
 
     public ResultSet getRepairHistoryInfo(final RepairHistoryData repairHistoryData)

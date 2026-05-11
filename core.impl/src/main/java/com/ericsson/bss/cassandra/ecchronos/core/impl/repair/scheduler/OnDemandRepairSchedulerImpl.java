@@ -98,12 +98,25 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
     {
         try
         {
+            removeFinishedJobs();
             Map<UUID, Set<OngoingJob>> allOngoingJobs = myOnDemandStatus.getOngoingStartedJobsForAllNodes(myReplicationState);
             allOngoingJobs.values().forEach(jobs -> jobs.forEach(this::scheduleOngoingJob));
         }
         catch (Exception e)
         {
             logFailureMessage(e);
+        }
+    }
+
+    private void removeFinishedJobs()
+    {
+        synchronized (myLock)
+        {
+            myScheduledJobs.entrySet().removeIf(entry ->
+            {
+                ScheduledJob.State state = entry.getValue().getState();
+                return state == ScheduledJob.State.FINISHED || state == ScheduledJob.State.FAILED;
+            });
         }
     }
 
@@ -144,6 +157,18 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
             }
             myScheduledJobs.clear();
             myExecutor.shutdown();
+        }
+        try
+        {
+            if (!myExecutor.awaitTermination(ONGOING_JOBS_PERIOD_SECONDS, TimeUnit.SECONDS))
+            {
+                myExecutor.shutdownNow();
+            }
+        }
+        catch (InterruptedException e)
+        {
+            myExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -287,7 +312,10 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         synchronized (myLock)
         {
             ScheduledJob job = myScheduledJobs.remove(id);
-            myScheduleManager.deschedule(hostId, job);
+            if (job != null)
+            {
+                myScheduleManager.deschedule(hostId, job);
+            }
         }
     }
 
