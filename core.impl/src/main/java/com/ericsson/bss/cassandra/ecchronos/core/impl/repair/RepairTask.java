@@ -152,49 +152,55 @@ public abstract class RepairTask implements NotificationListener // NOPMD Possib
         LOG.debug("repair starting for table {} on node {}", myTableReference, nodeID);
         if (proxy.addStorageServiceListener(nodeID, this))
         {
-            myCommandReady = false;
-            myPendingNotifications.clear();
-            myCommand = proxy.repairAsync(nodeID, myTableReference.getKeyspace(), getOptions());
-            myCommandReady = true;
-            if (myCommand > 0)
+            try
             {
-                // Process any notifications that arrived before myCommand was set
-                if (!myPendingNotifications.isEmpty())
+                myCommandReady = false;
+                myPendingNotifications.clear();
+                myCommand = proxy.repairAsync(nodeID, myTableReference.getKeyspace(), getOptions());
+                myCommandReady = true;
+                if (myCommand > 0)
                 {
-                    LOG.debug("Processing {} pending notifications for table {} on node {}",
-                            myPendingNotifications.size(), myTableReference, nodeID);
-                    for (Notification pending : new ArrayList<>(myPendingNotifications))
+                    // Process any notifications that arrived before myCommand was set
+                    if (!myPendingNotifications.isEmpty())
                     {
-                        handleNotification(pending, null);
+                        LOG.debug("Processing {} pending notifications for table {} on node {}",
+                                myPendingNotifications.size(), myTableReference, nodeID);
+                        for (Notification pending : new ArrayList<>(myPendingNotifications))
+                        {
+                            handleNotification(pending, null);
+                        }
+                        myPendingNotifications.clear();
                     }
-                    myPendingNotifications.clear();
-                }
-                try
-                {
-                    LOG.debug("waiting for latch for table {} on node {}", myTableReference, nodeID);
-                    myLatch.await();
-                    LOG.debug("finished waiting for latch for table {} on node {}", myTableReference, nodeID);
-                    proxy.removeStorageServiceListener(nodeID, this);
-                    verifyRepair(proxy);
-                    if (myLastError != null)
+                    try
                     {
-                        throw myLastError;
+                        LOG.debug("waiting for latch for table {} on node {}", myTableReference, nodeID);
+                        myLatch.await();
+                        LOG.debug("finished waiting for latch for table {} on node {}", myTableReference, nodeID);
+                        verifyRepair(proxy);
+                        if (myLastError != null)
+                        {
+                            throw myLastError;
+                        }
+                        if (hasLostNotification)
+                        {
+                            String msg = String.format("Repair-%d of %s had lost notifications", myCommand, myTableReference);
+                            LOG.warn(msg);
+                            throw new ScheduledJobException(msg);
+                        }
+                        LOG.debug("{} completed successfully on node {}", this, nodeID);
                     }
-                    if (hasLostNotification)
+                    catch (InterruptedException e)
                     {
-                        String msg = String.format("Repair-%d of %s had lost notifications", myCommand, myTableReference);
-                        LOG.warn(msg);
-                        throw new ScheduledJobException(msg);
+                        String msg = this + " was interrupted";
+                        LOG.warn(msg, e);
+                        Thread.currentThread().interrupt();
+                        throw new ScheduledJobException(msg, e);
                     }
-                    LOG.debug("{} completed successfully on node {}", this, nodeID);
                 }
-                catch (InterruptedException e)
-                {
-                    String msg = this + " was interrupted";
-                    LOG.warn(msg, e);
-                    Thread.currentThread().interrupt();
-                    throw new ScheduledJobException(msg, e);
-                }
+            }
+            finally
+            {
+                proxy.removeStorageServiceListener(nodeID, this);
             }
         }
         else
