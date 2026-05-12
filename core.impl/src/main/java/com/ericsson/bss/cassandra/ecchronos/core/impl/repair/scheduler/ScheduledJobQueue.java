@@ -126,16 +126,28 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
     }
 
     @Override
-    public final synchronized Iterator<ScheduledJob> iterator()
+    public final Iterator<ScheduledJob> iterator()
     {
-        myJobQueues.values().forEach(q -> q.forEach(ScheduledJob::refreshState));
-        purgeFinishedJobs();
-        List<PriorityQueue<ScheduledJob>> snapshots = myJobQueues.values().stream()
-                .map(PriorityQueue::new)
-                .collect(Collectors.toList());
-        Iterator<ScheduledJob> baseIterator = new ManyToOneIterator<>(snapshots, myComparator);
+        List<ScheduledJob> jobsToRefresh;
+        synchronized (this)
+        {
+            jobsToRefresh = myJobQueues.values().stream()
+                    .flatMap(Collection::stream)
+                    .collect(Collectors.toList());
+        }
 
-        return new RunnableJobIterator(baseIterator);
+        // Refresh state outside the lock — refreshState() may perform I/O
+        jobsToRefresh.forEach(ScheduledJob::refreshState);
+
+        synchronized (this)
+        {
+            purgeFinishedJobs();
+            List<PriorityQueue<ScheduledJob>> snapshots = myJobQueues.values().stream()
+                    .map(PriorityQueue::new)
+                    .collect(Collectors.toList());
+            Iterator<ScheduledJob> baseIterator = new ManyToOneIterator<>(snapshots, myComparator);
+            return new RunnableJobIterator(baseIterator);
+        }
     }
 
     private void purgeFinishedJobs()
