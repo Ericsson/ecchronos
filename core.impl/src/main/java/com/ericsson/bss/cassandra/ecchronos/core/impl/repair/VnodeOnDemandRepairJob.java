@@ -177,7 +177,6 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
     public void finishJob()
     {
         UUID id = getJobId();
-        getOnFinishedHook().accept(id);
         if (myTasks.isEmpty())
         {
             getOngoingJob().finishJob();
@@ -189,6 +188,7 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
             getOngoingJob().failJob();
             LOG.error("Failed on demand repair: {}", id);
         }
+        getOnFinishedHook().accept(id);
         super.finishJob();
     }
 

@@ -122,7 +122,6 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
     public void finishJob()
     {
         UUID id = getJobId();
-        getOnFinishedHook().accept(id);
         if (myTasks.isEmpty())
         {
             getOngoingJob().finishJob();
@@ -133,6 +132,7 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
             getOngoingJob().failJob();
             LOG.error("Failed incremental on demand repair: {}", id);
         }
+        getOnFinishedHook().accept(id);
         super.finishJob();
     }
 
