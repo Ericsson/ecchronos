@@ -73,7 +73,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
     private static final Logger LOG = LoggerFactory.getLogger(RepairSchedulerImpl.class);
 
     private final Map<UUID, Map<TableReference, Set<ScheduledRepairJob>>> myScheduledJobs = new ConcurrentHashMap<>();
-    private final Object myLock = new Object();
+    private final java.util.concurrent.locks.ReadWriteLock myLock = new java.util.concurrent.locks.ReentrantReadWriteLock();
 
     private final ExecutorService myExecutor;
     private final TableRepairMetrics myTableRepairMetrics;
@@ -147,7 +147,8 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
             Thread.currentThread().interrupt();
         }
 
-        synchronized (myLock)
+        myLock.writeLock().lock();
+        try
         {
             myScheduledJobs.entrySet().stream()
                     .flatMap(nodeEntry -> nodeEntry.getValue().entrySet().stream()
@@ -158,6 +159,10 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
                     .forEach(entry -> descheduleTableJob(entry.getKey(), entry.getValue()));
 
             myScheduledJobs.clear();
+        }
+        finally
+        {
+            myLock.writeLock().unlock();
         }
     }
 
@@ -179,7 +184,8 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
     @Override
     public List<ScheduledRepairJobView> getCurrentRepairJobs()
     {
-        synchronized (myLock)
+        myLock.readLock().lock();
+        try
         {
             return myScheduledJobs.values().stream()
                     .flatMap(tableJobs -> tableJobs.values().stream())
@@ -187,12 +193,17 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
                     .map(ScheduledRepairJob::getView)
                     .collect(Collectors.toList());
         }
+        finally
+        {
+            myLock.readLock().unlock();
+        }
     }
 
     @Override
     public List<ScheduledRepairJobView> getCurrentRepairJobsByNode(final UUID nodeId)
     {
-        synchronized (myLock)
+        myLock.readLock().lock();
+        try
         {
             Map<TableReference, Set<ScheduledRepairJob>> tableJobs = myScheduledJobs.get(nodeId);
 
@@ -206,6 +217,10 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
                     .map(ScheduledRepairJob::getView)
                     .collect(Collectors.toList());
         }
+        finally
+        {
+            myLock.readLock().unlock();
+        }
     }
 
 
@@ -214,39 +229,41 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
             final TableReference tableReference,
             final Set<RepairConfiguration> repairConfigurations)
     {
-        synchronized (myLock)
+        myLock.writeLock().lock();
+        try
         {
-            try
+            if (configurationHasChanged(node, tableReference, repairConfigurations))
             {
-                if (configurationHasChanged(node, tableReference, repairConfigurations))
-                {
-                    LOG.info("Creating schedule for table {} in node {}", tableReference, node.getHostId());
-                    createTableSchedule(node, tableReference, repairConfigurations);
-                }
-                else
-                {
-                    LOG.info("No configuration changes for table {} in node {}", tableReference, node.getHostId());
-                }
+                LOG.info("Creating schedule for table {} in node {}", tableReference, node.getHostId());
+                createTableSchedule(node, tableReference, repairConfigurations);
             }
-            catch (RuntimeMBeanException e)
+            else
             {
-                if (e.getCause() instanceof IllegalStateException
-                        && e.getCause().getMessage() != null
-                        && e.getCause().getMessage().contains("More than one key found"))
-                {
-                    LOG.error("Unexpected error during schedule change of {} on node {}, this is probably due to "
-                            + "a connection to a version of the Jolokia Agent 2.3.0 or older", tableReference, node.getHostId());
-                    LOG.debug("Unexpected error during schedule change of {}:", tableReference, e);
-                }
-                else
-                {
-                    LOG.error("Unexpected error during schedule change of {}:", tableReference, e);
-                }
+                LOG.info("No configuration changes for table {} in node {}", tableReference, node.getHostId());
             }
-            catch (Exception e)
+        }
+        catch (RuntimeMBeanException e)
+        {
+            if (e.getCause() instanceof IllegalStateException
+                    && e.getCause().getMessage() != null
+                    && e.getCause().getMessage().contains("More than one key found"))
+            {
+                LOG.error("Unexpected error during schedule change of {} on node {}, this is probably due to "
+                        + "a connection to a version of the Jolokia Agent 2.3.0 or older", tableReference, node.getHostId());
+                LOG.debug("Unexpected error during schedule change of {}:", tableReference, e);
+            }
+            else
             {
                 LOG.error("Unexpected error during schedule change of {}:", tableReference, e);
             }
+        }
+        catch (Exception e)
+        {
+            LOG.error("Unexpected error during schedule change of {}:", tableReference, e);
+        }
+        finally
+        {
+            myLock.writeLock().unlock();
         }
     }
 
@@ -312,29 +329,31 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 
     private void tableConfigurationRemoved(final Node node, final TableReference tableReference)
     {
-        synchronized (myLock)
+        myLock.writeLock().lock();
+        try
         {
-            try
+            Map<TableReference, Set<ScheduledRepairJob>> tableJobs = myScheduledJobs.get(node.getHostId());
+            if (tableJobs == null)
             {
-                Map<TableReference, Set<ScheduledRepairJob>> tableJobs = myScheduledJobs.get(node.getHostId());
-                if (tableJobs == null)
+                LOG.warn("No scheduled jobs found for node {} when removing/updating table config {}", node.getHostId(), tableReference);
+                return;
+            }
+            Set<ScheduledRepairJob> jobs = tableJobs.remove(tableReference);
+            if (jobs != null)
+            {
+                for (ScheduledRepairJob job : jobs)
                 {
-                    LOG.warn("No scheduled jobs found for node {} when removing/updating table config {}", node.getHostId(), tableReference);
-                    return;
-                }
-                Set<ScheduledRepairJob> jobs = tableJobs.remove(tableReference);
-                if (jobs != null)
-                {
-                    for (ScheduledRepairJob job : jobs)
-                    {
-                        descheduleTableJob(node.getHostId(), job);
-                    }
+                    descheduleTableJob(node.getHostId(), job);
                 }
             }
-            catch (Exception e)
-            {
-                LOG.error("Unexpected error during schedule removal of {}:", tableReference, e);
-            }
+        }
+        catch (Exception e)
+        {
+            LOG.error("Unexpected error during schedule removal of {}:", tableReference, e);
+        }
+        finally
+        {
+            myLock.writeLock().unlock();
         }
     }
 
@@ -346,25 +365,27 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 
     private void nodeConfigurationRemoved(final UUID nodeId)
     {
-        synchronized (myLock)
+        myLock.writeLock().lock();
+        try
         {
-            try
+            Map<TableReference, Set<ScheduledRepairJob>> tableJobs = myScheduledJobs.remove(nodeId);
+            if (tableJobs == null)
             {
-                Map<TableReference, Set<ScheduledRepairJob>> tableJobs = myScheduledJobs.remove(nodeId);
-                if (tableJobs == null)
-                {
-                    LOG.info("No scheduled jobs found for node {}", nodeId);
-                    return;
-                }
-                tableJobs.values().stream()
-                        .flatMap(Set::stream)
-                        .forEach(job -> descheduleTableJob(nodeId, job));
-                LOG.info("All scheduled jobs removed for node {}", nodeId);
+                LOG.info("No scheduled jobs found for node {}", nodeId);
+                return;
             }
-            catch (Exception e)
-            {
-                LOG.error("Unexpected error during schedule removal for node {}:", nodeId, e);
-            }
+            tableJobs.values().stream()
+                    .flatMap(Set::stream)
+                    .forEach(job -> descheduleTableJob(nodeId, job));
+            LOG.info("All scheduled jobs removed for node {}", nodeId);
+        }
+        catch (Exception e)
+        {
+            LOG.error("Unexpected error during schedule removal for node {}:", nodeId, e);
+        }
+        finally
+        {
+            myLock.writeLock().unlock();
         }
     }
 
