@@ -238,10 +238,10 @@ public final class OnDemandStatus
     public Set<OngoingJob> getAllClusterWideJobs()
     {
         NodeResolver nodeResolver = new NodeResolverImpl(mySession);
+        ReplicationState replState = new ReplicationStateImpl(nodeResolver, mySession);
         Set<OngoingJob> ongoingJobs = new HashSet<>();
         for (Node node : getNodes().values())
         {
-            ReplicationState replState = new ReplicationStateImpl(nodeResolver, mySession);
             ongoingJobs.addAll(getAllJobsForHost(replState, node.getHostId()));
         }
         return ongoingJobs;
