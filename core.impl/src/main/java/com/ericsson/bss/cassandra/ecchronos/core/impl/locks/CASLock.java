@@ -87,7 +87,7 @@ class CASLock implements DistributedLock, Runnable
             {
                 ScheduledExecutorService executor = myCasLockStatement.getCasLockProperties().getExecutor();
                 LOG.trace("Lock for resource {} acquired", myResource);
-                ScheduledFuture<?> future = executor.scheduleAtFixedRate(this,
+                ScheduledFuture<?> future = executor.scheduleWithFixedDelay(this,
                         myCasLockStatement.getCasLockFactoryCacheContext().getLockUpdateTimeInSeconds(),
                         myCasLockStatement.getCasLockFactoryCacheContext().getLockUpdateTimeInSeconds(), TimeUnit.SECONDS);
                 myUpdateFuture.set(future);
