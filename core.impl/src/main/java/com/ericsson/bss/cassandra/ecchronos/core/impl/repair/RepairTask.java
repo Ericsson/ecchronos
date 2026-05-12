@@ -267,7 +267,7 @@ public abstract class RepairTask implements NotificationListener // NOPMD Possib
      */
     public void cleanup()
     {
-        myExecutor.shutdown();
+        myExecutor.shutdownNow();
     }
 
     /**
