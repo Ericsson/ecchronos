@@ -177,6 +177,11 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     }
 
 
+    public final Node getLocalNode()
+    {
+        return myNode;
+    }
+
     public final ResultSet getAllRejections()
     {
         return mySession.execute(myStatementDecorator.apply(myGetAllRejectionsStatement.bind()));

@@ -218,10 +218,15 @@ public class RepairGroup extends ScheduledTask
 
     private Set<DriverNode> filterParticipants(final Set<DriverNode> participants, final TableReference tableReference)
     {
+        if (myTimeBasedRunPolicy == null)
+        {
+            return participants;
+        }
         Set<DriverNode> allowedParticipants = new HashSet<>();
         for (DriverNode node: participants)
         {
-            if (myTimeBasedRunPolicy.shouldReplicaBeIncluded(tableReference, node))
+            if (node.getId().equals(myTimeBasedRunPolicy.getLocalNode().getHostId())
+                    || myTimeBasedRunPolicy.shouldReplicaBeIncluded(tableReference, node))
             {
                 allowedParticipants.add(node);
             }

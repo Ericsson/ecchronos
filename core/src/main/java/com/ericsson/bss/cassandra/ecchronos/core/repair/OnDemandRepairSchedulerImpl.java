@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
-import com.ericsson.bss.cassandra.ecchronos.core.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.Metadata;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
@@ -64,7 +63,6 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
     private final OnDemandStatus myOnDemandStatus;
     private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(
             new ThreadFactoryBuilder().setNameFormat("OngoingJobsScheduler-%d").build());
-    private final TimeBasedRunPolicy myTimeBasedRunPolicy;
 
     private OnDemandRepairSchedulerImpl(final Builder builder)
     {
@@ -77,7 +75,6 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         myRepairConfiguration = builder.repairConfiguration;
         myRepairHistory = builder.repairHistory;
         myOnDemandStatus = builder.onDemandStatus;
-        myTimeBasedRunPolicy = builder.myTimeBasedRunPolicy;
         myExecutor.scheduleAtFixedRate(() -> getOngoingJobs(), 0, ONGOING_JOBS_PERIOD_SECONDS, TimeUnit.SECONDS);
     }
 
@@ -280,7 +277,6 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
                     .withRepairConfiguration(repairConfiguration)
                     .withRepairHistory(myRepairHistory)
                     .withOngoingJob(ongoingJob)
-                    .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                     .build();
         }
         return job;
@@ -302,7 +298,6 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         private RepairConfiguration repairConfiguration;
         private RepairHistory repairHistory;
         private OnDemandStatus onDemandStatus;
-        private TimeBasedRunPolicy myTimeBasedRunPolicy;
 
         /**
          * Build on demand repair scheduler with JMX proxy factory.
@@ -409,18 +404,6 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         public Builder withOnDemandStatus(final OnDemandStatus theOnDemandStatus)
         {
             this.onDemandStatus = theOnDemandStatus;
-            return this;
-        }
-
-        /**
-         * Build with TimeBasedRunPolicy.
-         *
-         * @param timeBasedRunPolicy TimeBasedRunPolicy.
-         * @return Builder
-         */
-        public Builder withTimeBasedRunPolicy(final TimeBasedRunPolicy timeBasedRunPolicy)
-        {
-            myTimeBasedRunPolicy = timeBasedRunPolicy;
             return this;
         }
 

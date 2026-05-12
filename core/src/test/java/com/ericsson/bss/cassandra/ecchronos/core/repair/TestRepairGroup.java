@@ -61,6 +61,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.DummyLock;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableList;
@@ -108,10 +109,15 @@ public class TestRepairGroup
 
     private RepairConfiguration myRepairConfiguration;
 
+    @Mock
+    private Node myLocalNode;
+
     @Before
     public void init()
     {
         when(myRepairHistory.newSession(any(), any(), any(), any())).thenReturn(myRepairSession);
+        when(myTimeBasedRunPolicy.getLocalNode()).thenReturn(myLocalNode);
+        when(myLocalNode.getHostId()).thenReturn(UUID.randomUUID());
         when(myTimeBasedRunPolicy.shouldReplicaBeIncluded(any(TableReference.class), any(DriverNode.class))).thenReturn(true);
         myRepairPolicies = Collections.singletonList(myTimeBasedRunPolicy);
 
@@ -438,6 +444,7 @@ public class TestRepairGroup
     {
         DriverNode node = mock(DriverNode.class);
         when(node.getDatacenter()).thenReturn(dataCenter);
+        when(node.getId()).thenReturn(UUID.randomUUID());
         return node;
     }
 }
