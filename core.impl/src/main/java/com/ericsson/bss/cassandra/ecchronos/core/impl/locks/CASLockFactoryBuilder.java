@@ -16,7 +16,6 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.locks;
 
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.utils.ConsistencyType;
-import com.ericsson.bss.cassandra.ecchronos.core.state.HostStates;
 
 /**
  * Represents a container for builder configurations and state for the CASLockFactory.
@@ -36,24 +35,6 @@ public class CASLockFactoryBuilder
     public final CASLockFactoryBuilder withNativeConnectionProvider(final DistributedNativeConnectionProvider nativeConnectionProvider)
     {
         myNativeConnectionProvider = nativeConnectionProvider;
-        return this;
-    }
-
-    /**
-     * @deprecated HostStates is no longer used by CASLockFactory. This method is a no-op.
-     */
-    @Deprecated
-    public final CASLockFactoryBuilder withHostStates(final HostStates hostStates)
-    {
-        return this;
-    }
-
-    /**
-     * @deprecated Local datacenter is no longer used by CASLockFactory. This method is a no-op.
-     */
-    @Deprecated
-    public final CASLockFactoryBuilder withLocalDatacenter(final String localDatacenter)
-    {
         return this;
     }
 

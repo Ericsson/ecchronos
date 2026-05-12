@@ -122,7 +122,6 @@ public class ITOnDemandRepairJob extends TestBase
 
         myLockFactory = CASLockFactory.builder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
-                .withHostStates(myHostStates)
                 .withConsistencySerial(ConsistencyType.SERIAL)
                 .build();
 
