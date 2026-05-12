@@ -131,7 +131,6 @@ public class ECChronos implements Closeable
                 .withRepairConfiguration(repairConfig.asRepairConfiguration())
                 .withRepairHistory(repairHistory)
                 .withOnDemandStatus(new OnDemandStatus(nativeConnectionProvider))
-                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .build();
         myRepairStatsProvider = new RepairStatsProviderImpl(new VnodeRepairStateFactoryImpl(replicationState,
                 repairHistoryProvider,

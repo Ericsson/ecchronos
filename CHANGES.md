@@ -2,6 +2,7 @@
 
 ## Version 6.1.9
 
+* Repair fails with "Local node must be part of repair" when datacenter exclusion filters out the local node - Issue #1550
 * Repair non-system keyspaces with names begining with system - Issue #1486
 
 ## Version 6.1.8

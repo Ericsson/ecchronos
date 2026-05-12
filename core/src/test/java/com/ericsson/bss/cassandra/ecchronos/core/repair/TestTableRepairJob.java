@@ -31,6 +31,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableList;
@@ -49,6 +50,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
@@ -108,6 +110,9 @@ public class TestTableRepairJob
     @Mock
     private TimeBasedRunPolicy myTimeBasedRunPolicy;
 
+    @Mock
+    private Node myLocalNode;
+
     private TableRepairJob myRepairJob;
 
     private final TableReference myTableReference = tableReference(keyspaceName, tableName);
@@ -122,6 +127,8 @@ public class TestTableRepairJob
         doNothing().when(myRepairState).update();
 
         when(myRepairHistory.newSession(any(), any(), any(), any())).thenReturn(myRepairSession);
+        when(myTimeBasedRunPolicy.getLocalNode()).thenReturn(myLocalNode);
+        when(myLocalNode.getHostId()).thenReturn(UUID.randomUUID());
         when(myTimeBasedRunPolicy.shouldReplicaBeIncluded(any(TableReference.class), any(DriverNode.class))).thenReturn(true);
         List<TableRepairPolicy> myRepairPolicies = Collections.singletonList(myTimeBasedRunPolicy);
 
@@ -311,7 +318,7 @@ public class TestTableRepairJob
     public void testIterator()
     {
         LongTokenRange tokenRange = new LongTokenRange(0, 10);
-        ImmutableSet<DriverNode> replicas = ImmutableSet.of(mock(DriverNode.class), mock(DriverNode.class));
+        ImmutableSet<DriverNode> replicas = ImmutableSet.of(mockDriverNode(), mockDriverNode());
         ImmutableList<LongTokenRange> vnodes = ImmutableList.of(tokenRange);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl
@@ -357,7 +364,7 @@ public class TestTableRepairJob
         );
 
         LongTokenRange tokenRange = new LongTokenRange(0, 10);
-        ImmutableSet<DriverNode> replicas = ImmutableSet.of(mock(DriverNode.class), mock(DriverNode.class));
+        ImmutableSet<DriverNode> replicas = ImmutableSet.of(mockDriverNode(), mockDriverNode());
         ImmutableList<LongTokenRange> vnodes = ImmutableList.of(tokenRange);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(
@@ -405,7 +412,7 @@ public class TestTableRepairJob
                 tokenRange2,
                 tokenRange3
         );
-        ImmutableSet<DriverNode> replicas = ImmutableSet.of(mock(DriverNode.class), mock(DriverNode.class));
+        ImmutableSet<DriverNode> replicas = ImmutableSet.of(mockDriverNode(), mockDriverNode());
         ImmutableList<LongTokenRange> vnodes = ImmutableList.of(tokenRange1, tokenRange2, tokenRange3);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(
@@ -456,7 +463,7 @@ public class TestTableRepairJob
                 tokenRange2,
                 tokenRange3
         );
-        ImmutableSet<DriverNode> replicas = ImmutableSet.of(mock(DriverNode.class), mock(DriverNode.class));
+        ImmutableSet<DriverNode> replicas = ImmutableSet.of(mockDriverNode(), mockDriverNode());
         ImmutableList<LongTokenRange> vnodes = ImmutableList.of(tokenRange1, tokenRange2, tokenRange3);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(
@@ -826,7 +833,14 @@ public class TestTableRepairJob
 
     private ReplicaRepairGroup getRepairGroup(LongTokenRange range, long lastRepairedAt)
     {
-        ImmutableSet<DriverNode> replicas = ImmutableSet.of(mock(DriverNode.class), mock(DriverNode.class));
+        ImmutableSet<DriverNode> replicas = ImmutableSet.of(mockDriverNode(), mockDriverNode());
         return new ReplicaRepairGroup(replicas, ImmutableList.of(range), lastRepairedAt);
+    }
+
+    private DriverNode mockDriverNode()
+    {
+        DriverNode node = mock(DriverNode.class);
+        when(node.getId()).thenReturn(UUID.randomUUID());
+        return node;
     }
 }
