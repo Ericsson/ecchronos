@@ -143,11 +143,9 @@ public class ECChronosInternals implements Closeable
 
         myLockFactory = CASLockFactory.builder()
                 .withNativeConnectionProvider(nativeConnectionProvider)
-                .withHostStates(myHostStatesImpl)
                 .withKeyspaceName(casLockFactoryConfig.getKeyspaceName())
                 .withCacheExpiryInSeconds(casLockFactoryConfig.getFailureCacheExpiryTimeInSeconds())
                 .withConsistencySerial(casLockFactoryConfig.getConsistencySerial())
-                .withLocalDatacenter(configuration.getConnectionConfig().getCqlConnection().getLocalDatacenter())
                 .build();
 
         myScheduleManagerImpl = ScheduleManagerImpl.builder()

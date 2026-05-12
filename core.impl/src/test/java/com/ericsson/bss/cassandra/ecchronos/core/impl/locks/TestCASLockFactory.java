@@ -18,7 +18,6 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -27,7 +26,6 @@ import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnecti
 import com.ericsson.bss.cassandra.ecchronos.core.impl.AbstractCassandraContainerTest;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.utils.ConsistencyType;
 import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.state.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import java.io.IOException;
@@ -96,8 +94,6 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
     private static PreparedStatement myGetPrioritiesStatement;
     private UUID myNodeID;
 
-    private static HostStates hostStates;
-
     @Parameterized.Parameter
     public String myKeyspaceName;
 
@@ -113,11 +109,8 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
                 "CREATE TABLE IF NOT EXISTS %s.lock_priority (resource text, node uuid, priority int, PRIMARY KEY(resource, node)) WITH default_time_to_live = 600 AND gc_grace_seconds = 0",
                 myKeyspaceName));
 
-        hostStates = mock(HostStates.class);
-        when(hostStates.isUp(any(Node.class))).thenReturn(true);
         myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
-                .withHostStates(hostStates)
                 .withKeyspaceName(myKeyspaceName)
                 .build();
 
@@ -156,7 +149,6 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
         when(node.getHostId()).thenReturn(UUID.randomUUID());
         myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
-                .withHostStates(hostStates)
                 .withKeyspaceName(myKeyspaceName)
                 .build();
         assertThat(myLockFactory.getCasLockFactoryCacheContext().getFailedLockRetryAttempts()).isEqualTo(9);
@@ -273,7 +265,6 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
         execute(myCompeteStatement.bind("lock", myNodeID, 2));
         CASLockFactory lockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
-                .withHostStates(hostStates)
                 .withKeyspaceName(myKeyspaceName)
                 .build();
 
@@ -291,7 +282,6 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
         execute(myCompeteStatement.bind("lock", myNodeID, 1));
         CASLockFactory lockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
-                .withHostStates(hostStates)
                 .withKeyspaceName(myKeyspaceName)
                 .build();
         try (LockFactory.DistributedLock lock = lockFactory.tryLock(DATA_CENTER, "lock", 2, new HashMap<>(), myNodeID))
@@ -390,7 +380,6 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
         assertThatExceptionOfType(IllegalStateException.class)
                 .isThrownBy(() -> new CASLockFactoryBuilder()
                         .withNativeConnectionProvider(getNativeConnectionProvider())
-                        .withHostStates(hostStates)
                         .withKeyspaceName(myKeyspaceName)
                         .build());
 
@@ -412,7 +401,6 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
         assertThatExceptionOfType(IllegalStateException.class)
                 .isThrownBy(() -> new CASLockFactoryBuilder()
                         .withNativeConnectionProvider(getNativeConnectionProvider())
-                        .withHostStates(hostStates)
                         .withKeyspaceName(myKeyspaceName)
                         .build());
 
@@ -429,7 +417,6 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
         assertThatExceptionOfType(IllegalStateException.class)
                 .isThrownBy(() -> new CASLockFactoryBuilder()
                         .withNativeConnectionProvider(getNativeConnectionProvider())
-                        .withHostStates(hostStates)
                         .withKeyspaceName(myKeyspaceName)
                         .build());
 
@@ -485,7 +472,6 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
                                 return null;
                             }
                         })
-                        .withHostStates(hostStates)
                         .withKeyspaceName(myKeyspaceName)
                         .build());
     }
@@ -503,7 +489,6 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
 
         myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(connectionProviderMock)
-                .withHostStates(hostStates)
                 .withKeyspaceName(myKeyspaceName)
                 .withConsistencySerial(ConsistencyType.LOCAL)
                 .build();
@@ -524,7 +509,6 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
 
         myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(connectionProviderMock)
-                .withHostStates(hostStates)
                 .withKeyspaceName(myKeyspaceName)
                 .withConsistencySerial(ConsistencyType.SERIAL)
                 .build();

@@ -33,7 +33,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.DummyLock;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
-import com.ericsson.bss.cassandra.ecchronos.core.state.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -56,8 +55,6 @@ public class TestScheduleManager
     private CASLockFactory myLockFactory;
     @Mock
     private DistributedNativeConnectionProvider myNativeConnectionProvider;
-    @Mock
-    private HostStates myHostStates;
 
     @Mock
     private RunPolicy myRunPolicy;
@@ -91,7 +88,6 @@ public class TestScheduleManager
 
         when(myRunPolicy.validate(any(ScheduledJob.class), any(Node.class))).thenReturn(-1L);
         doReturn(myLockFactoryBuilder).when(myLockFactoryBuilder).withNativeConnectionProvider(myNativeConnectionProvider);
-        doReturn(myLockFactoryBuilder).when(myLockFactoryBuilder).withHostStates(myHostStates);
         doReturn(myLockFactory).when(myLockFactoryBuilder).build();
     }
 
