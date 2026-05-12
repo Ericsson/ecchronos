@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.TokenMap;
 import com.datastax.oss.driver.api.core.metadata.token.TokenRange;
@@ -159,18 +158,10 @@ public class ReplicationStateImpl implements ReplicationState
             final String keyspace,
             final Node currentNode)
     {
-        ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> replication = buildTokenMap(
-                keyspace,
-                false,
-                currentNode);
-
-        ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> cached = KEYSPACE_REPLICATION_CACHE.getIfPresent(keyspace);
-        if (cached == null || !replication.equals(cached))
-        {
-            KEYSPACE_REPLICATION_CACHE.put(keyspace, replication);
-            return replication;
-        }
-        return cached;
+        TokenMap tokenMap = mySession.getMetadata().getTokenMap()
+                .orElseThrow(() -> new IllegalStateException("Cannot determine ranges, is metadata/tokenMap disabled?"));
+        String cacheKey = keyspace + ":" + System.identityHashCode(tokenMap);
+        return KEYSPACE_REPLICATION_CACHE.get(cacheKey, k -> buildTokenMap(keyspace, false, currentNode, tokenMap));
     }
 
     /**
@@ -192,48 +183,35 @@ public class ReplicationStateImpl implements ReplicationState
             final String keyspace,
             final Node currentNode)
     {
-        ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> replication = buildTokenMap(
-                keyspace,
-                true,
-                currentNode);
-
-        ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> cached = CLUSTER_WIDE_KEYSPACE_REPLICATION_CACHE.getIfPresent(keyspace);
-        if (cached == null || !replication.equals(cached))
-        {
-            CLUSTER_WIDE_KEYSPACE_REPLICATION_CACHE.put(keyspace, replication);
-            return replication;
-        }
-        return cached;
+        TokenMap tokenMap = mySession.getMetadata().getTokenMap()
+                .orElseThrow(() -> new IllegalStateException("Cannot determine ranges, is metadata/tokenMap disabled?"));
+        String cacheKey = keyspace + ":" + System.identityHashCode(tokenMap);
+        return CLUSTER_WIDE_KEYSPACE_REPLICATION_CACHE.get(cacheKey, k -> buildTokenMap(keyspace, true, currentNode, tokenMap));
     }
 
     private ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> buildTokenMap(
             final String keyspace,
             final boolean clusterWide,
-            final Node currentNode)
+            final Node currentNode,
+            final TokenMap tokenMap)
     {
         ImmutableMap.Builder<LongTokenRange, ImmutableSet<DriverNode>> replicationBuilder = ImmutableMap.builder();
         Map<Set<Node>, ImmutableSet<DriverNode>> replicaCache = new HashMap<>();
-        Metadata metadata = mySession.getMetadata();
-        Optional<TokenMap> tokenMap = metadata.getTokenMap();
-        if (!tokenMap.isPresent())
-        {
-            throw new IllegalStateException("Cannot determine ranges, is metadata/tokenMap disabled?");
-        }
         String keyspaceName = quoteIfNeeded(keyspace);
         Set<TokenRange> tokenRanges;
         if (clusterWide)
         {
-            tokenRanges = tokenMap.get().getTokenRanges();
+            tokenRanges = tokenMap.getTokenRanges();
         }
         else
         {
-            tokenRanges = tokenMap.get().getTokenRanges(keyspaceName, currentNode);
+            tokenRanges = tokenMap.getTokenRanges(keyspaceName, currentNode);
         }
         for (TokenRange tokenRange : tokenRanges)
         {
             LongTokenRange longTokenRange = convert(tokenRange);
             ImmutableSet<DriverNode> replicas
-                    = replicaCache.computeIfAbsent(tokenMap.get().getReplicas(keyspaceName, tokenRange), this::convert);
+                    = replicaCache.computeIfAbsent(tokenMap.getReplicas(keyspaceName, tokenRange), this::convert);
 
             replicationBuilder.put(longTokenRange, replicas);
         }
