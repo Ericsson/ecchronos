@@ -441,7 +441,7 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
             {
                 connector.close();
             }
-            catch (IOException e)
+            catch (IOException | NullPointerException e)
             {
                 LOG.debug("Failed to close JMX connector", e);
             }
