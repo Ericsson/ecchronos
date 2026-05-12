@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* HTTP errors in logs with shared HttpClient under concurrent load - Issue #1549
 * Improve memory management - Issue 1539
 * Remove sufficientNodesForLocking pre-check and catch driver exceptions instead - Issue #1468
 * Improve "Running Task" log message to reduce noise and add repair progress context - Issue #1470
