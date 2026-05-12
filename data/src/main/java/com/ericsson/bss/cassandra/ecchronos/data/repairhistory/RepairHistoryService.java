@@ -88,6 +88,7 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
     private final PreparedStatement myUpdateStatement;
     private final PreparedStatement mySelectStatement;
     private final PreparedStatement myIterateStatement;
+    private final PreparedStatement mySelectByTimeRangeStatement;
 
     private final CqlSession myCqlSession;
     private final ReplicationState myReplicationState;
@@ -156,6 +157,15 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
                 .whereColumn(COLUMN_REPAIR_ID).isGreaterThanOrEqualTo(bindMarker())
                 .whereColumn(COLUMN_REPAIR_ID).isLessThanOrEqualTo(bindMarker()).build()
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_ONE));
+        mySelectByTimeRangeStatement = myCqlSession.prepare(selectFrom(KEYSPACE_NAME, TABLE_NAME)
+                .columns(COLUMN_NODE_ID, COLUMN_TABLE_ID, COLUMN_REPAIR_ID, COLUMN_JOB_ID, COLUMN_COORDINATOR_ID,
+                        COLUMN_RANGE_BEGIN, COLUMN_RANGE_END, COLUMN_PARTICIPANTS, COLUMN_STATUS, COLUMN_STARTED_AT,
+                        COLUMN_FINISHED_AT)
+                .whereColumn(COLUMN_TABLE_ID).isEqualTo(bindMarker())
+                .whereColumn(COLUMN_NODE_ID).isEqualTo(bindMarker())
+                .whereColumn(COLUMN_REPAIR_ID).isGreaterThanOrEqualTo(bindMarker())
+                .whereColumn(COLUMN_REPAIR_ID).isLessThanOrEqualTo(bindMarker()).build()
+                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM));
     }
 
     /**
@@ -170,10 +180,10 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
      */
     public List<RepairHistoryData> getRepairHistoryByTimePeriod(final RepairHistoryData repairHistoryData)
     {
-        ResultSet resultSet = getRepairHistoryInfo(repairHistoryData);
-
         Instant queryStartedAt = repairHistoryData.getStartedAt();
         Instant queryFinishedAt = repairHistoryData.getFinishedAt();
+
+        ResultSet resultSet = getRepairHistoryInfoByTimeRange(repairHistoryData, queryStartedAt, queryFinishedAt);
 
         LocalDate queryStartDate = queryStartedAt.atZone(ZoneId.of(UNIVERSAL_TIMEZONE)).toLocalDate();
         LocalDate queryFinishDate = queryFinishedAt.atZone(ZoneId.of(UNIVERSAL_TIMEZONE)).toLocalDate();
@@ -186,9 +196,6 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
 
                     LocalDate rowStartDate = startedAt.atZone(ZoneId.of(UNIVERSAL_TIMEZONE)).toLocalDate();
                     LocalDate rowFinishDate = finishedAt.atZone(ZoneId.of(UNIVERSAL_TIMEZONE)).toLocalDate();
-
-                    LOG.debug("Filtering row: startedAt={}, finishedAt={}, queryStartedAt={}, queryFinishedAt={}",
-                            startedAt, finishedAt, queryStartedAt, queryFinishedAt);
 
                     return !rowFinishDate.isBefore(queryStartDate) && !rowStartDate.isAfter(queryFinishDate);
                 })
@@ -208,17 +215,13 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
      */
     public List<RepairHistoryData> getRepairHistoryByStatus(final RepairHistoryData repairHistoryData)
     {
-        LOG.info("Fetching repair history for status: {}", repairHistoryData.getStatus());
         ResultSet resultSet = getRepairHistoryInfo(repairHistoryData);
 
         return StreamSupport.stream(resultSet.spliterator(), false)
                 .filter(row ->
                 {
                     String status = row.getString(COLUMN_STATUS);
-                    boolean matches = repairHistoryData.getStatus().name().equalsIgnoreCase(status);
-
-                    LOG.debug("Row status: {}, matches: {}", status, matches);
-                    return matches;
+                    return repairHistoryData.getStatus().name().equalsIgnoreCase(status);
                 })
                 .map(row -> convertRowToRepairHistoryData(row, repairHistoryData.getLookBackTimeInMilliseconds()))
                 .collect(Collectors.toList());
@@ -240,9 +243,10 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
         long lookBackTimeInMillis = repairHistoryData.getLookBackTimeInMilliseconds();
         long lookBackStartTime = currentTimeInMillis - lookBackTimeInMillis;
 
-        LOG.info("Fetching repair history with look back start time: {}", lookBackStartTime);
+        Instant from = Instant.ofEpochMilli(lookBackStartTime);
+        Instant to = Instant.ofEpochMilli(currentTimeInMillis);
 
-        ResultSet resultSet = getRepairHistoryInfo(repairHistoryData);
+        ResultSet resultSet = getRepairHistoryInfoByTimeRange(repairHistoryData, from, to);
 
         return StreamSupport.stream(resultSet.spliterator(), false)
                 .filter(row ->
@@ -253,11 +257,7 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
                     long startedAtInMillis = startedAt.toEpochMilli();
                     long finishedAtInMillis = finishedAt.toEpochMilli();
 
-                    boolean withinLookBackPeriod = (startedAtInMillis >= lookBackStartTime || finishedAtInMillis >= lookBackStartTime);
-
-                    LOG.debug("Row startedAt: {}, finishedAt: {}, within look back period: {}", startedAt, finishedAt,
-                            withinLookBackPeriod);
-                    return withinLookBackPeriod;
+                    return (startedAtInMillis >= lookBackStartTime || finishedAtInMillis >= lookBackStartTime);
                 })
                 .map(row -> convertRowToRepairHistoryData(row, lookBackTimeInMillis))
                 .collect(Collectors.toList());
@@ -267,6 +267,20 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
     {
         BoundStatement boundStatement = mySelectStatement.bind(repairHistoryData.getTableId(),
                 repairHistoryData.getNodeId());
+        return myCqlSession.execute(boundStatement);
+    }
+
+    private ResultSet getRepairHistoryInfoByTimeRange(final RepairHistoryData repairHistoryData,
+                                                     final Instant from,
+                                                     final Instant to)
+    {
+        UUID start = Uuids.startOf(from.toEpochMilli());
+        UUID finish = Uuids.endOf(to.toEpochMilli());
+        BoundStatement boundStatement = mySelectByTimeRangeStatement.bind(
+                repairHistoryData.getTableId(),
+                repairHistoryData.getNodeId(),
+                start,
+                finish);
         return myCqlSession.execute(boundStatement);
     }
 
