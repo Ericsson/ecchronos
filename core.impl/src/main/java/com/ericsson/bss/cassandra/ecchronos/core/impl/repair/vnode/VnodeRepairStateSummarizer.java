@@ -94,12 +94,15 @@ public final class VnodeRepairStateSummarizer
             final Collection<VnodeRepairState> partialVnodes,
             final MergeStrategy mergeStrategy)
     {
-        List<VnodeRepairState> vnodeRepairStates = new ArrayList<>(partialVnodes);
+        List<VnodeRepairState> sortedPartials = new ArrayList<>(partialVnodes);
+        sortedPartials.sort((a, b) -> Long.compare(a.getTokenRange().start, b.getTokenRange().start));
+
+        List<VnodeRepairState> result = new ArrayList<>();
 
         for (VnodeRepairState baseState : baseVnodes)
         {
             List<VnodeRepairState> covering = new ArrayList<>();
-            for (VnodeRepairState actualState : vnodeRepairStates)
+            for (VnodeRepairState actualState : sortedPartials)
             {
                 if (baseState.getTokenRange().isCovering(actualState.getTokenRange()))
                 {
@@ -108,18 +111,21 @@ public final class VnodeRepairStateSummarizer
             }
             if (covering.isEmpty())
             {
-                vnodeRepairStates.add(baseState);
+                result.add(baseState);
             }
             else
             {
+                sortedPartials.removeAll(covering);
                 List<VnodeRepairState> replacement = new VnodeRepairStateSummarizer(baseState,
                         covering, mergeStrategy).summarize();
-                vnodeRepairStates.removeAll(covering);
-                vnodeRepairStates.addAll(replacement);
+                result.addAll(replacement);
             }
         }
 
-        return vnodeRepairStates;
+        // Add any remaining partials not covered by any base vnode
+        result.addAll(sortedPartials);
+
+        return result;
     }
 
     public List<VnodeRepairState> summarize()
@@ -134,12 +140,9 @@ public final class VnodeRepairStateSummarizer
 
             if (myMergeStrategy.shouldMerge(current, next))
             {
-                // If two vnodes are close in time we merge them together using
-                // the lowest timestamp of the two
+                mySummarizedRanges.remove(i + 1);
+                mySummarizedRanges.remove(i);
                 mySummarizedRanges.add(i, current.combine(next));
-
-                mySummarizedRanges.remove(current);
-                mySummarizedRanges.remove(next);
 
                 // Check the newly generated vnode since it might be possible
                 // to merge it again
@@ -162,15 +165,14 @@ public final class VnodeRepairStateSummarizer
 
             if (current.isCovering(next))
             {
-                splitCoveringRange(current, next);
+                splitCoveringRange(i, current, next);
                 i--;
             }
             else if (current.end().compareTo(next.start()) > 0)
             {
                 // Replace e.g. "(5, 15], (8, 30]" with "(5, 8], (8, 15], (15, 30]"
-                // The middle section (8, 15] gets the highest "repaired at" of the two overlapping ranges
-                mySummarizedRanges.remove(current);
-                mySummarizedRanges.remove(next);
+                mySummarizedRanges.remove(i + 1);
+                mySummarizedRanges.remove(i);
 
                 insertSorted(current.mutateEnd(next.start()), mySummarizedRanges);
                 insertSorted(current.splitEnd(next), mySummarizedRanges);
@@ -180,25 +182,22 @@ public final class VnodeRepairStateSummarizer
         }
     }
 
-    private void splitCoveringRange(final NormalizedRange covering, final NormalizedRange covered)
+    private void splitCoveringRange(final int coveringIndex, final NormalizedRange covering, final NormalizedRange covered)
     {
         if (covering.getStartedAt() >= covered.getStartedAt())
         {
-            // We already cover the sub range with a later repaired at, remove it
-            mySummarizedRanges.remove(covered);
+            mySummarizedRanges.remove(coveringIndex + 1);
         }
         else
         {
-            // Since the covering range is repaired earlier than the covered range
-            // we replace the covering range with smaller ranges around the covered
-            // range. The covered range is already in place in the list so there
-            // is no need to modify it.
-            mySummarizedRanges.remove(covering);
+            mySummarizedRanges.remove(coveringIndex + 1);
+            mySummarizedRanges.remove(coveringIndex);
 
             if (covering.start().compareTo(covered.start()) != 0)
             {
                 insertSorted(covering.mutateEnd(covered.start()), mySummarizedRanges);
             }
+            insertSorted(covered, mySummarizedRanges);
             if (covering.end().compareTo(covered.end()) != 0)
             {
                 insertSorted(covering.mutateStart(covered.end()), mySummarizedRanges);
