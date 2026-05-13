@@ -3,6 +3,7 @@
 ## Version 1.0.0 (Not yet Released)
 
 * On-Demand Repairs Stuck in IN_QUEUE at 100% Due to Re-Scheduling Loop, Blocking New Repairs - Issue #1553
+* HTTP errors in logs with shared HttpClient under concurrent load - Issue #1549
 * Improve memory management - Issue 1539
 * Remove sufficientNodesForLocking pre-check and catch driver exceptions instead - Issue #1468
 * Improve "Running Task" log message to reduce noise and add repair progress context - Issue #1470
