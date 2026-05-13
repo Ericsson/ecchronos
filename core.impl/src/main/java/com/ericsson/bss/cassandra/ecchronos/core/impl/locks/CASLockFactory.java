@@ -72,8 +72,8 @@ public final class CASLockFactory implements LockFactory, Closeable
     private static final int REFRESH_INTERVAL_RATIO = 10;
     private static final int DEFAULT_LOCK_TIME_IN_SECONDS = 600;
     private static final int MINIMUM_LOCK_TIME_IN_SECONDS = 30;
-    private static final long PRIORITY_CACHE_EXPIRE_SECONDS = 2L;
-    private static final int LOCK_REFRESHER_POOL_SIZE = 2;
+    private static final long PRIORITY_CACHE_EXPIRE_SECONDS = 30L;
+    private static final int LOCK_REFRESHER_POOL_SIZE = 4;
 
     private final CASLockFactoryCacheContext myCasLockFactoryCacheContext;
     private final Cache<String, List<NodePriority>> myPriorityCache;

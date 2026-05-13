@@ -62,9 +62,12 @@ public class JolokiaNotificationController
     private static final String SS_OBJ_NAME = "org.apache.cassandra.db:type=StorageService";
     public static final String NO_BROADCAST_ADDRESS = "0.0.0.0"; //NOPMD AvoidUsingHardCodedIP
 
+    private static final int NOTIFICATION_THREAD_POOL_SIZE = 4;
+
     private final Map<NotificationListener, String> myJolokiaRelationshipListeners = new HashMap<>();
 
-    private final ScheduledExecutorService myNotificationExecutor = Executors.newSingleThreadScheduledExecutor(
+    private final ScheduledExecutorService myNotificationExecutor = Executors.newScheduledThreadPool(
+            NOTIFICATION_THREAD_POOL_SIZE,
             new ThreadFactoryBuilder().setNameFormat("NotificationRefresher-%d").build());
 
     private final Map<UUID, Map<String, String>> myClientIdMap = new ConcurrentHashMap<>();
@@ -453,27 +456,25 @@ public class JolokiaNotificationController
     private String checkForNotifications(final UUID nodeID, final String notificationID)
             throws IOException, InterruptedException
     {
-        synchronized (myClientIdMap)
+        String url;
+        Map<String, String> clientInfo = myClientIdMap.get(nodeID);
+        if (clientInfo == null)
         {
-            Map<String, String> clientInfo = myClientIdMap.get(nodeID);
-            if (clientInfo == null)
-            {
-                LOG.debug("No client info found for node {}, skipping notification check", nodeID);
-                return "{}";
-            }
-
-            String url = mountJolokiaBaseURL(nodeID) + "/exec/" + clientInfo.get("store") + "/pull/"
-                + clientInfo.get(CLIENT_ID_PROPERTY) + "/" + notificationID;
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .timeout(java.time.Duration.ofSeconds(HTTP_REQUEST_TIMEOUT_SECONDS))
-                    .GET()
-                    .build();
-
-            HttpResponse<String> response = getHttpClient(nodeID).send(request, HttpResponse.BodyHandlers.ofString());
-            return decodeHtmlEntities(response.body());
+            LOG.debug("No client info found for node {}, skipping notification check", nodeID);
+            return "{}";
         }
+
+        url = mountJolokiaBaseURL(nodeID) + "/exec/" + clientInfo.get("store") + "/pull/"
+            + clientInfo.get(CLIENT_ID_PROPERTY) + "/" + notificationID;
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(java.time.Duration.ofSeconds(HTTP_REQUEST_TIMEOUT_SECONDS))
+                .GET()
+                .build();
+
+        HttpResponse<String> response = getHttpClient(nodeID).send(request, HttpResponse.BodyHandlers.ofString());
+        return decodeHtmlEntities(response.body());
     }
 
     private String decodeHtmlEntities(final String input)

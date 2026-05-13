@@ -35,7 +35,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * A repair state factory which uses a {@link RepairHistoryProvider} to determine repair state.
@@ -219,6 +221,9 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         return true;
     }
 
+    private volatile Map<LongTokenRange, ImmutableSet<DriverNode>> myCachedTokenMap;
+    private volatile NavigableMap<Long, Map.Entry<LongTokenRange, ImmutableSet<DriverNode>>> myCachedRangeIndex;
+
     private ImmutableSet<DriverNode> getReplicasForRange(final LongTokenRange range,
             final Map<LongTokenRange, ImmutableSet<DriverNode>>
                     tokenRangeToReplicaMap)
@@ -226,17 +231,41 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         ImmutableSet<DriverNode> nodes = tokenRangeToReplicaMap.get(range);
         if (nodes == null && useSubRanges)
         {
-            for (Map.Entry<LongTokenRange, ImmutableSet<DriverNode>> vnode : tokenRangeToReplicaMap.entrySet())
+            NavigableMap<Long, Map.Entry<LongTokenRange, ImmutableSet<DriverNode>>> rangeIndex = getRangeIndex(tokenRangeToReplicaMap);
+            Map.Entry<Long, Map.Entry<LongTokenRange, ImmutableSet<DriverNode>>> floor = rangeIndex.floorEntry(range.start);
+            if (floor != null && floor.getValue().getKey().isCovering(range))
             {
-                if (vnode.getKey().isCovering(range))
+                nodes = floor.getValue().getValue();
+            }
+            else
+            {
+                // Handle wrap-around: the covering range may have the highest start token
+                Map.Entry<Long, Map.Entry<LongTokenRange, ImmutableSet<DriverNode>>> last = rangeIndex.lastEntry();
+                if (last != null && last.getValue().getKey().isCovering(range))
                 {
-                    nodes = vnode.getValue();
-                    break;
+                    nodes = last.getValue().getValue();
                 }
             }
         }
 
         return nodes;
+    }
+
+    private NavigableMap<Long, Map.Entry<LongTokenRange, ImmutableSet<DriverNode>>> getRangeIndex(
+            final Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicaMap)
+    {
+        if (myCachedTokenMap == tokenRangeToReplicaMap && myCachedRangeIndex != null) //NOPMD CompareObjectsWithEquals - intentional identity check for caching
+        {
+            return myCachedRangeIndex;
+        }
+        TreeMap<Long, Map.Entry<LongTokenRange, ImmutableSet<DriverNode>>> index = new TreeMap<>();
+        for (Map.Entry<LongTokenRange, ImmutableSet<DriverNode>> entry : tokenRangeToReplicaMap.entrySet())
+        {
+            index.put(entry.getKey().start, entry);
+        }
+        myCachedTokenMap = tokenRangeToReplicaMap;
+        myCachedRangeIndex = index;
+        return index;
     }
 }
 

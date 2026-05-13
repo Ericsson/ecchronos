@@ -23,9 +23,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManage
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
 import java.io.Closeable;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -347,21 +345,18 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         private boolean tryRunTasks(final ScheduledJob next, final long tickStart)
         {
             boolean hasRun = false;
-            List<ScheduledTask> tasks = new ArrayList<>();
-            next.iterator().forEachRemaining(tasks::add);
-            int total = tasks.size();
 
-            LOG.info("Starting repair of {} for node {} ({} task groups)", next, nodeID, total);
+            LOG.info("Starting repair of {} for node {}", next, nodeID);
 
             int index = 0;
-            for (ScheduledTask task : tasks)
+            for (ScheduledTask task : next)
             {
                 if (System.currentTimeMillis() - tickStart > myRunIntervalInMs)
                 {
                     break;
                 }
                 index++;
-                hasRun |= tryRunTask(next, task, index, total);
+                hasRun |= tryRunTask(next, task, index);
             }
 
             if (hasRun)
@@ -376,15 +371,14 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         private boolean tryRunTask(
                 final ScheduledJob job,
                 final ScheduledTask task,
-                final int index,
-                final int total)
+                final int index)
         {
             LOG.debug("Trying to run task {} in node {}", task, nodeID);
             LOG.debug("Trying to acquire lock for {}", task);
             try (LockFactory.DistributedLock lock = task.getLock(myLockFactory, nodeID))
             {
                 LOG.debug("Lock has been acquired on node with Id {} with lock {}", nodeID, lock);
-                boolean successful = runTask(task, index, total);
+                boolean successful = runTask(task, index);
                 job.postExecute(successful, task);
                 return true;
             }
@@ -419,12 +413,11 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
         private boolean runTask(
                 final ScheduledTask task,
-                final int index,
-                final int total)
+                final int index)
         {
             try
             {
-                LOG.debug("Running task: {} ({}/{}), for node {}", task, index, total, nodeID);
+                LOG.debug("Running task: {} ({}), for node {}", task, index, nodeID);
                 return task.execute(nodeID);
             }
             catch (Exception e)

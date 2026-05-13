@@ -35,11 +35,11 @@ import javax.management.remote.JMXConnectionNotification;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -71,8 +71,8 @@ public abstract class RepairTask implements NotificationListener // NOPMD Possib
     private volatile int myCommand;
     private volatile boolean myCommandReady = false;
     private final List<Notification> myPendingNotifications = Collections.synchronizedList(new ArrayList<>());
-    private volatile Set<LongTokenRange> myFailedRanges = new HashSet<>();
-    private volatile Set<LongTokenRange> mySuccessfulRanges = new HashSet<>();
+    private final Set<LongTokenRange> myFailedRanges = ConcurrentHashMap.newKeySet();
+    private final Set<LongTokenRange> mySuccessfulRanges = ConcurrentHashMap.newKeySet();
 
     /**
      * Constructs a RepairTask for the specified node and table with the given repair configuration and metrics.
@@ -267,7 +267,7 @@ public abstract class RepairTask implements NotificationListener // NOPMD Possib
      */
     public void cleanup()
     {
-        myExecutor.shutdown();
+        myExecutor.shutdownNow();
     }
 
     /**

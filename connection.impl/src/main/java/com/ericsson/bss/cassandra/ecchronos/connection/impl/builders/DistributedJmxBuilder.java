@@ -59,6 +59,7 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
     private static final Integer JMX_JOLOKIA_CONNECTION_TIMEOUT = 20;
     private static final int DEFAULT_JOLOKIA_PORT = 8778;
     private static final int DEFAULT_PORT = 7199;
+    private static final int MAX_PARALLEL_CONNECTIONS = 10;
     public static final String NO_BROADCAST_ADDRESS = "0.0.0.0"; //NOPMD AvoidUsingHardCodedIP
     public static final String JOLOKIA_CA_CERTIFICATE_PROPERTY = "jolokia.caCertificate";
     public static final String JOLOKIA_CLIENT_CERTIFICATE_PROPERTY = "jolokia.clientCertificate";
@@ -184,17 +185,41 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
 
     private void createConnections() throws IOException
     {
-        for (Node node : myNativeConnectionProvider.getNodes().values())
+        Map<UUID, Node> nodes = myNativeConnectionProvider.getNodes();
+        ExecutorService pool = Executors.newFixedThreadPool(Math.min(nodes.size(), MAX_PARALLEL_CONNECTIONS));
+        try
         {
-            LOG.info("Creating connection with node {}", node.getHostId());
+            for (Node node : nodes.values())
+            {
+                pool.submit(() ->
+                {
+                    LOG.info("Creating connection with node {}", node.getHostId());
+                    try
+                    {
+                        reconnect(node);
+                        LOG.info("Connection created with success");
+                    }
+                    catch (EcChronosException e)
+                    {
+                        LOG.info("Unable to connect with node {} connection refused", node.getHostId(), e);
+                    }
+                });
+            }
+        }
+        finally
+        {
+            pool.shutdown();
             try
             {
-                reconnect(node);
-                LOG.info("Connection created with success");
+                if (!pool.awaitTermination(JMX_JOLOKIA_CONNECTION_TIMEOUT + MAX_PARALLEL_CONNECTIONS, TimeUnit.SECONDS))
+                {
+                    pool.shutdownNow();
+                }
             }
-            catch (EcChronosException e)
+            catch (InterruptedException e)
             {
-                LOG.info("Unable to connect with node {} connection refused", node.getHostId(), e);
+                pool.shutdownNow();
+                Thread.currentThread().interrupt();
             }
         }
     }
