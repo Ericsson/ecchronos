@@ -55,6 +55,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
     private final Map<UUID, ScheduledJobQueue> myQueue = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, ScheduledJob> currentExecutingJobs = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<ScheduledJob, Long> myContentionBackoff = new ConcurrentHashMap<>();
     private final Set<RunPolicy> myRunPolicies = Sets.newConcurrentHashSet();
     private final Map<UUID, ScheduledFuture<?>> myRunFuture = new ConcurrentHashMap<>();
     private final Map<UUID, JobRunTask> myRunTasks = new ConcurrentHashMap<>();
@@ -174,6 +175,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         {
             queue.remove(job);
         }
+        myContentionBackoff.remove(job);
     }
 
     @Override
@@ -202,6 +204,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         myRunTasks.clear();
         myQueue.clear();
         currentExecutingJobs.clear();
+        myContentionBackoff.clear();
         myRunPolicies.clear();
     }
 
@@ -307,6 +310,15 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 {
                     break;
                 }
+                Long backoffUntil = myContentionBackoff.get(next);
+                if (backoffUntil != null)
+                {
+                    if (System.currentTimeMillis() < backoffUntil)
+                    {
+                        continue;
+                    }
+                    myContentionBackoff.remove(next);
+                }
                 if (validate(next))
                 {
                     currentExecutingJobs.put(nodeID, next);
@@ -383,7 +395,8 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 {
                     LOG.warn("Unable to get schedule lock on task {} in node {}", task, nodeID, e);
                 }
-                job.setRunnableIn(ThreadLocalRandom.current().nextLong(myRunIntervalInMs, myRunIntervalInMs * JITTER_NUMBER));
+                myContentionBackoff.put(job, System.currentTimeMillis()
+                        + ThreadLocalRandom.current().nextLong(myRunIntervalInMs, myRunIntervalInMs * JITTER_NUMBER));
                 return false;
             }
             catch (Exception e)
@@ -392,7 +405,8 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 {
                     LOG.warn("Unable to get schedule lock on task {} in node {}", task, nodeID, e);
                 }
-                job.setRunnableIn(ThreadLocalRandom.current().nextLong(myRunIntervalInMs, myRunIntervalInMs * JITTER_NUMBER));
+                myContentionBackoff.put(job, System.currentTimeMillis()
+                        + ThreadLocalRandom.current().nextLong(myRunIntervalInMs, myRunIntervalInMs * JITTER_NUMBER));
                 return false;
             }
         }
