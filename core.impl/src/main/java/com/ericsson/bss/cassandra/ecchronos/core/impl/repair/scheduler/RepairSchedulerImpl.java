@@ -17,9 +17,6 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairJob;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.AlarmPostUpdateHook;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TableRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
@@ -28,7 +25,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManage
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
-import com.ericsson.bss.cassandra.ecchronos.core.state.RepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairStateFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
@@ -37,7 +33,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHistoryService;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
-import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.Closeable;
 
@@ -65,7 +60,6 @@ import javax.management.RuntimeMBeanException;
 /**
  * Class used to construct repair scheduler.
  */
-@SuppressWarnings("PMD.GodClass")
 public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 {
     private static final int DEFAULT_TERMINATION_WAIT_IN_SECONDS = 10;
@@ -76,18 +70,8 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
     private final java.util.concurrent.locks.ReadWriteLock myLock = new java.util.concurrent.locks.ReentrantReadWriteLock();
 
     private final ExecutorService myExecutor;
-    private final TableRepairMetrics myTableRepairMetrics;
-    private final RepairHistoryService myRepairHistoryService;
-    private final RepairFaultReporter myFaultReporter;
-    private final DistributedJmxProxyFactory myJmxProxyFactory;
     private final ScheduleManager myScheduleManager;
-    private final RepairStateFactory myRepairStateFactory;
-    private final ReplicationState myReplicationState;
-    private final CassandraMetrics myCassandraMetrics;
-    private final List<TableRepairPolicy> myRepairPolicies;
-    private final TableStorageStates myTableStorageStates;
-    private final RepairLockType myRepairLockType;
-    private final TimeBasedRunPolicy myTimeBasedRunPolicy;
+    private final ScheduledRepairJobFactory myJobFactory;
 
     private Set<ScheduledRepairJob> validateScheduleMap(final UUID nodeID, final TableReference tableReference)
     {
@@ -110,18 +94,20 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
     {
         myExecutor = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder().setNameFormat("RepairScheduler-%d").build());
-        myFaultReporter = builder.myFaultReporter;
-        myTableRepairMetrics = builder.myTableRepairMetrics;
-        myJmxProxyFactory = builder.myJmxProxyFactory;
         myScheduleManager = builder.myScheduleManager;
-        myRepairStateFactory = builder.myRepairStateFactory;
-        myReplicationState = builder.myReplicationState;
-        myRepairPolicies = new ArrayList<>(builder.myRepairPolicies);
-        myCassandraMetrics = builder.myCassandraMetrics;
-        myRepairHistoryService = builder.myRepairHistoryService;
-        myTableStorageStates = builder.myTableStorageStates;
-        myRepairLockType = builder.myRepairLockType;
-        myTimeBasedRunPolicy = builder.myTimeBasedRunPolicy;
+        myJobFactory = ScheduledRepairJobFactory.builder()
+                .withTableRepairMetrics(builder.myTableRepairMetrics)
+                .withRepairHistoryService(builder.myRepairHistoryService)
+                .withFaultReporter(builder.myFaultReporter)
+                .withJmxProxyFactory(builder.myJmxProxyFactory)
+                .withRepairStateFactory(builder.myRepairStateFactory)
+                .withReplicationState(builder.myReplicationState)
+                .withCassandraMetrics(builder.myCassandraMetrics)
+                .withRepairPolicies(builder.myRepairPolicies)
+                .withTableStorageStates(builder.myTableStorageStates)
+                .withRepairLockType(builder.myRepairLockType)
+                .withTimeBasedRunPolicy(builder.myTimeBasedRunPolicy)
+                .build();
     }
 
     @Override
@@ -232,7 +218,8 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         myLock.writeLock().lock();
         try
         {
-            if (configurationHasChanged(node, tableReference, repairConfigurations))
+            Set<ScheduledRepairJob> jobs = validateScheduleMap(node.getHostId(), tableReference);
+            if (RepairConfigurationComparator.hasChanged(jobs, repairConfigurations))
             {
                 LOG.info("Creating schedule for table {} in node {}", tableReference, node.getHostId());
                 createTableSchedule(node, tableReference, repairConfigurations);
@@ -267,37 +254,6 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         }
     }
 
-    private boolean configurationHasChanged(
-            final Node node,
-            final TableReference tableReference,
-            final Set<RepairConfiguration> repairConfigurations)
-    {
-        Set<ScheduledRepairJob> jobs = validateScheduleMap(node.getHostId(), tableReference);
-        if (repairConfigurations == null || repairConfigurations.isEmpty())
-        {
-            return false;
-        }
-
-        if (jobs == null || jobs.isEmpty())
-        {
-            return true;
-        }
-
-        int matching = 0;
-
-        for (ScheduledRepairJob job : jobs)
-        {
-            for (RepairConfiguration repairConfiguration : repairConfigurations)
-            {
-                if (job.getRepairConfiguration().equals(repairConfiguration))
-                {
-                    matching++;
-                }
-            }
-        }
-        return matching != repairConfigurations.size();
-    }
-
     private void createTableSchedule(
             final Node node,
             final TableReference tableReference,
@@ -319,7 +275,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         Set<ScheduledRepairJob> newJobs = new HashSet<>();
         for (RepairConfiguration repairConfiguration : repairConfigurations)
         {
-            ScheduledRepairJob job = createScheduledRepairJob(node, tableReference, repairConfiguration);
+            ScheduledRepairJob job = myJobFactory.create(node, tableReference, repairConfiguration);
             newJobs.add(job);
             myScheduleManager.schedule(node.getHostId(), job);
         }
@@ -395,61 +351,6 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         {
             myScheduleManager.deschedule(nodeID, job);
         }
-    }
-
-    private ScheduledRepairJob createScheduledRepairJob(
-            final Node node,
-            final TableReference tableReference,
-            final RepairConfiguration repairConfiguration)
-    {
-        ScheduledJob.Configuration configuration = new ScheduledJob.ConfigurationBuilder()
-                .withPriority(ScheduledJob.Priority.LOW)
-                .withRunInterval(repairConfiguration.getRepairIntervalInMs(), TimeUnit.MILLISECONDS)
-                .withBackoff(repairConfiguration.getBackoffInMs(), TimeUnit.MILLISECONDS)
-                .withPriorityGranularity(repairConfiguration.getPriorityGranularityUnit())
-                .build();
-        ScheduledRepairJob job;
-        if (repairConfiguration.getRepairType().equals(RepairType.INCREMENTAL))
-        {
-            LOG.info("Creating IncrementalRepairJob for node {}", node.getHostId());
-            job = new IncrementalRepairJob.Builder()
-                    .withConfiguration(configuration)
-                    .withNode(node)
-                    .withJmxProxyFactory(myJmxProxyFactory)
-                    .withTableReference(tableReference)
-                    .withRepairConfiguration(repairConfiguration)
-                    .withTableRepairMetrics(myTableRepairMetrics)
-                    .withCassandraMetrics(myCassandraMetrics)
-                    .withReplicationState(myReplicationState)
-                    .withRepairPolices(myRepairPolicies)
-                    .withRepairLockType(myRepairLockType)
-                    .build();
-        }
-        else
-        {
-            LOG.info("Creating TableRepairJob for table {}.{} in node {}",
-                    tableReference.getKeyspace(), tableReference.getTable(), node.getHostId());
-            AlarmPostUpdateHook alarmPostUpdateHook = new AlarmPostUpdateHook(tableReference, repairConfiguration,
-                    myFaultReporter);
-            RepairState repairState = myRepairStateFactory.create(node, tableReference, repairConfiguration,
-                    alarmPostUpdateHook);
-            job = new TableRepairJob.Builder()
-                    .withConfiguration(configuration)
-                    .withJmxProxyFactory(myJmxProxyFactory)
-                    .withTableReference(tableReference)
-                    .withRepairState(repairState)
-                    .withTableRepairMetrics(myTableRepairMetrics)
-                    .withRepairConfiguration(repairConfiguration)
-                    .withTableStorageStates(myTableStorageStates)
-                    .withRepairPolices(myRepairPolicies)
-                    .withRepairHistory(myRepairHistoryService)
-                    .withRepairLockType(myRepairLockType)
-                    .withNode(node)
-                    .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
-                    .build();
-        }
-        job.refreshState();
-        return job;
     }
 
     /**
@@ -635,4 +536,3 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         }
     }
 }
-
