@@ -22,12 +22,14 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandStatus;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OngoingJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.VnodeOnDemandRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.metadata.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
+import com.ericsson.bss.cassandra.ecchronos.core.state.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
@@ -50,6 +52,7 @@ import java.util.stream.Collectors;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +60,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A factory creating {@link OnDemandRepairJob}'s for tables.
  */
+@SuppressWarnings("PMD.GodClass")
 public final class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(OnDemandRepairSchedulerImpl.class);
@@ -255,6 +259,12 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
 
     private void scheduleOngoingJob(final OngoingJob ongoingJob)
     {
+        if (isAlreadyCompleted(ongoingJob))
+        {
+            LOG.debug("Skipping already completed ongoing job: {}", ongoingJob.getJobId());
+            ongoingJob.finishJob();
+            return;
+        }
         synchronized (myLock)
         {
             OnDemandRepairJob job = getOngoingRepairJob(ongoingJob);
@@ -264,6 +274,14 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
                 myScheduleManager.schedule(ongoingJob.getHostId(), job);
             }
         }
+    }
+
+    private boolean isAlreadyCompleted(final OngoingJob ongoingJob)
+    {
+        Map<LongTokenRange, ImmutableSet<DriverNode>> tokens = ongoingJob.getTokens();
+        Set<LongTokenRange> repairedTokens = ongoingJob.getRepairedTokens();
+        return tokens != null && !tokens.isEmpty()
+                && repairedTokens != null && repairedTokens.containsAll(tokens.keySet());
     }
 
     public List<OnDemandRepairJobView> getActiveRepairJobs()
