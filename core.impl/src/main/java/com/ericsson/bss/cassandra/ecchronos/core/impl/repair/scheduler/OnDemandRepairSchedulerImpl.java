@@ -16,20 +16,15 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.IncrementalOnDemandRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandStatus;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OngoingJob;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.VnodeOnDemandRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.metadata.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
-import com.ericsson.bss.cassandra.ecchronos.core.state.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
@@ -40,75 +35,68 @@ import java.io.Closeable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A factory creating {@link OnDemandRepairJob}'s for tables.
  */
-@SuppressWarnings("PMD.GodClass")
 public final class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Closeable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(OnDemandRepairSchedulerImpl.class);
-    private static final int ONGOING_JOBS_PERIOD_SECONDS = 10;
 
     private final Map<UUID, OnDemandRepairJob> myScheduledJobs = new HashMap<>();
     private final Object myLock = new Object();
 
-    private final DistributedJmxProxyFactory myJmxProxyFactory;
-    private final TableRepairMetrics myTableRepairMetrics;
     private final ScheduleManager myScheduleManager;
-    private final ReplicationState myReplicationState;
-    private final RepairLockType myRepairLockType;
     private final CqlSession mySession;
-    private final RepairConfiguration myRepairConfiguration;
-    private final RepairHistory myRepairHistory;
     private final OnDemandStatus myOnDemandStatus;
+    private final ReplicationState myReplicationState;
+    private final RepairConfiguration myRepairConfiguration;
+    private final OnDemandRepairJobFactory myJobFactory;
+    private final OnDemandJobPoller myPoller;
     private final Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
-
-    private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(
-            new ThreadFactoryBuilder().setNameFormat("OngoingJobsScheduler-%d").build());
 
     private OnDemandRepairSchedulerImpl(final Builder builder)
     {
-        myJmxProxyFactory = builder.myJmxProxyFactory;
-        myTableRepairMetrics = builder.myTableRepairMetrics;
         myScheduleManager = builder.myScheduleManager;
-        myReplicationState = builder.myReplicationState;
-        myRepairLockType = builder.repairLockType;
         mySession = builder.session;
-        myRepairConfiguration = builder.repairConfiguration;
-        myRepairHistory = builder.repairHistory;
         myOnDemandStatus = builder.onDemandStatus;
-        myExecutor.scheduleAtFixedRate(() -> getOngoingStartedJobsForAllNodes(), 0, ONGOING_JOBS_PERIOD_SECONDS, TimeUnit.SECONDS);
+        myReplicationState = builder.myReplicationState;
+        myRepairConfiguration = builder.repairConfiguration;
         myRepairConfigurationFunction = builder.myRepairConfigurationFunction;
+
+        myJobFactory = OnDemandRepairJobFactory.builder()
+                .withJmxProxyFactory(builder.myJmxProxyFactory)
+                .withTableRepairMetrics(builder.myTableRepairMetrics)
+                .withReplicationState(builder.myReplicationState)
+                .withRepairLockType(builder.repairLockType)
+                .withRepairHistory(builder.repairHistory)
+                .withRepairConfiguration(builder.repairConfiguration)
+                .withOnDemandStatus(builder.onDemandStatus)
+                .withOnFinishedHook(this::removeScheduledJob)
+                .build();
+
+        myPoller = OnDemandJobPoller.builder()
+                .withOnDemandStatus(builder.onDemandStatus)
+                .withReplicationState(builder.myReplicationState)
+                .withScheduleManager(builder.myScheduleManager)
+                .withJobFactory(myJobFactory)
+                .withTryAddJob(this::tryAddJob)
+                .withRemoveFinishedJobs(this::removeFinishedJobs)
+                .build();
     }
 
-    private void getOngoingStartedJobsForAllNodes()
+    private Boolean tryAddJob(final OnDemandRepairJob job)
     {
-        try
+        synchronized (myLock)
         {
-            removeFinishedJobs();
-            Map<UUID, Set<OngoingJob>> allOngoingJobs = myOnDemandStatus.getOngoingStartedJobsForAllNodes(myReplicationState);
-            allOngoingJobs.values().forEach(jobs -> jobs.forEach(this::scheduleOngoingJob));
-        }
-        catch (Exception e)
-        {
-            logFailureMessage(e);
+            return myScheduledJobs.putIfAbsent(job.getJobId(), job) == null;
         }
     }
 
@@ -124,11 +112,6 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         }
     }
 
-    private static void logFailureMessage(final Exception e)
-    {
-        LOG.warn("Failed to get ongoing on demand jobs, automatic retry in {}s", ONGOING_JOBS_PERIOD_SECONDS, e);
-    }
-
     /**
      * Retrieves and schedules ongoing on-demand repair jobs for a specific host.
      *
@@ -136,15 +119,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
      */
     public void scheduleOngoingJobs(final UUID hostId)
     {
-        try
-        {
-            Set<OngoingJob> ongoingJobs = myOnDemandStatus.getOngoingJobs(myReplicationState, hostId);
-            ongoingJobs.forEach(this::scheduleOngoingJob);
-        }
-        catch (Exception e)
-        {
-            logFailureMessage(e);
-        }
+        myPoller.scheduleOngoingJobs(hostId);
     }
 
     /**
@@ -153,6 +128,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
     @Override
     public void close()
     {
+        myPoller.close();
         synchronized (myLock)
         {
             for (OnDemandRepairJob job : myScheduledJobs.values())
@@ -160,19 +136,6 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
                 descheduleTable(job);
             }
             myScheduledJobs.clear();
-            myExecutor.shutdown();
-        }
-        try
-        {
-            if (!myExecutor.awaitTermination(ONGOING_JOBS_PERIOD_SECONDS, TimeUnit.SECONDS))
-            {
-                myExecutor.shutdownNow();
-            }
-        }
-        catch (InterruptedException e)
-        {
-            myExecutor.shutdownNow();
-            Thread.currentThread().interrupt();
         }
     }
 
@@ -191,9 +154,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         {
             scheduleJob(tableReference, true, repairType, node.getHostId());
         }
-        List<OnDemandRepairJobView> jobViews = getAllClusterWideRepairJobs().stream()
-                .collect(Collectors.toList());
-        return jobViews;
+        return getAllClusterWideRepairJobs().stream().collect(Collectors.toList());
     }
 
     /**
@@ -219,12 +180,13 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         synchronized (myLock)
         {
             validateTableReference(tableReference);
-            OnDemandRepairJob job = getRepairJob(tableReference, isClusterWide, repairType, nodeId);
+            OnDemandRepairJob job = myJobFactory.createNewJob(tableReference, isClusterWide, repairType, nodeId);
             myScheduledJobs.put(job.getJobId(), job);
             myScheduleManager.schedule(nodeId, job);
             return job.getView();
         }
     }
+
     @Override
     public boolean checkTableEnabled(final TableReference tableReference, final boolean forceRepairDisabled)
     {
@@ -257,33 +219,6 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         }
     }
 
-    private void scheduleOngoingJob(final OngoingJob ongoingJob)
-    {
-        if (isAlreadyCompleted(ongoingJob))
-        {
-            LOG.debug("Skipping already completed ongoing job: {}", ongoingJob.getJobId());
-            ongoingJob.finishJob();
-            return;
-        }
-        synchronized (myLock)
-        {
-            OnDemandRepairJob job = getOngoingRepairJob(ongoingJob);
-            if (myScheduledJobs.putIfAbsent(job.getJobId(), job) == null)
-            {
-                LOG.info("Scheduling ongoing job: {}", job.getJobId());
-                myScheduleManager.schedule(ongoingJob.getHostId(), job);
-            }
-        }
-    }
-
-    private boolean isAlreadyCompleted(final OngoingJob ongoingJob)
-    {
-        Map<LongTokenRange, ImmutableSet<DriverNode>> tokens = ongoingJob.getTokens();
-        Set<LongTokenRange> repairedTokens = ongoingJob.getRepairedTokens();
-        return tokens != null && !tokens.isEmpty()
-                && repairedTokens != null && repairedTokens.containsAll(tokens.keySet());
-    }
-
     public List<OnDemandRepairJobView> getActiveRepairJobs()
     {
         synchronized (myLock)
@@ -305,7 +240,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
     {
         return myOnDemandStatus.getAllClusterWideJobs()
                 .stream()
-                .map(this::getOngoingRepairJob)
+                .map(myJobFactory::createFromOngoingJob)
                 .map(OnDemandRepairJob::getView)
                 .collect(Collectors.toList());
     }
@@ -320,7 +255,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
     {
         return myOnDemandStatus.getAllJobs(myReplicationState, hostId)
                 .stream()
-                .map(this::getOngoingRepairJob)
+                .map(myJobFactory::createFromOngoingJob)
                 .map(OnDemandRepairJob::getView)
                 .collect(Collectors.toList());
     }
@@ -345,98 +280,11 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         }
     }
 
-    private OnDemandRepairJob getRepairJob(final TableReference tableReference,
-                                           final boolean isClusterWide,
-                                           final RepairType repairType,
-                                           final UUID hostId)
-    {
-        OngoingJob ongoingJob = createOngoingJob(tableReference, repairType, hostId);
-        if (isClusterWide)
-        {
-            ongoingJob.startClusterWideJob(repairType);
-        }
-        return getOngoingRepairJob(ongoingJob);
-    }
-
-    private OngoingJob createOngoingJob(final TableReference tableReference,
-                                        final RepairType repairType,
-                                        final UUID hostId)
-    {
-        return new OngoingJob.Builder()
-                .withOnDemandStatus(myOnDemandStatus)
-                .withTableReference(tableReference)
-                .withReplicationState(myReplicationState)
-                .withHostId(hostId)
-                .withRepairType(repairType)
-                .build();
-    }
-
-    private OnDemandRepairJob getOngoingRepairJob(final OngoingJob ongoingJob)
-    {
-        OnDemandRepairJob job;
-        Node node = getNodeByHostId(ongoingJob.getHostId());
-
-        RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder(myRepairConfiguration)
-                .withRepairType(ongoingJob.getRepairType())
-                .build();
-        if (ongoingJob.getRepairType().equals(RepairType.INCREMENTAL))
-        {
-            job = buildIncrementalOnDemandRepairJob(ongoingJob, repairConfiguration, node);
-        }
-        else
-        {
-            job = buildVnodeOnDemandRepairJob(ongoingJob, repairConfiguration, node);
-        }
-        return job;
-    }
-
-    private VnodeOnDemandRepairJob buildVnodeOnDemandRepairJob(final OngoingJob ongoingJob,
-                                                               final RepairConfiguration repairConfiguration,
-                                                               final Node node)
-    {
-        return new VnodeOnDemandRepairJob.Builder()
-                .withJmxProxyFactory(myJmxProxyFactory)
-                .withTableRepairMetrics(myTableRepairMetrics)
-                .withRepairLockType(myRepairLockType)
-                .withOnFinished(id -> removeScheduledJob(id, ongoingJob.getHostId()))
-                .withRepairConfiguration(repairConfiguration)
-                .withRepairHistory(myRepairHistory)
-                .withOngoingJob(ongoingJob)
-                .withNode(node)
-                .build();
-    }
-
-    private IncrementalOnDemandRepairJob buildIncrementalOnDemandRepairJob(final OngoingJob ongoingJob,
-                                                                           final RepairConfiguration repairConfiguration,
-                                                                           final Node node)
-    {
-        return new IncrementalOnDemandRepairJob.Builder()
-                .withJmxProxyFactory(myJmxProxyFactory)
-                .withTableRepairMetrics(myTableRepairMetrics)
-                .withRepairLockType(myRepairLockType)
-                .withOnFinished(id -> removeScheduledJob(id, ongoingJob.getHostId()))
-                .withRepairConfiguration(repairConfiguration)
-                .withReplicationState(myReplicationState)
-                .withOngoingJob(ongoingJob)
-                .withNode(node)
-                .build();
-    }
-
-    private Node getNodeByHostId(final UUID hostId)
-    {
-        Node node = myOnDemandStatus.getNodes().get(hostId);
-        if (node == null)
-        {
-            throw new NoSuchElementException("No node found with host ID: " + hostId);
-        }
-        return node;
-    }
     @Override
     public RepairConfiguration getRepairConfiguration()
     {
         return myRepairConfiguration;
     }
-
 
     public static Builder builder()
     {
@@ -551,6 +399,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
             this.repairHistory = theRepairHistory;
             return this;
         }
+
         /**
          * Build on demand repair scheduler with repair configuration function.
          *
