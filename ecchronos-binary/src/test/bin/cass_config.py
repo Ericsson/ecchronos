@@ -248,21 +248,43 @@ class CassandraCluster:
     def _verify_keyspace_exists(self, keyspace_name):
         """Verify that a keyspace exists and is available on all nodes"""
         max_attempts = 30
+        last_returncode = None
+        last_stdout = ""
+        last_stderr = ""
+
         for attempt in range(max_attempts):
             try:
                 command = ["docker", "exec", self.container_id, "cqlsh", "-e", f"DESCRIBE KEYSPACE {keyspace_name};"]
                 result = subprocess.run(
                     command, timeout=10, encoding="utf-8", stdout=subprocess.PIPE, stderr=subprocess.PIPE
                 )
+
+                last_returncode = result.returncode
+                last_stdout = result.stdout.strip()
+                last_stderr = result.stderr.strip()
+
                 if result.returncode == 0 and keyspace_name in result.stdout:
                     logger.info(f"Keyspace {keyspace_name} verified on attempt {attempt + 1}")
                     return
+
+                logger.warning(
+                    f"Attempt {attempt + 1} to verify keyspace {keyspace_name} failed "
+                    f"with return code {result.returncode}. stderr: {last_stderr}"
+                )
             except Exception as e:
+                last_stderr = str(e)
                 logger.warning(f"Attempt {attempt + 1} to verify keyspace {keyspace_name} failed: {e}")
 
             sleep(2)
 
-        raise TimeoutError(f"Keyspace {keyspace_name} not available after {max_attempts} attempts")
+        raise TimeoutError(
+            f"Keyspace {keyspace_name} not available after {max_attempts} attempts. "
+            f"Last return code: {last_returncode}. "
+            f"Last stderr: {last_stderr}. "
+            f"Last stdout: {last_stdout}. "
+            "Cassandra may be running, but the ecChronos keyspace was not available "
+            "before the integration test continued."
+        )
 
     def _modify_system_auth_keyspace(self):
         logger.info("Changing system_auth replication strategy")
