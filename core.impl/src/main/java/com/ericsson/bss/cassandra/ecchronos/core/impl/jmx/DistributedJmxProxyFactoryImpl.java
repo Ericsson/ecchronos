@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 import javax.management.ObjectName;
 import java.io.IOException;
 
@@ -112,6 +114,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
         private final ObjectName myStorageServiceObject;
         private final ObjectName myRepairServiceObject;
         private final JolokiaNotificationController myJolokiaNotificationController;
+        private final ConcurrentHashMap<UUID, ReentrantLock> myNodeLocks = new ConcurrentHashMap<>();
 
         private InternalDistributedJmxProxy(
                 final DistributedJmxConnectionProvider distributedJmxConnectionProvider,
@@ -127,6 +130,11 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
             myRepairServiceObject = new ObjectName(RS_OBJ_NAME);
             isJolokiaEnabled = jolokiaEnabled;
             myJolokiaNotificationController = jolokiaNotificationController;
+        }
+
+        private ReentrantLock getNodeLock(final UUID nodeID)
+        {
+            return myNodeLocks.computeIfAbsent(nodeID, id -> new ReentrantLock());
         }
 
         @Override
@@ -152,7 +160,16 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                     }
                     else
                     {
-                        nodeConnection.getMBeanServerConnection().addNotificationListener(myStorageServiceObject, listener, null, null);
+                        ReentrantLock lock = getNodeLock(nodeID);
+                        lock.lock();
+                        try
+                        {
+                            nodeConnection.getMBeanServerConnection().addNotificationListener(myStorageServiceObject, listener, null, null);
+                        }
+                        finally
+                        {
+                            lock.unlock();
+                        }
                     }
                 }
                 catch (InstanceNotFoundException | IOException | InterruptedException e)
@@ -191,10 +208,19 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
             {
                 try
                 {
-                    return (List<String>) nodeConnection
-                            .getMBeanServerConnection()
-                            .getAttribute(myStorageServiceObject,
-                                    LIVE_NODES_ATTRIBUTE);
+                    ReentrantLock lock = getNodeLock(nodeIdConnection);
+                    lock.lock();
+                    try
+                    {
+                        return (List<String>) nodeConnection
+                                .getMBeanServerConnection()
+                                .getAttribute(myStorageServiceObject,
+                                        LIVE_NODES_ATTRIBUTE);
+                    }
+                    finally
+                    {
+                        lock.unlock();
+                    }
                 }
                 catch (InstanceNotFoundException
                        | MBeanException
@@ -236,10 +262,19 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
             {
                 try
                 {
-                    return (List<String>) nodeConnection
-                            .getMBeanServerConnection()
-                            .getAttribute(myStorageServiceObject,
-                                    UNREACHABLE_NODES_ATTRIBUTE);
+                    ReentrantLock lock = getNodeLock(nodeIdConnection);
+                    lock.lock();
+                    try
+                    {
+                        return (List<String>) nodeConnection
+                                .getMBeanServerConnection()
+                                .getAttribute(myStorageServiceObject,
+                                        UNREACHABLE_NODES_ATTRIBUTE);
+                    }
+                    finally
+                    {
+                        lock.unlock();
+                    }
                 }
                 catch (InstanceNotFoundException
                        | MBeanException
@@ -271,17 +306,27 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
             {
                 try
                 {
-                    Object result = nodeConnection
-                            .getMBeanServerConnection().invoke(myStorageServiceObject,
-                                    REPAIR_ASYNC_METHOD,
-                                    new Object[]
-                                            {
-                                                    keyspace, options
-                                            },
-                                    new String[]
-                                            {
-                                                    String.class.getName(), Map.class.getName()
-                                            });
+                    ReentrantLock lock = getNodeLock(nodeID);
+                    lock.lock();
+                    Object result;
+                    try
+                    {
+                        result = nodeConnection
+                                .getMBeanServerConnection().invoke(myStorageServiceObject,
+                                        REPAIR_ASYNC_METHOD,
+                                        new Object[]
+                                                {
+                                                        keyspace, options
+                                                },
+                                        new String[]
+                                                {
+                                                        String.class.getName(), Map.class.getName()
+                                                });
+                    }
+                    finally
+                    {
+                        lock.unlock();
+                    }
                     LOG.debug("JMXRepair called for {} with options {}", keyspace, options);
                     // Handle both Integer and Long return types from Jolokia
                     if (result instanceof Number)
@@ -331,10 +376,19 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
             {
                 try
                 {
-                    nodeConnection
-                            .getMBeanServerConnection().invoke(myStorageServiceObject,
-                                    FORCE_TERMINATE_ALL_REPAIR_SESSIONS_METHOD,
-                                    null, null);
+                    ReentrantLock lock = getNodeLock(nodeID);
+                    lock.lock();
+                    try
+                    {
+                        nodeConnection
+                                .getMBeanServerConnection().invoke(myStorageServiceObject,
+                                        FORCE_TERMINATE_ALL_REPAIR_SESSIONS_METHOD,
+                                        null, null);
+                    }
+                    finally
+                    {
+                        lock.unlock();
+                    }
                 }
                 catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException | UncheckedJmxAdapterException e)
                 {
@@ -375,7 +429,16 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                     }
                     else
                     {
-                        nodeConnection.getMBeanServerConnection().removeNotificationListener(myStorageServiceObject, listener);
+                        ReentrantLock lock = getNodeLock(nodeID);
+                        lock.lock();
+                        try
+                        {
+                            nodeConnection.getMBeanServerConnection().removeNotificationListener(myStorageServiceObject, listener);
+                        }
+                        finally
+                        {
+                            lock.unlock();
+                        }
                     }
 
                 }
@@ -417,8 +480,18 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                             .format("org.apache.cassandra.metrics:type=Table,keyspace=%s,scope=%s,name=LiveDiskSpaceUsed",
                                     tableReference.getKeyspace(), tableReference.getTable()));
 
-                    Object result = nodeConnection
-                            .getMBeanServerConnection().getAttribute(objectName, "Count");
+                    ReentrantLock lock = getNodeLock(nodeID);
+                    lock.lock();
+                    Object result;
+                    try
+                    {
+                        result = nodeConnection
+                                .getMBeanServerConnection().getAttribute(objectName, "Count");
+                    }
+                    finally
+                    {
+                        lock.unlock();
+                    }
                     if (result instanceof Number)
                     {
                         return ((Number) result).longValue();
@@ -485,7 +558,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
 
             try
             {
-                Object result = invokeRepairStats(nodeConnection, tableReference);
+                Object result = invokeRepairStats(nodeID, nodeConnection, tableReference);
                 return extractMaxRepairedValue(result);
             }
             catch (MBeanException | ReflectionException | IOException | UncheckedJmxAdapterException e)
@@ -510,16 +583,25 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
             return 0;
         }
 
-        private Object invokeRepairStats(final JMXConnector nodeConnection, final TableReference tableReference)
+        private Object invokeRepairStats(final UUID nodeID, final JMXConnector nodeConnection, final TableReference tableReference)
                 throws InstanceNotFoundException, MBeanException, ReflectionException, IOException
         {
             List<String> args = new ArrayList<>();
             args.add(tableReference.getKeyspace());
             args.add(tableReference.getTable());
-            return nodeConnection.getMBeanServerConnection().invoke(
-                    myRepairServiceObject, REPAIR_STATS_METHOD,
-                    new Object[]{args, null},
-                    new String[]{List.class.getName(), String.class.getName()});
+            ReentrantLock lock = getNodeLock(nodeID);
+            lock.lock();
+            try
+            {
+                return nodeConnection.getMBeanServerConnection().invoke(
+                        myRepairServiceObject, REPAIR_STATS_METHOD,
+                        new Object[]{args, null},
+                        new String[]{List.class.getName(), String.class.getName()});
+            }
+            finally
+            {
+                lock.unlock();
+            }
         }
 
         @SuppressWarnings("unchecked")
@@ -601,8 +683,18 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                             .format("org.apache.cassandra.metrics:type=Table,keyspace=%s,scope=%s,name=PercentRepaired",
                                     tableReference.getKeyspace(), tableReference.getTable()));
 
-                    Object result = nodeConnection
-                            .getMBeanServerConnection().getAttribute(objectName, "Value");
+                    ReentrantLock lock = getNodeLock(nodeID);
+                    lock.lock();
+                    Object result;
+                    try
+                    {
+                        result = nodeConnection
+                                .getMBeanServerConnection().getAttribute(objectName, "Value");
+                    }
+                    finally
+                    {
+                        lock.unlock();
+                    }
                     // Handle different numeric types that Jolokia might return
                     if (result instanceof Number)
                     {
@@ -661,8 +753,17 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
             {
                 try
                 {
-                    return (String) nodeConnection
-                            .getMBeanServerConnection().getAttribute(myStorageServiceObject, "OperationMode");
+                    ReentrantLock lock = getNodeLock(nodeID);
+                    lock.lock();
+                    try
+                    {
+                        return (String) nodeConnection
+                                .getMBeanServerConnection().getAttribute(myStorageServiceObject, "OperationMode");
+                    }
+                    finally
+                    {
+                        lock.unlock();
+                    }
                 }
                 catch (InstanceNotFoundException
                        | AttributeNotFoundException
@@ -691,13 +792,23 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
             {
                 try
                 {
+                    ReentrantLock lock = getNodeLock(nodeID);
+                    lock.lock();
                     @SuppressWarnings("unchecked")
-                    List<String> status = (List<String>) nodeConnection
-                            .getMBeanServerConnection().invoke(
-                                    myStorageServiceObject,
-                                    "getParentRepairStatus",
-                                    new Object[]{command},
-                                    new String[]{int.class.getName()});
+                    List<String> status;
+                    try
+                    {
+                        status = (List<String>) nodeConnection
+                                .getMBeanServerConnection().invoke(
+                                        myStorageServiceObject,
+                                        "getParentRepairStatus",
+                                        new Object[]{command},
+                                        new String[]{int.class.getName()});
+                    }
+                    finally
+                    {
+                        lock.unlock();
+                    }
 
                     LOG.debug("Parent repair session {} status on node {}: {}", command, nodeID, status);
 
