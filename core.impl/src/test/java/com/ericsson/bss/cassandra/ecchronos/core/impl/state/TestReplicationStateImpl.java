@@ -37,12 +37,14 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 
 import static com.ericsson.bss.cassandra.ecchronos.core.impl.table.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -100,6 +102,11 @@ public class TestReplicationStateImpl
         when(mockReplica2.getBroadcastAddress()).thenReturn(Optional.of(address22));
         when(mockReplica3.getBroadcastAddress()).thenReturn(Optional.of(address33));
         when(mockReplica4.getBroadcastAddress()).thenReturn(Optional.of(address44));
+
+        when(mockReplica1.getHostId()).thenReturn(UUID.fromString("00000000-0000-0000-0000-000000000001"));
+        when(mockReplica2.getHostId()).thenReturn(UUID.fromString("00000000-0000-0000-0000-000000000002"));
+        lenient().when(mockReplica3.getHostId()).thenReturn(UUID.fromString("00000000-0000-0000-0000-000000000003"));
+        lenient().when(mockReplica4.getHostId()).thenReturn(UUID.fromString("00000000-0000-0000-0000-000000000004"));
 
         when(mockNodeResolver.fromIp(eq(address1))).thenReturn(Optional.of(mockNode1));
         when(mockNodeResolver.fromIp(eq(address2))).thenReturn(Optional.of(mockNode2));
@@ -404,5 +411,33 @@ public class TestReplicationStateImpl
         assertThat(tokenRanges.get(range1)).containsExactlyInAnyOrder(mockNode1, mockNode2, mockNode3);
 
         assertThat(replicationState.getTokenRanges(tableReference, mockReplica1)).isSameAs(tokenRanges);
+    }
+
+    @Test
+    public void testGetTokenRangeToReplicasDifferentNodesReturnDifferentRanges() throws Exception
+    {
+        LongTokenRange range1 = new LongTokenRange(1, 2);
+        LongTokenRange range2 = new LongTokenRange(3, 4);
+        TableReference tableReference = tableReference("ks", "tb");
+
+        TokenRange tokenRange1 = TokenUtil.getRange(1, 2);
+        TokenRange tokenRange2 = TokenUtil.getRange(3, 4);
+
+        doReturn(Sets.newHashSet(tokenRange1)).when(mockTokenMap).getTokenRanges(eq("ks"), eq(mockReplica1));
+        doReturn(Sets.newHashSet(mockReplica1, mockReplica2)).when(mockTokenMap).getReplicas(eq("ks"), eq(tokenRange1));
+
+        doReturn(Sets.newHashSet(tokenRange2)).when(mockTokenMap).getTokenRanges(eq("ks"), eq(mockReplica2));
+        doReturn(Sets.newHashSet(mockReplica2, mockReplica3)).when(mockTokenMap).getReplicas(eq("ks"), eq(tokenRange2));
+
+        ReplicationState replicationState = new ReplicationStateImpl(mockNodeResolver, mockSession);
+
+        Map<LongTokenRange, ImmutableSet<DriverNode>> rangesNode1 = replicationState.getTokenRangeToReplicas(
+                tableReference, mockReplica1);
+        Map<LongTokenRange, ImmutableSet<DriverNode>> rangesNode2 = replicationState.getTokenRangeToReplicas(
+                tableReference, mockReplica2);
+
+        assertThat(rangesNode1.keySet()).containsExactly(range1);
+        assertThat(rangesNode2.keySet()).containsExactly(range2);
+        assertThat(rangesNode1).isNotSameAs(rangesNode2);
     }
 }
