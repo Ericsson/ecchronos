@@ -160,7 +160,7 @@ public class ReplicationStateImpl implements ReplicationState
     {
         TokenMap tokenMap = mySession.getMetadata().getTokenMap()
                 .orElseThrow(() -> new IllegalStateException("Cannot determine ranges, is metadata/tokenMap disabled?"));
-        String cacheKey = keyspace + ":" + System.identityHashCode(tokenMap);
+        String cacheKey = keyspace + ":" + currentNode.getHostId() + ":" + System.identityHashCode(tokenMap);
         return KEYSPACE_REPLICATION_CACHE.get(cacheKey, k -> buildTokenMap(keyspace, false, currentNode, tokenMap));
     }
 
@@ -185,7 +185,7 @@ public class ReplicationStateImpl implements ReplicationState
     {
         TokenMap tokenMap = mySession.getMetadata().getTokenMap()
                 .orElseThrow(() -> new IllegalStateException("Cannot determine ranges, is metadata/tokenMap disabled?"));
-        String cacheKey = keyspace + ":" + System.identityHashCode(tokenMap);
+        String cacheKey = keyspace + ":" + currentNode.getHostId() + ":" + System.identityHashCode(tokenMap);
         return CLUSTER_WIDE_KEYSPACE_REPLICATION_CACHE.get(cacheKey, k -> buildTokenMap(keyspace, true, currentNode, tokenMap));
     }
 
