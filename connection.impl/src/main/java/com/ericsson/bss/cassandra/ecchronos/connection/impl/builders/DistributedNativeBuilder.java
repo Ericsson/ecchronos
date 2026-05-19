@@ -15,49 +15,31 @@
 package com.ericsson.bss.cassandra.ecchronos.connection.impl.builders;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.auth.AuthProvider;
-import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
-import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
-import com.datastax.oss.driver.api.core.config.ProgrammaticDriverConfigLoaderBuilder;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.NodeStateListener;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
-import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
-import com.datastax.oss.driver.api.core.metrics.DefaultSessionMetric;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedNativeConnectionProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
-import com.google.common.collect.ImmutableList;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DistributedNativeBuilder// NOPMD Possible God Class
+public class DistributedNativeBuilder
 {
     private static final Logger LOG = LoggerFactory.getLogger(DistributedNativeBuilder.class);
-
-    private static final List<String> SCHEMA_REFRESHED_KEYSPACES = ImmutableList.of("/.*/", "!system",
-            "!system_distributed", "!system_schema", "!system_traces", "!system_views", "!system_virtual_schema");
-
-    private static final List<String> SESSION_METRICS = Arrays.asList(DefaultSessionMetric.BYTES_RECEIVED.getPath(),
-            DefaultSessionMetric.BYTES_SENT.getPath(), DefaultSessionMetric.CONNECTED_NODES.getPath(),
-            DefaultSessionMetric.CQL_REQUESTS.getPath(), DefaultSessionMetric.CQL_CLIENT_TIMEOUTS.getPath(),
-            DefaultSessionMetric.CQL_PREPARED_CACHE_SIZE.getPath(), DefaultSessionMetric.THROTTLING_DELAY.getPath(),
-            DefaultSessionMetric.THROTTLING_QUEUE_SIZE.getPath(), DefaultSessionMetric.THROTTLING_ERRORS.getPath());
 
     private ConnectionType myType = ConnectionType.datacenterAware;
     private List<InetSocketAddress> myInitialContactPoints = new ArrayList<>();
@@ -91,7 +73,7 @@ public class DistributedNativeBuilder// NOPMD Possible God Class
      * Sets the type of the agent for the distributed native connection.
      *
      * @param type
-     *         the type of the agent as a {@link String}.
+     *         the type of the agent as a {@link ConnectionType}.
      * @return the current instance of {@link DistributedNativeBuilder}.
      */
     public final DistributedNativeBuilder withAgentType(final ConnectionType type)
@@ -112,6 +94,7 @@ public class DistributedNativeBuilder// NOPMD Possible God Class
         myLocalDatacenter = localDatacenter;
         return this;
     }
+
     public final DistributedNativeBuilder withEcchronosKeyspaceName(final String keySpace)
     {
         ecchronosKeyspaceName = keySpace;
@@ -234,7 +217,8 @@ public class DistributedNativeBuilder// NOPMD Possible God Class
         try
         {
             LOG.info("Creating Session With Initial Contact Points");
-            session = createSession(this);
+            session = CqlSessionFactory.create(myInitialContactPoints, myLocalDatacenter, myAuthProvider,
+                    mySslEngineFactory, mySchemaChangeListener, myNodeStateListeners, myIsMetricsEnabled);
             LOG.info("Requesting Nodes List");
             Map<UUID, Node> nodesList = createNodesMap(session);
             LOG.info("Nodes list was created with success");
@@ -260,6 +244,7 @@ public class DistributedNativeBuilder// NOPMD Possible God Class
         }
         return connectionProvider;
     }
+
     /**
      * Creates a map of nodes based on the connection type, reads the node list from the database.
      * @param session the connection information to the database
@@ -267,16 +252,8 @@ public class DistributedNativeBuilder// NOPMD Possible God Class
      */
     public Map<UUID, Node> createNodesMap(final CqlSession session)
     {
-        return switch (myType)
-        {
-            case datacenterAware -> generateNodesMap(resolveDatacenterNodes(session, myDatacenterAware));
-            case rackAware -> generateNodesMap(resolveRackNodes(session, myRackAware));
-            case hostAware -> generateNodesMap(resolveHostAware(session, myHostAware));
-        };
-    }
-
-    private Map<UUID, Node> generateNodesMap(final List<Node> nodes)
-    {
+        NodeFilter filter = createNodeFilter();
+        List<Node> nodes = filter.resolve(session);
         Map<UUID, Node> nodesMap = new HashMap<>();
         nodes.forEach(node -> nodesMap.put(node.getHostId(), node));
         return nodesMap;
@@ -289,210 +266,16 @@ public class DistributedNativeBuilder// NOPMD Possible God Class
      */
     public Boolean confirmNodeValid(final Node node)
     {
+        return createNodeFilter().isValid(node);
+    }
+
+    private NodeFilter createNodeFilter()
+    {
         return switch (myType)
         {
-            case datacenterAware -> confirmDatacenterNodeValid(node, myDatacenterAware);
-            case rackAware -> confirmRackNodeValid(node, myRackAware);
-            case hostAware -> confirmHostNodeValid(node, myHostAware);
+            case datacenterAware -> new DatacenterNodeFilter(myDatacenterAware);
+            case rackAware -> new RackNodeFilter(myRackAware);
+            case hostAware -> new HostNodeFilter(myHostAware);
         };
-    }
-
-    private Boolean confirmDatacenterNodeValid(final Node node, final List<String> datacenterNames)
-    {
-        return (datacenterNames.contains(node.getDatacenter()));
-    }
-
-    private Boolean confirmRackNodeValid(final Node node, final List<Map<String, String>> rackInfo)
-    {
-        Set<Map<String, String>> racksInfoSet = new HashSet<>(rackInfo);
-        Map<String, String> tmpRackInfo = new HashMap<>();
-        tmpRackInfo.put("datacenterName", node.getDatacenter());
-        tmpRackInfo.put("rackName", node.getRack());
-        return (racksInfoSet.contains(tmpRackInfo));
-    }
-
-    private Boolean confirmHostNodeValid(final Node node, final List<InetSocketAddress> hostsInfo)
-    {
-        Set<InetSocketAddress> hostsInfoSet = new HashSet<>(hostsInfo);
-
-        InetSocketAddress tmpAddress = (InetSocketAddress) node.getEndPoint().resolve();
-        return (hostsInfoSet.contains(tmpAddress));
-     }
-
-    private CqlSession createSession(final DistributedNativeBuilder builder)
-    {
-        CqlSessionBuilder sessionBuilder = fromBuilder(builder);
-
-        DriverConfigLoader driverConfigLoader = loaderBuilder(builder).build();
-        LOG.debug("Driver configuration: {}", driverConfigLoader.getInitialConfig().getDefaultProfile().entrySet());
-        sessionBuilder.withConfigLoader(driverConfigLoader);
-        return sessionBuilder.build();
-    }
-
-    private List<Node> resolveDatacenterNodes(final CqlSession session, final List<String> datacenterNames)
-    {
-        Set<String> datacenterNameSet = new HashSet<>(datacenterNames);
-        List<Node> nodesList = new ArrayList<>();
-        Collection<Node> nodes = session.getMetadata().getNodes().values();
-        LOG.debug("Total nodes found for DatacenterAware: {}", nodes.size());
-
-        for (Node node : nodes)
-        {
-            if (datacenterNameSet.contains(node.getDatacenter()))
-            {
-                nodesList.add(node);
-                LOG.debug("Processing Node added to nodesList {}", node.getHostId());
-            }
-            else
-            {
-                LOG.debug("Skipping Node {}", node.getHostId());
-            }
-        }
-        return nodesList;
-    }
-
-    private List<Node> resolveRackNodes(final CqlSession session, final List<Map<String, String>> rackInfo)
-    {
-        Set<Map<String, String>> racksInfoSet = new HashSet<>(rackInfo);
-        List<Node> nodesList = new ArrayList<>();
-        Collection<Node> nodes = session.getMetadata().getNodes().values();
-        LOG.debug("Total nodes found for RackAware: {}", nodes.size());
-
-        for (Node node : nodes)
-        {
-            Map<String, String> tmpRackInfo = new HashMap<>();
-            tmpRackInfo.put("datacenterName", node.getDatacenter());
-            tmpRackInfo.put("rackName", node.getRack());
-            if (racksInfoSet.contains(tmpRackInfo))
-            {
-                nodesList.add(node);
-                LOG.debug("Processing Node added to nodesList {}", node.getHostId());
-            }
-            else
-            {
-                LOG.debug("Skipping Node {}", node.getHostId());
-            }
-
-        }
-        return nodesList;
-    }
-
-    private List<Node> resolveHostAware(final CqlSession session, final List<InetSocketAddress> hostsInfo)
-    {
-        Set<InetSocketAddress> hostsInfoSet = new HashSet<>(hostsInfo);
-        List<Node> nodesList = new ArrayList<>();
-        Collection<Node> nodes = session.getMetadata().getNodes().values();
-        LOG.debug("Total nodes found for HostAware: {}", nodes.size());
-        for (Node node : nodes)
-        {
-            InetSocketAddress tmpAddress = (InetSocketAddress) node.getEndPoint().resolve();
-            if (hostsInfoSet.contains(tmpAddress))
-            {
-                nodesList.add(node);
-                LOG.debug("Processing Node added to nodesList {}", node.getHostId());
-            }
-            else
-            {
-                LOG.debug("Skipping Node {}", node.getHostId());
-            }
-
-        }
-        return nodesList;
-    }
-
-    private static ProgrammaticDriverConfigLoaderBuilder loaderBuilder(
-            final DistributedNativeBuilder builder
-    )
-    {
-        ProgrammaticDriverConfigLoaderBuilder loaderBuilder = DriverConfigLoader.programmaticBuilder()
-                .withStringList(DefaultDriverOption.METADATA_SCHEMA_REFRESHED_KEYSPACES,
-                        SCHEMA_REFRESHED_KEYSPACES);
-        if (builder.myIsMetricsEnabled)
-        {
-            loaderBuilder.withStringList(DefaultDriverOption.METRICS_SESSION_ENABLED, SESSION_METRICS);
-            loaderBuilder.withString(DefaultDriverOption.METRICS_FACTORY_CLASS, "MicrometerMetricsFactory");
-            loaderBuilder.withString(DefaultDriverOption.METRICS_ID_GENERATOR_CLASS, "TaggingMetricIdGenerator");
-        }
-        return loaderBuilder;
-    }
-
-    private static CqlSessionBuilder fromBuilder(final DistributedNativeBuilder builder)
-    {
-        CqlSessionBuilder sessionBuilder = CqlSession.builder()
-                .addContactPoints(resolveIfNeeded(builder.myInitialContactPoints))
-                .withLocalDatacenter(builder.myLocalDatacenter)
-                .withAuthProvider(builder.myAuthProvider)
-                .withSslEngineFactory(builder.mySslEngineFactory)
-                .withSchemaChangeListener(builder.mySchemaChangeListener);
-        for (NodeStateListener listener: builder.myNodeStateListeners)
-        {
-            sessionBuilder = sessionBuilder.addNodeStateListener(listener);
-        }
-        return sessionBuilder;
-    }
-
-    private static Collection<InetSocketAddress> resolveIfNeeded(final List<InetSocketAddress> initialContactPoints)
-    {
-        List<InetSocketAddress> resolvedContactPoints = new ArrayList<>();
-        for (InetSocketAddress address : initialContactPoints)
-        {
-            if (address.isUnresolved())
-            {
-                resolvedContactPoints.add(new InetSocketAddress(address.getHostString(), address.getPort()));
-            }
-            else
-            {
-                resolvedContactPoints.add(address);
-            }
-        }
-        return resolvedContactPoints;
-    }
-
-    /**
-     * Resolves nodes in the specified datacenters for testing purposes. This method delegates to
-     * {@link #resolveDatacenterNodes(CqlSession, List)}.
-     *
-     * @param session
-     *         the {@link CqlSession} used to connect to the cluster.
-     * @param datacenterNames
-     *         the list of datacenter names to resolve nodes for.
-     * @return a list of {@link Node} instances representing the resolved nodes.
-     */
-    @VisibleForTesting
-    public final List<Node> testResolveDatacenterNodes(final CqlSession session, final List<String> datacenterNames)
-    {
-        return resolveDatacenterNodes(session, datacenterNames);
-    }
-
-    /**
-     * Resolves nodes in the specified racks for testing purposes. This method delegates to
-     * {@link #resolveRackNodes(CqlSession, List)}.
-     *
-     * @param session
-     *         the {@link CqlSession} used to connect to the cluster.
-     * @param rackInfo
-     *         a list of maps representing rack information.
-     * @return a list of {@link Node} instances representing the resolved nodes.
-     */
-    @VisibleForTesting
-    public final List<Node> testResolveRackNodes(final CqlSession session, final List<Map<String, String>> rackInfo)
-    {
-        return resolveRackNodes(session, rackInfo);
-    }
-
-    /**
-     * Resolves nodes based on host awareness for testing purposes. This method delegates to
-     * {@link #resolveHostAware(CqlSession, List)}.
-     *
-     * @param session
-     *         the {@link CqlSession} used to connect to the cluster.
-     * @param hostsInfo
-     *         a list of {@link InetSocketAddress} representing host information.
-     * @return a list of {@link Node} instances representing the resolved nodes.
-     */
-    @VisibleForTesting
-    public final List<Node> testResolveHostAware(final CqlSession session, final List<InetSocketAddress> hostsInfo)
-    {
-        return resolveHostAware(session, hostsInfo);
     }
 }

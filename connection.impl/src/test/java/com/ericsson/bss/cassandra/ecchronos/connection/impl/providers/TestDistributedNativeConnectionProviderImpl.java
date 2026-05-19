@@ -15,19 +15,18 @@
 package com.ericsson.bss.cassandra.ecchronos.connection.impl.providers;
 
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.ContactEndPoint;
-import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.DistributedNativeBuilder;
-import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
+import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.DatacenterNodeFilter;
+import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.HostNodeFilter;
+import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.RackNodeFilter;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
-
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
@@ -72,14 +71,9 @@ public class TestDistributedNativeConnectionProviderImpl
 
     private final ContactEndPoint endPointNodeDC2Rack2 = new ContactEndPoint("127.0.0.4", 9042);
 
-    private final List<InetSocketAddress> contactPoints = new ArrayList<>();
-
     @Before
     public void setup()
     {
-        contactPoints.add(new InetSocketAddress("127.0.0.1", 9042));
-        contactPoints.add(new InetSocketAddress("127.0.0.2", 9042));
-
         when(mockNodeDC1Rack1.getDatacenter()).thenReturn("datacenter1");
         when(mockNodeDC1Rack2.getDatacenter()).thenReturn("datacenter1");
         when(mockNodeDC2Rack1.getDatacenter()).thenReturn("datacenter2");
@@ -112,14 +106,11 @@ public class TestDistributedNativeConnectionProviderImpl
     @Test
     public void testResolveDatacenterAware()
     {
-        List<String> datacentersInfo = new ArrayList<>();
-        datacentersInfo.add("datacenter1");
+        List<String> datacentersInfo = List.of("datacenter1");
 
-        DistributedNativeBuilder provider = DistributedNativeConnectionProviderImpl.builder()
-                .withInitialContactPoints(contactPoints)
-                .withDatacenterAware(datacentersInfo);
+        DatacenterNodeFilter filter = new DatacenterNodeFilter(datacentersInfo);
+        List<Node> realNodesList = filter.resolve(mySessionMock);
 
-        List<Node> realNodesList = provider.testResolveDatacenterNodes(mySessionMock, datacentersInfo);
         assertThat(realNodesList)
                 .extracting(Node::getDatacenter)
                 .containsOnly("datacenter1");
@@ -127,20 +118,16 @@ public class TestDistributedNativeConnectionProviderImpl
     }
 
     @Test
-    public void testResolveRackAware() throws SecurityException, IllegalArgumentException
+    public void testResolveRackAware()
     {
-        List<Map<String, String>> rackList = new ArrayList<>();
         Map<String, String> rackInfo = new HashMap<>();
         rackInfo.put("datacenterName", "datacenter1");
         rackInfo.put("rackName", "rack1");
-        rackList.add(rackInfo);
+        List<Map<String, String>> rackList = List.of(rackInfo);
 
-        DistributedNativeBuilder provider = DistributedNativeConnectionProviderImpl.builder()
-                .withInitialContactPoints(contactPoints)
-                .withAgentType(ConnectionType.rackAware)
-                .withRackAware(rackList);
+        RackNodeFilter filter = new RackNodeFilter(rackList);
+        List<Node> realNodesList = filter.resolve(mySessionMock);
 
-        List<Node> realNodesList = provider.testResolveRackNodes(mySessionMock, rackList);
         assertThat(realNodesList)
                 .extracting(Node::getRack)
                 .containsOnly("rack1");
@@ -150,15 +137,14 @@ public class TestDistributedNativeConnectionProviderImpl
     @Test
     public void testResolveHostAware()
     {
-        List<InetSocketAddress> hostList = new ArrayList<>();
-        hostList.add(new InetSocketAddress("127.0.0.1", 9042));
-        hostList.add(new InetSocketAddress("127.0.0.2", 9042));
-        hostList.add(new InetSocketAddress("127.0.0.3", 9042));
-        DistributedNativeBuilder provider = DistributedNativeConnectionProviderImpl.builder()
-                .withInitialContactPoints(contactPoints)
-                .withAgentType(ConnectionType.hostAware)
-                .withHostAware(hostList);
-        List<Node> realNodesList = provider.testResolveHostAware(mySessionMock, hostList);
+        List<InetSocketAddress> hostList = List.of(
+                new InetSocketAddress("127.0.0.1", 9042),
+                new InetSocketAddress("127.0.0.2", 9042),
+                new InetSocketAddress("127.0.0.3", 9042));
+
+        HostNodeFilter filter = new HostNodeFilter(hostList);
+        List<Node> realNodesList = filter.resolve(mySessionMock);
+
         assertEquals(3, realNodesList.size());
     }
 }
