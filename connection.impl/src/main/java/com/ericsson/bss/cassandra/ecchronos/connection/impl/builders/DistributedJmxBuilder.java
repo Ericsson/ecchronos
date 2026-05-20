@@ -14,59 +14,42 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection.impl.builders;
 
-import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.Row;
-import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.Node;
-import com.datastax.oss.driver.api.core.servererrors.QueryExecutionException;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedJmxConnectionProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
-import com.ericsson.bss.cassandra.ecchronos.utils.dns.ReverseDNS;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.sync.NodeStatus;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
-import org.jolokia.client.jmxadapter.JolokiaJmxConnectionProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.management.remote.JMXConnector;
-import javax.management.remote.JMXConnectorFactory;
-import javax.management.remote.JMXServiceURL;
-import javax.rmi.ssl.SslRMIClientSocketFactory;
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
-public class DistributedJmxBuilder //NOPMD Possible God Class
+public class DistributedJmxBuilder
 {
     private static final Logger LOG = LoggerFactory.getLogger(DistributedJmxBuilder.class);
-    private static final String JMX_FORMAT_URL = "service:jmx:rmi:///jndi/rmi://%s:%d/jmxrmi";
-    private static final String JMX_JOLOKIA_FORMAT_URL = "service:jmx:%s://%s:%d/jolokia/";
-    private static final Integer JMX_JOLOKIA_CONNECTION_TIMEOUT = 20;
     private static final int DEFAULT_JOLOKIA_PORT = 8778;
-    private static final int DEFAULT_PORT = 7199;
     private static final int MAX_PARALLEL_CONNECTIONS = 10;
-    public static final String NO_BROADCAST_ADDRESS = "0.0.0.0"; //NOPMD AvoidUsingHardCodedIP
+    private static final int CONNECTION_TIMEOUT_EXTRA_SECONDS = 10;
+
+    public static final String ECCHRONOS_JOLOKIA_SSL_ENABLED_PROPERTY = "ecchronos.jolokia.ssl.enabled";
     public static final String JOLOKIA_CA_CERTIFICATE_PROPERTY = "jolokia.caCertificate";
     public static final String JOLOKIA_CLIENT_CERTIFICATE_PROPERTY = "jolokia.clientCertificate";
     public static final String JOLOKIA_CLIENT_KEY_CERTIFICATE_PROPERTY = "jolokia.clientKey";
     public static final String JOLOKIA_CLIENT_KEY_ALGORITHM_CERTIFICATE_PROPERTY = "jolokia.clientKeyAlgorithm";
     public static final String JDK_DISABLE_HOSTNAME_VERIFICATION_PROPERTY = "jdk.internal.httpclient.disableHostnameVerification";
-    public static final String ECCHRONOS_JOLOKIA_SSL_ENABLED_PROPERTY = "ecchronos.jolokia.ssl.enabled";
 
     private CqlSession mySession;
     private DistributedNativeConnectionProvider myNativeConnectionProvider;
@@ -178,9 +161,7 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
     public final DistributedJmxConnectionProvider build() throws IOException
     {
         createConnections();
-        return new DistributedJmxConnectionProviderImpl(
-                this
-        );
+        return new DistributedJmxConnectionProviderImpl(this);
     }
 
     private void createConnections() throws IOException
@@ -211,7 +192,9 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
             pool.shutdown();
             try
             {
-                if (!pool.awaitTermination(JMX_JOLOKIA_CONNECTION_TIMEOUT + MAX_PARALLEL_CONNECTIONS, TimeUnit.SECONDS))
+                if (!pool.awaitTermination(
+                        JolokiaJmxConnectionFactory.CONNECTION_TIMEOUT_SECONDS + CONNECTION_TIMEOUT_EXTRA_SECONDS,
+                        TimeUnit.SECONDS))
                 {
                     pool.shutdownNow();
                 }
@@ -228,88 +211,34 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
      * Creates a JMX connection to the host.
      * @param node the node to connect with.
      */
-    public void reconnect(final Node node) throws EcChronosException //NOPMD CyclomaticComplexity
+    public void reconnect(final Node node) throws EcChronosException
     {
         try
         {
-            String host = node.getBroadcastRpcAddress().get().getAddress().getHostAddress();
-            if (NO_BROADCAST_ADDRESS.equals(host))
-            {
-                host = node.getListenAddress().get().getHostString();
-            }
-            if (myIpTranslator.isActive())
-            {
-                host = myIpTranslator.getInternalIp(host);
-            }
-            JMXServiceURL jmxUrl;
-            Integer port;
+            JmxHostResolver hostResolver = new JmxHostResolver(myIpTranslator, myReverseDNSResolution);
+            String host = hostResolver.resolve(node);
+            Map<String, Object> env = JmxEnvironmentFactory.create(myCredentialsSupplier, myTLSSupplier, isJolokiaEnabled);
+            int port;
             JMXConnector jmxConnector;
-
-            if (myReverseDNSResolution)
-            {
-                host = ReverseDNS.fromHostString(host);
-            }
-            if (host.contains(":") && !host.startsWith("[") && !host.endsWith("]"))
-            {
-                // Use square brackets to surround IPv6 addresses
-                host = "[" + host + "]";
-            }
 
             if (isJolokiaEnabled)
             {
                 port = myJolokiaPort;
-                String protocol = String.valueOf(true).equals(getTLSConfig().get(ECCHRONOS_JOLOKIA_SSL_ENABLED_PROPERTY)) ? "jolokia+https" : "jolokia";
-                jmxUrl = new JMXServiceURL(String.format(JMX_JOLOKIA_FORMAT_URL, protocol, host, port));
-                JolokiaJmxConnectionProvider jolokiaJmxConnectionProvider = new JolokiaJmxConnectionProvider();
-                LOG.info("Creating Jolokia JMXConnection with host: {} and port: {}", host, port);
-                jmxConnector = jolokiaJmxConnectionProvider.newJMXConnector(jmxUrl, createJMXEnv());
-
-                ExecutorService exec = Executors.newSingleThreadExecutor();
-                try
-                {
-                    Future<?> future = exec.submit(() ->
-                    {
-                        try
-                        {
-                            jmxConnector.connect();
-                        }
-                        catch (IOException e)
-                        {
-                            LOG.error("Jolokia connection IOException during connect()", e);
-                            throw new IllegalStateException("Failed to connect to Jolokia", e);
-                        }
-                    });
-                    future.get(JMX_JOLOKIA_CONNECTION_TIMEOUT, TimeUnit.SECONDS);
-                }
-                catch (TimeoutException | InterruptedException | ExecutionException e)
-                {
-                    LOG.error("Jolokia connection failed with timeout or execution error", e);
-                    closeQuietly(jmxConnector);
-                    throw new IOException("Jolokia connection failed", e);
-                }
-                finally
-                {
-                    exec.shutdownNow();
-                }
-               // Verify MBeanServerConnection is available
-                if (jmxConnector.getMBeanServerConnection() == null)
-                {
-                    closeQuietly(jmxConnector);
-                    throw new IOException("MBeanServerConnection is null after Jolokia connection");
-                }
+                boolean sslEnabled = String.valueOf(true).equals(
+                        myTLSSupplier != null ? myTLSSupplier.get().get(ECCHRONOS_JOLOKIA_SSL_ENABLED_PROPERTY) : null);
+                jmxConnector = new JolokiaJmxConnectionFactory(sslEnabled).connect(host, port, env);
             }
             else
             {
-                port = getJMXPort(node);
-                jmxUrl = new JMXServiceURL(String.format(JMX_FORMAT_URL, host, port));
-                LOG.info("Starting to instantiate JMXService with host: {} and port: {}", host, port);
-                jmxConnector = JMXConnectorFactory.connect(jmxUrl, createJMXEnv());
+                port = JmxPortDiscovery.getPort(mySession, node);
+                jmxConnector = new RmiJmxConnectionFactory().connect(host, port, env);
             }
 
-            LOG.debug("Connecting JMX through {}, credentials: {}, tls: {}", jmxUrl, isAuthEnabled(), isTLSEnabled());
+            LOG.debug("Connecting JMX through {}:{}, credentials: {}, tls: {}",
+                    host, port, myCredentialsSupplier != null, myTLSSupplier != null);
             if (isConnected(jmxConnector))
             {
-                LOG.info("Connected JMX for {}", jmxUrl);
+                LOG.info("Connected JMX for {}:{}", host, port);
                 myEccNodesSync.updateNodeStatus(NodeStatus.AVAILABLE, node.getDatacenter(), node.getHostId());
                 JMXConnector oldConnector = myJMXConnections.put(Objects.requireNonNull(node.getHostId()), jmxConnector);
                 closeQuietly(oldConnector);
@@ -320,128 +249,10 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
                 myEccNodesSync.updateNodeStatus(NodeStatus.UNAVAILABLE, node.getDatacenter(), node.getHostId());
             }
         }
-        catch
-        (
-                AllNodesFailedException | QueryExecutionException | IOException | SecurityException e)
+        catch (IOException | SecurityException e)
         {
             LOG.error("Failed to create JMX connection with node {} because of", node.getHostId(), e);
             myEccNodesSync.updateNodeStatus(NodeStatus.UNAVAILABLE, node.getDatacenter(), node.getHostId());
-        }
-    }
-
-
-    private Map<String, Object> createJMXEnv()
-    {
-        Map<String, Object> env = new HashMap<>();
-        String[] credentials = getCredentialsConfig();
-        Map<String, String> tls = getTLSConfig();
-        if (credentials != null)
-        {
-            env.put(JMXConnector.CREDENTIALS, credentials);
-        }
-        if (isJolokiaEnabled && String.valueOf(true).equals(tls.get(ECCHRONOS_JOLOKIA_SSL_ENABLED_PROPERTY)))
-        {
-            LOG.info("Setting Jolokia client with PEM certificates");
-            String caCert = tls.get(JOLOKIA_CA_CERTIFICATE_PROPERTY);
-            String clientCert = tls.get(JOLOKIA_CLIENT_CERTIFICATE_PROPERTY);
-            String clientKey = tls.get(JOLOKIA_CLIENT_KEY_CERTIFICATE_PROPERTY);
-            String keyAlgorithm = tls.get(JOLOKIA_CLIENT_KEY_ALGORITHM_CERTIFICATE_PROPERTY);
-            String disableHostnameVerification = tls.get(JDK_DISABLE_HOSTNAME_VERIFICATION_PROPERTY);
-
-            setSystemPropertyIfNotNull(JOLOKIA_CA_CERTIFICATE_PROPERTY, caCert);
-            setSystemPropertyIfNotNull(JOLOKIA_CLIENT_CERTIFICATE_PROPERTY, clientCert);
-            setSystemPropertyIfNotNull(JOLOKIA_CLIENT_KEY_CERTIFICATE_PROPERTY, clientKey);
-            setSystemPropertyIfNotNull(JOLOKIA_CLIENT_KEY_ALGORITHM_CERTIFICATE_PROPERTY, keyAlgorithm);
-            setSystemPropertyIfNotNull(JDK_DISABLE_HOSTNAME_VERIFICATION_PROPERTY, disableHostnameVerification);
-        }
-        else if (!tls.isEmpty())
-        {
-            for (Map.Entry<String, String> configEntry : tls.entrySet())
-            {
-                String key = configEntry.getKey();
-                String value = configEntry.getValue();
-
-                if (value != null && !value.isEmpty())
-                {
-                    System.setProperty(key, value);
-                }
-                else
-                {
-                    System.clearProperty(key);
-                }
-            }
-            env.put("com.sun.jndi.rmi.factory.socket", new SslRMIClientSocketFactory());
-        }
-        return env;
-    }
-
-    private void setSystemPropertyIfNotNull(final String key, final String value)
-    {
-        if (value != null)
-        {
-            System.setProperty(key, value);
-        }
-    }
-
-    private String[] getCredentialsConfig()
-    {
-        if (myCredentialsSupplier == null)
-        {
-            return null;
-        }
-        return myCredentialsSupplier.get();
-    }
-
-    private Map<String, String> getTLSConfig()
-    {
-        if (myTLSSupplier == null)
-        {
-            return new HashMap<>();
-        }
-        return myTLSSupplier.get();
-    }
-
-    private boolean isAuthEnabled()
-    {
-        return getCredentialsConfig() != null;
-    }
-
-    private boolean isTLSEnabled()
-    {
-        return !getTLSConfig().isEmpty();
-    }
-
-
-    private Integer getJMXPort(final Node node)
-    {
-        try
-        {
-            SimpleStatement simpleStatement = SimpleStatement
-                    .builder("SELECT value FROM system_views.system_properties WHERE name = 'cassandra.jmx.remote.port';")
-                    .setNode(node)
-                    .build();
-            Row row = mySession.execute(simpleStatement).one();
-            if ((row == null) || (row.getString("value") == null))
-            {
-                simpleStatement = SimpleStatement
-                        .builder("SELECT value FROM system_views.system_properties WHERE name = 'cassandra.jmx.local.port';")
-                        .setNode(node)
-                        .build();
-                row = mySession.execute(simpleStatement).one();
-
-            }
-            if ((row != null) && (row.getString("value") != null))
-            {
-                return Integer.parseInt(Objects.requireNonNull(row.getString("value")));
-            }
-            else
-            {
-                return DEFAULT_PORT;
-            }
-        }
-        catch (AllNodesFailedException e)
-        {
-            return DEFAULT_PORT;
         }
     }
 
@@ -450,14 +261,14 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
         try
         {
             jmxConnector.getConnectionId();
+            return true;
         }
         catch (IOException e)
         {
             return false;
         }
-
-        return true;
     }
+
     private static void closeQuietly(final JMXConnector connector)
     {
         if (connector != null)
