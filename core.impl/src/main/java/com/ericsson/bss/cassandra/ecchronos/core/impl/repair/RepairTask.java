@@ -24,55 +24,32 @@ import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairStatus;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ScheduledJobException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.management.Notification;
-import javax.management.NotificationListener;
-import javax.management.remote.JMXConnectionNotification;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
- * Abstract Class used to represent repair tasks.
+ * Abstract class used to represent repair tasks. Orchestrates repair execution
+ * by delegating to {@link RepairRangeTracker}, {@link RepairNotificationHandler},
+ * and {@link RepairHangMonitor}.
  */
-public abstract class RepairTask implements NotificationListener // NOPMD Possible God Class
+public abstract class RepairTask
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairTask.class);
-    private static final Pattern RANGE_PATTERN = Pattern.compile("\\((-?[0-9]+),(-?[0-9]+)\\]");
-    private static final int HEALTH_CHECK_INTERVAL_MINUTES = 1;
-    private final int maxWaitTimeInMinutes;
 
     private final UUID nodeID;
-    private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(
-            new ThreadFactoryBuilder().setNameFormat("HangPreventingTask-%d").build());
-    private final CountDownLatch myLatch = new CountDownLatch(1);
     private final DistributedJmxProxyFactory myJmxProxyFactory;
     private final TableReference myTableReference;
     private final TableRepairMetrics myTableRepairMetrics;
     private final RepairConfiguration myRepairConfiguration;
-    private volatile ScheduledFuture<?> myHangPreventFuture;
-    private volatile ScheduledJobException myLastError;
-    private volatile boolean hasLostNotification = false;
-    private volatile int myCommand;
-    private volatile boolean myCommandReady = false;
-    private final List<Notification> myPendingNotifications = Collections.synchronizedList(new ArrayList<>());
-    private final Set<LongTokenRange> myFailedRanges = ConcurrentHashMap.newKeySet();
-    private final Set<LongTokenRange> mySuccessfulRanges = ConcurrentHashMap.newKeySet();
+
+    private final RepairRangeTracker myRangeTracker = new RepairRangeTracker();
+    private final RepairNotificationHandler myNotificationHandler;
+    private final RepairHangMonitor myHangMonitor;
 
     /**
      * Constructs a RepairTask for the specified node and table with the given repair configuration and metrics.
@@ -98,7 +75,14 @@ public abstract class RepairTask implements NotificationListener // NOPMD Possib
         myTableReference = Preconditions.checkNotNull(tableReference, "Table reference must be set");
         myRepairConfiguration = Preconditions.checkNotNull(repairConfiguration, "Repair configuration must be set");
         myTableRepairMetrics = tableRepairMetrics;
-        maxWaitTimeInMinutes = maxWaitTime;
+
+        myNotificationHandler = new RepairNotificationHandler(
+                this::onRangeFinished,
+                this::rescheduleHangPrevention
+        );
+        myHangMonitor = new RepairHangMonitor(
+                myJmxProxyFactory, nodeID, myTableReference, maxWaitTime, myNotificationHandler
+        );
     }
 
     /**
@@ -116,7 +100,7 @@ public abstract class RepairTask implements NotificationListener // NOPMD Possib
         onExecute();
         try (DistributedJmxProxy proxy = myJmxProxyFactory.connect())
         {
-            rescheduleHangPrevention();
+            myHangMonitor.reschedule();
             repair(proxy);
             onFinish(RepairStatus.SUCCESS);
         }
@@ -128,10 +112,7 @@ public abstract class RepairTask implements NotificationListener // NOPMD Possib
         }
         finally
         {
-            if (myHangPreventFuture != null)
-            {
-                myHangPreventFuture.cancel(false);
-            }
+            myHangMonitor.cancel();
             end = System.nanoTime();
             total = end - start;
             myTableRepairMetrics.repairSession(myTableReference, total, TimeUnit.NANOSECONDS, successful);
@@ -146,69 +127,65 @@ public abstract class RepairTask implements NotificationListener // NOPMD Possib
     {
         // NOOP
     }
-    @SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.CognitiveComplexity"})
+
     private void repair(final DistributedJmxProxy proxy) throws ScheduledJobException
     {
         LOG.debug("repair starting for table {} on node {}", myTableReference, nodeID);
-        if (proxy.addStorageServiceListener(nodeID, this))
+        if (!proxy.addStorageServiceListener(nodeID, myNotificationHandler))
         {
-            try
-            {
-                myCommandReady = false;
-                myPendingNotifications.clear();
-                myCommand = proxy.repairAsync(nodeID, myTableReference.getKeyspace(), getOptions());
-                myCommandReady = true;
-                if (myCommand > 0)
-                {
-                    // Process any notifications that arrived before myCommand was set
-                    if (!myPendingNotifications.isEmpty())
-                    {
-                        LOG.debug("Processing {} pending notifications for table {} on node {}",
-                                myPendingNotifications.size(), myTableReference, nodeID);
-                        for (Notification pending : new ArrayList<>(myPendingNotifications))
-                        {
-                            handleNotification(pending, null);
-                        }
-                        myPendingNotifications.clear();
-                    }
-                    try
-                    {
-                        LOG.debug("waiting for latch for table {} on node {}", myTableReference, nodeID);
-                        myLatch.await();
-                        LOG.debug("finished waiting for latch for table {} on node {}", myTableReference, nodeID);
-                        verifyRepair(proxy);
-                        if (myLastError != null)
-                        {
-                            throw myLastError;
-                        }
-                        if (hasLostNotification)
-                        {
-                            String msg = String.format("Repair-%d of %s had lost notifications", myCommand, myTableReference);
-                            LOG.warn(msg);
-                            throw new ScheduledJobException(msg);
-                        }
-                        LOG.debug("{} completed successfully on node {}", this, nodeID);
-                    }
-                    catch (InterruptedException e)
-                    {
-                        String msg = this + " was interrupted";
-                        LOG.warn(msg, e);
-                        Thread.currentThread().interrupt();
-                        throw new ScheduledJobException(msg, e);
-                    }
-                }
-            }
-            finally
-            {
-                proxy.removeStorageServiceListener(nodeID, this);
-            }
-        }
-        else
-        {
-            String msg = String.format("Repair of %s has no jmx connection", myCommand, myTableReference);
+            String msg = String.format("Repair of %s has no jmx connection", myTableReference);
             LOG.warn(msg);
             throw new ScheduledJobException(msg);
         }
+        try
+        {
+            myNotificationHandler.prepareForCommand();
+            int command = proxy.repairAsync(nodeID, myTableReference.getKeyspace(), getOptions());
+            if (command > 0)
+            {
+                myNotificationHandler.setCommand(command);
+                awaitAndVerifyRepair(proxy, command);
+            }
+        }
+        finally
+        {
+            proxy.removeStorageServiceListener(nodeID, myNotificationHandler);
+        }
+    }
+
+    private void awaitAndVerifyRepair(final DistributedJmxProxy proxy, final int command)
+            throws ScheduledJobException
+    {
+        try
+        {
+            LOG.debug("waiting for latch for table {} on node {}", myTableReference, nodeID);
+            myNotificationHandler.await();
+            LOG.debug("finished waiting for latch for table {} on node {}", myTableReference, nodeID);
+            verifyRepair(proxy);
+            if (myNotificationHandler.getLastError() != null)
+            {
+                throw myNotificationHandler.getLastError();
+            }
+            if (myNotificationHandler.hasLostNotification())
+            {
+                String msg = String.format("Repair-%d of %s had lost notifications", command, myTableReference);
+                LOG.warn(msg);
+                throw new ScheduledJobException(msg);
+            }
+            LOG.debug("{} completed successfully on node {}", this, nodeID);
+        }
+        catch (InterruptedException e)
+        {
+            String msg = this + " was interrupted";
+            LOG.warn(msg, e);
+            Thread.currentThread().interrupt();
+            throw new ScheduledJobException(msg, e);
+        }
+    }
+
+    private void rescheduleHangPrevention()
+    {
+        myHangMonitor.reschedule();
     }
 
     /**
@@ -228,10 +205,10 @@ public abstract class RepairTask implements NotificationListener // NOPMD Possib
      */
     protected void verifyRepair(final DistributedJmxProxy proxy) throws ScheduledJobException
     {
-        if (!myFailedRanges.isEmpty())
+        if (myRangeTracker.hasFailedRanges())
         {
             proxy.forceTerminateAllRepairSessions();
-            throw new ScheduledJobException("Repair has failed ranges '" + myFailedRanges + "'");
+            throw new ScheduledJobException("Repair has failed ranges '" + myRangeTracker.getFailedRanges() + "'");
         }
     }
 
@@ -267,134 +244,19 @@ public abstract class RepairTask implements NotificationListener // NOPMD Possib
      */
     public void cleanup()
     {
-        myExecutor.shutdownNow();
+        myHangMonitor.shutdown();
     }
 
     /**
-     * Notification handler.
-     *
-     * @param notification
-     *         The notification.
-     * @param handback
-     *         The handback.
-     */
-    @SuppressWarnings("unchecked")
-    @Override
-    public void handleNotification(final Notification notification, final Object handback)
-    {
-        LOG.debug("Notification {}", notification.toString());
-        switch (notification.getType())
-        {
-        case "progress":
-            rescheduleHangPrevention();
-            String tag = (String) notification.getSource();
-            if (!myCommandReady)
-            {
-                LOG.debug("Notification arrived before command ID is ready, storing as pending: {}", tag);
-                myPendingNotifications.add(notification);
-                break;
-            }
-            if (tag.equals("repair:" + myCommand))
-            {
-                Map<String, Integer> progress = (Map<String, Integer>) notification.getUserData();
-
-                String message = notification.getMessage();
-                ProgressEventType type = ProgressEventType.values()[progress.get("type")];
-                LOG.debug("Notification Type {}", type.toString());
-
-                this.progress(type, message);
-            }
-            break;
-
-        case JMXConnectionNotification.NOTIFS_LOST:
-            hasLostNotification = true;
-            break;
-
-        case JMXConnectionNotification.FAILED:
-        case JMXConnectionNotification.CLOSED:
-            String errorMessage = String.format("Unable to repair %s, error: %s", myTableReference, notification.getType());
-            LOG.error(errorMessage);
-            myLastError = new ScheduledJobException(errorMessage);
-            myLatch.countDown();
-            break;
-        default:
-            LOG.debug("Unknown JMXConnectionNotification type: {}", notification.getType());
-            break;
-        }
-    }
-
-    private void rescheduleHangPrevention()
-    {
-        if (myHangPreventFuture != null)
-        {
-            myHangPreventFuture.cancel(false);
-        }
-        // Schedule the first check to happen after 1 minute
-        myHangPreventFuture = myExecutor.schedule(new HangPreventingTask(), HEALTH_CHECK_INTERVAL_MINUTES,
-                TimeUnit.MINUTES);
-    }
-
-    /**
-     * Update progress.
-     *
-     * @param type
-     *         Progress event type.
-     * @param message
-     *         The message.
-     */
-    @VisibleForTesting
-    void progress(final ProgressEventType type, final String message)
-    {
-        if (type == ProgressEventType.PROGRESS || type == ProgressEventType.ERROR)
-        {
-            if (message.contains("finished") || message.contains("failed"))
-            {
-                LOG.debug("Progress message received: {}", message);
-                RepairStatus repairStatus = RepairStatus.SUCCESS;
-                if (message.contains("failed"))
-                {
-                    repairStatus = RepairStatus.FAILED;
-                }
-                Matcher rangeMatcher = RANGE_PATTERN.matcher(message);
-                while (rangeMatcher.find())
-                {
-                    long start = Long.parseLong(rangeMatcher.group(1));
-                    long end = Long.parseLong(rangeMatcher.group(2));
-
-                    LongTokenRange completedRange = new LongTokenRange(start, end);
-                    onRangeFinished(completedRange, repairStatus);
-                }
-            }
-            else
-            {
-                LOG.warn("{} - Unknown progress message received: {}", this, message);
-            }
-        }
-        if (type == ProgressEventType.COMPLETE)
-        {
-            LOG.debug("Progress message set to complete latch counted down: {}", message);
-            myLatch.countDown();
-            LOG.debug("Latch count now set to: {}", myLatch.getCount());
-        }
-    }
-
-    /**
-     * Method called once a range is finished successfully. In case of multiple ranges being repaired this will be
-     * called once per range. If this method is overriden make sure to call the super method.
+     * Method called once a range is finished. In case of multiple ranges being repaired this will be
+     * called once per range. If this method is overridden make sure to call the super method.
      *
      * @param range The range
      * @param repairStatus The status of the range
      */
     protected void onRangeFinished(final LongTokenRange range, final RepairStatus repairStatus)
     {
-        if (repairStatus.equals(RepairStatus.FAILED))
-        {
-            myFailedRanges.add(range);
-        }
-        else
-        {
-            mySuccessfulRanges.add(range);
-        }
+        myRangeTracker.onRangeFinished(range, repairStatus);
     }
 
     /**
@@ -439,73 +301,21 @@ public abstract class RepairTask implements NotificationListener // NOPMD Possib
         NOTIFICATION
     }
 
-    private final class HangPreventingTask implements Runnable
-    {
-        private static final String NORMAL_STATUS = "NORMAL";
-        private final long startTime = System.currentTimeMillis();
-
-        @Override
-        public void run()
-        {
-            try (DistributedJmxProxy proxy = myJmxProxyFactory.connect())
-            {
-                String nodeStatus = proxy.getNodeStatus(nodeID);
-                if (!NORMAL_STATUS.equals(nodeStatus))
-                {
-                    // Node state is not normal, terminate the repair directly
-                    LOG.error("Cassandra node {} is down, aborting repair task.", nodeID);
-                    myLastError = new ScheduledJobException("Cassandra node " + nodeID + " is down");
-                    proxy.forceTerminateAllRepairSessionsInSpecificNode(nodeID);
-                    myLatch.countDown();
-                }
-                else if (!proxy.isRepairActive(nodeID, myCommand))
-                {
-                    // No repair is active, assume notification was lost
-                    LOG.warn("Repair-{} of {} is no longer active on node {}, notification may have been lost",
-                            myCommand, myTableReference, nodeID);
-                    myLatch.countDown();
-                }
-                else if (System.currentTimeMillis() - startTime >= TimeUnit.MINUTES.toMillis(maxWaitTimeInMinutes))
-                {
-                    // Repair takes too long, force termination of sessions
-                    LOG.error("Repair-{} of {} still active after {} minutes on node {}, forcing termination",
-                            myCommand, myTableReference, maxWaitTimeInMinutes, nodeID);
-                    proxy.forceTerminateAllRepairSessionsInSpecificNode(nodeID);
-                    myLatch.countDown();
-                }
-                else
-                {
-                    LOG.debug("Repair-{} still in status {}. Will recheck in {} minutes",
-                            myCommand, nodeStatus, HEALTH_CHECK_INTERVAL_MINUTES);
-                    myHangPreventFuture = myExecutor.schedule(this,
-                            HEALTH_CHECK_INTERVAL_MINUTES, TimeUnit.MINUTES);
-                }
-            }
-            catch (IOException e)
-            {
-                LOG.error("Unable to check node status or prevent hanging repair task for Repair-{} of {}",
-                        myCommand, myTableReference, e);
-            }
-        }
-    }
-
     /**
      * Returns the set of token ranges that have failed during the repair task.
-     *
-     * <p>This method is primarily intended for testing purposes.</p>
      *
      * @return a set of {@link LongTokenRange} representing the failed token ranges.
      */
     @VisibleForTesting
     protected final Set<LongTokenRange> getFailedRanges()
     {
-        return myFailedRanges;
+        return myRangeTracker.getFailedRanges();
     }
 
     @VisibleForTesting
     protected final Set<LongTokenRange> getSuccessfulRanges()
     {
-        return mySuccessfulRanges;
+        return myRangeTracker.getSuccessfulRanges();
     }
 
     /**
