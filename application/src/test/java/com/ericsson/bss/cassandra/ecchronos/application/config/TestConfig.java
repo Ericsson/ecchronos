@@ -314,6 +314,14 @@ public class TestConfig
     }
 
     @Test
+    public void testJmxPort()
+    {
+        DistributedJmxConnection jmxConfig = config.getConnectionConfig().getJmxConnection();
+        assertThat(jmxConfig.getJmxPort()).isNotNull();
+        assertThat(jmxConfig.getJmxPort()).isEqualTo(9211);
+    }
+
+    @Test
     public void testThreadPoolConfig()
     {
         ThreadPoolTaskConfig threadPoolTaskConfig = config.getConnectionConfig().getThreadPoolTaskConfig();

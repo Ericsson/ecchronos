@@ -14,12 +14,14 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection.impl.builders;
 
-import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionStrategy;
+import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionStrategy.ConnectionResult;
+import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.utils.ConnectionUtils;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedJmxConnectionProviderImpl;
-import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.sync.NodeStatus;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
@@ -27,6 +29,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.management.remote.JMXConnector;
+import javax.management.remote.JMXServiceURL;
+
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
@@ -35,45 +39,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 public class DistributedJmxBuilder
 {
     private static final Logger LOG = LoggerFactory.getLogger(DistributedJmxBuilder.class);
-    private static final int DEFAULT_JOLOKIA_PORT = 8778;
+
     private static final int MAX_PARALLEL_CONNECTIONS = 10;
-    private static final int CONNECTION_TIMEOUT_EXTRA_SECONDS = 10;
-
-    public static final String ECCHRONOS_JOLOKIA_SSL_ENABLED_PROPERTY = "ecchronos.jolokia.ssl.enabled";
-    public static final String JOLOKIA_CA_CERTIFICATE_PROPERTY = "jolokia.caCertificate";
-    public static final String JOLOKIA_CLIENT_CERTIFICATE_PROPERTY = "jolokia.clientCertificate";
-    public static final String JOLOKIA_CLIENT_KEY_CERTIFICATE_PROPERTY = "jolokia.clientKey";
-    public static final String JOLOKIA_CLIENT_KEY_ALGORITHM_CERTIFICATE_PROPERTY = "jolokia.clientKeyAlgorithm";
-    public static final String JDK_DISABLE_HOSTNAME_VERIFICATION_PROPERTY = "jdk.internal.httpclient.disableHostnameVerification";
-
-    private CqlSession mySession;
     private DistributedNativeConnectionProvider myNativeConnectionProvider;
     private final ConcurrentHashMap<UUID, JMXConnector> myJMXConnections = new ConcurrentHashMap<>();
-    private Supplier<String[]> myCredentialsSupplier;
-    private Supplier<Map<String, String>> myTLSSupplier;
-    private boolean isJolokiaEnabled = false;
-    private int myJolokiaPort = DEFAULT_JOLOKIA_PORT;
     private EccNodesSync myEccNodesSync;
-    private boolean myReverseDNSResolution = false;
-    private IpTranslator myIpTranslator;
-
-    /**
-     * Set the CQL session to be used by the DistributedJmxBuilder.
-     *
-     * @param session
-     *         the CqlSession instance to be used for communication with Cassandra.
-     * @return the current instance of DistributedJmxBuilder for chaining.
-     */
-    public final DistributedJmxBuilder withCqlSession(final CqlSession session)
-    {
-        mySession = session;
-        return this;
-    }
+    private JmxConnectionStrategy jmxConnectionStrategy;
 
     /**
      * Set the map of nodes to be used by the DistributedJmxBuilder.
@@ -85,32 +60,6 @@ public class DistributedJmxBuilder
     public final DistributedJmxBuilder withNativeConnection(final DistributedNativeConnectionProvider nativeConnection)
     {
         myNativeConnectionProvider = nativeConnection;
-        return this;
-    }
-
-    /**
-     * Set the credentials supplier to be used by the DistributedJmxBuilder.
-     *
-     * @param credentials
-     *         a Supplier that provides an array of Strings containing the username and password.
-     * @return the current instance of DistributedJmxBuilder for chaining.
-     */
-    public final DistributedJmxBuilder withCredentials(final Supplier<String[]> credentials)
-    {
-        myCredentialsSupplier = credentials;
-        return this;
-    }
-
-    /**
-     * Set the TLS settings supplier to be used by the DistributedJmxBuilder.
-     *
-     * @param tlsSupplier
-     *         a Supplier that provides a Map containing TLS settings.
-     * @return the current instance of DistributedJmxBuilder for chaining.
-     */
-    public final DistributedJmxBuilder withTLS(final Supplier<Map<String, String>> tlsSupplier)
-    {
-        myTLSSupplier = tlsSupplier;
         return this;
     }
 
@@ -127,27 +76,9 @@ public class DistributedJmxBuilder
         return this;
     }
 
-    public final DistributedJmxBuilder withJolokiaEnabled(final boolean jolokiaEnabled)
+    public final DistributedJmxBuilder withConnectionStrategy(final JmxConnectionStrategy strategy)
     {
-        isJolokiaEnabled = jolokiaEnabled;
-        return this;
-    }
-
-    public final DistributedJmxBuilder withJolokiaPort(final int jolokiaPort)
-    {
-        myJolokiaPort = jolokiaPort;
-        return this;
-    }
-
-    public final DistributedJmxBuilder withDNSResolution(final boolean reverseDNSResolution)
-    {
-        myReverseDNSResolution = reverseDNSResolution;
-        return this;
-    }
-
-    public final DistributedJmxBuilder withIpTranslator(final IpTranslator ipTranslator)
-    {
-        myIpTranslator = ipTranslator;
+        jmxConnectionStrategy = strategy;
         return this;
     }
 
@@ -192,9 +123,7 @@ public class DistributedJmxBuilder
             pool.shutdown();
             try
             {
-                if (!pool.awaitTermination(
-                        JolokiaJmxConnectionFactory.CONNECTION_TIMEOUT_SECONDS + CONNECTION_TIMEOUT_EXTRA_SECONDS,
-                        TimeUnit.SECONDS))
+                if (!pool.awaitTermination(ConnectionUtils.JMX_CONNECTION_TIMEOUT + MAX_PARALLEL_CONNECTIONS, TimeUnit.SECONDS))
                 {
                     pool.shutdownNow();
                 }
@@ -215,39 +144,8 @@ public class DistributedJmxBuilder
     {
         try
         {
-            JmxHostResolver hostResolver = new JmxHostResolver(myIpTranslator, myReverseDNSResolution);
-            String host = hostResolver.resolve(node);
-            Map<String, Object> env = JmxEnvironmentFactory.create(myCredentialsSupplier, myTLSSupplier, isJolokiaEnabled);
-            int port;
-            JMXConnector jmxConnector;
-
-            if (isJolokiaEnabled)
-            {
-                port = myJolokiaPort;
-                boolean sslEnabled = String.valueOf(true).equals(
-                        myTLSSupplier != null ? myTLSSupplier.get().get(ECCHRONOS_JOLOKIA_SSL_ENABLED_PROPERTY) : null);
-                jmxConnector = new JolokiaJmxConnectionFactory(sslEnabled).connect(host, port, env);
-            }
-            else
-            {
-                port = JmxPortDiscovery.getPort(mySession, node);
-                jmxConnector = new RmiJmxConnectionFactory().connect(host, port, env);
-            }
-
-            LOG.debug("Connecting JMX through {}:{}, credentials: {}, tls: {}",
-                    host, port, myCredentialsSupplier != null, myTLSSupplier != null);
-            if (isConnected(jmxConnector))
-            {
-                LOG.info("Connected JMX for {}:{}", host, port);
-                myEccNodesSync.updateNodeStatus(NodeStatus.AVAILABLE, node.getDatacenter(), node.getHostId());
-                JMXConnector oldConnector = myJMXConnections.put(Objects.requireNonNull(node.getHostId()), jmxConnector);
-                closeQuietly(oldConnector);
-            }
-            else
-            {
-                closeQuietly(jmxConnector);
-                myEccNodesSync.updateNodeStatus(NodeStatus.UNAVAILABLE, node.getDatacenter(), node.getHostId());
-            }
+            ConnectionResult result = jmxConnectionStrategy.connect(node);
+            verifyConnection(node, result.connector(), result.serviceURL());
         }
         catch (IOException | SecurityException e)
         {
@@ -256,31 +154,19 @@ public class DistributedJmxBuilder
         }
     }
 
-    private static boolean isConnected(final JMXConnector jmxConnector)
+    private void verifyConnection(final Node node, final JMXConnector jmxConnector, final JMXServiceURL jmxUrl)
     {
-        try
+        if (ConnectionUtils.isConnected(jmxConnector))
         {
-            jmxConnector.getConnectionId();
-            return true;
+            LOG.info("Connected JMX for {}", jmxUrl);
+            myEccNodesSync.updateNodeStatus(NodeStatus.AVAILABLE, node.getDatacenter(), node.getHostId());
+            JMXConnector oldConnector = myJMXConnections.put(Objects.requireNonNull(node.getHostId()), jmxConnector);
+            ConnectionUtils.closeQuietly(oldConnector);
         }
-        catch (IOException e)
+        else
         {
-            return false;
-        }
-    }
-
-    private static void closeQuietly(final JMXConnector connector)
-    {
-        if (connector != null)
-        {
-            try
-            {
-                connector.close();
-            }
-            catch (IOException | NullPointerException e)
-            {
-                LOG.debug("Failed to close JMX connector", e);
-            }
+            ConnectionUtils.closeQuietly(jmxConnector);
+            myEccNodesSync.updateNodeStatus(NodeStatus.UNAVAILABLE, node.getDatacenter(), node.getHostId());
         }
     }
 

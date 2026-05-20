@@ -29,12 +29,14 @@ public class DistributedJmxConnection extends Connection<DistributedJmxConnectio
 {
     public static final int DEFAULT_RUN_DELAY = 500;
     public static final int DEFAULT_MAX_WAIT_TIME_IN_MINUTES = 40;
+    public static final int DEFAULT_JMX_PORT = 7199;
     private RetryPolicyConfig myRetryPolicyConfig = new RetryPolicyConfig();
     private JolokiaConfig myJolokiaConfig = new JolokiaConfig();
     private boolean myReverseDNSResolution = false;
     private Integer myRunDelay = DEFAULT_RUN_DELAY;
     private Integer myMaxWaitTimeInMinutes = DEFAULT_MAX_WAIT_TIME_IN_MINUTES;
     private boolean myUseBroadcastRPCAddress = true;
+    private int myJmxPort = DEFAULT_JMX_PORT;
 
     public DistributedJmxConnection()
     {
@@ -46,6 +48,18 @@ public class DistributedJmxConnection extends Connection<DistributedJmxConnectio
         {
             // Do something useful ...
         }
+    }
+
+    @JsonProperty("port")
+    public final int getJmxPort()
+    {
+        return myJmxPort;
+    }
+
+    @JsonProperty("port")
+    public final void setJmxPort(final int port)
+    {
+        myJmxPort = port;
     }
 
     @JsonProperty("runDelay")
