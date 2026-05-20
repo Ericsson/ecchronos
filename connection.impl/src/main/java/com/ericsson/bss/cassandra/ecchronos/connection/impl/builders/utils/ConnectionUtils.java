@@ -24,29 +24,36 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
-import com.ericsson.bss.cassandra.ecchronos.utils.dns.ReverseDNS;
 
+/**
+ * Utility class providing JMX connection helpers: credentials, TLS configuration,
+ * host resolution, and connector lifecycle management.
+ */
 public final class ConnectionUtils
 {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionUtils.class);
-    public static final String NO_BROADCAST_ADDRESS = "0.0.0.0"; //NOPMD AvoidUsingHardCodedIP
+
+    /** Timeout in seconds for JMX connection attempts. */
     public static final Integer JMX_CONNECTION_TIMEOUT = 20;
 
-    private final boolean myReverseDNSResolution;
-    private final IpTranslator myIpTranslator;
+    private final JmxHostResolver myHostResolver;
     private final Supplier<String[]> myCredentialsSupplier;
     private final Supplier<Map<String, String>> myTLSSupplier;
 
+    /**
+     * Constructs a ConnectionUtils from the given builder.
+     *
+     * @param builder the builder.
+     */
     public ConnectionUtils(final Builder builder)
     {
-        myReverseDNSResolution = builder.myReverseDNSResolution;
-        myIpTranslator = builder.myIpTranslator;
+        myHostResolver = new JmxHostResolver(builder.myIpTranslator, builder.myReverseDNSResolution);
         myCredentialsSupplier = builder.myCredentialsSupplier;
         myTLSSupplier = builder.myTLSSupplier;
     }
 
     /**
-     * Defines the host address for the given node.
+     * Resolves the JMX host address for the given node.
      *
      * @param node the node to resolve.
      * @return the resolved host string.
@@ -54,25 +61,7 @@ public final class ConnectionUtils
      */
     public String defineHost(final Node node) throws UnknownHostException
     {
-        String host = node.getBroadcastRpcAddress().get().getAddress().getHostAddress();
-        if (NO_BROADCAST_ADDRESS.equals(host))
-        {
-            host = node.getListenAddress().get().getHostString();
-        }
-        if (myIpTranslator.isActive())
-        {
-            host = myIpTranslator.getInternalIp(host);
-        }
-        if (myReverseDNSResolution)
-        {
-            host = ReverseDNS.fromHostString(host);
-        }
-        if (host.contains(":") && !host.startsWith("[") && !host.endsWith("]"))
-        {
-            // Use square brackets to surround IPv6 addresses
-            host = "[" + host + "]";
-        }
-        return host;
+        return myHostResolver.resolve(node);
     }
 
     public static boolean isConnected(final JMXConnector jmxConnector)
