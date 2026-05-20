@@ -17,8 +17,6 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads.NodeWorkerManager;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.refresh.NodeAddedAction;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.refresh.NodeRemovedAction;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.CloseEvent;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.KeyspaceCreatedEvent;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.SetupEvent;
@@ -47,7 +45,6 @@ import org.slf4j.LoggerFactory;
  * A repair configuration provider that adds configuration to {@link NodeWorkerManager} based on whether the table
  * is replicated locally using the default repair configuration provided during construction of this object.
  */
-@SuppressWarnings("PMD.GodClass")
 public class DefaultRepairConfigurationProvider extends NodeStateListenerBase implements SchemaChangeListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultRepairConfigurationProvider.class);
@@ -56,10 +53,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
 
     private CqlSession mySession;
     private final ExecutorService myService;
-    private EccNodesSync myEccNodesSync;
-    private DistributedJmxConnectionProvider myJmxConnectionProvider;
-    private DistributedNativeConnectionProvider myAgentNativeConnectionProvider;
-    private ScheduleManager myScheduleManager;
+    private NodeLifecycleHandler myNodeLifecycleHandler;
 
     /**
      * Default constructor.
@@ -72,14 +66,16 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     private DefaultRepairConfigurationProvider(final Builder builder)
     {
         mySession = builder.mySession;
-        myEccNodesSync = builder.myEccNodesSync;
-        myJmxConnectionProvider = builder.myJmxConnectionProvider;
-        myAgentNativeConnectionProvider = builder.myAgentNativeConnectionProvider;
         myWorkerManager = builder.myNodeWorkerManager;
-        setupConfiguration();
         myService = Executors.newFixedThreadPool(NO_OF_THREADS);
-        myScheduleManager = builder.myScheduleManager;
-
+        myNodeLifecycleHandler = new NodeLifecycleHandler(
+                builder.myEccNodesSync,
+                builder.myJmxConnectionProvider,
+                builder.myAgentNativeConnectionProvider,
+                builder.myNodeWorkerManager,
+                builder.myScheduleManager,
+                myService);
+        setupConfiguration();
     }
 
     /**
@@ -90,11 +86,14 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     public void fromBuilder(final Builder builder)
     {
         mySession = builder.mySession;
-        myEccNodesSync = builder.myEccNodesSync;
-        myJmxConnectionProvider = builder.myJmxConnectionProvider;
-        myAgentNativeConnectionProvider = builder.myAgentNativeConnectionProvider;
         myWorkerManager = builder.myNodeWorkerManager;
-        myScheduleManager = builder.myScheduleManager;
+        myNodeLifecycleHandler = new NodeLifecycleHandler(
+                builder.myEccNodesSync,
+                builder.myJmxConnectionProvider,
+                builder.myAgentNativeConnectionProvider,
+                builder.myNodeWorkerManager,
+                builder.myScheduleManager,
+                myService);
         setupConfiguration();
     }
 
@@ -211,244 +210,119 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         return new Builder();
     }
 
-    /**
-     * Called when user defined types are created.
-     *
-     * @param type User defined type
-     */
     @Override
     public void onUserDefinedTypeCreated(final UserDefinedType type)
     {
         // NOOP
     }
 
-    /**
-     * Called when user defined types are dropped.
-     *
-     * @param type User defined type
-     */
     @Override
     public void onUserDefinedTypeDropped(final UserDefinedType type)
     {
         // NOOP
     }
 
-    /**
-     * Called when user defined types are updated.
-     *
-     * @param current Current user defined type
-     * @param previous previous user defined type
-     */
     @Override
     public void onUserDefinedTypeUpdated(final UserDefinedType current, final UserDefinedType previous)
     {
         // NOOP
     }
 
-    /**
-     * Called when functions are created.
-     *
-     * @param function Function metadata
-     */
     @Override
     public void onFunctionCreated(final FunctionMetadata function)
     {
         // NOOP
     }
 
-    /**
-     * Called when functions are dropped.
-     *
-     * @param function Function metadata
-     */
     @Override
     public void onFunctionDropped(final FunctionMetadata function)
     {
         // NOOP
     }
 
-    /**
-     * Called when functions are updated.
-     *
-     * @param current Current function metadata
-     * @param previous Previous function metadata
-     */
     @Override
     public void onFunctionUpdated(final FunctionMetadata current, final FunctionMetadata previous)
     {
         // NOOP
     }
 
-    /**
-     * Called when aggregates are created.
-     *
-     * @param aggregate Aggregate metadata
-     */
     @Override
     public void onAggregateCreated(final AggregateMetadata aggregate)
     {
         // NOOP
     }
 
-    /**
-     * Called when aggregates are dropped.
-     *
-     * @param aggregate Aggregate metadata
-     */
     @Override
     public void onAggregateDropped(final AggregateMetadata aggregate)
     {
         // NOOP
     }
 
-    /**
-     * Called when aggregates are updated.
-     *
-     * @param current Current aggregate metadata
-     * @param previous previous aggregate metadata
-     */
     @Override
     public void onAggregateUpdated(final AggregateMetadata current, final AggregateMetadata previous)
     {
         // NOOP
     }
 
-    /**
-     * Called when views are created.
-     *
-     * @param view View metadata
-     */
     @Override
     public void onViewCreated(final ViewMetadata view)
     {
         // NOOP
     }
 
-    /**
-     * Called when views are dropped.
-     *
-     * @param view View metadata
-     */
     @Override
     public void onViewDropped(final ViewMetadata view)
     {
         // NOOP
     }
 
-    /**
-     * Called when views are updated.
-     *
-     * @param current Current view metadata
-     * @param previous Previous view metadata
-     */
     @Override
     public void onViewUpdated(final ViewMetadata current, final ViewMetadata previous)
     {
         // NOOP
     }
 
-    /**
-     * Called when the session is up and ready. Will invoke the listeners' onSessionReady methods.
-     *
-     * @param session The session
-     */
     @Override
-    public void onSessionReady(final Session session)
+    public final void onSessionReady(final Session session)
     {
         SchemaChangeListener.super.onSessionReady(session);
     }
 
-    /**
-     * Callback for when a node switches state to UP.
-     *
-     * @param node The node switching state to UP
-     */
     @Override
-    public void onUp(final Node node)
+    public final void onUp(final Node node)
     {
-        LOG.debug("{} switched state to UP.", node);
-        if (myAgentNativeConnectionProvider == null  || !myAgentNativeConnectionProvider.getNodes().containsKey(node.getHostId()))
+        if (myNodeLifecycleHandler != null)
         {
-            onAdd(node);
-        }
-        else
-        {
-            LOG.info("Node {} came back up, refreshing JMX connection in case endpoint changed", node.getHostId());
-            NodeAddedAction callable = new NodeAddedAction(myEccNodesSync, myJmxConnectionProvider,
-                    myAgentNativeConnectionProvider, node);
-            myService.submit(callable);
-            if (myScheduleManager != null)
-            {
-                myScheduleManager.createScheduleFutureForNode(node.getHostId());
-            }
-            else
-            {
-                LOG.debug("myScheduleManager not ready when Node added {}", node.getHostId());
-            }
+            myNodeLifecycleHandler.onUp(node);
         }
         setupConfiguration();
     }
 
-    /**
-     * Callback for when a node switches state to DOWN.
-     *
-     * @param node The node switching state to DOWN
-     */
     @Override
-    public void onDown(final Node node)
+    public final void onDown(final Node node)
     {
-        LOG.debug("{} switched state to DOWN.", node);
+        if (myNodeLifecycleHandler != null)
+        {
+            myNodeLifecycleHandler.onDown(node);
+        }
         setupConfiguration();
     }
 
-    /**
-     * Callback for when a new node is added to the cluster.
-     * @param node the node to add.
-     */
     @Override
-    public void onAdd(final Node node)
+    public final void onAdd(final Node node)
     {
-        if (myAgentNativeConnectionProvider == null  || myAgentNativeConnectionProvider.confirmNodeValid(node))
+        if (myNodeLifecycleHandler != null)
         {
-            LOG.info("Node added {}", node.getHostId());
-
-            NodeAddedAction callable = new NodeAddedAction(myEccNodesSync, myJmxConnectionProvider, myAgentNativeConnectionProvider, node);
-            myService.submit(callable);
-            if (myWorkerManager != null)
-            {
-                myWorkerManager.addNode(node);
-            }
-            if (myScheduleManager != null)
-            {
-                myScheduleManager.createScheduleFutureForNode(node.getHostId());
-            }
-            else
-            {
-                LOG.debug("myScheduleManager not ready when Node added {}", node.getHostId());
-            }
+            myNodeLifecycleHandler.onAdd(node);
         }
     }
 
-    /**
-     * callback for when a node is removed from the cluster.
-     * @param node the node to remove.
-     */
     @Override
-    public void onRemove(final Node node)
+    public final void onRemove(final Node node)
     {
-        if (myAgentNativeConnectionProvider == null  || myAgentNativeConnectionProvider.confirmNodeValid(node))
+        if (myNodeLifecycleHandler != null)
         {
-            LOG.info("Node removed {}", node.getHostId());
-            NodeRemovedAction callable = new NodeRemovedAction(myEccNodesSync, myJmxConnectionProvider, myAgentNativeConnectionProvider, node);
-            myService.submit(callable);
-            if (myWorkerManager != null)
-            {
-                myWorkerManager.removeNode(node);
-            }
-            if (myScheduleManager != null)
-            {
-                myScheduleManager.removeScheduleFutureForNode(node.getHostId());
-            }
+            myNodeLifecycleHandler.onRemove(node);
         }
     }
 
@@ -473,7 +347,6 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         for (KeyspaceMetadata keyspaceMetadata : mySession.getMetadata().getKeyspaces().values())
         {
             myWorkerManager.broadcastEvent(new SetupEvent(keyspaceMetadata));
-
         }
     }
 
@@ -488,7 +361,6 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         private DistributedNativeConnectionProvider myAgentNativeConnectionProvider;
         private NodeWorkerManager myNodeWorkerManager;
         private ScheduleManager myScheduleManager;
-
 
         /**
          * Build with session.
@@ -518,7 +390,8 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
          * @param agentNativeConnectionProvider the native connection.
          * @return Builder
          */
-        public Builder withDistributedNativeConnectionProvider(final DistributedNativeConnectionProvider agentNativeConnectionProvider)
+        public Builder withDistributedNativeConnectionProvider(
+                final DistributedNativeConnectionProvider agentNativeConnectionProvider)
         {
             myAgentNativeConnectionProvider = agentNativeConnectionProvider;
             return this;
@@ -545,6 +418,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
             myNodeWorkerManager = nodeWorkerManager;
             return this;
         }
+
         /**
          * Build with scheduleManager.
          * @param scheduleManager the schedule Manager
@@ -567,4 +441,3 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         }
     }
 }
-
