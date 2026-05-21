@@ -80,7 +80,7 @@ public class AgentJmxConnectionProvider implements DistributedJmxConnectionProvi
 
         JmxConnectionStrategy strategy = jolokiaConfig.isEnabled()
             ? JolokiaConnectionStrategy.newBuilder().withConnectionUtils(myConnectionUtils).withPort(jolokiaConfig.getPort()).build()
-            : RMIConnectionStrategy.newBuilder().withConnectionUtils(myConnectionUtils).withPort(jolokiaConfig.getPort()).build();
+            : RMIConnectionStrategy.newBuilder().withConnectionUtils(myConnectionUtils).withPort(jmxConnection.getJmxPort()).build();
         myDistributedJmxConnectionProviderImpl = DistributedJmxConnectionProviderImpl.builder()
                 .withNativeConnection(distributedNativeConnectionProvider)
                 .withEccNodesSync(eccNodesSync)
