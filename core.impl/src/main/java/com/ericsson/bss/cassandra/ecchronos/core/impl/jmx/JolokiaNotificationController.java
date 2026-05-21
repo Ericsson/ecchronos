@@ -161,13 +161,29 @@ public class JolokiaNotificationController
             final NotificationListener listener) throws UnknownHostException
     {
         String jolokiaNotificationID = myJolokiaRelationshipListeners.get(listener);
+        if (jolokiaNotificationID == null)
+        {
+            LOG.warn("No Jolokia notification ID found for listener on node {}, skipping removal", nodeID);
+            return;
+        }
         removeJolokiaNotification(nodeID, jolokiaNotificationID);
         synchronized (myNotificationMonitors)
         {
-            myNotificationMonitors.get(nodeID).get(jolokiaNotificationID).cancel(true);
-            myNotificationMonitors.get(nodeID).remove(jolokiaNotificationID);
+            Map<String, ScheduledFuture<?>> monitors = myNotificationMonitors.get(nodeID);
+            if (monitors != null)
+            {
+                ScheduledFuture<?> future = monitors.remove(jolokiaNotificationID);
+                if (future != null)
+                {
+                    future.cancel(true);
+                }
+            }
         }
-        myNodeListenersMap.get(nodeID).remove(jolokiaNotificationID);
+        Map<String, NotificationListener> listeners = myNodeListenersMap.get(nodeID);
+        if (listeners != null)
+        {
+            listeners.remove(jolokiaNotificationID);
+        }
         myJolokiaRelationshipListeners.remove(listener);
     }
 
