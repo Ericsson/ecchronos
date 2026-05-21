@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Deprecate JMX Port Discover to use port field in ecc.yml - Issue #1578
 * Refactor DistributedJmxBuilder to Reduce Cyclomatic Complexity - Issue #1573
 * Add per-node JMX operation serialization to prevent HTTP errors under concurrent load - Issue #1560
 * Fix job status incorrectly changing to BLOCKED on lock contention backoff - Issue #1548

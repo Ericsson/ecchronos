@@ -66,9 +66,16 @@ public final class JmxHostResolver
         {
             host = ReverseDNS.fromHostString(host);
         }
-        if (host.contains(":") && !host.startsWith("[") && !host.endsWith("]"))
+        if (host.contains(":"))
         {
-            host = "[" + host + "]";
+            if (!host.startsWith("["))
+            {
+                host = "[" + host;
+            }
+            if (!host.endsWith("]"))
+            {
+                host = host + "]";
+            }
         }
         return host;
     }

@@ -147,7 +147,8 @@ connection:
     ## The JMX port used for native RMI connections to Cassandra nodes.
     ## This value must match the port configured in Cassandra's cassandra-env.sh
     ## or jvm.options (cassandra.jmx.remote.port / cassandra.jmx.local.port).
-    ## All nodes in the cluster are expected to use the same JMX port.
+    ## All nodes controlled by the same ecChronos instances are expected to use
+    ## the same JMX port.
     ##
     port: 7199
     ##
