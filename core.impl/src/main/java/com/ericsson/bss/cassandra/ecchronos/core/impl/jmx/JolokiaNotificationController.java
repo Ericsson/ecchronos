@@ -129,7 +129,31 @@ public class JolokiaNotificationController
 
         myJolokiaRelationshipListeners.put(listener, jolokiaNotificationID);
 
-        startNotificationMonitor(nodeID, jolokiaNotificationID);
+        try
+        {
+            startNotificationMonitor(nodeID, jolokiaNotificationID);
+        }
+        catch (Exception e)
+        {
+            myJolokiaRelationshipListeners.remove(listener);
+            synchronized (myNodeListenersMap)
+            {
+                Map<String, NotificationListener> listeners = myNodeListenersMap.get(nodeID);
+                if (listeners != null)
+                {
+                    listeners.remove(jolokiaNotificationID);
+                }
+            }
+            try
+            {
+                removeJolokiaNotification(nodeID, jolokiaNotificationID);
+            }
+            catch (Exception removeEx)
+            {
+                LOG.warn("Failed to remove Jolokia notification during cleanup for node {}", nodeID, removeEx);
+            }
+            throw new IOException("Failed to start notification monitor for node " + nodeID, e);
+        }
     }
 
     public final void removeStorageServiceListener(
