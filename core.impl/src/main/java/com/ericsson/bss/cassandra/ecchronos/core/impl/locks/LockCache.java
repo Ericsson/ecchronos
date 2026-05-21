@@ -33,6 +33,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public final class LockCache
 {
     private static final Logger LOG = LoggerFactory.getLogger(LockCache.class);
+    private static final int MAX_CACHE_SIZE = 10000;
 
     private final Cache<LockKey, LockException> myFailureCache;
     private final LockSupplier myLockSupplier;
@@ -47,6 +48,7 @@ public final class LockCache
         myLockSupplier = lockSupplier;
 
         myFailureCache = Caffeine.newBuilder()
+                .maximumSize(MAX_CACHE_SIZE)
                 .expireAfterWrite(expireTime, expireTimeUnit)
                 .executor(Runnable::run)
                 .build();

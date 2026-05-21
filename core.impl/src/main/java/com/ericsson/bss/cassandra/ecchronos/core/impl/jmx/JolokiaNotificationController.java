@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import javax.management.Notification;
 import javax.management.NotificationListener;
 import javax.net.ssl.SSLContext;
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -49,7 +50,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-public class JolokiaNotificationController
+public class JolokiaNotificationController implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(JolokiaNotificationController.class);
     private static final int SHUTDOWN_TIMEOUT_SECONDS = 1;
@@ -129,7 +130,31 @@ public class JolokiaNotificationController
 
         myJolokiaRelationshipListeners.put(listener, jolokiaNotificationID);
 
-        startNotificationMonitor(nodeID, jolokiaNotificationID);
+        try
+        {
+            startNotificationMonitor(nodeID, jolokiaNotificationID);
+        }
+        catch (Exception e)
+        {
+            myJolokiaRelationshipListeners.remove(listener);
+            synchronized (myNodeListenersMap)
+            {
+                Map<String, NotificationListener> listeners = myNodeListenersMap.get(nodeID);
+                if (listeners != null)
+                {
+                    listeners.remove(jolokiaNotificationID);
+                }
+            }
+            try
+            {
+                removeJolokiaNotification(nodeID, jolokiaNotificationID);
+            }
+            catch (Exception removeEx)
+            {
+                LOG.warn("Failed to remove Jolokia notification during cleanup for node {}", nodeID, removeEx);
+            }
+            throw new IOException("Failed to start notification monitor for node " + nodeID, e);
+        }
     }
 
     public final void removeStorageServiceListener(
@@ -137,13 +162,29 @@ public class JolokiaNotificationController
             final NotificationListener listener) throws UnknownHostException
     {
         String jolokiaNotificationID = myJolokiaRelationshipListeners.get(listener);
+        if (jolokiaNotificationID == null)
+        {
+            LOG.warn("No Jolokia notification ID found for listener on node {}, skipping removal", nodeID);
+            return;
+        }
         removeJolokiaNotification(nodeID, jolokiaNotificationID);
         synchronized (myNotificationMonitors)
         {
-            myNotificationMonitors.get(nodeID).get(jolokiaNotificationID).cancel(true);
-            myNotificationMonitors.get(nodeID).remove(jolokiaNotificationID);
+            Map<String, ScheduledFuture<?>> monitors = myNotificationMonitors.get(nodeID);
+            if (monitors != null)
+            {
+                ScheduledFuture<?> future = monitors.remove(jolokiaNotificationID);
+                if (future != null)
+                {
+                    future.cancel(true);
+                }
+            }
         }
-        myNodeListenersMap.get(nodeID).remove(jolokiaNotificationID);
+        Map<String, NotificationListener> listeners = myNodeListenersMap.get(nodeID);
+        if (listeners != null)
+        {
+            listeners.remove(jolokiaNotificationID);
+        }
         myJolokiaRelationshipListeners.remove(listener);
     }
 
@@ -486,6 +527,7 @@ public class JolokiaNotificationController
                 .replace("&amp;", "&");
     }
 
+    @Override
     public final void close()
     {
         // Remove remote Jolokia notifications
