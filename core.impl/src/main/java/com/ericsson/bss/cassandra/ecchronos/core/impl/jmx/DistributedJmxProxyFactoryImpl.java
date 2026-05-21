@@ -104,7 +104,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
         return myMaxWaitTimeInMinutes;
     }
 
-    private static final class InternalDistributedJmxProxy implements DistributedJmxProxy
+    private static final class InternalDistributedJmxProxy implements DistributedJmxProxy // NOPMD CyclomaticComplexity
     {
         private final DistributedJmxConnectionProvider myDistributedJmxConnectionProvider;
         private final Map<UUID, Node> myNodesMap;
@@ -431,6 +431,14 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                 try
                 {
                     nodeConnection.removeConnectionNotificationListener(listener);
+                }
+                catch (ListenerNotFoundException e)
+                {
+                    rethrowIfOutOfMemory(e);
+                    LOG.warn("Unable to remove connection notification listener for node {}", nodeID, e);
+                }
+                try
+                {
                     if (isJolokiaEnabled)
                     {
                         myJolokiaNotificationController.removeStorageServiceListener(nodeID, listener);
@@ -448,7 +456,6 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                             lock.unlock();
                         }
                     }
-
                 }
                 catch (InstanceNotFoundException | ListenerNotFoundException | IOException | UncheckedJmxAdapterException e)
                 {
