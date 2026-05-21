@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import javax.management.Notification;
 import javax.management.NotificationListener;
 import javax.net.ssl.SSLContext;
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -49,7 +50,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-public class JolokiaNotificationController
+public class JolokiaNotificationController implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(JolokiaNotificationController.class);
     private static final int SHUTDOWN_TIMEOUT_SECONDS = 1;
@@ -526,6 +527,7 @@ public class JolokiaNotificationController
                 .replace("&amp;", "&");
     }
 
+    @Override
     public final void close()
     {
         // Remove remote Jolokia notifications
