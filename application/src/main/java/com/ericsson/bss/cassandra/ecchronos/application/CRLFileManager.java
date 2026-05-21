@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,7 +40,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public final class CRLFileManager
+public final class CRLFileManager implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CRLFileManager.class);
 
@@ -197,4 +198,9 @@ public final class CRLFileManager
 
     }
 
+    @Override
+    public void close()
+    {
+        myScheduler.shutdownNow();
+    }
 }

@@ -80,6 +80,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     private static final long DEFAULT_REJECT_TIME_IN_MS = TimeUnit.MINUTES.toMillis(1);
 
     static final long DEFAULT_CACHE_EXPIRE_TIME_IN_MS = TimeUnit.SECONDS.toMillis(10);
+    private static final int MAX_CACHE_SIZE = 10000;
 
     private final PreparedStatement myGetRejectionsStatementByKsAndTb;
     private final PreparedStatement myCreateRejectionsStatement;
@@ -251,6 +252,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     private LoadingCache<TableKey, TimeRejectionCollection> createConfigCache(final long expireAfterInMs)
     {
         return Caffeine.newBuilder()
+                .maximumSize(MAX_CACHE_SIZE)
                 .expireAfterWrite(expireAfterInMs, TimeUnit.MILLISECONDS)
                 .executor(Runnable::run)
                 .build(key -> load(key));
