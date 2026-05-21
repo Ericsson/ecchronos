@@ -176,6 +176,14 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                 {
                     rethrowIfOutOfMemory(e);
                     LOG.error("Unable to add StorageService listener in node {}", nodeID, e);
+                    try
+                    {
+                        nodeConnection.removeConnectionNotificationListener(listener);
+                    }
+                    catch (Exception removeEx)
+                    {
+                        LOG.warn("Failed to remove connection notification listener during cleanup for node {}", nodeID, removeEx);
+                    }
                     ret = false;
                 }
             }
