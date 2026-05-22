@@ -16,13 +16,17 @@ package com.ericsson.bss.cassandra.ecchronos.application.providers;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
+import com.ericsson.bss.cassandra.ecchronos.application.config.connection.DistributedJmxConnection;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.JolokiaConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.Credentials;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.JmxTLSConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.DistributedJmxBuilder;
+import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionStrategy;
+import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.utils.ConnectionUtils;
+import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.utils.JolokiaConnectionStrategy;
+import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.utils.RMIConnectionStrategy;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedJmxConnectionProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
@@ -61,22 +65,26 @@ public class AgentJmxConnectionProvider implements DistributedJmxConnectionProvi
             final EccNodesSync eccNodesSync,
             final IpTranslator ipTranslator) throws IOException
     {
-        JolokiaConfig jolokiaConfig = config.getConnectionConfig().getJmxConnection().getJolokiaConfig();
+        DistributedJmxConnection jmxConnection = config.getConnectionConfig().getJmxConnection();
+        JolokiaConfig jolokiaConfig = jmxConnection.getJolokiaConfig();
         Supplier<String[]> credentials = () -> convertCredentials(jmxSecurity);
         Supplier<Map<String, String>> tls = () -> convertTls(jmxSecurity);
 
         LOG.info("Creating DistributedJmxConnectionConfig");
+        ConnectionUtils myConnectionUtils = ConnectionUtils.newBuilder()
+            .withCredentials(credentials)
+            .withTls(tls)
+            .withIpTranslator(ipTranslator)
+            .withReverseDNSResolution(jmxConnection.getReseverseDNSResolution())
+            .build();
 
+        JmxConnectionStrategy strategy = jolokiaConfig.isEnabled()
+            ? JolokiaConnectionStrategy.newBuilder().withConnectionUtils(myConnectionUtils).withPort(jolokiaConfig.getPort()).build()
+            : RMIConnectionStrategy.newBuilder().withConnectionUtils(myConnectionUtils).withPort(jmxConnection.getJmxPort()).build();
         myDistributedJmxConnectionProviderImpl = DistributedJmxConnectionProviderImpl.builder()
-                .withCqlSession(distributedNativeConnectionProvider.getCqlSession())
                 .withNativeConnection(distributedNativeConnectionProvider)
-                .withCredentials(credentials)
                 .withEccNodesSync(eccNodesSync)
-                .withTLS(tls)
-                .withJolokiaEnabled(jolokiaConfig.isEnabled())
-                .withJolokiaPort(jolokiaConfig.getPort())
-                .withDNSResolution(config.getConnectionConfig().getJmxConnection().getReseverseDNSResolution())
-                .withIpTranslator(ipTranslator)
+                .withConnectionStrategy(strategy)
                 .build();
     }
 
@@ -91,7 +99,7 @@ public class AgentJmxConnectionProvider implements DistributedJmxConnectionProvi
         Map<String, String> config = new HashMap<>();
         if (!tlsConfig.isCertificateConfigured())
         {
-            config.put(DistributedJmxBuilder.ECCHRONOS_JOLOKIA_SSL_ENABLED_PROPERTY, String.valueOf(false));
+            config.put(JolokiaConnectionStrategy.ECCHRONOS_JOLOKIA_SSL_ENABLED_PROPERTY, String.valueOf(false));
             if (tlsConfig.getProtocol() != null)
                 {
                     config.put("com.sun.management.jmxremote.ssl.enabled.protocols", tlsConfig.getProtocol());
@@ -107,12 +115,12 @@ public class AgentJmxConnectionProvider implements DistributedJmxConnectionProvi
         }
         else
         {
-            config.put(DistributedJmxBuilder.ECCHRONOS_JOLOKIA_SSL_ENABLED_PROPERTY, String.valueOf(true));
-            config.put(DistributedJmxBuilder.JOLOKIA_CA_CERTIFICATE_PROPERTY, tlsConfig.getTrustCertificatePath().orElse(null));
-            config.put(DistributedJmxBuilder.JOLOKIA_CLIENT_CERTIFICATE_PROPERTY, tlsConfig.getCertificatePath().orElse(null));
-            config.put(DistributedJmxBuilder.JOLOKIA_CLIENT_KEY_CERTIFICATE_PROPERTY, tlsConfig.getCertificatePrivateKeyPath().orElse(null));
-            config.put(DistributedJmxBuilder.JOLOKIA_CLIENT_KEY_ALGORITHM_CERTIFICATE_PROPERTY, tlsConfig.getAlgorithm().orElse(null));
-            config.put(DistributedJmxBuilder.JDK_DISABLE_HOSTNAME_VERIFICATION_PROPERTY, String.valueOf(!tlsConfig.requiresEndpointVerification()));
+            config.put(JolokiaConnectionStrategy.ECCHRONOS_JOLOKIA_SSL_ENABLED_PROPERTY, String.valueOf(true));
+            config.put(JolokiaConnectionStrategy.JOLOKIA_CA_CERTIFICATE_PROPERTY, tlsConfig.getTrustCertificatePath().orElse(null));
+            config.put(JolokiaConnectionStrategy.JOLOKIA_CLIENT_CERTIFICATE_PROPERTY, tlsConfig.getCertificatePath().orElse(null));
+            config.put(JolokiaConnectionStrategy.JOLOKIA_CLIENT_KEY_CERTIFICATE_PROPERTY, tlsConfig.getCertificatePrivateKeyPath().orElse(null));
+            config.put(JolokiaConnectionStrategy.JOLOKIA_CLIENT_KEY_ALGORITHM_CERTIFICATE_PROPERTY, tlsConfig.getAlgorithm().orElse(null));
+            config.put(JolokiaConnectionStrategy.JDK_DISABLE_HOSTNAME_VERIFICATION_PROPERTY, String.valueOf(!tlsConfig.requiresEndpointVerification()));
         }
 
         return config;

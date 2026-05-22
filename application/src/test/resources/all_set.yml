@@ -58,6 +58,7 @@ connection:
       time: 45
       unit: minutes
   jmx:
+    port: 9211
     jolokia:
       enabled: true
       port: 7887
