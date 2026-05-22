@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Implement Flyweight Caching for LongTokenRange Instances - Issue #1580
 * Deprecate JMX Port Discover to use port field in ecc.yml - Issue #1578
 * Refactor DistributedJmxBuilder to Reduce Cyclomatic Complexity - Issue #1573
 

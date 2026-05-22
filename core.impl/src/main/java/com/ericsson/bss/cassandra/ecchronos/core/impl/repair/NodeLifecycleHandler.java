@@ -21,6 +21,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads.NodeWorkerMan
 import com.ericsson.bss.cassandra.ecchronos.core.impl.refresh.NodeAddedAction;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.refresh.NodeRemovedAction;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
+import com.ericsson.bss.cassandra.ecchronos.core.state.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,6 +102,7 @@ public class NodeLifecycleHandler
         if (myAgentNativeConnectionProvider == null || myAgentNativeConnectionProvider.confirmNodeValid(node))
         {
             LOG.info("Node added {}", node.getHostId());
+            LongTokenRange.clearCache();
             NodeAddedAction callable = new NodeAddedAction(myEccNodesSync, myJmxConnectionProvider,
                     myAgentNativeConnectionProvider, node);
             myService.submit(callable);
@@ -127,6 +129,7 @@ public class NodeLifecycleHandler
         if (myAgentNativeConnectionProvider == null || myAgentNativeConnectionProvider.confirmNodeValid(node))
         {
             LOG.info("Node removed {}", node.getHostId());
+            LongTokenRange.clearCache();
             NodeRemovedAction callable = new NodeRemovedAction(myEccNodesSync, myJmxConnectionProvider,
                     myAgentNativeConnectionProvider, node);
             myService.submit(callable);

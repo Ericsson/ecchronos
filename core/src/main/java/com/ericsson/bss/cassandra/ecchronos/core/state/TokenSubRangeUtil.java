@@ -69,7 +69,7 @@ public class TokenSubRangeUtil
         }
 
         LongTokenRange lastRange = subRanges.get(subRanges.size() - 1);
-        subRanges.add(new LongTokenRange(lastRange.end, tokenRange.end));
+        subRanges.add(LongTokenRange.of(lastRange.end, tokenRange.end));
 
         // Verify sub range size match full range size
         validateSubRangeSize(subRanges);
@@ -109,7 +109,7 @@ public class TokenSubRangeUtil
         long rangeStart = enforceValidBounds(rangeStartTmp);
         long rangeEnd = enforceValidBounds(rangeEndTmp);
 
-        return new LongTokenRange(rangeStart, rangeEnd);
+        return LongTokenRange.of(rangeStart, rangeEnd);
     }
 
     private long enforceValidBounds(final BigInteger tokenValue)

@@ -250,6 +250,6 @@ public class ReplicationStateImpl implements ReplicationState
         // Assuming murmur3 partitioner
         long start = ((Murmur3Token) range.getStart()).getValue();
         long end = ((Murmur3Token) range.getEnd()).getValue();
-        return new LongTokenRange(start, end);
+        return LongTokenRange.of(start, end);
     }
 }

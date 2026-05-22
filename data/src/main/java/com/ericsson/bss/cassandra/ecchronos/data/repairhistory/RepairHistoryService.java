@@ -459,7 +459,7 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
             long rangeBegin = Long.parseLong(row.getString(COLUMN_RANGE_BEGIN));
             long rangeEnd = Long.parseLong(row.getString(COLUMN_RANGE_END));
 
-            LongTokenRange tokenRange = new LongTokenRange(rangeBegin, rangeEnd);
+            LongTokenRange tokenRange = LongTokenRange.of(rangeBegin, rangeEnd);
             long startedAt = row.getInstant(COLUMN_STARTED_AT).toEpochMilli();
             Instant finished = row.getInstant(COLUMN_FINISHED_AT);
             long finishedAt = -1L;
