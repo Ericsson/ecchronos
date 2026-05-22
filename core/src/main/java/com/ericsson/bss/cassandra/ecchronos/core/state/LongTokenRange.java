@@ -15,7 +15,6 @@
 package com.ericsson.bss.cassandra.ecchronos.core.state;
 
 import java.math.BigInteger;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import com.github.benmanes.caffeine.cache.Cache;
@@ -30,8 +29,9 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 @SuppressWarnings("VisibilityModifier")
 public class LongTokenRange
 {
+    private static final int DEFAULT_TTL_IN_MINUTES = 60;
     private static final Cache<LongTokenRange, LongTokenRange> CACHE = Caffeine.newBuilder()
-        .expireAfterAccess(60, TimeUnit.MINUTES)
+        .expireAfterAccess(DEFAULT_TTL_IN_MINUTES, TimeUnit.MINUTES)
         .build();
 
     private static final int HASH_THIRTYONE = 31;
