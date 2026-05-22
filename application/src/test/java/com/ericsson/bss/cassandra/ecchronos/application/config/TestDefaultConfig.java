@@ -221,4 +221,12 @@ public class TestDefaultConfig
     {
         assertThat(config.getConnectionConfig().getJmxConnection().getUseBroadcastRPCAddress()).isTrue();
     }
+
+    @Test
+    public void testJmxPort()
+    {
+        DistributedJmxConnection jmxConfig = config.getConnectionConfig().getJmxConnection();
+        assertThat(jmxConfig.getJmxPort()).isNotNull();
+        assertThat(jmxConfig.getJmxPort()).isEqualTo(7199);
+    }
 }

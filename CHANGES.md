@@ -4,6 +4,9 @@
 
 ## Version 1.0.0
 
+* Deprecate JMX Port Discover to use port field in ecc.yml - Issue #1578
+* Refactor DistributedJmxBuilder to Reduce Cyclomatic Complexity - Issue #1573
+
 ## Version 1.0.0-beta7
 
 * Add per-node JMX operation serialization to prevent HTTP errors under concurrent load - Issue #1560

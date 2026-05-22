@@ -12,22 +12,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.connection.impl.builders;
+package com.ericsson.bss.cassandra.ecchronos.connection;
+
+import java.io.IOException;
 
 import javax.management.remote.JMXConnector;
-import java.io.IOException;
-import java.util.Map;
+import javax.management.remote.JMXServiceURL;
 
-public interface JmxConnectionFactory
+import com.datastax.oss.driver.api.core.metadata.Node;
+
+public interface JmxConnectionStrategy
 {
-    /**
-     * Create a JMX connection to the given host and port.
-     *
-     * @param host the resolved host address.
-     * @param port the JMX port.
-     * @param env  the JMX environment (credentials, TLS settings).
-     * @return a connected JMXConnector.
-     * @throws IOException if connection fails.
-     */
-    JMXConnector connect(String host, int port, Map<String, Object> env) throws IOException;
+    ConnectionResult connect(Node node) throws IOException;
+
+    public record ConnectionResult(JMXConnector connector, JMXServiceURL serviceURL)
+    {
+    }
 }

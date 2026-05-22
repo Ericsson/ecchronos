@@ -23,6 +23,10 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionStrategy;
+import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.utils.ConnectionUtils;
+import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.utils.JolokiaConnectionStrategy;
+import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.utils.RMIConnectionStrategy;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedJmxConnectionProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedNativeConnectionProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.DistributedJmxProxyFactoryImpl;
@@ -129,12 +133,18 @@ abstract public class TestBase
                 .withEcchronosID(ECCHRONOS_ID)
                 .build();
 
-        myJmxConnectionProvider = DistributedJmxConnectionProviderImpl.builder()
-                .withCqlSession(myNativeConnectionProvider.getCqlSession())
-                .withNativeConnection(myNativeConnectionProvider)
-                .withJolokiaEnabled(myJolokiaEnabled)
-                .withEccNodesSync(myEccNodesSync)
+        ConnectionUtils connectionUtils = ConnectionUtils.newBuilder()
                 .withIpTranslator(new IpTranslator())
+                .build();
+
+        JmxConnectionStrategy jmxConnectionStrategy = myJolokiaEnabled
+                ? JolokiaConnectionStrategy.newBuilder().withConnectionUtils(connectionUtils).withPort(8778).build()
+                : RMIConnectionStrategy.newBuilder().withConnectionUtils(connectionUtils).build();
+
+        myJmxConnectionProvider = DistributedJmxConnectionProviderImpl.builder()
+                .withNativeConnection(myNativeConnectionProvider)
+                .withEccNodesSync(myEccNodesSync)
+                .withConnectionStrategy(jmxConnectionStrategy)
                 .build();
 
         Map<UUID, Node> nodesMap = myNativeConnectionProvider.getCqlSession().getMetadata().getNodes();
