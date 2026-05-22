@@ -16,6 +16,10 @@ package com.ericsson.bss.cassandra.ecchronos.core.state;
 
 import java.math.BigInteger;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 /**
  * A representation of a token range in Cassandra.
@@ -26,7 +30,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @SuppressWarnings("VisibilityModifier")
 public class LongTokenRange
 {
-    private static final ConcurrentHashMap<LongTokenRange, LongTokenRange> CACHE = new ConcurrentHashMap<>();
+    private static final Cache<LongTokenRange, LongTokenRange> CACHE = Caffeine.newBuilder()
+        .expireAfterAccess(60, TimeUnit.MINUTES)
+        .build();
 
     private static final int HASH_THIRTYONE = 31;
     private static final int HASH_THIRTYTWO = 32;
@@ -50,9 +56,8 @@ public class LongTokenRange
      */
     public static LongTokenRange of(final long start, final long end)
     {
-        LongTokenRange candidate = new LongTokenRange(start, end);
-        LongTokenRange cached = CACHE.putIfAbsent(candidate, candidate);
-        return cached != null ? cached : candidate;
+        LongTokenRange key = new LongTokenRange(start, end);
+        return CACHE.get(key, k -> k);
     }
 
     /**
@@ -62,15 +67,16 @@ public class LongTokenRange
      */
     public static int cacheSize()
     {
-        return CACHE.size();
+        return CACHE.asMap().size();
     }
 
     /**
-     * Clears the token range cache. Intended for test isolation.
+     * Clears the token range cache.
      */
     public static void clearCache()
     {
-        CACHE.clear();
+        CACHE.invalidateAll();
+        CACHE.cleanUp();
     }
 
     public LongTokenRange(final long aStart, final long anEnd)
