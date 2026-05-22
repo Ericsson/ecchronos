@@ -14,16 +14,12 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
-import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.OnDemandRepair;
 import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
-import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -35,23 +31,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Collection;
-import java.util.ArrayList;
-import java.util.UUID;
-import java.util.Collections;
-import java.util.Set;
-
-
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import static com.ericsson.bss.cassandra.ecchronos.rest.RestUtils.REPAIR_MANAGEMENT_ENDPOINT_PREFIX;
-import static com.ericsson.bss.cassandra.ecchronos.rest.RestUtils.parseIdOrThrow;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 /**
  * REST Controller for managing on-demand repair operations in ecChronos,
@@ -59,27 +42,22 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
  */
 @Tag(name = "Repair-Management", description = "Management of repairs")
 @RestController
-public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagementREST //NOPMD Possible God Class
+public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagementREST
 {
-    private final OnDemandRepairScheduler myOnDemandRepairScheduler;
-
-    private final TableReferenceFactory myTableReferenceFactory;
-
-    private final ReplicatedTableProvider myReplicatedTableProvider;
+    private final OnDemandRepairJobOrchestrator myOrchestrator;
+    private final OnDemandRepairRequestValidator myValidator;
 
     @Autowired
-    private final DistributedNativeConnectionProvider myDistributedNativeConnectionProvider;
-
     public OnDemandRepairManagementRESTImpl(
             final OnDemandRepairScheduler demandRepairScheduler,
             final TableReferenceFactory tableReferenceFactory,
             final ReplicatedTableProvider replicatedTableProvider,
             final DistributedNativeConnectionProvider distributedNativeConnectionProvider)
     {
-        myOnDemandRepairScheduler = demandRepairScheduler;
-        myTableReferenceFactory = tableReferenceFactory;
-        myReplicatedTableProvider = replicatedTableProvider;
-        myDistributedNativeConnectionProvider = distributedNativeConnectionProvider;
+        myValidator = new OnDemandRepairRequestValidator(
+                demandRepairScheduler, replicatedTableProvider, distributedNativeConnectionProvider);
+        myOrchestrator = new OnDemandRepairJobOrchestrator(
+                demandRepairScheduler, tableReferenceFactory, distributedNativeConnectionProvider, myValidator);
     }
 
     @Override
@@ -97,7 +75,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             @Parameter(description = "Only return repairs matching the hostId.")
             final String hostId)
     {
-        return ResponseEntity.ok(getListOfOnDemandRepairs(keyspace, table, hostId));
+        return ResponseEntity.ok(myOrchestrator.getRepairs(keyspace, table, hostId));
     }
 
     @Override
@@ -114,7 +92,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             @Parameter(description = "Only return repairs matching the specified JobID.")
             final String jobID)
     {
-        return ResponseEntity.ok(getListOfOnDemandRepairs(nodeID, jobID));
+        return ResponseEntity.ok(myOrchestrator.getRepairs(nodeID, jobID));
     }
 
     @Override
@@ -145,217 +123,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             @Parameter(description = "Force repair of tables disabled in the schedule .")
             final boolean forceRepairDisabled)
     {
-        return ResponseEntity.ok(runOnDemandRepair(nodeID, keyspace, table, getRepairTypeOrDefault(repairType), all,
-                forceRepairTWCS, forceRepairDisabled));
-    }
-
-    private RepairType getRepairTypeOrDefault(final RepairType repairType)
-    {
-        if (repairType == null)
-        {
-            return RepairType.VNODE;
-        }
-        return repairType;
-    }
-
-
-    private List<OnDemandRepair> getListOfOnDemandRepairs(final String keyspace, final String table,
-            final String hostId)
-    {
-
-        Collection<Predicate<OnDemandRepairJobView>> filters = new ArrayList<Predicate<OnDemandRepairJobView>>();
-
-        if (keyspace != null)
-        {
-            Predicate<OnDemandRepairJobView> keyspaceFilter = job -> keyspace.equals(job.getTableReference().getKeyspace());
-            filters.add(keyspaceFilter);
-            if (table != null)
-            {
-                Predicate<OnDemandRepairJobView> tableFilter = job -> table.equals(job.getTableReference().getTable());
-                filters.add(tableFilter);
-            }
-        }
-        if (hostId != null)
-        {
-            UUID host = parseIdOrThrow(hostId);
-            Predicate<OnDemandRepairJobView> hostFilter = job -> host.equals(job.getNodeId());
-            filters.add(hostFilter);
-        }
-        Predicate<OnDemandRepairJobView> filter = filters.stream().reduce(Predicate::and).orElse(x -> true);
-        return getClusterWideOnDemandJobs(filter);
-    }
-
-    private List<OnDemandRepair> getListOfOnDemandRepairs(final String nodeID, final String jobID)
-    {
-        boolean allNodes = "all".equalsIgnoreCase(nodeID);
-        List<OnDemandRepair> repairJobs;
-        if (allNodes)
-        {
-            Predicate<OnDemandRepairJobView> filter = jobID != null
-                    ? job -> parseIdOrThrow(jobID).equals(job.getJobId())
-                    : x -> true;
-            repairJobs = getClusterWideOnDemandJobs(filter);
-        }
-        else
-        {
-            UUID myNodeID = parseIdOrThrow(nodeID);
-            repairJobs = jobID != null
-                    ? getOnDemandJobs(myNodeID).stream()
-                        .filter(job -> parseIdOrThrow(jobID).equals(job.jobID)).toList()
-                    : getOnDemandJobs(myNodeID);
-        }
-        if (jobID != null && repairJobs.isEmpty())
-        {
-            throw new ResponseStatusException(NOT_FOUND);
-        }
-        return repairJobs;
-    }
-
-    private List<OnDemandRepair> runOnDemandRepair(
-            final String nodeID,
-            final String keyspace, final String table,
-            final RepairType repairType,
-            final boolean all,
-            final boolean forceRepairTWCS, final boolean forceRepairDisabled)
-    {
-        try
-        {
-            List<OnDemandRepair> onDemandRepairs;
-            checkValidClusterRun(nodeID, all, keyspace, table);
-
-            UUID nodeUUID = nodeID == null  ? null : parseIdOrThrow(nodeID);
-            if (nodeUUID != null  && myDistributedNativeConnectionProvider.getNodes().get(nodeUUID) == null)
-            {
-                throw new ResponseStatusException(BAD_REQUEST,
-                        "Node specified is not a valid node or is not managed by the local instance");
-            }
-
-            if (keyspace != null)
-            {
-                onDemandRepairs = getOnDemandRepairsForKeyspace(keyspace, table, repairType,
-                        nodeUUID, forceRepairTWCS, forceRepairDisabled);
-            }
-            else
-            {
-                onDemandRepairs = runLocalOrCluster(nodeUUID, repairType, myTableReferenceFactory.forCluster(),
-                        forceRepairTWCS, forceRepairDisabled);
-            }
-            return onDemandRepairs;
-        }
-        catch (EcChronosException e)
-        {
-            throw new ResponseStatusException(NOT_FOUND, NOT_FOUND.getReasonPhrase(), e);
-        }
-    }
-
-    private void checkValidClusterRun(final String nodeID, final boolean all, final String keyspace, final String table)
-    {
-        if (nodeID == null && !all)
-        {
-            throw new ResponseStatusException(BAD_REQUEST, "If a node is not specified then parameter all should be true");
-        }
-        if (keyspace == null && table != null)
-        {
-            throw new ResponseStatusException(BAD_REQUEST, "Keyspace must be provided if table is provided");
-        }
-
-    }
-    private List<OnDemandRepair> getOnDemandRepairsForKeyspace(final String keyspace,
-                                                               final String table,
-                                                               final RepairType repairType,
-                                                               final UUID nodeUUID,
-                                                               final boolean forceRepairTWCS,
-                                                               final boolean forceRepairDisabled) throws EcChronosException
-    {
-        List<OnDemandRepair> onDemandRepairs;
-        if (table != null)
-        {
-            TableReference tableReference = myTableReferenceFactory.forTable(keyspace, table);
-            if (tableReference == null)
-            {
-                throw new ResponseStatusException(NOT_FOUND,
-                        "Table " + keyspace + "." + table + " does not exist");
-            }
-            if (rejectForTWCS(tableReference, forceRepairTWCS))
-            {
-                throw new ResponseStatusException(BAD_REQUEST,
-                        "Table " + keyspace + "." + table + " uses TWCS");
-            }
-            if (!myOnDemandRepairScheduler.checkTableEnabled(tableReference, forceRepairDisabled))
-            {
-                throw new ResponseStatusException(BAD_REQUEST,
-                        "Table " + keyspace + "." + table + " is disabled");
-            }
-            onDemandRepairs = runLocalOrCluster(nodeUUID, repairType,
-                    Collections.singleton(myTableReferenceFactory.forTable(keyspace, table)),
-                    forceRepairTWCS, forceRepairDisabled);
-        }
-        else
-        {
-            onDemandRepairs = runLocalOrCluster(nodeUUID, repairType,
-                    myTableReferenceFactory.forKeyspace(keyspace), forceRepairTWCS, forceRepairDisabled);
-        }
-        return onDemandRepairs;
-    }
-    private List<OnDemandRepair> getClusterWideOnDemandJobs(final Predicate<OnDemandRepairJobView> filter)
-    {
-        return myOnDemandRepairScheduler.getAllClusterWideRepairJobs().stream()
-                .filter(filter)
-                .map(OnDemandRepair::new)
-                .collect(Collectors.toList());
-    }
-
-    private List<OnDemandRepair> getOnDemandJobs(
-            final UUID nodeID)
-    {
-        return myOnDemandRepairScheduler.getAllRepairJobs(nodeID).stream()
-                .map(OnDemandRepair::new)
-                .collect(Collectors.toList());
-    }
-    private Boolean rejectForTWCS(final TableReference tableReference, final boolean forceRepairTWCS)
-    {
-        return (!forceRepairTWCS &&  tableReference.getTwcs()
-                && myOnDemandRepairScheduler.getRepairConfiguration().getIgnoreTWCSTables());
-
-    }
-
-    private List<OnDemandRepair> runLocalOrCluster(
-            final UUID nodeID,
-            final RepairType repairType,
-            final Set<TableReference> tables,
-            final boolean forceRepairTWCS,
-            final boolean forceRepairDisabled)
-            throws EcChronosException
-    {
-        Collection<Node> availableNodes;
-        if (nodeID == null)
-        {
-            availableNodes = myDistributedNativeConnectionProvider.getNodes().values();
-        }
-        else
-        {
-            availableNodes = new ArrayList<Node>();
-            availableNodes.add(myDistributedNativeConnectionProvider.getNodes().get(nodeID));
-        }
-
-        List<OnDemandRepair> onDemandRepairs = new ArrayList<>();
-        for (TableReference tableReference : tables)
-        {
-            for (Node eachNode : availableNodes)
-            {
-                if (isRepairableTable(forceRepairTWCS, forceRepairDisabled, tableReference, eachNode))
-                {
-                    onDemandRepairs.add(new OnDemandRepair(
-                            myOnDemandRepairScheduler.scheduleJob(tableReference, repairType, eachNode.getHostId())));
-                }
-            }
-        }
-        return onDemandRepairs;
-    }
-    private boolean isRepairableTable(final boolean forceRepairTWCS, final boolean forceRepairDisabled, final TableReference tableReference, final Node node)
-    {
-        return !rejectForTWCS(tableReference, forceRepairTWCS)
-                && myReplicatedTableProvider.accept(node, tableReference.getKeyspace())
-                && myOnDemandRepairScheduler.checkTableEnabled(tableReference, forceRepairDisabled);
+        return ResponseEntity.ok(myOrchestrator.runRepair(nodeID, keyspace, table,
+                myValidator.getRepairTypeOrDefault(repairType), all, forceRepairTWCS, forceRepairDisabled));
     }
 }
