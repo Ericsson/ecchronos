@@ -4,6 +4,9 @@
 
 * Deprecate JMX Port Discover to use port field in ecc.yml - Issue #1578
 * Refactor DistributedJmxBuilder to Reduce Cyclomatic Complexity - Issue #1573
+
+## Version 1.0.0-beta7
+
 * Add per-node JMX operation serialization to prevent HTTP errors under concurrent load - Issue #1560
 * Fix job status incorrectly changing to BLOCKED on lock contention backoff - Issue #1548
 * On-Demand Repairs Stuck in IN_QUEUE at 100% Due to Re-Scheduling Loop, Blocking New Repairs - Issue #1553
