@@ -20,6 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnecti
 import com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads.NodeWorkerManager;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.refresh.NodeAddedAction;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.refresh.NodeRemovedAction;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.ReplicaSetCache;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.state.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
@@ -42,6 +43,7 @@ public class NodeLifecycleHandler
     private final NodeWorkerManager myWorkerManager;
     private final ScheduleManager myScheduleManager;
     private final ExecutorService myService;
+    private final ReplicaSetCache myReplicaSetCache;
 
     public NodeLifecycleHandler(final EccNodesSync eccNodesSync,
                                 final DistributedJmxConnectionProvider jmxConnectionProvider,
@@ -50,12 +52,25 @@ public class NodeLifecycleHandler
                                 final ScheduleManager scheduleManager,
                                 final ExecutorService service)
     {
+        this(eccNodesSync, jmxConnectionProvider, agentNativeConnectionProvider,
+                workerManager, scheduleManager, service, null);
+    }
+
+    public NodeLifecycleHandler(final EccNodesSync eccNodesSync,
+                                final DistributedJmxConnectionProvider jmxConnectionProvider,
+                                final DistributedNativeConnectionProvider agentNativeConnectionProvider,
+                                final NodeWorkerManager workerManager,
+                                final ScheduleManager scheduleManager,
+                                final ExecutorService service,
+                                final ReplicaSetCache replicaSetCache)
+    {
         myEccNodesSync = eccNodesSync;
         myJmxConnectionProvider = jmxConnectionProvider;
         myAgentNativeConnectionProvider = agentNativeConnectionProvider;
         myWorkerManager = workerManager;
         myScheduleManager = scheduleManager;
         myService = service;
+        myReplicaSetCache = replicaSetCache;
     }
 
     /**
@@ -103,6 +118,7 @@ public class NodeLifecycleHandler
         {
             LOG.info("Node added {}", node.getHostId());
             LongTokenRange.clearCache();
+            clearReplicaSetCache();
             NodeAddedAction callable = new NodeAddedAction(myEccNodesSync, myJmxConnectionProvider,
                     myAgentNativeConnectionProvider, node);
             myService.submit(callable);
@@ -130,6 +146,7 @@ public class NodeLifecycleHandler
         {
             LOG.info("Node removed {}", node.getHostId());
             LongTokenRange.clearCache();
+            clearReplicaSetCache();
             NodeRemovedAction callable = new NodeRemovedAction(myEccNodesSync, myJmxConnectionProvider,
                     myAgentNativeConnectionProvider, node);
             myService.submit(callable);
@@ -141,6 +158,14 @@ public class NodeLifecycleHandler
             {
                 myScheduleManager.removeScheduleFutureForNode(node.getHostId());
             }
+        }
+    }
+
+    private void clearReplicaSetCache()
+    {
+        if (myReplicaSetCache != null)
+        {
+            myReplicaSetCache.clear();
         }
     }
 }

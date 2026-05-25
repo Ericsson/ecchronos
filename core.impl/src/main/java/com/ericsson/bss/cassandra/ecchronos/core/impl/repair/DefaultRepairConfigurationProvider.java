@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads.NodeWorkerManager;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.ReplicaSetCache;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.CloseEvent;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.KeyspaceCreatedEvent;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.SetupEvent;
@@ -74,7 +75,8 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
                 builder.myAgentNativeConnectionProvider,
                 builder.myNodeWorkerManager,
                 builder.myScheduleManager,
-                myService);
+                myService,
+                builder.myReplicaSetCache);
         setupConfiguration();
     }
 
@@ -93,7 +95,8 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
                 builder.myAgentNativeConnectionProvider,
                 builder.myNodeWorkerManager,
                 builder.myScheduleManager,
-                myService);
+                myService,
+                builder.myReplicaSetCache);
         setupConfiguration();
     }
 
@@ -361,6 +364,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         private DistributedNativeConnectionProvider myAgentNativeConnectionProvider;
         private NodeWorkerManager myNodeWorkerManager;
         private ScheduleManager myScheduleManager;
+        private ReplicaSetCache myReplicaSetCache;
 
         /**
          * Build with session.
@@ -427,6 +431,17 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         public Builder withScheduleManager(final ScheduleManager scheduleManager)
         {
             myScheduleManager = scheduleManager;
+            return this;
+        }
+
+        /**
+         * Build with ReplicaSetCache.
+         * @param replicaSetCache the replica set cache to clear on topology changes.
+         * @return Builder
+         */
+        public Builder withReplicaSetCache(final ReplicaSetCache replicaSetCache)
+        {
+            myReplicaSetCache = replicaSetCache;
             return this;
         }
 
