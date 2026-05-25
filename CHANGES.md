@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Optimize VnodeRepairStatesImpl combineWithRepairedAt Allocations - Issue #1582
 * Implement ReplicaSet Interning for VnodeRepairState Instances - Issue #1581
 * Implement Flyweight Caching for LongTokenRange Instances - Issue #1580
 * Deprecate JMX Port Discover to use port field in ecc.yml - Issue #1578
