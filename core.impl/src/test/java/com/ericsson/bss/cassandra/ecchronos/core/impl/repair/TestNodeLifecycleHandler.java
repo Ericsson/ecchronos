@@ -19,6 +19,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionP
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads.NodeWorkerManager;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
+import com.ericsson.bss.cassandra.ecchronos.core.state.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,6 +33,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -136,5 +138,33 @@ public class TestNodeLifecycleHandler
 
         verify(mockWorkerManager).addNode(mockNode);
         verify(mockScheduleManager).createScheduleFutureForNode(nodeId);
+    }
+
+    @Test
+    public void testOnAddClearsTokenRangeCache()
+    {
+        when(mockNativeProvider.confirmNodeValid(mockNode)).thenReturn(true);
+        LongTokenRange.clearCache();
+        LongTokenRange.of(1, 100);
+        LongTokenRange.of(2, 200);
+        assertThat(LongTokenRange.cacheSize()).isEqualTo(2);
+
+        handler.onAdd(mockNode);
+
+        assertThat(LongTokenRange.cacheSize()).isEqualTo(0);
+    }
+
+    @Test
+    public void testOnRemoveClearsTokenRangeCache()
+    {
+        when(mockNativeProvider.confirmNodeValid(mockNode)).thenReturn(true);
+        LongTokenRange.clearCache();
+        LongTokenRange.of(1, 100);
+        LongTokenRange.of(2, 200);
+        assertThat(LongTokenRange.cacheSize()).isEqualTo(2);
+
+        handler.onRemove(mockNode);
+
+        assertThat(LongTokenRange.cacheSize()).isEqualTo(0);
     }
 }

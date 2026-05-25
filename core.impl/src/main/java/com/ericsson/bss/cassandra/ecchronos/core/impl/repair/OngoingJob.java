@@ -106,7 +106,7 @@ public final class OngoingJob
     {
         Set<LongTokenRange> repairedLongTokenRanges = new HashSet<>();
         myRepairedTokens.forEach(t -> repairedLongTokenRanges
-                .add(new LongTokenRange(myOnDemandStatus.getStartTokenFrom(t), myOnDemandStatus.getEndTokenFrom(t))));
+                .add(LongTokenRange.of(myOnDemandStatus.getStartTokenFrom(t), myOnDemandStatus.getEndTokenFrom(t))));
         return repairedLongTokenRanges;
     }
 

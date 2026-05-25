@@ -15,13 +15,25 @@
 package com.ericsson.bss.cassandra.ecchronos.core.state;
 
 import java.math.BigInteger;
+import java.util.concurrent.TimeUnit;
+
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 /**
  * A representation of a token range in Cassandra.
+ * <p>
+ * Prefer using {@link #of(long, long)} to obtain instances, as it leverages an internal
+ * flyweight cache to avoid redundant allocations for the same token range.
  */
 @SuppressWarnings("VisibilityModifier")
 public class LongTokenRange
 {
+    private static final int DEFAULT_TTL_IN_MINUTES = 60;
+    private static final Cache<LongTokenRange, LongTokenRange> CACHE = Caffeine.newBuilder()
+        .expireAfterAccess(DEFAULT_TTL_IN_MINUTES, TimeUnit.MINUTES)
+        .build();
+
     private static final int HASH_THIRTYONE = 31;
     private static final int HASH_THIRTYTWO = 32;
 
@@ -34,6 +46,38 @@ public class LongTokenRange
 
     public final long start;
     public final long end;
+
+    /**
+     * Returns a cached instance for the given token range.
+     *
+     * @param start The start of the token range.
+     * @param end The end of the token range.
+     * @return A cached LongTokenRange instance.
+     */
+    public static LongTokenRange of(final long start, final long end)
+    {
+        LongTokenRange key = new LongTokenRange(start, end);
+        return CACHE.get(key, k -> k);
+    }
+
+    /**
+     * Returns the current number of cached token ranges.
+     *
+     * @return The cache size.
+     */
+    public static int cacheSize()
+    {
+        return CACHE.asMap().size();
+    }
+
+    /**
+     * Clears the token range cache.
+     */
+    public static void clearCache()
+    {
+        CACHE.invalidateAll();
+        CACHE.cleanUp();
+    }
 
     public LongTokenRange(final long aStart, final long anEnd)
     {
