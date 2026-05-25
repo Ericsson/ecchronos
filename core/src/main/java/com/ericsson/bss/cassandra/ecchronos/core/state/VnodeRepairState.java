@@ -30,7 +30,6 @@ public class VnodeRepairState
     private final ImmutableSet<DriverNode> myReplicas;
     private final long myStartedAt;
     private final long myFinishedAt;
-    private final long myRepairTime;
 
     /**
      * Constructor.
@@ -53,19 +52,17 @@ public class VnodeRepairState
      * @param replicas The nodes.
      * @param startedAt Started at timestamp.
      * @param finishedAt Finished at timestamp.
-     * @param repairTime Repair time.
+     * @param repairTime Repair time (ignored, computed on demand).
+     * @deprecated Use the 4-arg constructor instead. repairTime is now computed from finishedAt - startedAt.
      */
+    @Deprecated
     public VnodeRepairState(final LongTokenRange tokenRange,
             final ImmutableSet<DriverNode> replicas,
             final long startedAt,
             final long finishedAt,
             final long repairTime)
     {
-        myTokenRange = tokenRange;
-        myReplicas = replicas;
-        myStartedAt = startedAt;
-        myFinishedAt = finishedAt;
-        myRepairTime = repairTime;
+        this(tokenRange, replicas, startedAt, finishedAt);
     }
 
     /**
@@ -85,15 +82,6 @@ public class VnodeRepairState
         myReplicas = replicas;
         myStartedAt = startedAt;
         myFinishedAt = finishedAt;
-        if (myFinishedAt != UNREPAIRED)
-        {
-            myRepairTime = myFinishedAt - myStartedAt;
-        }
-        else
-        {
-            myRepairTime = 0;
-        }
-
     }
 
     /**
@@ -153,7 +141,7 @@ public class VnodeRepairState
      */
     public long getRepairTime()
     {
-        return myRepairTime;
+        return myFinishedAt != UNREPAIRED ? myFinishedAt - myStartedAt : 0;
     }
 
     /**
@@ -182,7 +170,6 @@ public class VnodeRepairState
                 + ", myReplicas=" + myReplicas
                 + ", myStartedAt=" + myStartedAt
                 + ", myFinishedAt=" + myFinishedAt
-                + ", myRepairTime=" + myRepairTime
                 + '}';
     }
 
@@ -206,7 +193,6 @@ public class VnodeRepairState
         VnodeRepairState that = (VnodeRepairState) o;
         return myStartedAt == that.myStartedAt
                 && myFinishedAt == that.myFinishedAt
-                && myRepairTime == that.myRepairTime
                 && Objects.equals(myTokenRange, that.myTokenRange)
                 && Objects.equals(myReplicas, that.myReplicas);
     }
@@ -219,6 +205,6 @@ public class VnodeRepairState
     @Override
     public int hashCode()
     {
-        return Objects.hash(myTokenRange, myReplicas, myStartedAt, myFinishedAt, myRepairTime);
+        return Objects.hash(myTokenRange, myReplicas, myStartedAt, myFinishedAt);
     }
 }
