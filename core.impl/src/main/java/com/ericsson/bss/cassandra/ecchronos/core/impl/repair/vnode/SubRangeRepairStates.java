@@ -48,15 +48,30 @@ public final class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
     @Override
     public SubRangeRepairStates combineWithRepairedAt(final long repairedAt)
     {
-        Builder builder = newBuilder(getVnodeRepairStates());
-
+        boolean anyUpdated = false;
         for (VnodeRepairState vnodeRepairState : getVnodeRepairStates())
         {
-            VnodeRepairState vnodeRepairStateWithRepairedAt = new VnodeRepairState(vnodeRepairState.getTokenRange(),
-                    vnodeRepairState.getReplicas(), repairedAt);
-            builder.updateVnodeRepairState(vnodeRepairStateWithRepairedAt);
+            if (vnodeRepairState.lastRepairedAt() < repairedAt)
+            {
+                anyUpdated = true;
+                break;
+            }
+        }
+        if (!anyUpdated)
+        {
+            return this;
         }
 
+        Builder builder = newBuilder(getVnodeRepairStates());
+        for (VnodeRepairState vnodeRepairState : getVnodeRepairStates())
+        {
+            if (vnodeRepairState.lastRepairedAt() < repairedAt)
+            {
+                VnodeRepairState updated = new VnodeRepairState(vnodeRepairState.getTokenRange(),
+                        vnodeRepairState.getReplicas(), repairedAt);
+                builder.updateVnodeRepairState(updated);
+            }
+        }
         return builder.build();
     }
 
