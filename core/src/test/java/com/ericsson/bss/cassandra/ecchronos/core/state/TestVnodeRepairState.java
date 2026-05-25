@@ -91,4 +91,50 @@ public class TestVnodeRepairState
                 .usingGetClass()
                 .verify();
     }
+
+    @Test
+    public void testGetRepairTimeComputed()
+    {
+        LongTokenRange range = new LongTokenRange(1, 2);
+        DriverNode node1 = mock(DriverNode.class);
+
+        VnodeRepairState state = new VnodeRepairState(range, ImmutableSet.of(node1), 1000L, 1500L);
+
+        assertThat(state.getRepairTime()).isEqualTo(500L);
+    }
+
+    @Test
+    public void testGetRepairTimeWhenUnrepaired()
+    {
+        LongTokenRange range = new LongTokenRange(1, 2);
+        DriverNode node1 = mock(DriverNode.class);
+
+        VnodeRepairState state = new VnodeRepairState(range, ImmutableSet.of(node1), 1000L);
+
+        assertThat(state.getRepairTime()).isEqualTo(0L);
+    }
+
+    @Test
+    public void testGetRepairTimeWithExplicitUnrepairedFinished()
+    {
+        LongTokenRange range = new LongTokenRange(1, 2);
+        DriverNode node1 = mock(DriverNode.class);
+
+        VnodeRepairState state = new VnodeRepairState(range, ImmutableSet.of(node1), 1000L, VnodeRepairState.UNREPAIRED);
+
+        assertThat(state.getRepairTime()).isEqualTo(0L);
+    }
+
+    @Test
+    public void testDeprecatedConstructorProducesSameResult()
+    {
+        LongTokenRange range = new LongTokenRange(1, 2);
+        DriverNode node1 = mock(DriverNode.class);
+
+        VnodeRepairState state = new VnodeRepairState(range, ImmutableSet.of(node1), 1000L, 1500L, 500L);
+
+        assertThat(state.getRepairTime()).isEqualTo(500L);
+        assertThat(state.getStartedAt()).isEqualTo(1000L);
+        assertThat(state.getFinishedAt()).isEqualTo(1500L);
+    }
 }
