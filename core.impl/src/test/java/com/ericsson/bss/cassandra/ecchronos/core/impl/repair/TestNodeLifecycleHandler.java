@@ -18,9 +18,11 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads.NodeWorkerManager;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.ReplicaSetCache;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.state.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
+import com.google.common.collect.ImmutableSet;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -166,5 +168,37 @@ public class TestNodeLifecycleHandler
         handler.onRemove(mockNode);
 
         assertThat(LongTokenRange.cacheSize()).isEqualTo(0);
+    }
+
+    @Test
+    public void testOnAddClearsReplicaSetCache()
+    {
+        when(mockNativeProvider.confirmNodeValid(mockNode)).thenReturn(true);
+        ReplicaSetCache cache = new ReplicaSetCache();
+        cache.intern(ImmutableSet.of());
+        assertThat(cache.size()).isEqualTo(1);
+
+        NodeLifecycleHandler handlerWithCache = new NodeLifecycleHandler(mockEccNodesSync, mockJmxProvider,
+                mockNativeProvider, mockWorkerManager, mockScheduleManager, mockExecutor, cache);
+
+        handlerWithCache.onAdd(mockNode);
+
+        assertThat(cache.size()).isEqualTo(0);
+    }
+
+    @Test
+    public void testOnRemoveClearsReplicaSetCache()
+    {
+        when(mockNativeProvider.confirmNodeValid(mockNode)).thenReturn(true);
+        ReplicaSetCache cache = new ReplicaSetCache();
+        cache.intern(ImmutableSet.of());
+        assertThat(cache.size()).isEqualTo(1);
+
+        NodeLifecycleHandler handlerWithCache = new NodeLifecycleHandler(mockEccNodesSync, mockJmxProvider,
+                mockNativeProvider, mockWorkerManager, mockScheduleManager, mockExecutor, cache);
+
+        handlerWithCache.onRemove(mockNode);
+
+        assertThat(cache.size()).isEqualTo(0);
     }
 }

@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.VnodeRepairGroupFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.VnodeRepairStateFactoryImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.ReplicaSetCache;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 
 import com.ericsson.bss.cassandra.ecchronos.core.state.HostStates;
@@ -37,16 +38,28 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
 
     private final VnodeRepairStateFactoryImpl myVnodeRepairStateFactory;
     private final VnodeRepairStateFactoryImpl mySubRangeRepairStateFactory;
+    private final ReplicaSetCache myReplicaSetCache;
 
     private RepairStateFactoryImpl(final Builder builder)
     {
         myHostStates = builder.myHostStates;
         myTableRepairMetrics = builder.myTableRepairMetrics;
+        myReplicaSetCache = new ReplicaSetCache();
 
         myVnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(builder.myReplicationState,
-                builder.myRepairHistoryProvider, false);
+                builder.myRepairHistoryProvider, false, myReplicaSetCache);
         mySubRangeRepairStateFactory = new VnodeRepairStateFactoryImpl(builder.myReplicationState,
-                builder.myRepairHistoryProvider, true);
+                builder.myRepairHistoryProvider, true, myReplicaSetCache);
+    }
+
+    /**
+     * Get the shared replica set cache.
+     *
+     * @return The ReplicaSetCache instance.
+     */
+    public ReplicaSetCache getReplicaSetCache()
+    {
+        return myReplicaSetCache;
     }
 
     @Override

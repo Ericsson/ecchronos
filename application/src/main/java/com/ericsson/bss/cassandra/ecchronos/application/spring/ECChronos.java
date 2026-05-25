@@ -155,7 +155,8 @@ public class ECChronos implements Closeable
                 .withJmxConnectionProvider(jmxConnectionProvider)
                 .withNodeWorkerManager(myNodeWorkerManager)
                 .withScheduleManager(myECChronosInternals.getScheduleManager())
-                .withDistributedNativeConnectionProvider(nativeConnectionProvider));
+                .withDistributedNativeConnectionProvider(nativeConnectionProvider)
+                .withReplicaSetCache(repairStateFactoryImpl.getReplicaSetCache()));
 
         myRepairStatsProvider = new RepairStatsProviderImpl(
                 nativeConnectionProvider,
