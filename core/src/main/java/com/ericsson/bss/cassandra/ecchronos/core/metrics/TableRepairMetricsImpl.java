@@ -24,6 +24,7 @@ import io.micrometer.core.instrument.Timer;
 import java.io.Closeable;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -56,11 +57,25 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
     static Clock clock = () -> System.currentTimeMillis(); // NOPMD
 
     private final Map<TableReference, TableGauges> myTableGauges = new ConcurrentHashMap<>();
+    private final Set<TableReference> myRegisteredTables = ConcurrentHashMap.newKeySet();
     private final MeterRegistry myMeterRegistry;
 
     private TableRepairMetricsImpl(final Builder builder)
     {
         myMeterRegistry = Preconditions.checkNotNull(builder.myMeterRegistry, "Meter registry cannot be null");
+        // Register node-level aggregate gauges once at construction time
+        Gauge.builder(NODE_REPAIRED_RATIO, myTableGauges,
+                        tableGauges -> tableGauges.values().stream()
+                                .mapToDouble(TableGauges::getRepairRatio).average().orElse(0))
+                .register(myMeterRegistry);
+        TimeGauge.builder(NODE_TIME_SINCE_LAST_REPAIRED, myTableGauges, TimeUnit.MILLISECONDS,
+                        tableGauges -> clock.timeNow() - tableGauges.values().stream()
+                                .mapToDouble(TableGauges::getLastRepairedAt).min().orElse(0))
+                .register(myMeterRegistry);
+        TimeGauge.builder(NODE_REMAINING_REPAIR_TIME, myTableGauges, TimeUnit.MILLISECONDS,
+                        tableGauges -> tableGauges.values().stream()
+                                .mapToDouble(TableGauges::getRemainingRepairTime).sum())
+                .register(myMeterRegistry);
     }
 
     @Override
@@ -69,24 +84,18 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
                             final int notRepairedRanges)
     {
         createOrGetTableGauges(tableReference).repairRatio(repairedRanges, notRepairedRanges);
-        Gauge.builder(REPAIRED_RATIO, myTableGauges,
-                        (tableGauges) -> tableGauges.get(tableReference).getRepairRatio())
-                .tags(KEYSPACE_TAG, tableReference.getKeyspace(), TABLE_TAG, tableReference.getTable())
-                .register(myMeterRegistry);
-        Gauge.builder(NODE_REPAIRED_RATIO, myTableGauges,
-                        (tableGauges) -> tableGauges.values().stream().mapToDouble(TableGauges::getRepairRatio)
-                                .average().orElse(0))
-                .register(myMeterRegistry);
+        registerTableGaugesIfAbsent(tableReference);
     }
 
     @Override
     public Optional<Double> getRepairRatio(final TableReference tableReference)
     {
-        if (myTableGauges.get(tableReference) == null)
+        TableGauges gauges = myTableGauges.get(tableReference);
+        if (gauges == null)
         {
             return Optional.empty();
         }
-        return Optional.ofNullable(myTableGauges.get(tableReference).getRepairRatio());
+        return Optional.ofNullable(gauges.getRepairRatio());
     }
 
     @Override
@@ -94,15 +103,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
                                final long lastRepairedAt)
     {
         createOrGetTableGauges(tableReference).lastRepairedAt(lastRepairedAt);
-        TimeGauge.builder(TIME_SINCE_LAST_REPAIRED, myTableGauges, TimeUnit.MILLISECONDS,
-                        (tableGauges) -> clock.timeNow() - tableGauges.get(tableReference).getLastRepairedAt())
-                .tags(KEYSPACE_TAG, tableReference.getKeyspace(), TABLE_TAG, tableReference.getTable())
-                .register(myMeterRegistry);
-        TimeGauge.builder(NODE_TIME_SINCE_LAST_REPAIRED, myTableGauges, TimeUnit.MILLISECONDS,
-                        (tableGauges) ->
-                                clock.timeNow() - tableGauges.values().stream()
-                                        .mapToDouble(TableGauges::getLastRepairedAt).min().orElse(0))
-                .register(myMeterRegistry);
+        registerTableGaugesIfAbsent(tableReference);
     }
 
     @Override
@@ -110,14 +111,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
                                     final long remainingRepairTime)
     {
         createOrGetTableGauges(tableReference).remainingRepairTime(remainingRepairTime);
-        TimeGauge.builder(REMAINING_REPAIR_TIME, myTableGauges, TimeUnit.MILLISECONDS,
-                        (tableGauges) -> tableGauges.get(tableReference).getRemainingRepairTime())
-                .tags(KEYSPACE_TAG, tableReference.getKeyspace(), TABLE_TAG, tableReference.getTable())
-                .register(myMeterRegistry);
-        TimeGauge.builder(NODE_REMAINING_REPAIR_TIME, myTableGauges, TimeUnit.MILLISECONDS,
-                        (tableGauges) ->
-                                tableGauges.values().stream().mapToDouble(TableGauges::getRemainingRepairTime).sum())
-                .register(myMeterRegistry);
+        registerTableGaugesIfAbsent(tableReference);
     }
 
     @Override
@@ -144,6 +138,41 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         for (TableGauges tableGauges : myTableGauges.values())
         {
             tableGauges.close();
+        }
+    }
+
+    /**
+     * Registers per-table gauges only once per table to avoid redundant allocations.
+     * Gauge lambdas are null-safe and return fallback values if the table is removed.
+     */
+    private void registerTableGaugesIfAbsent(final TableReference tableReference)
+    {
+        if (myRegisteredTables.add(tableReference))
+        {
+            Gauge.builder(REPAIRED_RATIO, myTableGauges,
+                            tableGauges ->
+                            {
+                                TableGauges g = tableGauges.get(tableReference);
+                                return g != null ? g.getRepairRatio() : 0.0;
+                            })
+                    .tags(KEYSPACE_TAG, tableReference.getKeyspace(), TABLE_TAG, tableReference.getTable())
+                    .register(myMeterRegistry);
+            TimeGauge.builder(TIME_SINCE_LAST_REPAIRED, myTableGauges, TimeUnit.MILLISECONDS,
+                            tableGauges ->
+                            {
+                                TableGauges g = tableGauges.get(tableReference);
+                                return g != null ? clock.timeNow() - g.getLastRepairedAt() : 0.0;
+                            })
+                    .tags(KEYSPACE_TAG, tableReference.getKeyspace(), TABLE_TAG, tableReference.getTable())
+                    .register(myMeterRegistry);
+            TimeGauge.builder(REMAINING_REPAIR_TIME, myTableGauges, TimeUnit.MILLISECONDS,
+                            tableGauges ->
+                            {
+                                TableGauges g = tableGauges.get(tableReference);
+                                return g != null ? g.getRemainingRepairTime() : 0.0;
+                            })
+                    .tags(KEYSPACE_TAG, tableReference.getKeyspace(), TABLE_TAG, tableReference.getTable())
+                    .register(myMeterRegistry);
         }
     }
 

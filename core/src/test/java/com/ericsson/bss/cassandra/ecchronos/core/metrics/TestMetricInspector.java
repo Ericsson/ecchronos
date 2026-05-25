@@ -79,7 +79,7 @@ public class TestMetricInspector
         Level logLevel = logsList.get(0).getLevel();
         assertEquals("Total repair failures in node till now is: 2", logMessage);
         assertEquals(Level.DEBUG, logLevel);
-        assertEquals(1, count);
+        assertEquals(4, count);
     }
 
     @Test
@@ -110,7 +110,7 @@ public class TestMetricInspector
         Level logLevel = logsList.get(0).getLevel();
         assertEquals("Total repair failures in node till now is: 2", logMessage);
         assertEquals(Level.DEBUG, logLevel);
-        assertEquals(1, count);
+        assertEquals(4, count);
         assertEquals(2, myMetricInspector.getTotalRecordFailures());
         myMetricInspector.stopInspection();
     }
