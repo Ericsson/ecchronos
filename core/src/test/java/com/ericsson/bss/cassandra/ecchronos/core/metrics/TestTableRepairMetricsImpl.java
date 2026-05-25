@@ -531,4 +531,54 @@ public class TestTableRepairMetricsImpl
         assertThat(nodeFailedRepairSessions.max(TimeUnit.MILLISECONDS)).isEqualTo(failedRepairTimeTable1);
         assertThat(nodeFailedRepairSessions.mean(TimeUnit.MILLISECONDS)).isEqualTo(expectedNodeMeanFailedTime);
     }
+
+    @Test
+    public void testGaugeRegisteredOnlyOncePerTable()
+    {
+        TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
+
+        myTableRepairMetricsImpl.repairState(tableReference, 1, 0);
+        myTableRepairMetricsImpl.repairState(tableReference, 1, 1);
+        myTableRepairMetricsImpl.repairState(tableReference, 0, 1);
+
+        // Should still have exactly one gauge for this table
+        long gaugeCount = myMeterRegistry.getMeters().stream()
+                .filter(m -> m.getId().getName().equals(TableRepairMetricsImpl.REPAIRED_RATIO))
+                .filter(m -> TEST_TABLE1.equals(m.getId().getTag("table")))
+                .count();
+        assertThat(gaugeCount).isEqualTo(1);
+    }
+
+    @Test
+    public void testMetricValuesUpdateAfterSingleRegistration()
+    {
+        TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
+
+        myTableRepairMetricsImpl.repairState(tableReference, 1, 0);
+        Gauge gauge = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
+                .gauge();
+        assertThat(gauge).isNotNull();
+        assertThat(gauge.value()).isEqualTo(1.0);
+
+        // Update value — gauge should reflect new value without re-registration
+        myTableRepairMetricsImpl.repairState(tableReference, 1, 1);
+        assertThat(gauge.value()).isEqualTo(0.5);
+    }
+
+    @Test
+    public void testNodeGaugesRegisteredAtConstruction()
+    {
+        // NODE_* gauges should exist even before any table metrics are reported
+        Gauge nodeRatio = myMeterRegistry.find(TableRepairMetricsImpl.NODE_REPAIRED_RATIO).gauge();
+        assertThat(nodeRatio).isNotNull();
+        assertThat(nodeRatio.value()).isEqualTo(0.0);
+
+        Gauge nodeTime = myMeterRegistry.find(TableRepairMetricsImpl.NODE_TIME_SINCE_LAST_REPAIRED).gauge();
+        assertThat(nodeTime).isNotNull();
+
+        Gauge nodeRemaining = myMeterRegistry.find(TableRepairMetricsImpl.NODE_REMAINING_REPAIR_TIME).gauge();
+        assertThat(nodeRemaining).isNotNull();
+        assertThat(nodeRemaining.value()).isEqualTo(0.0);
+    }
 }
