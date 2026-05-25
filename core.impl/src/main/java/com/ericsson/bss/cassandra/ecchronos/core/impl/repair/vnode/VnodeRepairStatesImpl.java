@@ -27,6 +27,7 @@ import java.util.Objects;
 public final class VnodeRepairStatesImpl implements VnodeRepairStates // CPD-OFF
 {
     private final ImmutableList<VnodeRepairState> myVnodeRepairStatuses;
+    private static final float DEFAULT_LOAD_FACTOR = 0.75f;
 
     private VnodeRepairStatesImpl(final Builder builder)
     {
@@ -103,10 +104,12 @@ public final class VnodeRepairStatesImpl implements VnodeRepairStates // CPD-OFF
 
     public static class Builder implements VnodeRepairStates.Builder
     {
-        private final Map<LongTokenRange, VnodeRepairState> myVnodeRepairStates = new LinkedHashMap<>();
+        private final Map<LongTokenRange, VnodeRepairState> myVnodeRepairStates;
 
         public Builder(final Collection<VnodeRepairState> vnodeRepairStates)
         {
+            int capacity = (int) (vnodeRepairStates.size() / DEFAULT_LOAD_FACTOR) + 1;
+            myVnodeRepairStates = new LinkedHashMap<>(capacity);
             for (VnodeRepairState vnodeRepairState : vnodeRepairStates)
             {
                 myVnodeRepairStates.put(vnodeRepairState.getTokenRange(), vnodeRepairState);
