@@ -27,6 +27,7 @@ import java.util.Objects;
 public final class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
 {
     private final ImmutableList<VnodeRepairState> myVnodeRepairStatuses;
+    private static final float DEFAULT_LOAD_FACTOR = 0.75f;
 
     private SubRangeRepairStates(final SubRangeRepairStates.Builder builder)
     {
@@ -110,10 +111,12 @@ public final class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
     public static class Builder implements VnodeRepairStates.Builder
     {
         private final ImmutableList<VnodeRepairState> myVnodeRepairStatesBase;
-        private final Map<LongTokenRange, VnodeRepairState> myActualVnodeRepairStates = new HashMap<>();
+        private final Map<LongTokenRange, VnodeRepairState> myActualVnodeRepairStates;
 
         public Builder(final Collection<VnodeRepairState> vnodeRepairStates)
         {
+            int capacity = (int) (vnodeRepairStates.size() / DEFAULT_LOAD_FACTOR) + 1;
+            myActualVnodeRepairStates = new HashMap<>(capacity);
             ImmutableList.Builder<VnodeRepairState> builder = ImmutableList.builder();
             for (VnodeRepairState vnodeRepairState : vnodeRepairStates)
             {
