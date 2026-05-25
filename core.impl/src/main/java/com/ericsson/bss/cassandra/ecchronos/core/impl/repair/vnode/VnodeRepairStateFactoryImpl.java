@@ -49,15 +49,36 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
     private final ReplicationState myReplicationState;
     private final RepairHistoryProvider myRepairHistoryProvider;
     private final boolean useSubRanges;
+    private final ReplicaSetCache myReplicaSetCache;
 
     public VnodeRepairStateFactoryImpl(
             final ReplicationState replicationState,
             final RepairHistoryProvider repairHistoryProvider,
             final boolean toUseSubRanges)
     {
+        this(replicationState, repairHistoryProvider, toUseSubRanges, new ReplicaSetCache());
+    }
+
+    public VnodeRepairStateFactoryImpl(
+            final ReplicationState replicationState,
+            final RepairHistoryProvider repairHistoryProvider,
+            final boolean toUseSubRanges,
+            final ReplicaSetCache replicaSetCache)
+    {
         myReplicationState = replicationState;
         myRepairHistoryProvider = repairHistoryProvider;
         this.useSubRanges = toUseSubRanges;
+        myReplicaSetCache = replicaSetCache;
+    }
+
+    /**
+     * Get the replica set cache used by this factory.
+     *
+     * @return The ReplicaSetCache instance.
+     */
+    public ReplicaSetCache getReplicaSetCache()
+    {
+        return myReplicaSetCache;
     }
 
     /**
@@ -131,7 +152,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         for (Map.Entry<LongTokenRange, ImmutableSet<DriverNode>> entry : tokenRangeToReplicaMap.entrySet())
         {
             LongTokenRange longTokenRange = entry.getKey();
-            ImmutableSet<DriverNode> replicas = entry.getValue();
+            ImmutableSet<DriverNode> replicas = myReplicaSetCache.intern(entry.getValue());
             vnodeRepairStatesBase.add(new VnodeRepairState(longTokenRange, replicas, lastRepairedAt));
         }
 
@@ -154,7 +175,8 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         {
             RepairEntry repairEntry = repairEntryIterator.next();
             LongTokenRange longTokenRange = repairEntry.getRange();
-            ImmutableSet<DriverNode> replicas = getReplicasForRange(longTokenRange, tokenRangeToReplicaMap);
+            ImmutableSet<DriverNode> rawReplicas = getReplicasForRange(longTokenRange, tokenRangeToReplicaMap);
+            ImmutableSet<DriverNode> replicas = rawReplicas != null ? myReplicaSetCache.intern(rawReplicas) : null;
 
             VnodeRepairState vnodeRepairState = new VnodeRepairState(longTokenRange,
                     replicas, repairEntry.getStartedAt(), repairEntry.getFinishedAt());
