@@ -173,7 +173,7 @@ public class CassandraRepairHistoryService implements RepairHistoryProvider
         {
             long rangeBegin = Long.parseLong(row.getString(RANGE_BEGIN_COLUMN));
             long rangeEnd = Long.parseLong(row.getString(RANGE_END_COLUMN));
-            return new LongTokenRange(rangeBegin, rangeEnd);
+            return LongTokenRange.of(rangeBegin, rangeEnd);
         }
 
         private Set<DriverNode> resolveNodes(final Row row)

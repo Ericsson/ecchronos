@@ -218,7 +218,7 @@ public final class RepairNotificationHandler implements NotificationListener
                 {
                     long start = Long.parseLong(rangeMatcher.group(1));
                     long end = Long.parseLong(rangeMatcher.group(2));
-                    myRangeCallback.onRangeFinished(new LongTokenRange(start, end), repairStatus);
+                    myRangeCallback.onRangeFinished(LongTokenRange.of(start, end), repairStatus);
                 }
             }
             else

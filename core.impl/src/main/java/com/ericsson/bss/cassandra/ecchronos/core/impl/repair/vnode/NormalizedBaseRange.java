@@ -113,7 +113,7 @@ public class NormalizedBaseRange
             realEnd = realEnd.subtract(LongTokenRange.FULL_RANGE);
         }
 
-        return new VnodeRepairState(new LongTokenRange(realStart.longValueExact(), realEnd.longValueExact()),
+        return new VnodeRepairState(LongTokenRange.of(realStart.longValueExact(), realEnd.longValueExact()),
                 baseVnode.getReplicas(), range.getStartedAt(), range.getFinishedAt(), range.getRepairTime());
     }
 
