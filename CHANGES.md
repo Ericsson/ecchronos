@@ -4,6 +4,7 @@
 
 ## Version 1.0.0
 
+* Bound SSL session cache to prevent unbounded SSLSessionImpl growth - Issue #1601
 * Fix HTTP Exchange Retention and Resource Leaks in JolokiaNotificationController - Issue #1583
 * Reduce Memory Footprint of VnodeRepairState - Issue #1586
 * Avoid Repeated Gauge Registration in TableRepairMetricsImpl - Issue #1584
