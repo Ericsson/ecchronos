@@ -134,15 +134,15 @@
         <org.yaml.snakeyaml.version>2.6</org.yaml.snakeyaml.version>
 
         <!-- Other -->
-        <io.netty.version>4.1.133.Final</io.netty.version>
+        <io.netty.version>4.1.134.Final</io.netty.version>
 
         <!-- Tests -->
         <awaitility.version>4.3.0</awaitility.version>
         <mockito.core.version>5.23.0</mockito.core.version>
         <assertj.version>3.27.7</assertj.version>
         <junit.junit.version>4.13.2</junit.junit.version>
-        <junit.junit-vintage-engine.version>6.0.3</junit.junit-vintage-engine.version>
-        <junit.jupiter.junit-jupiter.version>6.0.3</junit.jupiter.junit-jupiter.version>
+        <junit.junit-vintage-engine.version>6.1.0</junit.junit-vintage-engine.version>
+        <junit.jupiter.junit-jupiter.version>6.1.0</junit.jupiter.junit-jupiter.version>
         <org.apache.commons.io.version>2.22.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.28.0</org.apache.commons.commons-compress.version>
         <equalsverifier.version>4.5</equalsverifier.version>
