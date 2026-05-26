@@ -87,52 +87,41 @@ public class RepairStateImpl implements RepairState
     @Override
     public final void update()
     {
-        try
+        RepairStateSnapshot oldRepairStateSnapshot = myRepairStateSnapshot.get();
+        long now = System.currentTimeMillis();
+
+        if (oldRepairStateSnapshot != null
+                && !isRepairNeeded(oldRepairStateSnapshot.lastCompletedAt(),
+                oldRepairStateSnapshot.getEstimatedRepairTime(), now))
         {
-            RepairStateSnapshot oldRepairStateSnapshot = myRepairStateSnapshot.get();
-            long now = System.currentTimeMillis();
-            if (oldRepairStateSnapshot == null
-                    || isRepairNeeded(oldRepairStateSnapshot.lastCompletedAt(),
-                    oldRepairStateSnapshot.getEstimatedRepairTime(),
-                    now))
-            {
-                RepairStateSnapshot newRepairStateSnapshot = generateNewRepairState(myNode,
-                        oldRepairStateSnapshot, now);
-                if (myRepairStateSnapshot.compareAndSet(oldRepairStateSnapshot, newRepairStateSnapshot))
-                {
-                    myTableRepairMetrics.lastRepairedAt(myTableReference,
-                            newRepairStateSnapshot.lastCompletedAt());
-
-                    int nonRepairedRanges
-                            = (int) newRepairStateSnapshot.getVnodeRepairStates().getVnodeRepairStates()
-                            .stream()
-                            .filter(v -> vnodeIsRepairable(v, newRepairStateSnapshot,
-                                    System.currentTimeMillis()))
-                            .count();
-
-                    int repairedRanges
-                            = newRepairStateSnapshot.getVnodeRepairStates().getVnodeRepairStates().size()
-                            - nonRepairedRanges;
-                    myTableRepairMetrics.repairState(myTableReference, repairedRanges, nonRepairedRanges);
-                    myTableRepairMetrics.remainingRepairTime(myTableReference,
-                            newRepairStateSnapshot.getRemainingRepairTime(System.currentTimeMillis(),
-                                    myRepairConfiguration.getRepairIntervalInMs()));
-                    LOG.trace("Table {} switched to repair state {}", myTableReference,
-                            newRepairStateSnapshot);
-                }
-            }
-            else
-            {
-                LOG.trace("Table {} keeping repair state {}", myTableReference, oldRepairStateSnapshot);
-            }
+            LOG.trace("Table {} keeping repair state {}", myTableReference, oldRepairStateSnapshot);
+            return;
         }
-        finally
+
+        RepairStateSnapshot newRepairStateSnapshot = generateNewRepairState(myNode,
+                oldRepairStateSnapshot, now);
+        if (myRepairStateSnapshot.compareAndSet(oldRepairStateSnapshot, newRepairStateSnapshot))
         {
-            RepairStateSnapshot snapshot = myRepairStateSnapshot.get();
-            if (snapshot != null)
-            {
-                myPostUpdateHook.postUpdate(snapshot, myNode.getHostId());
-            }
+            myTableRepairMetrics.lastRepairedAt(myTableReference,
+                    newRepairStateSnapshot.lastCompletedAt());
+
+            int nonRepairedRanges
+                    = (int) newRepairStateSnapshot.getVnodeRepairStates().getVnodeRepairStates()
+                    .stream()
+                    .filter(v -> vnodeIsRepairable(v, newRepairStateSnapshot,
+                            System.currentTimeMillis()))
+                    .count();
+
+            int repairedRanges
+                    = newRepairStateSnapshot.getVnodeRepairStates().getVnodeRepairStates().size()
+                    - nonRepairedRanges;
+            myTableRepairMetrics.repairState(myTableReference, repairedRanges, nonRepairedRanges);
+            myTableRepairMetrics.remainingRepairTime(myTableReference,
+                    newRepairStateSnapshot.getRemainingRepairTime(System.currentTimeMillis(),
+                            myRepairConfiguration.getRepairIntervalInMs()));
+            LOG.trace("Table {} switched to repair state {}", myTableReference,
+                    newRepairStateSnapshot);
+            myPostUpdateHook.postUpdate(newRepairStateSnapshot, myNode.getHostId());
         }
     }
 

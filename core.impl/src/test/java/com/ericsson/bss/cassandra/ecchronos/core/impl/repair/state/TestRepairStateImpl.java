@@ -102,7 +102,7 @@ public class TestRepairStateImpl
     }
 
     @Test
-    public void testPostUpdateHookCalledWhenUpdateThrowsException()
+    public void testPostUpdateHookNotCalledWhenUpdateThrowsException()
     {
         // setup - first call succeeds (constructor), second call throws
         long repairIntervalMs = TimeUnit.DAYS.toMillis(7);
@@ -133,9 +133,58 @@ public class TestRepairStateImpl
             exceptionThrown = true;
         }
 
-        // verify - postUpdateHook should still be called despite the exception
-        verify(myPostUpdateHook, times(2)).postUpdate(any(), any());
+        // verify - postUpdateHook NOT called again since no state change occurred
+        verify(myPostUpdateHook, times(1)).postUpdate(any(), any());
         assertThat(exceptionThrown).isTrue();
+    }
+
+    @Test
+    public void testPostUpdateHookNotCalledWhenRepairNotNeeded()
+    {
+        // setup - table recently repaired (not due for repair)
+        long now = System.currentTimeMillis();
+        VnodeRepairStates vnodeRepairStates = createVnodeRepairStates(now);
+
+        when(myVnodeRepairStateFactory.calculateNewState(any(), eq(TABLE_REFERENCE), any(), anyLong()))
+                .thenReturn(vnodeRepairStates);
+        when(myReplicaRepairGroupFactory.generateReplicaRepairGroups(any()))
+                .thenReturn(Collections.emptyList());
+
+        RepairStateImpl repairState = new RepairStateImpl(myNode, TABLE_REFERENCE, myRepairConfiguration,
+                myVnodeRepairStateFactory, myHostStates, myTableRepairMetrics,
+                myReplicaRepairGroupFactory, myPostUpdateHook);
+
+        // verify - constructor calls update() -> hook called once
+        verify(myPostUpdateHook, times(1)).postUpdate(any(), any());
+
+        // act - second update() should skip since repair not needed
+        repairState.update();
+
+        // verify - hook NOT called again
+        verify(myPostUpdateHook, times(1)).postUpdate(any(), any());
+    }
+
+    @Test
+    public void testUpdateSkipsStateRegenerationWhenRepairNotNeeded()
+    {
+        // setup - table recently repaired
+        long now = System.currentTimeMillis();
+        VnodeRepairStates vnodeRepairStates = createVnodeRepairStates(now);
+
+        when(myVnodeRepairStateFactory.calculateNewState(any(), eq(TABLE_REFERENCE), any(), anyLong()))
+                .thenReturn(vnodeRepairStates);
+        when(myReplicaRepairGroupFactory.generateReplicaRepairGroups(any()))
+                .thenReturn(Collections.emptyList());
+
+        RepairStateImpl repairState = new RepairStateImpl(myNode, TABLE_REFERENCE, myRepairConfiguration,
+                myVnodeRepairStateFactory, myHostStates, myTableRepairMetrics,
+                myReplicaRepairGroupFactory, myPostUpdateHook);
+
+        // act - second update() should skip
+        repairState.update();
+
+        // verify - factory only called once (during constructor)
+        verify(myVnodeRepairStateFactory, times(1)).calculateNewState(any(), any(), any(), anyLong());
     }
 
     private void setupSuccessfulStateFactory()
