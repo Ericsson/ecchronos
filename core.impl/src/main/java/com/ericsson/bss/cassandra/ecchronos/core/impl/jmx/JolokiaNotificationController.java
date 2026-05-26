@@ -48,7 +48,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class JolokiaNotificationController implements Closeable
 {
@@ -77,7 +79,9 @@ public class JolokiaNotificationController implements Closeable
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final CertificateHandler myCertificateHandler;
-    private final Map<UUID, HttpClient> myHttpClients = new ConcurrentHashMap<>();
+    private final HttpClient myHttpClient;
+    private final ConcurrentHashMap<UUID, ReentrantLock> myNodeLocks = new ConcurrentHashMap<>();
+    private final Semaphore myPollingSemaphore;
 
     private final DistributedNativeConnectionProvider myNativeConnectionProvider;
     private final int myJolokiaPort;
@@ -97,24 +101,28 @@ public class JolokiaNotificationController implements Closeable
         myRunDelay = builder.myRunDelay;
         myIpTranslator = builder.myIpTranslator;
         myCertificateHandler = builder.myCertificateHandler;
+        myPollingSemaphore = new Semaphore(NOTIFICATION_THREAD_POOL_SIZE);
+        myHttpClient = buildHttpClient();
     }
 
-    private HttpClient getHttpClient(final UUID nodeID)
+    private HttpClient buildHttpClient()
     {
-        return myHttpClients.computeIfAbsent(nodeID, id ->
+        HttpClient.Builder builder = HttpClient.newBuilder()
+                .connectTimeout(java.time.Duration.ofSeconds(HTTP_TIMEOUT_SECONDS));
+        if (myCertificateHandler != null)
         {
-            HttpClient.Builder builder = HttpClient.newBuilder()
-                    .connectTimeout(java.time.Duration.ofSeconds(HTTP_TIMEOUT_SECONDS));
-            if (myCertificateHandler != null)
+            SSLContext sslContext = myCertificateHandler.getSSLContext();
+            if (sslContext != null)
             {
-                SSLContext sslContext = myCertificateHandler.getSSLContext();
-                if (sslContext != null)
-                {
-                    builder.sslContext(sslContext);
-                }
+                builder.sslContext(sslContext);
             }
-            return builder.build();
-        });
+        }
+        return builder.build();
+    }
+
+    private ReentrantLock getNodeLock(final UUID nodeID)
+    {
+        return myNodeLocks.computeIfAbsent(nodeID, id -> new ReentrantLock());
     }
 
     public final void addStorageServiceListener(final UUID nodeID, final NotificationListener listener) throws IOException, InterruptedException
@@ -231,23 +239,38 @@ public class JolokiaNotificationController implements Closeable
         @Override
         public void run()
         {
+            if (!myPollingSemaphore.tryAcquire())
+            {
+                LOG.debug("Polling concurrency limit reached, skipping poll for node {} notificationID {}",
+                        myNodeID, myNotificationID);
+                return;
+            }
             try
             {
-                String response = checkForNotificationsWithRetry(myNodeID, myNotificationID);
-                NotificationListenerResponse notificationListenerResponse = objectMapper.readValue(response,
-                        NotificationListenerResponse.class);
-
-                if (notificationListenerResponse.getValue() != null)
+                ReentrantLock lock = getNodeLock(myNodeID);
+                lock.lock();
+                try
                 {
-                    List<NotificationListenerResponse.Notification> notifications =
-                            notificationListenerResponse.getValue().getNotifications();
+                    String response = checkForNotificationsWithRetry(myNodeID, myNotificationID);
+                    NotificationListenerResponse notificationListenerResponse = objectMapper.readValue(response,
+                            NotificationListenerResponse.class);
 
-                    for (NotificationListenerResponse.Notification notificationObj : notifications)
+                    if (notificationListenerResponse.getValue() != null)
                     {
-                        createNotification(notificationObj);
+                        List<NotificationListenerResponse.Notification> notifications =
+                                notificationListenerResponse.getValue().getNotifications();
+
+                        for (NotificationListenerResponse.Notification notificationObj : notifications)
+                        {
+                            createNotification(notificationObj);
+                        }
                     }
+                    consecutiveFailures = 0;
                 }
-                consecutiveFailures = 0;
+                finally
+                {
+                    lock.unlock();
+                }
             }
             catch (Exception e)
             {
@@ -263,6 +286,10 @@ public class JolokiaNotificationController implements Closeable
                     LOG.warn("Transient notification check failure ({}/{}) for node {} and notificationID {}",
                             consecutiveFailures, MAX_CONSECUTIVE_FAILURES, myNodeID, myNotificationID, e);
                 }
+            }
+            finally
+            {
+                myPollingSemaphore.release();
             }
         }
 
@@ -332,7 +359,7 @@ public class JolokiaNotificationController implements Closeable
                     .GET()
                     .build();
 
-            HttpResponse<String> response = getHttpClient(nodeID).send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = myHttpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
             LOG.debug("Raw response from {}: Status={}, Body={}", url, response.statusCode(), response.body());
 
@@ -360,7 +387,7 @@ public class JolokiaNotificationController implements Closeable
                 .timeout(java.time.Duration.ofSeconds(HTTP_REQUEST_TIMEOUT_SECONDS))
                 .POST(HttpRequest.BodyPublishers.ofString(jolokiaCreateNotificationOptions(nodeID)))
                 .build();
-        HttpResponse<String> response = getHttpClient(nodeID).send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = myHttpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         NotificationRegisterResponse notificationRegisterResponse = objectMapper.readValue(
                 decodeHtmlEntities(response.body()), NotificationRegisterResponse.class);
@@ -379,7 +406,7 @@ public class JolokiaNotificationController implements Closeable
                 .build();
         try
         {
-            getHttpClient(nodeID).send(request, HttpResponse.BodyHandlers.ofString());
+            myHttpClient.send(request, HttpResponse.BodyHandlers.ofString());
         }
         catch (IOException | InterruptedException e)
         {
@@ -514,7 +541,7 @@ public class JolokiaNotificationController implements Closeable
                 .GET()
                 .build();
 
-        HttpResponse<String> response = getHttpClient(nodeID).send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = myHttpClient.send(request, HttpResponse.BodyHandlers.ofString());
         return decodeHtmlEntities(response.body());
     }
 
@@ -563,7 +590,7 @@ public class JolokiaNotificationController implements Closeable
         myNodeListenersMap.clear();
         myJolokiaRelationshipListeners.clear();
         myClientIdMap.clear();
-        myHttpClients.clear();
+        myNodeLocks.clear();
 
         // Shutdown executor
         myNotificationExecutor.shutdown();
