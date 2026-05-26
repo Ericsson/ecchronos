@@ -58,6 +58,8 @@ public class JolokiaNotificationController implements Closeable
     private static final int SHUTDOWN_TIMEOUT_SECONDS = 1;
     private static final int HTTP_TIMEOUT_SECONDS = 5;
     private static final int HTTP_REQUEST_TIMEOUT_SECONDS = 10;
+    private static final int SSL_SESSION_CACHE_SIZE = 50;
+    private static final int SSL_SESSION_TIMEOUT_SECONDS = 3600;
     private static final int MAX_RETRIES = 3;
     private static final long INITIAL_RETRY_DELAY_IN_MS = 500;
     private static final int MAX_CONSECUTIVE_FAILURES = 5;
@@ -114,6 +116,8 @@ public class JolokiaNotificationController implements Closeable
             SSLContext sslContext = myCertificateHandler.getSSLContext();
             if (sslContext != null)
             {
+                sslContext.getClientSessionContext().setSessionCacheSize(SSL_SESSION_CACHE_SIZE);
+                sslContext.getClientSessionContext().setSessionTimeout(SSL_SESSION_TIMEOUT_SECONDS);
                 builder.sslContext(sslContext);
             }
         }
