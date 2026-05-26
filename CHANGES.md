@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Implement Lazy Repair State Updates in RepairStateImpl - Issue #1585
 * Fix HTTP Exchange Retention and Resource Leaks in JolokiaNotificationController - Issue #1583
 * Reduce Memory Footprint of VnodeRepairState - Issue #1586
 * Avoid Repeated Gauge Registration in TableRepairMetricsImpl - Issue #1584
