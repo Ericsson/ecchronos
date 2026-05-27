@@ -608,7 +608,12 @@ def run_repair(arguments):
     if result.is_successful():
         table_printer.print_repairs(result.data, columns=arguments.columns, output=arguments.output)
     else:
-        print("Repair Request Failed")
+        msg = "Repair Request Failed"
+        if result.message:
+            msg += ": " + result.message
+        if result.message and "disabled" in result.message:
+            msg += ". Use --forceRepairDisabled to force repair."
+        print(msg)
         sys.exit(1)
 
 

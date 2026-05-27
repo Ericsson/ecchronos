@@ -142,7 +142,8 @@ def step_validate_nodeid_error(context):
 
 @then("the output should contain a repair request failed message")
 def step_validate_repair_failed_error(context):
-    validate_nodeid_error(context.header, REPAIR_REQUEST_FAILED)
+    assert len(context.header) == 1, context.header
+    assert context.header[0].startswith(REPAIR_REQUEST_FAILED), context.header[0]
 
 
 @then("the output should contain a repair row for {keyspace}.{table} with type {repair_type}")

@@ -98,8 +98,17 @@ class RestRequest(object):
             response.close()
             return RequestResult(status_code=response.getcode(), data=json_data)
         except HTTPError as e:
+            error_body = None
+            try:
+                error_body = e.read().decode("utf-8")
+                error_json = json.loads(error_body)
+                error_msg = error_json.get("message", error_body)
+            except (ValueError, UnicodeDecodeError, OSError):
+                error_msg = error_body
             return RequestResult(
-                status_code=e.code, message="Unable to retrieve resource {0}".format(request_url), exception=e
+                status_code=e.code,
+                message=error_msg or "Unable to retrieve resource {0}".format(request_url),
+                exception=e,
             )
         except URLError as e:
             return RequestResult(status_code=404, message="Unable to connect to {0}".format(request_url), exception=e)
