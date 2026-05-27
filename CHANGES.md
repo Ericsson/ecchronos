@@ -2,6 +2,7 @@
 
 ## Version 1.0.1 (Not yet Released)
 
+* ecctool run-repair now displays actual error message from REST API on failure - Issue #1603
 * Implement Lazy Repair State Updates in RepairStateImpl - Issue #1585
 * Bound SSL session cache to prevent unbounded SSLSessionImpl growth - Issue #1601
 * Fix HTTP Exchange Retention and Resource Leaks in JolokiaNotificationController - Issue #1583
