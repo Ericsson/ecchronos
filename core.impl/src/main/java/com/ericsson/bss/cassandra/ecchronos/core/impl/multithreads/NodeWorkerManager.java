@@ -86,6 +86,12 @@ public class NodeWorkerManager
         LOG.info("New worker created for Node {}", node.getHostId());
         myWorkers.put(node.getHostId(), worker);
         int requiredPoolSize = myWorkers.size();
+        if (myThreadPool.getMaxPoolSize() < requiredPoolSize)
+        {
+            LOG.info("Increasing thread pool max size from {} to {}",
+                    myThreadPool.getMaxPoolSize(), requiredPoolSize);
+            myThreadPool.setMaxPoolSize(requiredPoolSize);
+        }
         if (myThreadPool.getCorePoolSize() < requiredPoolSize)
         {
             LOG.info("Increasing thread pool core size from {} to {}",
@@ -143,7 +149,9 @@ public class NodeWorkerManager
                 myRepairScheduler.removeAllConfigurationsForNode(node.getHostId());
                 NodeWorker nodeWorker = myWorkers.remove(node.getHostId());
                 myThreadPool.stop(nodeWorker);
-                myThreadPool.setCorePoolSize(Math.max(1, myWorkers.size()));
+                int newSize = Math.max(1, myWorkers.size());
+                myThreadPool.setCorePoolSize(newSize);
+                myThreadPool.setMaxPoolSize(newSize);
             }
         }
     }
