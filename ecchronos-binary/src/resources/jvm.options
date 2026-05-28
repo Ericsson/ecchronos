@@ -44,6 +44,18 @@
 # Size of the heap for young generation.
 #-Xmn100M
 
+###########################
+# NATIVE MEMORY SETTINGS #
+###########################
+
+# Cap metaspace to prevent classloader leaks from consuming unbounded native memory.
+# ecChronos loads ~5K classes; 128m provides generous headroom.
+-XX:MaxMetaspaceSize=128m
+
+# Cap JIT code cache. Default is 240MB which is excessive for ecChronos.
+# 64m is sufficient for the application's hot method set.
+-XX:ReservedCodeCacheSize=64m
+
 ##################
 # STACK SETTINGS #
 ##################
