@@ -2,6 +2,7 @@
 
 ## Version 1.0.1 (Not yet Released)
 
+* Add MaxMetaspaceSize and ReservedCodeCacheSize to jvm.options - Issue #1610
 * ecctool run-repair now displays actual error message from REST API on failure - Issue #1603
 * Implement Lazy Repair State Updates in RepairStateImpl - Issue #1585
 * Bound SSL session cache to prevent unbounded SSLSessionImpl growth - Issue #1601
