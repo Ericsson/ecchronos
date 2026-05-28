@@ -244,7 +244,7 @@ public abstract class RepairTask
      */
     public void cleanup()
     {
-        myHangMonitor.shutdown();
+        myHangMonitor.cancel();
     }
 
     /**

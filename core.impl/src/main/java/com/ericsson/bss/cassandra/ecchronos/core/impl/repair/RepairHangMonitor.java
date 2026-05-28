@@ -34,15 +34,22 @@ import java.util.concurrent.TimeUnit;
  * Monitors a running repair for hangs by periodically checking node status
  * and repair activity. Terminates the repair if the node is down, the repair
  * is no longer active, or the max wait time is exceeded.
+ *
+ * Uses a shared static executor to avoid per-task thread creation overhead
+ * and prevent native memory leaks from orphaned executor threads.
  */
 public class RepairHangMonitor
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairHangMonitor.class);
     private static final String NORMAL_STATUS = "NORMAL";
     private static final int DEFAULT_HEALTH_CHECK_INTERVAL_MINUTES = 1;
+    private static final int SHARED_POOL_SIZE = 2;
 
-    private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(
-            new ThreadFactoryBuilder().setNameFormat("HangPreventingTask-%d").build());
+    private static final ScheduledExecutorService SHARED_EXECUTOR = Executors.newScheduledThreadPool(
+            SHARED_POOL_SIZE,
+            new ThreadFactoryBuilder().setNameFormat("HangPreventingTask-%d").setDaemon(true).build());
+
+    private final ScheduledExecutorService myExecutor;
     private final DistributedJmxProxyFactory myJmxProxyFactory;
     private final UUID myNodeID;
     private final TableReference myTableReference;
@@ -60,7 +67,7 @@ public class RepairHangMonitor
             final RepairNotificationHandler notificationHandler)
     {
         this(jmxProxyFactory, nodeID, tableReference, maxWaitTimeInMinutes, notificationHandler,
-                DEFAULT_HEALTH_CHECK_INTERVAL_MINUTES, TimeUnit.MINUTES);
+                DEFAULT_HEALTH_CHECK_INTERVAL_MINUTES, TimeUnit.MINUTES, SHARED_EXECUTOR);
     }
 
     @VisibleForTesting
@@ -72,6 +79,20 @@ public class RepairHangMonitor
             final long healthCheckInterval,
             final TimeUnit healthCheckTimeUnit)
     {
+        this(jmxProxyFactory, nodeID, tableReference, maxWaitTimeInMinutes, notificationHandler,
+                healthCheckInterval, healthCheckTimeUnit, SHARED_EXECUTOR);
+    }
+
+    @VisibleForTesting
+    RepairHangMonitor(final DistributedJmxProxyFactory jmxProxyFactory,
+            final UUID nodeID,
+            final TableReference tableReference,
+            final int maxWaitTimeInMinutes,
+            final RepairNotificationHandler notificationHandler,
+            final long healthCheckInterval,
+            final TimeUnit healthCheckTimeUnit,
+            final ScheduledExecutorService executor)
+    {
         myJmxProxyFactory = jmxProxyFactory;
         myNodeID = nodeID;
         myTableReference = tableReference;
@@ -79,6 +100,7 @@ public class RepairHangMonitor
         myNotificationHandler = notificationHandler;
         myHealthCheckInterval = healthCheckInterval;
         myHealthCheckTimeUnit = healthCheckTimeUnit;
+        myExecutor = executor;
     }
 
     /**
@@ -95,7 +117,7 @@ public class RepairHangMonitor
     }
 
     /**
-     * Cancel any pending checks.
+     * Cancel any pending checks. Since the executor is shared, only the future is cancelled.
      */
     public void cancel()
     {
@@ -103,14 +125,6 @@ public class RepairHangMonitor
         {
             myHangPreventFuture.cancel(false);
         }
-    }
-
-    /**
-     * Shut down the executor.
-     */
-    public void shutdown()
-    {
-        myExecutor.shutdownNow();
     }
 
     private final class HangPreventingTask implements Runnable
