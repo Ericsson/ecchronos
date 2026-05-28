@@ -33,6 +33,8 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
@@ -56,19 +58,23 @@ public class TestRepairHangMonitor
 
     private RepairHangMonitor monitor;
 
+    private ScheduledExecutorService testExecutor;
+
     @Before
     public void setup() throws IOException
     {
         when(myJmxProxyFactory.connect()).thenReturn(myProxy);
         when(myNotificationHandler.getCommand()).thenReturn(COMMAND);
+        testExecutor = Executors.newSingleThreadScheduledExecutor();
         monitor = new RepairHangMonitor(myJmxProxyFactory, NODE_ID, myTableReference,
-                MAX_WAIT_MINUTES, myNotificationHandler, 1, TimeUnit.SECONDS);
+                MAX_WAIT_MINUTES, myNotificationHandler, 1, TimeUnit.SECONDS, testExecutor);
     }
 
     @After
     public void teardown()
     {
-        monitor.shutdown();
+        monitor.cancel();
+        testExecutor.shutdownNow();
     }
 
     @Test

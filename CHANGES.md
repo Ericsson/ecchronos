@@ -2,6 +2,7 @@
 
 ## Version 1.0.1 (Not yet Released)
 
+* Fix native memory leak: replace per-task executor with shared pool in RepairHangMonitor - Issue #1611
 * Add -Xss512k to jvm.options to limit thread stack memory - Issue #1608
 * ecctool run-repair now displays actual error message from REST API on failure - Issue #1603
 * Implement Lazy Repair State Updates in RepairStateImpl - Issue #1585
