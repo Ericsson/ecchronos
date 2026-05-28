@@ -55,3 +55,11 @@
 # Cap JIT code cache. Default is 240MB which is excessive for ecChronos.
 # 64m is sufficient for the application's hot method set.
 -XX:ReservedCodeCacheSize=64m
+
+##################
+# STACK SETTINGS #
+##################
+
+# Thread stack size. Default is 1MB which is excessive for ecChronos workloads.
+# Reducing to 512k halves per-thread memory overhead in high-thread-count scenarios.
+-Xss512k
