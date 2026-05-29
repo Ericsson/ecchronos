@@ -2,6 +2,7 @@
 
 ## Version 1.0.1 (Not yet Released)
 
+* Set HttpClient keepalive timeout to 5s to prevent connection pool memory growth - Issue #1614
 * Add MaxMetaspaceSize and ReservedCodeCacheSize to jvm.options - Issue #1610
 * Fix native memory leak: replace per-task executor with shared pool in RepairHangMonitor - Issue #1611
 * Add -Xss512k to jvm.options to limit thread stack memory - Issue #1608

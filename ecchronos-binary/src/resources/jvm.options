@@ -63,3 +63,12 @@
 # Thread stack size. Default is 1MB which is excessive for ecChronos workloads.
 # Reducing to 512k halves per-thread memory overhead in high-thread-count scenarios.
 -Xss512k
+
+##############################
+# HTTP CLIENT POOL SETTINGS #
+##############################
+
+# Evict idle HTTP connections after 5 seconds. Default is 1200s (20 minutes)
+# which causes completed exchange objects to be retained on pooled connections,
+# leading to steady memory growth.
+-Djdk.httpclient.keepalive.timeout=5
