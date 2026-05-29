@@ -89,8 +89,8 @@ public class RepairGroup extends ScheduledTask
 
         myRepairConfiguration = Preconditions
                 .checkNotNull(builder.myRepairConfiguration, "Repair configuration must be set");
-        myReplicaRepairGroup = Preconditions
-                .checkNotNull(builder.myReplicaRepairGroup, "Replica repair group must be set");
+        myReplicaRepairGroup = copyReplicaRepairGroup(Preconditions
+                .checkNotNull(builder.myReplicaRepairGroup, "Replica repair group must be set"));
         myJmxProxyFactory = Preconditions
                 .checkNotNull(builder.myJmxProxyFactory, "Jmx proxy factory must be set");
         myTableRepairMetrics = Preconditions
@@ -265,6 +265,14 @@ public class RepairGroup extends ScheduledTask
             }
         }
         return allowedParticipants;
+    }
+
+    private static ReplicaRepairGroup copyReplicaRepairGroup(final ReplicaRepairGroup original)
+    {
+        return new ReplicaRepairGroup(
+                original.replicas() != null ? new HashSet<>(original.replicas()) : null,
+                original.vnodes() != null ? new ArrayList<>(original.vnodes()) : null,
+                original.lastCompletedAt());
     }
 
     /**
