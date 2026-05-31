@@ -362,7 +362,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 if (validate(next))
                 {
                     currentExecutingJobs.put(nodeID, next);
-                    if (tryRunBatchedSession(next, tickStart))
+                    if (tryRunBatchedSession(next))
                     {
                         hadWork = true;
                         break;
@@ -387,9 +387,8 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             return true;
         }
 
-        private boolean tryRunBatchedSession(final ScheduledJob firstJob, final long tickStart)
+        private boolean tryRunBatchedSession(final ScheduledJob firstJob)
         {
-            // Try to acquire lock using the first task of the first job
             Iterator<ScheduledTask> taskIterator = firstJob.iterator();
             if (!taskIterator.hasNext())
             {
@@ -397,10 +396,10 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             }
 
             ScheduledTask firstTask = taskIterator.next();
-            LockFactory.DistributedLock sessionLock;
-            try
+            try (LockFactory.DistributedLock sessionLock = firstTask.getLock(myLockFactory, nodeID))
             {
-                sessionLock = firstTask.getLock(myLockFactory, nodeID);
+                LOG.debug("Lock acquired for batched session on node {} with lock {}", nodeID, sessionLock);
+                return executeBatchedSession(firstJob, firstTask, taskIterator);
             }
             catch (RuntimeMBeanException e)
             {
@@ -412,64 +411,74 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 handleLockFailure(firstJob, e);
                 return false;
             }
+        }
 
-            // Lock acquired - run batched session
+        private boolean executeBatchedSession(
+                final ScheduledJob firstJob,
+                final ScheduledTask firstTask,
+                final Iterator<ScheduledTask> taskIterator)
+        {
             long sessionStart = System.currentTimeMillis();
-            int tasksExecuted = 0;
-            try
-            {
-                LOG.info("Batched session started for node {}, window={}ms", nodeID, mySessionWindowInMs);
+            LOG.info("Batched session started for node {}, window={}ms", nodeID, mySessionWindowInMs);
 
-                // Execute the first task (lock already acquired for it)
-                if (runTask(firstTask, 1))
+            int tasksExecuted = executeFirstJob(firstJob, firstTask, taskIterator, sessionStart);
+
+            if (withinSessionWindow(sessionStart))
+            {
+                tasksExecuted += runRemainingJobsInSession(sessionStart, firstJob);
+            }
+
+            long elapsed = System.currentTimeMillis() - sessionStart;
+            LOG.info("Batched session ended for node {}, executed {} tasks in {}ms",
+                    nodeID, tasksExecuted, elapsed);
+            applyCooldown(tasksExecuted);
+            return true;
+        }
+
+        private int executeFirstJob(
+                final ScheduledJob job,
+                final ScheduledTask firstTask,
+                final Iterator<ScheduledTask> taskIterator,
+                final long sessionStart)
+        {
+            int tasksExecuted = 0;
+            if (runTask(firstTask, 1))
+            {
+                job.postExecute(true, firstTask);
+                tasksExecuted++;
+            }
+            else
+            {
+                job.postExecute(false, firstTask);
+            }
+
+            int index = 1;
+            while (taskIterator.hasNext() && withinSessionWindow(sessionStart))
+            {
+                index++;
+                ScheduledTask task = taskIterator.next();
+                boolean successful = runTask(task, index);
+                job.postExecute(successful, task);
+                if (successful)
                 {
-                    firstJob.postExecute(true, firstTask);
                     tasksExecuted++;
                 }
-                else
-                {
-                    firstJob.postExecute(false, firstTask);
-                }
-
-                // Continue with remaining tasks of the first job
-                int index = 1;
-                while (taskIterator.hasNext() && withinSessionWindow(sessionStart))
-                {
-                    index++;
-                    ScheduledTask task = taskIterator.next();
-                    boolean successful = runTask(task, index);
-                    firstJob.postExecute(successful, task);
-                    if (successful)
-                    {
-                        tasksExecuted++;
-                    }
-                }
-
-                if (tasksExecuted > 0)
-                {
-                    firstJob.refreshState();
-                }
-
-                // Continue with other jobs while within session window
-                if (withinSessionWindow(sessionStart))
-                {
-                    tasksExecuted += runRemainingJobsInSession(sessionStart, firstJob);
-                }
             }
-            finally
+
+            if (tasksExecuted > 0)
             {
-                sessionLock.close();
-                long elapsed = System.currentTimeMillis() - sessionStart;
-                LOG.info("Batched session ended for node {}, executed {} tasks in {}ms",
-                        nodeID, tasksExecuted, elapsed);
-
-                if (tasksExecuted > 0 && myCooldownInMs > 0)
-                {
-                    myCooldownUntil = System.currentTimeMillis() + myCooldownInMs;
-                    LOG.debug("Node {} entering cooldown for {}ms", nodeID, myCooldownInMs);
-                }
+                job.refreshState();
             }
-            return true;
+            return tasksExecuted;
+        }
+
+        private void applyCooldown(final int tasksExecuted)
+        {
+            if (tasksExecuted > 0 && myCooldownInMs > 0)
+            {
+                myCooldownUntil = System.currentTimeMillis() + myCooldownInMs;
+                LOG.debug("Node {} entering cooldown for {}ms", nodeID, myCooldownInMs);
+            }
         }
 
         private int runRemainingJobsInSession(final long sessionStart, final ScheduledJob excludeJob)
@@ -481,41 +490,51 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 {
                     break;
                 }
-                if (job.equals(excludeJob))
-                {
-                    continue;
-                }
-                Long backoffUntil = myContentionBackoff.get(job);
-                if (backoffUntil != null && System.currentTimeMillis() < backoffUntil)
-                {
-                    continue;
-                }
-                if (!validate(job))
+                if (shouldSkipJob(job, excludeJob))
                 {
                     continue;
                 }
                 currentExecutingJobs.put(nodeID, job);
-                int index = 0;
-                boolean jobHadWork = false;
-                for (ScheduledTask task : job)
+                tasksExecuted += executeJobTasks(job, sessionStart);
+            }
+            return tasksExecuted;
+        }
+
+        private boolean shouldSkipJob(final ScheduledJob job, final ScheduledJob excludeJob)
+        {
+            if (job.equals(excludeJob))
+            {
+                return true;
+            }
+            Long backoffUntil = myContentionBackoff.get(job);
+            if (backoffUntil != null && System.currentTimeMillis() < backoffUntil)
+            {
+                return true;
+            }
+            return !validate(job);
+        }
+
+        private int executeJobTasks(final ScheduledJob job, final long sessionStart)
+        {
+            int tasksExecuted = 0;
+            int index = 0;
+            for (ScheduledTask task : job)
+            {
+                if (!withinSessionWindow(sessionStart))
                 {
-                    if (!withinSessionWindow(sessionStart))
-                    {
-                        break;
-                    }
-                    index++;
-                    boolean successful = runTask(task, index);
-                    job.postExecute(successful, task);
-                    if (successful)
-                    {
-                        tasksExecuted++;
-                        jobHadWork = true;
-                    }
+                    break;
                 }
-                if (jobHadWork)
+                index++;
+                boolean successful = runTask(task, index);
+                job.postExecute(successful, task);
+                if (successful)
                 {
-                    job.refreshState();
+                    tasksExecuted++;
                 }
+            }
+            if (tasksExecuted > 0)
+            {
+                job.refreshState();
             }
             return tasksExecuted;
         }
