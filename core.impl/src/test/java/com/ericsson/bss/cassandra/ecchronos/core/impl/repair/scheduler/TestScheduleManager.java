@@ -279,16 +279,16 @@ public class TestScheduleManager
         TestJob job = new TestJob(ScheduledJob.Priority.LOW, 3, nodeID1);
         myScheduler.schedule(nodeID1, job);
 
+        // In batched mode, lock is acquired once for the session via the first task.
+        // All subsequent tasks execute without re-acquiring the lock.
         when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap(), any()))
-                .thenReturn(new DummyLock())
-                .thenThrow(new LockException(""))
                 .thenReturn(new DummyLock());
 
         myScheduler.run(nodeID1);
 
-        assertThat(job.getTaskRuns()).isEqualTo(2);
+        assertThat(job.getTaskRuns()).isEqualTo(3);
         assertThat(myScheduler.getQueueSize(nodeID1)).isEqualTo(1);
-        verify(myLockFactory, times(3)).tryLock(any(), anyString(), anyInt(), anyMap(), any());
+        verify(myLockFactory, times(1)).tryLock(any(), anyString(), anyInt(), anyMap(), any());
     }
 
     private void waitForJobStarted(TestJob job) throws InterruptedException
