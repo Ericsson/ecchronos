@@ -460,6 +460,27 @@ scheduler:
   frequency:
     time: 30
     unit: SECONDS
+  ##
+  ## Specifies the time window for batched lock sessions.
+  ## When a node acquires a distributed lock, it holds it for this duration
+  ## and executes multiple repair tasks within the window before releasing.
+  ## This reduces lock acquisition overhead significantly in large clusters.
+  ## Default: 5 minutes.
+  ##
+  session_window:
+    time: 5
+    unit: MINUTES
+  ##
+  ## Specifies the cooldown period after a batched session completes.
+  ## After releasing the lock, the node waits this duration before attempting
+  ## to acquire a new lock, allowing other nodes fair access.
+  ## Set to 0 to disable cooldown (nodes compete immediately).
+  ## Only configure if metrics show some nodes consistently failing to acquire locks.
+  ## Default: 0 (disabled).
+  ##
+  cooldown:
+    time: 0
+    unit: SECONDS
 
 rest_server:
   ##
