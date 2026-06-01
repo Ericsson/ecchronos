@@ -2,6 +2,7 @@
 
 ## Version 1.0.1 (Not yet Released)
 
+* Fix lambda snapshot capture in RepairStateImpl preventing GC of old snapshots - Issue #1622
 * Fix SSLSessionImpl accumulation: apply cache bounds to JVM default SSLContext and cache instance - Issue #1620
 * Fix RepairStateSnapshot retention by decoupling RepairGroup from snapshot object graph - Issue #1616
 * Set HttpClient keepalive timeout to 5s to prevent connection pool memory growth - Issue #1614

@@ -105,10 +105,11 @@ public class RepairStateImpl implements RepairState
             myTableRepairMetrics.lastRepairedAt(myTableReference,
                     newRepairStateSnapshot.lastCompletedAt());
 
+            long estimatedRepairTime = newRepairStateSnapshot.getEstimatedRepairTime();
             int nonRepairedRanges
                     = (int) newRepairStateSnapshot.getVnodeRepairStates().getVnodeRepairStates()
                     .stream()
-                    .filter(v -> vnodeIsRepairable(v, newRepairStateSnapshot,
+                    .filter(v -> vnodeIsRepairable(v, estimatedRepairTime,
                             System.currentTimeMillis()))
                     .count();
 
@@ -150,9 +151,10 @@ public class RepairStateImpl implements RepairState
 
         VnodeRepairStates updatedVnodeRepairStates = vnodeRepairStates.combineWithRepairedAt(repairedAt);
 
+        long estimatedRepairTime = old != null ? old.getEstimatedRepairTime() : 0L;
         List<VnodeRepairState> repairableVnodes = updatedVnodeRepairStates.getVnodeRepairStates().stream()
                 .filter(this::replicasAreRepairable)
-                .filter(v -> vnodeIsRepairable(v, old, System.currentTimeMillis()))
+                .filter(v -> vnodeIsRepairable(v, estimatedRepairTime, System.currentTimeMillis()))
                 .collect(Collectors.toList());
 
         List<ReplicaRepairGroup> replicaRepairGroups
@@ -285,14 +287,9 @@ public class RepairStateImpl implements RepairState
     }
 
     private boolean vnodeIsRepairable(final VnodeRepairState vnodeRepairState,
-            final RepairStateSnapshot snapshot,
+            final long estimatedRepairTime,
             final long now)
     {
-        long estimatedRepairTime = 0L;
-        if (snapshot != null)
-        {
-            estimatedRepairTime = snapshot.getEstimatedRepairTime();
-        }
         return isRepairNeeded(vnodeRepairState.lastRepairedAt(), estimatedRepairTime, now);
     }
 }
