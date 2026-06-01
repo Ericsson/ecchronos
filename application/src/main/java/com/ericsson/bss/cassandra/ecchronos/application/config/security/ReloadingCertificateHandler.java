@@ -116,6 +116,12 @@ public class ReloadingCertificateHandler implements CertificateHandler
     {
     }
 
+    private static final int SSL_SESSION_CACHE_SIZE = 50;
+    private static final int SSL_SESSION_TIMEOUT_SECONDS = 3600;
+
+    private volatile SSLContext myCachedSSLContext;
+    private volatile Context myCachedSSLContextSource;
+
     @Override
     public final void setDefaultSSLContext()
     {
@@ -126,6 +132,8 @@ public class ReloadingCertificateHandler implements CertificateHandler
             {
                 SSLContext sslContext = SSLContext.getInstance("TLS");
                 initSSLContext(context, sslContext);
+                sslContext.getClientSessionContext().setSessionCacheSize(SSL_SESSION_CACHE_SIZE);
+                sslContext.getClientSessionContext().setSessionTimeout(SSL_SESSION_TIMEOUT_SECONDS);
                 SSLContext.setDefault(sslContext);
                 LOG.info("Default SSLContext set for JVM");
             }
@@ -144,10 +152,18 @@ public class ReloadingCertificateHandler implements CertificateHandler
         {
             return null;
         }
+        if (myCachedSSLContext != null && myCachedSSLContextSource == context) // NOPMD CompareObjectsWithEquals - intentional identity check
+        {
+            return myCachedSSLContext;
+        }
         try
         {
             SSLContext sslContext = SSLContext.getInstance("TLS");
             initSSLContext(context, sslContext);
+            sslContext.getClientSessionContext().setSessionCacheSize(SSL_SESSION_CACHE_SIZE);
+            sslContext.getClientSessionContext().setSessionTimeout(SSL_SESSION_TIMEOUT_SECONDS);
+            myCachedSSLContext = sslContext;
+            myCachedSSLContextSource = context;
             return sslContext;
         }
         catch (Exception e)
