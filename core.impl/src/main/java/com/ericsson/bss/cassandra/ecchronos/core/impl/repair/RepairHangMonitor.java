@@ -25,9 +25,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.UUID;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -45,9 +45,14 @@ public class RepairHangMonitor
     private static final int DEFAULT_HEALTH_CHECK_INTERVAL_MINUTES = 1;
     private static final int SHARED_POOL_SIZE = 2;
 
-    private static final ScheduledExecutorService SHARED_EXECUTOR = Executors.newScheduledThreadPool(
-            SHARED_POOL_SIZE,
-            new ThreadFactoryBuilder().setNameFormat("HangPreventingTask-%d").setDaemon(true).build());
+    private static final ScheduledExecutorService SHARED_EXECUTOR;
+    static
+    {
+        ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(SHARED_POOL_SIZE,
+                new ThreadFactoryBuilder().setNameFormat("HangPreventingTask-%d").setDaemon(true).build());
+        executor.setRemoveOnCancelPolicy(true);
+        SHARED_EXECUTOR = executor;
+    }
 
     private final ScheduledExecutorService myExecutor;
     private final DistributedJmxProxyFactory myJmxProxyFactory;
