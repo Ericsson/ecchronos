@@ -1,6 +1,8 @@
 # Changes
 
-## Version 1.0.1 (Not yet Released)
+## Version 1.0.2 (Not yet Released)
+
+## Version 1.0.1
 
 * Enable removeOnCancelPolicy on RepairHangMonitor shared executor - Issue #1621
 * Fix lambda snapshot capture in RepairStateImpl preventing GC of old snapshots - Issue #1622
