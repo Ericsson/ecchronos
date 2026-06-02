@@ -2,6 +2,8 @@
 
 ## Version 1.0.2 (Not yet Released)
 
+* Add javax.net.ssl.sessionCacheSize=50 to jvm.options to bound Jolokia SSL sessions - Issue #1626
+
 ## Version 1.0.1
 
 * Enable removeOnCancelPolicy on RepairHangMonitor shared executor - Issue #1621
