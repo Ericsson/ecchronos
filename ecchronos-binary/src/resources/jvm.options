@@ -72,3 +72,12 @@
 # which causes completed exchange objects to be retained on pooled connections,
 # leading to steady memory growth.
 -Djdk.httpclient.keepalive.timeout=5
+
+####################
+# SSL/TLS SETTINGS #
+####################
+
+# Limit SSL session cache size for all SSLContexts in the JVM.
+# Prevents unbounded session accumulation from third-party libraries
+# (e.g., Jolokia) that create their own SSLContext without cache bounds.
+-Djavax.net.ssl.sessionCacheSize=50

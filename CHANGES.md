@@ -1,8 +1,15 @@
 # Changes
 
-## Version 1.0.1 (Not yet Released)
+## Version 1.0.2 (Not yet Released)
 
 * Implement Batched Lock Acquisition Strategy to Improve Repair Throughput in Large Clusters - Issue #1618
+* Add javax.net.ssl.sessionCacheSize=50 to jvm.options to bound Jolokia SSL sessions - Issue #1626
+
+## Version 1.0.1
+
+* Enable removeOnCancelPolicy on RepairHangMonitor shared executor - Issue #1621
+* Fix lambda snapshot capture in RepairStateImpl preventing GC of old snapshots - Issue #1622
+* Fix SSLSessionImpl accumulation: apply cache bounds to JVM default SSLContext and cache instance - Issue #1620
 * Fix RepairStateSnapshot retention by decoupling RepairGroup from snapshot object graph - Issue #1616
 * Set HttpClient keepalive timeout to 5s to prevent connection pool memory growth - Issue #1614
 * Add MaxMetaspaceSize and ReservedCodeCacheSize to jvm.options - Issue #1610
