@@ -186,13 +186,32 @@ public class RepairGroup extends ScheduledTask
     @Override
     public LockFactory.DistributedLock getLock(final LockFactory lockFactory, final UUID nodeId) throws LockException
     {
+        Map<String, String> metadata = getLockMetadata();
+        Set<RepairResource> repairResources = getRepairResources();
+        return myRepairLockFactory.getLock(lockFactory, repairResources, metadata, myPriority, nodeId);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Set<RepairResource> getRepairResources()
+    {
+        return myRepairResourceFactory.getRepairResources(myReplicaRepairGroup);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Map<String, String> getLockMetadata()
+    {
         Map<String, String> metadata = new HashMap<>();
         metadata.put(LOCK_METADATA_KEYSPACE, myTableReference.getKeyspace());
         metadata.put(LOCK_METADATA_TABLE, myTableReference.getTable());
-
-        Set<RepairResource> repairResources = myRepairResourceFactory.getRepairResources(myReplicaRepairGroup);
-        return myRepairLockFactory.getLock(lockFactory, repairResources, metadata, myPriority, nodeId);
+        return metadata;
     }
+
     /**
      * String representation.
      *
