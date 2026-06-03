@@ -2,6 +2,7 @@
 
 ## Version 1.0.2 (Not yet Released)
 
+* Implement Batched Lock Acquisition Strategy to Improve Repair Throughput in Large Clusters - Issue #1618
 * Add javax.net.ssl.sessionCacheSize=50 to jvm.options to bound Jolokia SSL sessions - Issue #1626
 
 ## Version 1.0.1

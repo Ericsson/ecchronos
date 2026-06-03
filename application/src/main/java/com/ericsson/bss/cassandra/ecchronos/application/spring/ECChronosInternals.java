@@ -151,6 +151,10 @@ public class ECChronosInternals implements Closeable
         myScheduleManagerImpl = ScheduleManagerImpl.builder()
                 .withRunInterval(configuration.getSchedulerConfig().getFrequency().getInterval(TimeUnit.MILLISECONDS),
                         TimeUnit.MILLISECONDS)
+                .withSessionWindow(configuration.getSchedulerConfig().getSessionWindow().getInterval(TimeUnit.MILLISECONDS),
+                        TimeUnit.MILLISECONDS)
+                .withCooldown(configuration.getSchedulerConfig().getCooldown().getInterval(TimeUnit.MILLISECONDS),
+                        TimeUnit.MILLISECONDS)
                 .withNodeIDList(jmxConnectionProvider.getJmxConnections().keySet())
                 .withNativeConnectionProvider(nativeConnectionProvider)
                 .withLockFactory(myLockFactory)
