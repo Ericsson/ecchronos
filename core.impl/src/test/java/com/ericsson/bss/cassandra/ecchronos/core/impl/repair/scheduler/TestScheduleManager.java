@@ -30,6 +30,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnecti
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.CASLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.CASLockFactoryBuilder;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.DummyLock;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairResource;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
@@ -244,7 +245,7 @@ public class TestScheduleManager
     @Test
     public void testRunningOneJobWithThrowingLock() throws LockException
     {
-        DummyJob job = new DummyJob(ScheduledJob.Priority.LOW, nodeID1);
+        TestJob job = new TestJob(ScheduledJob.Priority.LOW, 1, nodeID1, "dc1", "resource1");
         myScheduler.schedule(nodeID1, job);
 
         when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap(), any())).thenThrow(new LockException(""));
@@ -258,8 +259,8 @@ public class TestScheduleManager
     @Test
     public void testTwoJobsThrowingLock() throws LockException
     {
-        DummyJob job1 = new DummyJob(ScheduledJob.Priority.LOW, nodeID1);
-        DummyJob job2 = new DummyJob(ScheduledJob.Priority.LOW, nodeID1);
+        TestJob job1 = new TestJob(ScheduledJob.Priority.LOW, 1, nodeID1, "dc1", "resource1");
+        TestJob job2 = new TestJob(ScheduledJob.Priority.LOW, 1, nodeID1, "dc1", "resource2");
         myScheduler.schedule(nodeID1, job1);
         myScheduler.schedule(nodeID1, job2);
 
@@ -270,17 +271,15 @@ public class TestScheduleManager
         assertThat(job1.hasRun()).isFalse();
         assertThat(job2.hasRun()).isFalse();
         assertThat(myScheduler.getQueueSize(nodeID1)).isEqualTo(2);
-        verify(myLockFactory, times(2)).tryLock(any(), anyString(), anyInt(), anyMap(), any());
     }
 
     @Test
-    public void testThreeTasksOneThrowing() throws LockException
+    public void testThreeTasksWithResources() throws LockException
     {
-        TestJob job = new TestJob(ScheduledJob.Priority.LOW, 3, nodeID1);
+        TestJob job = new TestJob(ScheduledJob.Priority.LOW, 3, nodeID1, "dc1", "resource1");
         myScheduler.schedule(nodeID1, job);
 
-        // In batched mode, lock is acquired once for the session via the first task.
-        // All subsequent tasks execute without re-acquiring the lock.
+        // Lock acquired once for the shared resource across all tasks in the session
         when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap(), any()))
                 .thenReturn(new DummyLock());
 
@@ -315,6 +314,7 @@ public class TestScheduleManager
         private final AtomicInteger taskRuns = new AtomicInteger();
         private final int numTasks;
         private final Runnable onCompletion;
+        private final Set<RepairResource> repairResources;
 
 
         public TestJob(Priority priority, CountDownLatch cdl, UUID nodeId)
@@ -322,9 +322,11 @@ public class TestScheduleManager
             this(priority, cdl, 1, () -> {}, nodeId);
         }
 
-        public TestJob(Priority priority, int numTasks, UUID nodeId)
+
+        public TestJob(Priority priority, int numTasks, UUID nodeId, String dc, String resource)
         {
             this(priority, numTasks, () -> {}, nodeId);
+            repairResources.add(new RepairResource(dc, resource));
         }
 
         public TestJob(Priority priority, int numTasks, Runnable onCompletion, UUID nodeId)
@@ -332,6 +334,7 @@ public class TestScheduleManager
             super(new ConfigurationBuilder().withPriority(priority).withRunInterval(1, TimeUnit.SECONDS).build(), nodeId);
             this.numTasks = numTasks;
             this.onCompletion = onCompletion;
+            this.repairResources = new HashSet<>();
         }
 
         public TestJob(Priority priority, CountDownLatch cdl, int numTasks, Runnable onCompletion, UUID nodeId)
@@ -339,6 +342,7 @@ public class TestScheduleManager
             super(new ConfigurationBuilder().withPriority(priority).withRunInterval(1, TimeUnit.SECONDS).build(), nodeId);
             this.numTasks = numTasks;
             this.onCompletion = onCompletion;
+            this.repairResources = new HashSet<>();
             countDownLatch = cdl;
         }
 
@@ -377,6 +381,12 @@ public class TestScheduleManager
             public ShortRunningTask(Runnable onCompletion)
             {
                 this.onCompletion = onCompletion;
+            }
+
+            @Override
+            public Set<RepairResource> getRepairResources()
+            {
+                return repairResources;
             }
 
             @Override

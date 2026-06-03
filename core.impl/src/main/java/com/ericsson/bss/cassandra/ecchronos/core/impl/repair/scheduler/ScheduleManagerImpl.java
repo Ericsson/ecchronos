@@ -17,14 +17,13 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.CASLockFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
 import java.io.Closeable;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -234,7 +233,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     @VisibleForTesting
     public void run(final UUID nodeID)
     {
-        myRunTasks.get(nodeID).run();
+        myRunTasks.get(nodeID).runOnce();
     }
 
     /**
@@ -285,6 +284,12 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         @Override
         public void run()
         {
+            boolean hadWork = runOnce();
+            reschedule(hadWork);
+        }
+
+        private boolean runOnce()
+        {
             boolean hadWork = false;
             try
             {
@@ -292,7 +297,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 if (System.currentTimeMillis() < myCooldownUntil)
                 {
                     LOG.debug("Node {} in cooldown until {}", nodeID, myCooldownUntil);
-                    return;
+                    return false;
                 }
                 if (myQueue.get(nodeID) != null)
                 {
@@ -307,10 +312,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             {
                 LOG.error("Exception while running job in node {}", nodeID, e);
             }
-            finally
-            {
-                reschedule(hadWork);
-            }
+            return hadWork;
         }
 
         private void reschedule(final boolean hadWork)
@@ -362,11 +364,8 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 if (validate(next))
                 {
                     currentExecutingJobs.put(nodeID, next);
-                    if (tryRunBatchedSession(next))
-                    {
-                        hadWork = true;
-                        break;
-                    }
+                    hadWork = runSession(next);
+                    break;
                 }
             }
             currentExecutingJobs.remove(nodeID);
@@ -387,84 +386,93 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             return true;
         }
 
-        private boolean tryRunBatchedSession(final ScheduledJob firstJob)
-        {
-            Iterator<ScheduledTask> taskIterator = firstJob.iterator();
-            if (!taskIterator.hasNext())
-            {
-                return false;
-            }
-
-            ScheduledTask firstTask = taskIterator.next();
-            try (LockFactory.DistributedLock sessionLock = firstTask.getLock(myLockFactory, nodeID))
-            {
-                LOG.debug("Lock acquired for batched session on node {} with lock {}", nodeID, sessionLock);
-                return executeBatchedSession(firstJob, firstTask, taskIterator);
-            }
-            catch (RuntimeMBeanException e)
-            {
-                handleLockFailure(firstJob, e);
-                return false;
-            }
-            catch (Exception e)
-            {
-                handleLockFailure(firstJob, e);
-                return false;
-            }
-        }
-
-        private boolean executeBatchedSession(
-                final ScheduledJob firstJob,
-                final ScheduledTask firstTask,
-                final Iterator<ScheduledTask> taskIterator)
+        private boolean runSession(final ScheduledJob firstJob)
         {
             long sessionStart = System.currentTimeMillis();
-            LOG.info("Batched session started for node {}, window={}ms", nodeID, mySessionWindowInMs);
+            LOG.info("Session started for node {}, window={}ms", nodeID, mySessionWindowInMs);
+            int tasksExecuted;
 
-            int tasksExecuted = executeFirstJob(firstJob, firstTask, taskIterator, sessionStart);
-
-            if (withinSessionWindow(sessionStart))
+            try (SessionLockPool lockPool = new SessionLockPool(myLockFactory, nodeID))
             {
-                tasksExecuted += runRemainingJobsInSession(sessionStart, firstJob);
-            }
+                tasksExecuted = executeJobTasks(firstJob, sessionStart, lockPool);
 
-            long elapsed = System.currentTimeMillis() - sessionStart;
-            LOG.info("Batched session ended for node {}, executed {} tasks in {}ms",
-                    nodeID, tasksExecuted, elapsed);
-            applyCooldown(tasksExecuted);
-            return true;
-        }
-
-        private int executeFirstJob(
-                final ScheduledJob job,
-                final ScheduledTask firstTask,
-                final Iterator<ScheduledTask> taskIterator,
-                final long sessionStart)
-        {
-            int tasksExecuted = 0;
-            if (runTask(firstTask, 1))
-            {
-                job.postExecute(true, firstTask);
-                tasksExecuted++;
-            }
-            else
-            {
-                job.postExecute(false, firstTask);
-            }
-
-            int index = 1;
-            while (taskIterator.hasNext() && withinSessionWindow(sessionStart))
-            {
-                index++;
-                ScheduledTask task = taskIterator.next();
-                boolean successful = runTask(task, index);
-                job.postExecute(successful, task);
-                if (successful)
+                if (withinSessionWindow(sessionStart))
                 {
-                    tasksExecuted++;
+                    tasksExecuted += runRemainingJobsInSession(sessionStart, firstJob, lockPool);
                 }
             }
 
+            LOG.info("Session ended for node {}, executed {} tasks in {}ms",
+                    nodeID, tasksExecuted, System.currentTimeMillis() - sessionStart);
+            applyCooldown(tasksExecuted);
+            return tasksExecuted > 0;
+        }
+
+        private int runRemainingJobsInSession(
+                final long sessionStart,
+                final ScheduledJob excludeJob,
+                final SessionLockPool lockPool)
+        {
+            int tasksExecuted = 0;
+            for (ScheduledJob job : myQueue.get(nodeID))
+            {
+                if (!withinSessionWindow(sessionStart))
+                {
+                    break;
+                }
+                if (shouldSkipJob(job, excludeJob))
+                {
+                    continue;
+                }
+                currentExecutingJobs.put(nodeID, job);
+                tasksExecuted += executeJobTasks(job, sessionStart, lockPool);
+            }
+            return tasksExecuted;
+        }
+
+        private boolean shouldSkipJob(final ScheduledJob job, final ScheduledJob excludeJob)
+        {
+            if (job == excludeJob)
+            {
+                return true;
+            }
+            Long backoffUntil = myContentionBackoff.get(job);
+            if (backoffUntil != null && System.currentTimeMillis() < backoffUntil)
+            {
+                return true;
+            }
+            return !validate(job);
+        }
+
+        private int executeJobTasks(
+                final ScheduledJob job,
+                final long sessionStart,
+                final SessionLockPool lockPool)
+        {
+            int tasksExecuted = 0;
+            int index = 0;
+            for (ScheduledTask task : job)
+            {
+                if (!withinSessionWindow(sessionStart))
+                {
+                    break;
+                }
+                index++;
+                try
+                {
+                    lockPool.acquireForTask(task);
+                    boolean successful = runTask(task, index);
+                    job.postExecute(successful, task);
+                    if (successful)
+                    {
+                        tasksExecuted++;
+                    }
+                }
+                catch (Exception e)
+                {
+                    handleLockFailure(job, e);
+                }
+            }
             if (tasksExecuted > 0)
             {
                 job.refreshState();
@@ -481,64 +489,6 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             }
         }
 
-        private int runRemainingJobsInSession(final long sessionStart, final ScheduledJob excludeJob)
-        {
-            int tasksExecuted = 0;
-            for (ScheduledJob job : myQueue.get(nodeID))
-            {
-                if (!withinSessionWindow(sessionStart))
-                {
-                    break;
-                }
-                if (shouldSkipJob(job, excludeJob))
-                {
-                    continue;
-                }
-                currentExecutingJobs.put(nodeID, job);
-                tasksExecuted += executeJobTasks(job, sessionStart);
-            }
-            return tasksExecuted;
-        }
-
-        private boolean shouldSkipJob(final ScheduledJob job, final ScheduledJob excludeJob)
-        {
-            if (job.equals(excludeJob))
-            {
-                return true;
-            }
-            Long backoffUntil = myContentionBackoff.get(job);
-            if (backoffUntil != null && System.currentTimeMillis() < backoffUntil)
-            {
-                return true;
-            }
-            return !validate(job);
-        }
-
-        private int executeJobTasks(final ScheduledJob job, final long sessionStart)
-        {
-            int tasksExecuted = 0;
-            int index = 0;
-            for (ScheduledTask task : job)
-            {
-                if (!withinSessionWindow(sessionStart))
-                {
-                    break;
-                }
-                index++;
-                boolean successful = runTask(task, index);
-                job.postExecute(successful, task);
-                if (successful)
-                {
-                    tasksExecuted++;
-                }
-            }
-            if (tasksExecuted > 0)
-            {
-                job.refreshState();
-            }
-            return tasksExecuted;
-        }
-
         private boolean withinSessionWindow(final long sessionStart)
         {
             return (System.currentTimeMillis() - sessionStart) < mySessionWindowInMs;
@@ -546,9 +496,8 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
         private void handleLockFailure(final ScheduledJob job, final Exception e)
         {
-            if (e instanceof RuntimeMBeanException)
+            if (e instanceof RuntimeMBeanException rme)
             {
-                RuntimeMBeanException rme = (RuntimeMBeanException) e;
                 if (rme.getCause() instanceof IllegalStateException
                         && rme.getCause().getMessage() != null
                         && rme.getCause().getMessage().contains("More than one key found"))
@@ -561,13 +510,13 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                     LOG.warn("Unable to get schedule lock on job {} in node {}", job, nodeID, e);
                 }
             }
-            else if (e.getCause() != null)
+            else if (e instanceof LockException)
             {
-                LOG.warn("Unable to get schedule lock on job {} in node {}", job, nodeID, e);
+                LOG.debug("Lock contention for job {} in node {}: {}", job, nodeID, e.getMessage());
             }
             else
             {
-                LOG.debug("Lock contention for job {} in node {}", job, nodeID, e);
+                LOG.warn("Unable to get schedule lock on job {} in node {}", job, nodeID, e);
             }
             long backoff = ThreadLocalRandom.current().nextLong(
                     myRunIntervalInMs / 2, myRunIntervalInMs);

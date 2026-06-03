@@ -15,9 +15,12 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler;
 
 import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairResource;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ScheduledJobException;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Set;
 import java.util.UUID;
 
 @SuppressWarnings("VisibilityModifier")
@@ -72,6 +75,26 @@ public abstract class ScheduledTask
     public LockFactory.DistributedLock getLock(final LockFactory lockFactory, final UUID nodeId) throws LockException
     {
         return lockFactory.tryLock(null, DEFAULT_SCHEDULE_RESOURCE, myPriority, new HashMap<>(), nodeId);
+    }
+
+    /**
+     * Get the repair resources required by this task.
+     *
+     * @return The set of repair resources needed, empty if not applicable.
+     */
+    public Set<RepairResource> getRepairResources()
+    {
+        return Collections.emptySet();
+    }
+
+    /**
+     * Get the priority of this task.
+     *
+     * @return The priority value.
+     */
+    public int getPriority()
+    {
+        return myPriority;
     }
 }
 

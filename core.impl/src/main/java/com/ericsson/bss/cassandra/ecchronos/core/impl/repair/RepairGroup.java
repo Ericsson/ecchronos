@@ -190,8 +190,17 @@ public class RepairGroup extends ScheduledTask
         metadata.put(LOCK_METADATA_KEYSPACE, myTableReference.getKeyspace());
         metadata.put(LOCK_METADATA_TABLE, myTableReference.getTable());
 
-        Set<RepairResource> repairResources = myRepairResourceFactory.getRepairResources(myReplicaRepairGroup);
+        Set<RepairResource> repairResources = getRepairResources();
         return myRepairLockFactory.getLock(lockFactory, repairResources, metadata, myPriority, nodeId);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Set<RepairResource> getRepairResources()
+    {
+        return myRepairResourceFactory.getRepairResources(myReplicaRepairGroup);
     }
     /**
      * String representation.
