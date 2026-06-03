@@ -432,7 +432,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
         private boolean shouldSkipJob(final ScheduledJob job, final ScheduledJob excludeJob)
         {
-            if (job == excludeJob)
+            if (job.equals(excludeJob))
             {
                 return true;
             }
