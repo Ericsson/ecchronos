@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.CASLockFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.RepairLockFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
@@ -60,6 +61,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     private final Map<UUID, ScheduledFuture<?>> myRunFuture = new ConcurrentHashMap<>();
     private final Map<UUID, JobRunTask> myRunTasks = new ConcurrentHashMap<>();
     private final CASLockFactory myLockFactory;
+    private final RepairLockFactoryImpl myRepairLockFactory;
     private final DistributedNativeConnectionProvider myNativeConnectionProvider;
 
     private final ScheduledThreadPoolExecutor myExecutor;
@@ -76,6 +78,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         myExecutor.setKeepAliveTime(DEFAULT_KEEP_ALIVE_TIME, TimeUnit.SECONDS);
         myExecutor.allowCoreThreadTimeOut(true);
         myLockFactory = builder.myLockFactory;
+        myRepairLockFactory = new RepairLockFactoryImpl();
         myRunIntervalInMs = builder.myRunIntervalInMs;
         mySessionWindowInMs = builder.mySessionWindowInMs;
         myCooldownInMs = builder.myCooldownInMs;
@@ -392,7 +395,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             LOG.info("Session started for node {}, window={}ms", nodeID, mySessionWindowInMs);
             int tasksExecuted;
 
-            try (SessionLockPool lockPool = new SessionLockPool(myLockFactory, nodeID))
+            try (SessionLockPool lockPool = new SessionLockPool(myLockFactory, myRepairLockFactory, nodeID))
             {
                 tasksExecuted = executeJobTasks(firstJob, sessionStart, lockPool);
 

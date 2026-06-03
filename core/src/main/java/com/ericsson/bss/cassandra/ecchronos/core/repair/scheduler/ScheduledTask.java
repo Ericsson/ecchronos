@@ -20,6 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ScheduledJobException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -95,6 +96,16 @@ public abstract class ScheduledTask
     public int getPriority()
     {
         return myPriority;
+    }
+
+    /**
+     * Get the lock metadata for this task.
+     *
+     * @return The metadata map, empty if not applicable.
+     */
+    public Map<String, String> getLockMetadata()
+    {
+        return Collections.emptyMap();
     }
 }
 
