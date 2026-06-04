@@ -27,8 +27,9 @@ def step_send_patch_request(context, body):
     headers = {"Content-Type": "application/json"}
     if client_cert and client_key and client_ca:
         url = "https://" + context.url
-        context.response = requests.patch(url, data=body, headers=headers,
-                                          cert=(client_cert, client_key), verify=client_ca, timeout=10)
+        context.response = requests.patch(
+            url, data=body, headers=headers, cert=(client_cert, client_key), verify=client_ca, timeout=10
+        )
     else:
         url = "http://" + context.url
         context.response = requests.patch(url, data=body, headers=headers, timeout=10)

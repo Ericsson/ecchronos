@@ -23,41 +23,49 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "pylib"))
 
 def test_parse_duration_ms_seconds():
     from ecctool import parse_duration_ms
+
     assert parse_duration_ms("30s") == 30000
 
 
 def test_parse_duration_ms_minutes():
     from ecctool import parse_duration_ms
+
     assert parse_duration_ms("5m") == 300000
 
 
 def test_parse_duration_ms_hours():
     from ecctool import parse_duration_ms
+
     assert parse_duration_ms("2h") == 7200000
 
 
 def test_parse_duration_ms_milliseconds():
     from ecctool import parse_duration_ms
+
     assert parse_duration_ms("500ms") == 500
 
 
 def test_parse_duration_ms_raw_int():
     from ecctool import parse_duration_ms
+
     assert parse_duration_ms("300000") == 300000
 
 
 def test_parse_duration_ms_one_second():
     from ecctool import parse_duration_ms
+
     assert parse_duration_ms("1s") == 1000
 
 
 def test_parse_duration_ms_zero():
     from ecctool import parse_duration_ms
+
     assert parse_duration_ms("0") == 0
 
 
 def test_parse_duration_ms_invalid_format():
     from ecctool import parse_duration_ms
+
     try:
         parse_duration_ms("abc")
         assert False, "Should have raised SystemExit"
@@ -67,6 +75,7 @@ def test_parse_duration_ms_invalid_format():
 
 def test_parse_duration_ms_negative():
     from ecctool import parse_duration_ms
+
     try:
         parse_duration_ms("-5m")
         assert False, "Should have raised SystemExit"

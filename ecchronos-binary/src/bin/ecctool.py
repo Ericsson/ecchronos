@@ -213,9 +213,11 @@ def add_config_subcommand(sub_parsers):
 
 def config(arguments):
     request = rest.ConfigRequest(base_url=arguments.url)
-    has_updates = (arguments.session_window is not None
-                   or arguments.cooldown is not None
-                   or arguments.locks_per_resource is not None)
+    has_updates = (
+        arguments.session_window is not None
+        or arguments.cooldown is not None
+        or arguments.locks_per_resource is not None
+    )
     if has_updates:
         session_window_ms = parse_duration_ms(arguments.session_window) if arguments.session_window else None
         cooldown_ms = parse_duration_ms(arguments.cooldown) if arguments.cooldown else None
