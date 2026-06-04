@@ -55,7 +55,11 @@ public class RepairLockFactoryImpl implements RepairLockFactory
         LOG.info("RepairLockFactory configured with {} locks per resource", locksPerResource);
     }
 
-    private int getLocksPerResource()
+    /**
+     * Get the current locks per resource value.
+     * @return current locks per resource
+     */
+    public static int getLocksPerResource()
     {
         return CONFIGURED_LOCKS_PER_RESOURCE.get();
     }

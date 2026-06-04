@@ -484,6 +484,28 @@ output formats: json (defaults to no format)
 ### -p &lt;pidfile&gt;, --pidfile &lt;pidfile&gt;
 file containing process id
 
+## ecctool config
+
+Show or update ecChronos runtime configuration. Changes are in-memory only — restarting ecChronos restores values from `ecc.yml`.
+
+```console
+usage: ecctool config [-h] [--session-window SESSION_WINDOW] [--cooldown COOLDOWN] [--locks-per-resource LOCKS_PER_RESOURCE] [-u URL]
+```
+
+When called without arguments, displays the current configuration. When called with one or more parameters, updates the specified values.
+
+### --session-window &lt;duration&gt;
+Time window for batched lock sessions. Accepts duration format: `5m`, `30s`, `2h`, `500ms`, or raw milliseconds.
+
+### --cooldown &lt;duration&gt;
+Cooldown period after a session completes. Accepts same duration format as `--session-window`.
+
+### --locks-per-resource &lt;int&gt;
+Number of concurrent locks per datacenter resource. Must be >= 1.
+
+### -u &lt;url&gt;, --url &lt;url&gt;
+ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+
 # Examples
 
 For example usage and explanation about output refer to [ECCTOOL_EXAMPLES.md](../ECCTOOL_EXAMPLES.md)

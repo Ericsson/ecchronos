@@ -382,6 +382,27 @@ class RejectionsRequest(RestRequest):
         return result
 
 
+class ConfigRequest(RestRequest):
+    URL = "repair-management/v2/config"
+
+    def __init__(self, base_url=None):
+        RestRequest.__init__(self, base_url)
+
+    def get(self):
+        return self.request(ConfigRequest.URL)
+
+    def patch(self, session_window_ms=None, cooldown_ms=None, locks_per_resource=None):
+        body = {}
+        if session_window_ms is not None:
+            body["session_window_ms"] = session_window_ms
+        if cooldown_ms is not None:
+            body["cooldown_ms"] = cooldown_ms
+        if locks_per_resource is not None:
+            body["locks_per_resource"] = locks_per_resource
+        headers = {"Content-Type": "application/json"}
+        return self.request(ConfigRequest.URL, "PATCH", body=body, headers=headers)
+
+
 def _create_response(request):
     cert_file = os.getenv("ECCTOOL_CERT_FILE")
     key_file = os.getenv("ECCTOOL_KEY_FILE")

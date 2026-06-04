@@ -66,8 +66,8 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
     private final ScheduledThreadPoolExecutor myExecutor;
     private final long myRunIntervalInMs;
-    private final long mySessionWindowInMs;
-    private final long myCooldownInMs;
+    private volatile long mySessionWindowInMs;
+    private volatile long myCooldownInMs;
 
     private ScheduleManagerImpl(final Builder builder)
     {
@@ -138,6 +138,68 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         {
             return "";
         }
+    }
+
+    /**
+     * Get the current session window in milliseconds.
+     * @return session window in ms
+     */
+    @Override
+    public long getSessionWindowInMs()
+    {
+        return mySessionWindowInMs;
+    }
+
+    /**
+     * Set the session window at runtime.
+     * @param sessionWindowInMs new session window in milliseconds, must be greater than 0
+     */
+    @Override
+    public void setSessionWindowInMs(final long sessionWindowInMs)
+    {
+        if (sessionWindowInMs <= 0)
+        {
+            throw new IllegalArgumentException("session_window must be > 0");
+        }
+        mySessionWindowInMs = sessionWindowInMs;
+        LOG.info("Session window updated to {} ms", sessionWindowInMs);
+    }
+
+    /**
+     * Get the current cooldown in milliseconds.
+     * @return cooldown in ms
+     */
+    @Override
+    public long getCooldownInMs()
+    {
+        return myCooldownInMs;
+    }
+
+    /**
+     * Set the cooldown at runtime.
+     * @param cooldownInMs new cooldown in milliseconds, must be greater than or equal to 0
+     */
+    @Override
+    public void setCooldownInMs(final long cooldownInMs)
+    {
+        if (cooldownInMs < 0)
+        {
+            throw new IllegalArgumentException("cooldown must be >= 0");
+        }
+        myCooldownInMs = cooldownInMs;
+        LOG.info("Cooldown updated to {} ms", cooldownInMs);
+    }
+
+    @Override
+    public int getLocksPerResource()
+    {
+        return RepairLockFactoryImpl.getLocksPerResource();
+    }
+
+    @Override
+    public void setLocksPerResource(final int locksPerResource)
+    {
+        RepairLockFactoryImpl.configure(locksPerResource);
     }
 
     /**

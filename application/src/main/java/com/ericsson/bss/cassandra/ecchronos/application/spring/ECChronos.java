@@ -50,6 +50,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.VnodeRepairSt
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairStatsProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
@@ -196,6 +197,12 @@ public class ECChronos implements Closeable
     public OnDemandRepairScheduler onDemandRepairScheduler()
     {
         return myOnDemandRepairSchedulerImpl;
+    }
+
+    @Bean
+    public ScheduleManager scheduleManager()
+    {
+        return myECChronosInternals.getScheduleManager();
     }
 
     @Bean

@@ -699,7 +699,7 @@ limitations under the License.
                         <headerSections>
                             <headerSection>
                                 <key>YEAR</key>
-                                <defaultValue>2024</defaultValue>
+                                <defaultValue>2026</defaultValue>
                                 <ensureMatch>[0-9-]+</ensureMatch>
                             </headerSection>
                         </headerSections>
