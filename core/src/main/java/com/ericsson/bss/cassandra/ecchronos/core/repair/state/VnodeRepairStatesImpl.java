@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/** Tracks repair states for all vnodes of a table. */
 public final class VnodeRepairStatesImpl implements VnodeRepairStates // CPD-OFF
 {
     private final List<VnodeRepairState> myVnodeRepairStatuses;
@@ -59,6 +60,11 @@ public final class VnodeRepairStatesImpl implements VnodeRepairStates // CPD-OFF
         return myVnodeRepairStatuses.toString();
     }
 
+    /**
+     * Creates a new builder instance.
+     * @param vnodeRepairStates the vnode repair states
+     * @return the built instance
+     */
     public static Builder newBuilder(final Collection<VnodeRepairState> vnodeRepairStates)
     {
         return new Builder(vnodeRepairStates);
@@ -85,10 +91,15 @@ public final class VnodeRepairStatesImpl implements VnodeRepairStates // CPD-OFF
         return Objects.hash(myVnodeRepairStatuses);
     }
 
+    /** Builder for constructing instances of the enclosing class. */
     public static class Builder implements VnodeRepairStates.Builder
     {
         private final Map<LongTokenRange, VnodeRepairState> myVnodeRepairStates = new LinkedHashMap<>();
 
+        /**
+         * Constructs a new Builder.
+         * @param vnodeRepairStates the vnode repair states
+         */
         public Builder(final Collection<VnodeRepairState> vnodeRepairStates)
         {
             for (VnodeRepairState vnodeRepairState : vnodeRepairStates)

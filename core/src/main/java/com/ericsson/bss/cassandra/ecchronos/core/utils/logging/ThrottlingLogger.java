@@ -33,24 +33,45 @@ public class ThrottlingLogger
     private final Logger myLogger;
     private final long myIntervalNanos;
 
+    /**
+     * Constructs a new ThrottlingLogger.
+     * @param logger the logger instance
+     * @param interval the time interval
+     * @param timeUnit the time unit
+     */
     public ThrottlingLogger(final Logger logger, final long interval, final TimeUnit timeUnit)
     {
         myLogger = logger;
         myIntervalNanos = timeUnit.toNanos(interval);
     }
 
+    /**
+     * Logs an informational message.
+     * @param message the log message
+     * @param objects the message format arguments
+     */
     public final void info(final String message, final Object... objects)
     {
         ThrottledLogMessage throttledLogMessage = getThrottledLogMessage(message);
         throttledLogMessage.info(myLogger, System.nanoTime(), objects);
     }
 
+    /**
+     * Logs a warning message.
+     * @param message the log message
+     * @param objects the message format arguments
+     */
     public final void warn(final String message, final Object... objects)
     {
         ThrottledLogMessage throttledLogMessage = getThrottledLogMessage(message);
         throttledLogMessage.warn(myLogger, System.nanoTime(), objects);
     }
 
+    /**
+     * Logs an error message.
+     * @param message the log message
+     * @param objects the message format arguments
+     */
     public final void error(final String message, final Object... objects)
     {
         ThrottledLogMessage throttledLogMessage = getThrottledLogMessage(message);

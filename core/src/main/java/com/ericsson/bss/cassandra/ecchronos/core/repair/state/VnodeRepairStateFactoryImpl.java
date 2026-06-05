@@ -38,6 +38,12 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
     private final RepairHistoryProvider myRepairHistoryProvider;
     private final boolean useSubRanges;
 
+    /**
+     * Constructs a new VnodeRepairStateFactoryImpl.
+     * @param replicationState the replication state
+     * @param repairHistoryProvider the repair history provider
+     * @param toUseSubRanges the to use sub ranges
+     */
     public VnodeRepairStateFactoryImpl(final ReplicationState replicationState,
                                        final RepairHistoryProvider repairHistoryProvider,
                                        final boolean toUseSubRanges)

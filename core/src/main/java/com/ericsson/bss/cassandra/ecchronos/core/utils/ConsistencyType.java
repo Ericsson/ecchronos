@@ -14,9 +14,13 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
+/** Defines the consistency level strategy for repair operations. */
 public enum ConsistencyType
 {
+    /** Default consistency. */
     DEFAULT,
+    /** Local consistency. */
     LOCAL,
+    /** Serial consistency. */
     SERIAL
 }

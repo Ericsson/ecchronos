@@ -100,6 +100,10 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     private final LoadingCache<TableKey, TimeRejectionCollection> myTimeRejectionCache;
     private final Node myNode;
 
+    /**
+     * Constructs a new TimeBasedRunPolicy.
+     * @param builder the builder to configure
+     */
     public TimeBasedRunPolicy(final Builder builder)
     {
         mySession = builder.mySession;
@@ -177,16 +181,29 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     }
 
 
+    /**
+     * Returns the local node.
+     * @return the local node
+     */
     public final Node getLocalNode()
     {
         return myNode;
     }
 
+    /**
+     * Returns the all rejections.
+     * @return the all rejections
+     */
     public final ResultSet getAllRejections()
     {
         return mySession.execute(myStatementDecorator.apply(myGetAllRejectionsStatement.bind()));
     }
 
+    /**
+     * Adds rejection.
+     * @param bucket the time bucket
+     * @return the result set
+     */
     public final ResultSet addRejection(final TimeBasedRunPolicyBucket bucket)
     {
         Statement decoratedStatement =
@@ -200,6 +217,11 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         return mySession.execute(decoratedStatement);
     }
 
+    /**
+     * Adds datacenter exclusion.
+     * @param bucket the time bucket
+     * @return the result set
+     */
     public final ResultSet addDatacenterExclusion(final TimeBasedRunPolicyBucket bucket)
     {
         Statement decoratedStatement =
@@ -213,6 +235,11 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     }
 
 
+    /**
+     * Removes a datacenter from the exclusion list.
+     * @param bucket the time bucket
+     * @return the result set
+     */
     public final ResultSet dropDatacenterExclusion(final TimeBasedRunPolicyBucket bucket)
     {
         Statement decoratedStatement =
@@ -224,6 +251,11 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         return mySession.execute(decoratedStatement);
     }
 
+    /**
+     * Deletes a previously registered rejection.
+     * @param bucket the time bucket
+     * @return the result set
+     */
     public final ResultSet deleteRejection(final TimeBasedRunPolicyBucket bucket)
     {
         Statement decoratedStatement =
@@ -235,6 +267,12 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         return mySession.execute(decoratedStatement);
     }
 
+    /**
+     * Returns the rejections by ks and tb.
+     * @param keyspace the keyspace name
+     * @param table the table reference
+     * @return the rejections by ks and tb
+     */
     public final ResultSet getRejectionsByKsAndTb(final String keyspace, final String table)
     {
         Statement decoratedStatement =
@@ -242,6 +280,11 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         return mySession.execute(decoratedStatement);
     }
 
+    /**
+     * Returns the rejections by ks.
+     * @param keyspace the keyspace name
+     * @return the rejections by ks
+     */
     public final ResultSet getRejectionsByKs(final String keyspace)
     {
         Statement decoratedStatement =
@@ -249,6 +292,10 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         return mySession.execute(decoratedStatement);
     }
 
+    /**
+     * Truncates the value to the specified precision.
+     * @return the result set
+     */
     public final ResultSet truncate()
     {
         Statement decoratedStatement =
@@ -292,6 +339,12 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         return getRejectionsForTable(tableReference, null) == -1L;
     }
 
+    /**
+     * Determines whether the given replica should be included in repair.
+     * @param tableReference the table reference
+     * @param node the Cassandra node
+     * @return true if the replica should be included
+     */
     public final boolean shouldReplicaBeIncluded(final TableReference tableReference, final DriverNode node)
     {
         return getRejectionsForTable(tableReference, node) == -1L;
@@ -304,11 +357,16 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         myTimeRejectionCache.cleanUp();
     }
 
+    /**
+     * Builds the instance.
+     * @return the built instance
+     */
     public static Builder builder()
     {
         return new Builder();
     }
 
+    /** Builder for constructing instances of the enclosing class. */
     public static class Builder
     {
         private static final String DEFAULT_KEYSPACE_NAME = "ecchronos";
@@ -320,24 +378,50 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         private Clock myClock = Clock.systemDefaultZone();
         private Node myNode;
 
+        /** Constructs a new Builder. */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
+         * Sets the session.
+         * @param session the CQL session
+         * @return this builder
+         */
         public final Builder withSession(final CqlSession session)
         {
             mySession = session;
             return this;
         }
 
+        /**
+         * Sets the statement decorator.
+         * @param statementDecorator the statement decorator
+         * @return this builder
+         */
         public final Builder withStatementDecorator(final StatementDecorator statementDecorator)
         {
             myStatementDecorator = statementDecorator;
             return this;
         }
 
+        /**
+         * Sets the keyspace name.
+         * @param keyspaceName the keyspace name
+         * @return this builder
+         */
         public final Builder withKeyspaceName(final String keyspaceName)
         {
             myKeyspaceName = keyspaceName;
             return this;
         }
 
+        /**
+         * Sets the local node.
+         * @param node the Cassandra node
+         * @return this builder
+         */
         public final Builder withLocalNode(final Node node)
         {
             myNode = node;
@@ -364,6 +448,10 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
             return this;
         }
 
+        /**
+         * Builds the instance.
+         * @return the built instance
+         */
         public final TimeBasedRunPolicy build()
         {
             verifySchemasExists();

@@ -52,6 +52,7 @@ import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+/** Spring configuration class that defines application beans. */
 @Configuration
 public class BeanConfigurator
 {
@@ -65,6 +66,10 @@ public class BeanConfigurator
 
     private final ConfigRefresher configRefresher;
 
+    /**
+     * Constructs a new BeanConfigurator.
+     * @throws ConfigurationException if the configuration is invalid
+     */
     public BeanConfigurator() throws ConfigurationException
     {
         if (ConfigurationHelper.DEFAULT_INSTANCE.usePath())
@@ -83,6 +88,7 @@ public class BeanConfigurator
         jmxSecurity.set(security.getJmxSecurity());
     }
 
+    /** Releases resources held by this instance. */
     public final void close()
     {
         if (configRefresher != null)
@@ -91,6 +97,11 @@ public class BeanConfigurator
         }
     }
 
+    /**
+     * Returns the application configuration.
+     * @return the configuration
+     * @throws ConfigurationException if the configuration is invalid
+     */
     @Bean
     public Config config() throws ConfigurationException
     {
@@ -107,6 +118,12 @@ public class BeanConfigurator
         return ConfigurationHelper.DEFAULT_INSTANCE.getConfiguration(CONFIGURATION_FILE, Config.class);
     }
 
+    /**
+     * Returns the web server factory.
+     * @param configuration the application configuration
+     * @return the web server factory
+     * @throws UnknownHostException if an error occurs
+     */
     @Bean
     public ConfigurableServletWebServerFactory webServerFactory(final Config configuration) throws UnknownHostException
     {
@@ -116,18 +133,36 @@ public class BeanConfigurator
         return factory;
     }
 
+    /**
+     * Returns the repair fault reporter.
+     * @param config the configuration
+     * @return the repair fault reporter
+     * @throws ConfigurationException if the configuration is invalid
+     */
     @Bean
     public RepairFaultReporter repairFaultReporter(final Config config) throws ConfigurationException
     {
         return ReflectionUtils.construct(config.getRepairConfig().getAlarm().getFaultReporterClass());
     }
 
+    /**
+     * Returns the default repair configuration provider.
+     * @return the default repair configuration provider
+     */
     @Bean
     public DefaultRepairConfigurationProvider defaultRepairConfigurationProvider()
     {
         return new DefaultRepairConfigurationProvider();
     }
 
+    /**
+     * Returns the native CQL connection provider.
+     * @param config the configuration
+     * @param defaultRepairConfigurationProvider the default repair configuration provider
+     * @param eccCompositeMeterRegistry the ECC composite meter registry
+     * @return the native connection provider
+     * @throws ConfigurationException if the configuration is invalid
+     */
     @Bean
     public NativeConnectionProvider nativeConnectionProvider(final Config config,
             final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
@@ -137,6 +172,15 @@ public class BeanConfigurator
                 eccCompositeMeterRegistry);
     }
 
+    /**
+     * Returns the native connection provider.
+     * @param configuration the application configuration
+     * @param securitySupplier the security supplier
+     * @param defaultRepairConfigurationProvider the default repair configuration provider
+     * @param meterRegistry the meter registry
+     * @return the native connection provider
+     * @throws ConfigurationException if the configuration is invalid
+     */
     public static NativeConnectionProvider getNativeConnectionProvider(
         final Config configuration,
         final Supplier<Security.CqlSecurity> securitySupplier,
@@ -234,6 +278,12 @@ public class BeanConfigurator
         }
     }
 
+    /**
+     * Returns the JMX connection provider.
+     * @param config the configuration
+     * @return the JMX connection provider
+     * @throws ConfigurationException if the configuration is invalid
+     */
     @Bean
     public JmxConnectionProvider jmxConnectionProvider(final Config config) throws ConfigurationException
     {
@@ -252,6 +302,12 @@ public class BeanConfigurator
                         configuration, securitySupplier);
     }
 
+    /**
+     * Returns the statement decorator.
+     * @param config the configuration
+     * @return the statement decorator
+     * @throws ConfigurationException if the configuration is invalid
+     */
     @Bean
     public StatementDecorator statementDecorator(final Config config) throws ConfigurationException
     {
@@ -280,6 +336,11 @@ public class BeanConfigurator
         }
     }
 
+    /**
+     * Returns the node resolver.
+     * @param nativeConnectionProvider the native connection provider
+     * @return the node resolver
+     */
     @Bean
     public NodeResolver nodeResolver(final NativeConnectionProvider nativeConnectionProvider)
     {
@@ -288,6 +349,12 @@ public class BeanConfigurator
         return new NodeResolverImpl(session);
     }
 
+    /**
+     * Returns the replication state.
+     * @param nativeConnectionProvider the native connection provider
+     * @param nodeResolver the node resolver
+     * @return the replication state
+     */
     @Bean
     public ReplicationState replicationState(final NativeConnectionProvider nativeConnectionProvider,
                                              final NodeResolver nodeResolver)
@@ -298,6 +365,10 @@ public class BeanConfigurator
         return new ReplicationStateImpl(nodeResolver, session, node);
     }
 
+    /**
+     * Registers custom type converters.
+     * @return the conversion configurer
+     */
     @Bean
     public WebMvcConfigurer conversionConfigurer() //Add application converters to web so springboot can convert in REST
     {

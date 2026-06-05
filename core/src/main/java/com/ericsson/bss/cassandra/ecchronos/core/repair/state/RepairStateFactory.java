@@ -17,9 +17,17 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
+/** Factory interface for creating repair state instances. */
 @FunctionalInterface
 public interface RepairStateFactory
 {
+    /**
+     * Creates a new instance.
+     * @param tableReference the table reference
+     * @param repairConfiguration the repair configuration
+     * @param postUpdateHook the post update hook
+     * @return the repair state
+     */
     RepairState create(TableReference tableReference,
                        RepairConfiguration repairConfiguration,
                        PostUpdateHook postUpdateHook);

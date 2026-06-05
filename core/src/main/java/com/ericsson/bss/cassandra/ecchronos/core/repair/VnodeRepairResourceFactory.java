@@ -25,6 +25,12 @@ import java.util.stream.Collectors;
  */
 public class VnodeRepairResourceFactory implements RepairResourceFactory
 {
+    /** Constructs a new VnodeRepairResourceFactory. */
+    public VnodeRepairResourceFactory()
+    {
+        // Default constructor
+    }
+
     @Override
     public final Set<RepairResource> getRepairResources(final ReplicaRepairGroup replicaRepairGroup)
     {

@@ -23,10 +23,15 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.types.RepairStats;
 
 import java.util.Collection;
 
+/** Default implementation that computes repair statistics from history. */
 public class RepairStatsProviderImpl implements RepairStatsProvider
 {
     private final VnodeRepairStateFactory myVnodeRepairStateFactory;
 
+    /**
+     * Constructs a new RepairStatsProviderImpl.
+     * @param vnodeRepairStateFactory the vnode repair state factory
+     */
     public RepairStatsProviderImpl(final VnodeRepairStateFactory vnodeRepairStateFactory)
     {
         myVnodeRepairStateFactory = vnodeRepairStateFactory;

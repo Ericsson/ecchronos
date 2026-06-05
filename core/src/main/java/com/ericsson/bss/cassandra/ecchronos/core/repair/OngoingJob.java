@@ -27,11 +27,18 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
+/** Represents a repair job that is currently in progress or pending. */
 public final class OngoingJob
 {
+    /** Represents the possible states of this job. */
     public enum Status
     {
-        started, finished, failed
+        /** Started status. */
+        started,
+        /** Finished status. */
+        finished,
+        /** Failed status. */
+        failed
     }
 
     private final UUID myJobId;
@@ -66,36 +73,64 @@ public final class OngoingJob
         }
     }
 
+    /**
+     * Returns the job id.
+     * @return the job id
+     */
     public UUID getJobId()
     {
         return myJobId;
     }
 
+    /**
+     * Returns the host id.
+     * @return the host id
+     */
     public UUID getHostId()
     {
         return myHostId;
     }
 
+    /**
+     * Returns the status.
+     * @return the status
+     */
     public Status getStatus()
     {
         return myStatus;
     }
 
+    /**
+     * Returns the completed time.
+     * @return the completed time
+     */
     public long getCompletedTime()
     {
         return myCompletedTime;
     }
 
+    /**
+     * Returns the table reference.
+     * @return the table reference
+     */
     public TableReference getTableReference()
     {
         return myTableReference;
     }
 
+    /**
+     * Returns the repair type.
+     * @return the repair type
+     */
     public RepairOptions.RepairType getRepairType()
     {
         return myRepairType;
     }
 
+    /**
+     * Returns the repaired tokens.
+     * @return the repaired tokens
+     */
     public Set<LongTokenRange> getRepairedTokens()
     {
         Set<LongTokenRange> repairedLongTokenRanges = new HashSet<>();
@@ -104,17 +139,29 @@ public final class OngoingJob
         return repairedLongTokenRanges;
     }
 
+    /**
+     * Completes processing of the current token ranges.
+     * @param ranges the token ranges to process
+     */
     public void finishRanges(final Set<LongTokenRange> ranges)
     {
         ranges.forEach(t -> myRepairedTokens.add(myOnDemandStatus.createUDTTokenRangeValue(t.start, t.end)));
         myOnDemandStatus.updateJob(myJobId, myRepairedTokens);
     }
 
+    /**
+     * Returns the tokens.
+     * @return the tokens
+     */
     public Map<LongTokenRange, Set<DriverNode>> getTokens()
     {
         return myTokens;
     }
 
+    /**
+     * Returns whether it has topology changed.
+     * @return true if it has topology changed
+     */
     public boolean hasTopologyChanged()
     {
         return !myTokens.equals(myReplicationState.getTokenRangeToReplicas(myTableReference))
@@ -123,6 +170,10 @@ public final class OngoingJob
                 && myTokenHash != myTokens.hashCode()));
     }
 
+    /**
+     * Starts a cluster-wide repair job.
+     * @param repairType the repair type
+     */
     public void startClusterWideJob(final RepairOptions.RepairType repairType)
     {
         Map<LongTokenRange, Set<DriverNode>> allTokenRanges = myReplicationState
@@ -180,16 +231,19 @@ public final class OngoingJob
         }
     }
 
+    /** Marks the job as finished. */
     public void finishJob()
     {
         myOnDemandStatus.finishJob(myJobId);
     }
 
+    /** Marks the job as failed. */
     public void failJob()
     {
         myOnDemandStatus.failJob(myJobId);
     }
 
+    /** Builder for constructing instances of the enclosing class. */
     public static class Builder
     {
         private UUID myJobId = null;
@@ -203,6 +257,12 @@ public final class OngoingJob
         private long myCompletedTime = -1;
         private RepairOptions.RepairType myRepairType = RepairOptions.RepairType.VNODE;
 
+        /** Constructs a new Builder. */
+        public Builder()
+        {
+            // Default constructor
+        }
+
         /**
          * Ongoing job build with ongoing job info.
          *
@@ -212,6 +272,7 @@ public final class OngoingJob
          * @param theStatus Status.
          * @param theCompletedTime Completion time.
          * @return The builder
+         * @param repairType the repair type
          */
         public Builder withOngoingJobInfo(final UUID theJobId,
                                           final int theTokenMapHash,

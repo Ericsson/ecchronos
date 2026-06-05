@@ -20,18 +20,28 @@ import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import java.util.Objects;
 
+/** REST response model containing repair information for a table. */
 @SuppressWarnings("VisibilityModifier")
 public class RepairInfo
 {
+    /** The since in ms. */
     @NotBlank
     @Min(0)
     public long sinceInMs;
+    /** The to in ms. */
     @NotBlank
     @Min(0)
     public long toInMs;
+    /** The repair stats. */
     @NotBlank
     public List<RepairStats> repairStats;
 
+    /**
+     * Constructs a new RepairInfo.
+     * @param since the start timestamp for the query
+     * @param to the end of the range
+     * @param theRepairStats the repair stats
+     */
     public RepairInfo(final long since, final long to, final List<RepairStats> theRepairStats)
     {
         this.sinceInMs = since;

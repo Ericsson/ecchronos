@@ -27,18 +27,28 @@ public abstract class ScheduledTask
 {
     private static final String DEFAULT_SCHEDULE_RESOURCE = "SCHEDULE_LOCK";
 
+    /** The priority. */
     protected final int myPriority;
 
+    /** Constructs a new ScheduledTask. */
     protected ScheduledTask()
     {
         this(1);
     }
 
+    /**
+     * Constructs a new ScheduledTask.
+     * @param priority the job priority value
+     */
     protected ScheduledTask(final int priority)
     {
         myPriority = priority;
     }
 
+    /**
+     * Performs pre-validation before execution.
+     * @return true if pre-validation passes
+     */
     public final boolean preValidate()
     {
         return true;

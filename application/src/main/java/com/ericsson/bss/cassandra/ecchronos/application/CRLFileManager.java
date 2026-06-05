@@ -45,6 +45,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+/** Manages Certificate Revocation List files and their periodic refresh. */
 public final class CRLFileManager
 {
     private static final Logger LOG = LoggerFactory.getLogger(CRLFileManager.class);
@@ -64,6 +65,10 @@ public final class CRLFileManager
     private final List<Runnable> myRefreshListeners = new ArrayList<>();
     private volatile Set<? extends CRL> myCRLs = new LinkedHashSet<>();
 
+    /**
+     * Constructs a new CRLFileManager.
+     * @param crlConfig the CRL config
+     */
     public CRLFileManager(final CRLConfig crlConfig)
     {
         this.myPath = crlConfig.getPath();
@@ -100,11 +105,19 @@ public final class CRLFileManager
         LOG.info("CRL initialized using path '{}'", this.myPath);
     }
 
+    /**
+     * Returns the current CRLs.
+     * @return the current CRLs
+     */
     public Collection<? extends CRL> getCurrentCRLs()
     {
         return myCRLs;
     }
 
+    /**
+     * Adds refresh listener.
+     * @param listener the event listener to register
+     */
     public void addRefreshListener(final Runnable listener)
     {
         if (listener != null && !myRefreshListeners.contains(listener))
@@ -113,16 +126,28 @@ public final class CRLFileManager
         }
     }
 
+    /**
+     * Returns the refresh listeners.
+     * @return the refresh listeners
+     */
     public List<Runnable> getRefreshListeners()
     {
         return myRefreshListeners;
     }
 
+    /**
+     * Returns whether strict mode is enabled.
+     * @return true if in strict mode
+     */
     public boolean inStrictMode()
     {
         return myStrict;
     }
 
+    /**
+     * Increments the attempt counter.
+     * @return the new attempt count
+     */
     public int increaseAttempts()
     {
         int attempt = myAttempt;
@@ -130,26 +155,40 @@ public final class CRLFileManager
         return attempt;
     }
 
+    /**
+     * Returns whether it has more attempts.
+     * @return true if it has more attempts
+     */
     public boolean hasMoreAttempts()
     {
         return myAttempt <= myMaxAttempts;
     }
 
+    /** Resets the attempt counter. */
     public void resetAttempts()
     {
         myAttempt = 1;
     }
 
+    /**
+     * Returns the maximum number of attempts.
+     * @return the maximum number of attempts
+     */
     public int maxAttempts()
     {
         return myMaxAttempts;
     }
 
+    /**
+     * Returns the attempt.
+     * @return the attempt
+     */
     public int getAttempt()
     {
         return myAttempt;
     }
 
+    /** Notifies listeners that a refresh has occurred. */
     @VisibleForTesting
     public void notifyRefresh()
     {

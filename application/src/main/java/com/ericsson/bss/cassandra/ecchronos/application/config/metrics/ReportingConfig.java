@@ -19,29 +19,51 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.HashSet;
 import java.util.Set;
 
+/** Configuration for a single metrics reporting target. */
 public class ReportingConfig
 {
     private boolean myIsEnabled = true;
     private Set<ExcludedMetric> myExcludedMetrics = new HashSet<>();
 
+    /** Default constructor. */
+    public ReportingConfig()
+    {
+    }
+
+    /**
+     * Returns whether enabled.
+     * @return true if enabled
+     */
     @JsonProperty("enabled")
     public final boolean isEnabled()
     {
         return myIsEnabled;
     }
 
+    /**
+     * Sets the enabled.
+     * @param enabled whether enabled
+     */
     @JsonProperty("enabled")
     public final void setEnabled(final boolean enabled)
     {
         myIsEnabled = enabled;
     }
 
+    /**
+     * Returns the excluded metrics.
+     * @return the excluded metrics
+     */
     @JsonProperty("excludedMetrics")
     public final Set<ExcludedMetric> getExcludedMetrics()
     {
         return myExcludedMetrics;
     }
 
+    /**
+     * Sets the excluded metrics.
+     * @param excludedMetrics the excluded metrics
+     */
     @JsonProperty("excludedMetrics")
     public final void setExcludedMetrics(final Set<ExcludedMetric> excludedMetrics)
     {

@@ -27,6 +27,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.Import;
 
+/** Spring Boot application entry point for ecChronos. */
 @SpringBootApplication
 @Import(value = {RepairManagementRESTImpl.class, ScheduleRepairManagementRESTImpl.class,
         OnDemandRepairManagementRESTImpl.class, MetricsREST.class, RejectConfigREST.class,
@@ -35,6 +36,15 @@ public class SpringBooter extends SpringBootServletInitializer
 {
     private static final Logger LOG = LoggerFactory.getLogger(SpringBooter.class);
 
+    /** Default constructor. */
+    public SpringBooter()
+    {
+    }
+
+    /**
+     * Application entry point.
+     * @param args the command-line arguments
+     */
     public static void main(final String[] args)
     {
         try

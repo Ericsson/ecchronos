@@ -233,6 +233,10 @@ public final class CASLockFactory implements LockFactory, Closeable
         return myCasLockProperties.getSerialConsistencyLevel();
     }
 
+    /**
+     * Builds and returns the instance.
+     * @return the built instance
+     */
     public static CASLockFactoryBuilder builder()
     {
         return new CASLockFactoryBuilder();
@@ -341,6 +345,10 @@ public final class CASLockFactory implements LockFactory, Closeable
     /**
      * Represents a container for cache-related configurations and state for the CASLockFactory.
      * This class is used to decouple cache-related fields from CASLockFactory to avoid excessive field count.
+     *
+     * @param lockCache the lock cache
+     * @param lockUpdateTimeInSeconds the lock update time in seconds
+     * @param failedLockRetryAttempts the number of failed lock retry attempts
      */
     public record CASLockFactoryCacheContext(LockCache lockCache,
                                              long lockUpdateTimeInSeconds,

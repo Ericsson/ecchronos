@@ -185,6 +185,10 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
         return myTasks.isEmpty() ? ScheduledJob.State.FINISHED : ScheduledJob.State.RUNNABLE;
     }
 
+    /**
+     * Returns the progress.
+     * @return the progress
+     */
     public double getProgress()
     {
         if (myTotalTokens == 0)
@@ -205,6 +209,7 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
         return String.format("Vnode On Demand Repair job of %s", getTableReference());
     }
 
+    /** Builder for constructing instances of the enclosing class. */
     public static class Builder
     {
         private final ScheduledJob.Configuration configuration = new ScheduledJob.ConfigurationBuilder()
@@ -221,48 +226,93 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
         private RepairHistory repairHistory;
         private OngoingJob ongoingJob;
 
+        /** Constructs a new Builder. */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
+         * Sets the JMX proxy factory.
+         * @param aJMXProxyFactory the JMX proxy factory
+         * @return this builder
+         */
         public final Builder withJmxProxyFactory(final JmxProxyFactory aJMXProxyFactory)
         {
             this.jmxProxyFactory = aJMXProxyFactory;
             return this;
         }
 
+        /**
+         * Sets the table repair metrics.
+         * @param theTableRepairMetrics the table repair metrics
+         * @return this builder
+         */
         public final Builder withTableRepairMetrics(final TableRepairMetrics theTableRepairMetrics)
         {
             this.tableRepairMetrics = theTableRepairMetrics;
             return this;
         }
 
+        /**
+         * Sets the repair lock type.
+         * @param aRepairLockType the repair lock type
+         * @return this builder
+         */
         public final Builder withRepairLockType(final RepairLockType aRepairLockType)
         {
             this.repairLockType = aRepairLockType;
             return this;
         }
 
+        /**
+         * Sets the on finished.
+         * @param theOnFinishedHook the on finished hook
+         * @return this builder
+         */
         public final Builder withOnFinished(final Consumer<UUID> theOnFinishedHook)
         {
             this.onFinishedHook = theOnFinishedHook;
             return this;
         }
 
+        /**
+         * Sets the repair configuration.
+         * @param aRepairConfiguration the repair configuration
+         * @return this builder
+         */
         public final Builder withRepairConfiguration(final RepairConfiguration aRepairConfiguration)
         {
             this.repairConfiguration = aRepairConfiguration;
             return this;
         }
 
+        /**
+         * Sets the repair history.
+         * @param aRepairHistory the repair history
+         * @return this builder
+         */
         public final Builder withRepairHistory(final RepairHistory aRepairHistory)
         {
             this.repairHistory = aRepairHistory;
             return this;
         }
 
+        /**
+         * Sets the ongoing job.
+         * @param anOngoingJob the ongoing job
+         * @return this builder
+         */
         public final Builder withOngoingJob(final OngoingJob anOngoingJob)
         {
             this.ongoingJob = anOngoingJob;
             return this;
         }
 
+        /**
+         * Builds the configured instance.
+         * @return the built instance
+         */
         public final VnodeOnDemandRepairJob build()
         {
             return new VnodeOnDemandRepairJob(this);

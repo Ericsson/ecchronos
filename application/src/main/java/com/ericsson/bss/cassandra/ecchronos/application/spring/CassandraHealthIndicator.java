@@ -32,6 +32,7 @@ import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.Map;
 
+/** Spring health indicator that reports Cassandra connectivity status. */
 @Component
 public class CassandraHealthIndicator implements HealthIndicator
 {
@@ -39,6 +40,11 @@ public class CassandraHealthIndicator implements HealthIndicator
     private final NativeConnectionProvider myNativeConnectionProvider;
     private final JmxConnectionProvider myJmxConnectionProvider;
 
+    /**
+     * Constructs a new CassandraHealthIndicator.
+     * @param nativeConnectionProvider the native connection provider
+     * @param jmxConnectionProvider the JMX connection provider
+     */
     public CassandraHealthIndicator(final NativeConnectionProvider nativeConnectionProvider,
                                     final JmxConnectionProvider jmxConnectionProvider)
     {

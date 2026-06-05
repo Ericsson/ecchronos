@@ -44,6 +44,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+/** A scheduled task that repairs a group of token sub-ranges. */
 public class RepairGroup extends ScheduledTask
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairGroup.class);
@@ -63,6 +64,11 @@ public class RepairGroup extends ScheduledTask
     private BigInteger myTokensPerRepair;
     private RepairHistory myRepairHistory;
 
+    /**
+     * Constructs a new RepairGroup.
+     * @param priority the job priority value
+     * @param builder the builder to configure
+     */
     public RepairGroup(final int priority, final Builder builder)
     {
         super(priority);
@@ -234,11 +240,16 @@ public class RepairGroup extends ScheduledTask
         return allowedParticipants;
     }
 
+    /**
+     * Creates a new instance.
+     * @return the built instance
+     */
     public static Builder newBuilder()
     {
         return new Builder();
     }
 
+    /** Builder for constructing instances of the enclosing class. */
     public static class Builder
     {
         private TableReference myTableReference;
@@ -253,6 +264,12 @@ public class RepairGroup extends ScheduledTask
         private RepairHistory myRepairHistory;
         private TimeBasedRunPolicy myTimeBasedRunPolicy;
         private UUID myJobId;
+
+        /** Constructs a new Builder. */
+        public Builder()
+        {
+            // Default constructor
+        }
 
         /**
          * Build with table reference.

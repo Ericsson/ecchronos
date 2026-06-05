@@ -26,10 +26,18 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
+/** Repair task that executes an incremental repair on a table. */
 public class IncrementalRepairTask extends RepairTask
 {
     private static final Logger LOG = LoggerFactory.getLogger(IncrementalRepairTask.class);
 
+    /**
+     * Constructs a new IncrementalRepairTask.
+     * @param jmxProxyFactory the JMX proxy factory
+     * @param tableReference the table reference
+     * @param repairConfiguration the repair configuration
+     * @param tableRepairMetrics the table repair metrics
+     */
     public IncrementalRepairTask(final JmxProxyFactory jmxProxyFactory, final TableReference tableReference,
             final RepairConfiguration repairConfiguration, final TableRepairMetrics tableRepairMetrics)
     {

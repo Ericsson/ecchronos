@@ -22,11 +22,22 @@ import org.slf4j.LoggerFactory;
 
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 
+/** A fault reporter implementation that logs alarms using SLF4J. */
 public class LoggingFaultReporter implements RepairFaultReporter
 {
     private static final Logger LOG = LoggerFactory.getLogger(LoggingFaultReporter.class);
     private final Map<Integer, FaultCode> alarms = new HashMap<>();
 
+    /** Constructs a new LoggingFaultReporter. */
+    public LoggingFaultReporter()
+    {
+        // Default constructor
+    }
+
+    /**
+     * Returns the currently active alarms mapped by their data hash code.
+     * @return the alarms
+     */
     public final Map<Integer, FaultCode> getAlarms()
     {
         return alarms;

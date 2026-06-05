@@ -34,6 +34,10 @@ public class TokenSubRangeUtil
     private final BigInteger tokenStart;
     private final BigInteger totalRangeSize;
 
+    /**
+     * Constructs a new TokenSubRangeUtil.
+     * @param aTokenRange the token range
+     */
     public TokenSubRangeUtil(final LongTokenRange aTokenRange)
     {
         this.tokenRange = aTokenRange;

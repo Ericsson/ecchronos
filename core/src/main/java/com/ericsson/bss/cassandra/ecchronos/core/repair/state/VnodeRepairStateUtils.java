@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+/** Utility methods for computing vnode repair state. */
 public final class VnodeRepairStateUtils
 {
     private VnodeRepairStateUtils()

@@ -74,6 +74,13 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
     private final long myLookbackTime;
     private final Clock myClock;
 
+    /**
+     * Constructs a new RepairHistoryProviderImpl.
+     * @param nodeResolver the node resolver
+     * @param session the CQL session
+     * @param statementDecorator the statement decorator
+     * @param lookbackTime the lookback time
+     */
     public RepairHistoryProviderImpl(final NodeResolver nodeResolver,
                                      final CqlSession session,
                                      final StatementDecorator statementDecorator,

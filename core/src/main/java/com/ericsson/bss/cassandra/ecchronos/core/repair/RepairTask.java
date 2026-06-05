@@ -42,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/** Base class for tasks that execute Cassandra repair operations. */
 public abstract class RepairTask implements NotificationListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairTask.class);
@@ -160,7 +161,7 @@ public abstract class RepairTask implements NotificationListener
      * Method is called once a repair is completed.
      *
      * @param proxy
-     *         The jmx proxy
+     *         The JMX proxy
      * @throws ScheduledJobException
      *         In case when repair is deemed as failed.
      */
@@ -322,6 +323,7 @@ public abstract class RepairTask implements NotificationListener
         }
     }
 
+    /** Defines the types of repair progress events. */
     public enum ProgressEventType
     {
         /**

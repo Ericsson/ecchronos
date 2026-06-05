@@ -34,6 +34,10 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
 {
     private final CqlSession session;
 
+    /**
+     * Constructs a new TableReferenceFactoryImpl.
+     * @param aSession the session
+     */
     public TableReferenceFactoryImpl(final CqlSession aSession)
     {
         this.session = Preconditions.checkNotNull(aSession, "Session must be set");

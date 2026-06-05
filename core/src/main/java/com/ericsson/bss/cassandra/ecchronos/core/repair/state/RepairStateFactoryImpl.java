@@ -19,6 +19,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
+/** Default implementation of the repair state factory. */
 public final class RepairStateFactoryImpl implements RepairStateFactory
 {
     private final HostStates myHostStates;
@@ -55,17 +56,28 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
                 myTableRepairMetrics, replicaRepairGroupFactory, postUpdateHook);
     }
 
+    /**
+     * Builds the instance.
+     * @return the built instance
+     */
     public static Builder builder()
     {
         return new Builder();
     }
 
+    /** Builder for constructing instances of the enclosing class. */
     public static class Builder
     {
         private ReplicationState myReplicationState;
         private HostStates myHostStates;
         private RepairHistoryProvider myRepairHistoryProvider;
         private TableRepairMetrics myTableRepairMetrics;
+
+        /** Constructs a new Builder. */
+        public Builder()
+        {
+            // Default constructor
+        }
 
         /**
          * Build repair state factory with replication state.

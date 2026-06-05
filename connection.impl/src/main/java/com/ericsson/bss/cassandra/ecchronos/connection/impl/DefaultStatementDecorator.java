@@ -17,8 +17,15 @@ package com.ericsson.bss.cassandra.ecchronos.connection.impl;
 import com.datastax.oss.driver.api.core.cql.Statement;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 
+/** A no-op statement decorator that returns statements unchanged. */
 public class DefaultStatementDecorator implements StatementDecorator
 {
+    /** Constructs a new DefaultStatementDecorator. */
+    public DefaultStatementDecorator()
+    {
+        // Default constructor
+    }
+
     @Override
     public final Statement apply(final Statement statement)
     {

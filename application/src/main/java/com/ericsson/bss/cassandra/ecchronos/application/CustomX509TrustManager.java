@@ -26,6 +26,7 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.concurrent.locks.ReentrantLock;
 
+/** Custom X.509 trust manager with CRL validation support. */
 public final class CustomX509TrustManager implements X509TrustManager
 {
 
@@ -34,20 +35,29 @@ public final class CustomX509TrustManager implements X509TrustManager
     private final X509TrustManager myDelegate;
     private final CustomCRLValidator myCRLValidator;
 
+    /** The last server chain. */
     @VisibleForTesting
     protected volatile X509Certificate[] myLastServerChain;
 
+    /** The last server auth type. */
     @VisibleForTesting
     protected volatile String myLastServerAuthType;
 
+    /** The last client chain. */
     @VisibleForTesting
     protected volatile X509Certificate[] myLastClientChain;
 
+    /** The last client auth type. */
     @VisibleForTesting
     protected volatile String myLastClientAuthType;
 
     private final ReentrantLock myValidationLock = new ReentrantLock();
 
+    /**
+     * Constructs a new CustomX509TrustManager.
+     * @param delegate the delegate to forward calls to
+     * @param validator the certificate validator
+     */
     public CustomX509TrustManager(final X509TrustManager delegate, final CustomCRLValidator validator)
     {
         this.myDelegate = delegate;
@@ -149,6 +159,10 @@ public final class CustomX509TrustManager implements X509TrustManager
         }
     }
 
+    /**
+     * Revalidates the server trust chain.
+     * @throws CertificateException if a certificate error occurs
+     */
     public void revalidateServerTrust() throws CertificateException
     {
         myValidationLock.lock();
@@ -165,6 +179,10 @@ public final class CustomX509TrustManager implements X509TrustManager
         }
     }
 
+    /**
+     * Revalidates the client trust chain.
+     * @throws CertificateException if a certificate error occurs
+     */
     public void revalidateClientTrust() throws CertificateException
     {
         myValidationLock.lock();
@@ -181,6 +199,7 @@ public final class CustomX509TrustManager implements X509TrustManager
         }
     }
 
+    /** Callback invoked when the configuration is refreshed. */
     public void onRefresh()
     {
         try
@@ -224,6 +243,7 @@ public final class CustomX509TrustManager implements X509TrustManager
         return myDelegate.getAcceptedIssuers();
     }
 
+    /** Terminates the application. */
     @VisibleForTesting
     protected void systemExit()
     {

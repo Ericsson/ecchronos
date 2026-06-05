@@ -43,11 +43,21 @@ public class CassandraMetrics implements Closeable
     private final LoadingCache<TableReference, CassandraMetric> myCache;
     private final JmxProxyFactory myJmxProxyFactory;
 
+    /**
+     * Constructs a new CassandraMetrics.
+     * @param jmxProxyFactory the JMX proxy factory
+     */
     public CassandraMetrics(final JmxProxyFactory jmxProxyFactory)
     {
         this(jmxProxyFactory, Duration.ofSeconds(DEFAULT_CACHE_REFRESH_TIME_SECONDS),
                 Duration.ofMinutes(DEFAULT_CACHE_EXPIRY_TIME_MINUTES));
     }
+    /**
+     * Constructs a new CassandraMetrics.
+     * @param jmxProxyFactory the JMX proxy factory
+     * @param refreshAfter the refresh after
+     * @param expireAfter the expire after
+     */
     public CassandraMetrics(final JmxProxyFactory jmxProxyFactory, final Duration refreshAfter,
             final Duration expireAfter)
     {

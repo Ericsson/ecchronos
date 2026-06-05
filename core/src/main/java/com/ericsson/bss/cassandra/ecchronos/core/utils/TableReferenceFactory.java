@@ -36,7 +36,7 @@ public interface TableReferenceFactory
     /**
      * Get a table reference for the provided TableMetadata.
      *
-     * @param table the TableMetadata.
+     * @param table the table reference
      * @return A table reference for the provided keyspace/table pair.
      */
     TableReference forTable(TableMetadata table);

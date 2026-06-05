@@ -295,11 +295,16 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         return job;
     }
 
+    /**
+     * Builds the instance.
+     * @return the built instance
+     */
     public static Builder builder()
     {
         return new Builder();
     }
 
+    /** Builder for constructing instances of the enclosing class. */
     public static class Builder
     {
         private RepairFaultReporter myFaultReporter;
@@ -314,6 +319,12 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         private CassandraMetrics myCassandraMetrics;
         private TimeBasedRunPolicy myTimeBasedRunPolicy;
         private final List<TableRepairPolicy> myRepairPolicies = new ArrayList<>();
+
+        /** Constructs a new Builder. */
+        public Builder()
+        {
+            // Default constructor
+        }
 
         /**
          * RepairSchedulerImpl build with fault reporter.

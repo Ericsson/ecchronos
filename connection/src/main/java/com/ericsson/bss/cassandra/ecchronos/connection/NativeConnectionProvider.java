@@ -25,10 +25,22 @@ import java.io.IOException;
  */
 public interface NativeConnectionProvider extends Closeable
 {
+    /**
+     * Returns the CQL session used for native connections.
+     * @return the session
+     */
     CqlSession getSession();
 
+    /**
+     * Returns the local Cassandra node.
+     * @return the local node
+     */
     Node getLocalNode();
 
+    /**
+     * Returns whether remote routing is enabled.
+     * @return the remote routing
+     */
     boolean getRemoteRouting();
 
     @Override

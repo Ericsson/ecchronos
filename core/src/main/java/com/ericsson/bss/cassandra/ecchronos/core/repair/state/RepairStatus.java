@@ -19,9 +19,13 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
  */
 public enum RepairStatus
 {
+    /** Repair started. */
     STARTED,
+    /** Repair succeeded. */
     SUCCESS,
+    /** Repair failed. */
     FAILED,
+    /** Unknown status. */
     UNKNOWN;
 
     /**

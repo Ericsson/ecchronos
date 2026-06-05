@@ -41,6 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
+/** Repair task that executes a sub-range vnode repair. */
 public class VnodeRepairTask extends RepairTask
 {
     private static final Logger LOG = LoggerFactory.getLogger(VnodeRepairTask.class);
@@ -50,6 +51,17 @@ public class VnodeRepairTask extends RepairTask
     private final Set<DriverNode> myReplicas;
     private volatile Set<LongTokenRange> myUnknownRanges;
 
+    /**
+     * Constructs a new VnodeRepairTask.
+     * @param jmxProxyFactory the JMX proxy factory
+     * @param tableReference the table reference
+     * @param repairConfiguration the repair configuration
+     * @param tableRepairMetrics the table repair metrics
+     * @param repairHistory the repair history
+     * @param tokenRanges the token ranges
+     * @param replicas the replica nodes for the range
+     * @param jobId the job id
+     */
     public VnodeRepairTask(final JmxProxyFactory jmxProxyFactory, final TableReference tableReference,
             final RepairConfiguration repairConfiguration, final TableRepairMetrics tableRepairMetrics,
             final RepairHistory repairHistory, final Set<LongTokenRange> tokenRanges, final Set<DriverNode> replicas,

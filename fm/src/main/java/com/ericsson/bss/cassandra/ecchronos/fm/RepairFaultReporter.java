@@ -16,14 +16,20 @@ package com.ericsson.bss.cassandra.ecchronos.fm;
 
 import java.util.Map;
 
+/** Reporter interface for raising and clearing repair-related fault alarms. */
 public interface RepairFaultReporter
 {
+    /** Key used to identify the keyspace in fault data. */
     String FAULT_KEYSPACE = "KEYSPACE";
+    /** Key used to identify the table in fault data. */
     String FAULT_TABLE = "TABLE";
 
+    /** Fault codes indicating the severity of a repair issue. */
     enum FaultCode
     {
+        /** Indicates a repair warning condition. */
         REPAIR_WARNING,
+        /** Indicates a repair error condition. */
         REPAIR_ERROR
     }
 

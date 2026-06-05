@@ -71,12 +71,22 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         }
     }
 
+    /**
+     * Adds run policy.
+     * @param runPolicy the run policy
+     * @return true if the policy was added
+     */
     public boolean addRunPolicy(final RunPolicy runPolicy)
     {
         LOG.debug("Run policy {} added", runPolicy);
         return myRunPolicies.add(runPolicy);
     }
 
+    /**
+     * Removes a previously registered run policy.
+     * @param runPolicy the run policy
+     * @return true if the policy was removed
+     */
     public boolean removeRunPolicy(final RunPolicy runPolicy)
     {
         LOG.debug("Run policy {} removed", runPolicy);
@@ -245,22 +255,44 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         }
     }
 
+    /**
+     * Builds the instance.
+     * @return the built instance
+     */
     public static Builder builder()
     {
         return new Builder();
     }
 
+    /** Builder for constructing instances of the enclosing class. */
     public static class Builder
     {
         private LockFactory myLockFactory;
         private long myRunIntervalInMs = DEFAULT_RUN_DELAY_IN_MS;
 
+        /** Constructs a new Builder. */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
+         * Sets the lock factory.
+         * @param lockFactory the lock factory
+         * @return this builder
+         */
         public final Builder withLockFactory(final LockFactory lockFactory)
         {
             myLockFactory = lockFactory;
             return this;
         }
 
+        /**
+         * Sets the run interval.
+         * @param runInterval the run interval
+         * @param timeUnit the time unit
+         * @return this builder
+         */
         public final Builder withRunInterval(final long runInterval, final TimeUnit timeUnit)
         {
             myRunIntervalInMs = timeUnit.toMillis(runInterval);
@@ -268,6 +300,10 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         }
 
 
+        /**
+         * Builds the instance.
+         * @return the built instance
+         */
         public final ScheduleManagerImpl build()
         {
             return new ScheduleManagerImpl(this);

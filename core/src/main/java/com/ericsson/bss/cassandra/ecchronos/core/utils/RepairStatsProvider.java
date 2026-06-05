@@ -17,8 +17,17 @@ package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.RepairStats;
 
+/** Interface for providing repair statistics. */
 @FunctionalInterface
 public interface RepairStatsProvider
 {
+    /**
+     * Returns the repair stats.
+     * @param tableReference the table reference
+     * @param since the start timestamp for the query
+     * @param to the end of the range
+     * @param isLocal the is local
+     * @return the repair stats
+     */
     RepairStats getRepairStats(TableReference tableReference, long since, long to, boolean isLocal);
 }

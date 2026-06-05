@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 
+/** Tracks data size per table using Cassandra storage metrics. */
 public final class TableStorageStatesImpl implements TableStorageStates, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(TableStorageStatesImpl.class);
@@ -91,11 +92,16 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
         myTableSizes.set(null);
     }
 
+    /**
+     * Builds the instance.
+     * @return the built instance
+     */
     public static Builder builder()
     {
         return new Builder();
     }
 
+    /** Builder for constructing instances of the enclosing class. */
     public static class Builder
     {
         private ReplicatedTableProvider myReplicatedTableProvider;
@@ -104,30 +110,62 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
         private long myInitialDelayInMs = 0;
         private long myUpdateDelayInMs = DEFAULT_UPDATE_DELAY_IN_MS;
 
+        /** Constructs a new Builder. */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
+         * Sets the replicated table provider.
+         * @param replicatedTableProvider the replicated table provider
+         * @return this builder
+         */
         public final Builder withReplicatedTableProvider(final ReplicatedTableProvider replicatedTableProvider)
         {
             myReplicatedTableProvider = replicatedTableProvider;
             return this;
         }
 
+        /**
+         * Sets the JMX proxy factory.
+         * @param jmxProxyFactory the JMX proxy factory
+         * @return this builder
+         */
         public final Builder withJmxProxyFactory(final JmxProxyFactory jmxProxyFactory)
         {
             myJmxProxyFactory = jmxProxyFactory;
             return this;
         }
 
+        /**
+         * Sets the initial delay.
+         * @param initialDelay the initial delay
+         * @param timeUnit the time unit
+         * @return this builder
+         */
         public final Builder withInitialDelay(final long initialDelay, final TimeUnit timeUnit)
         {
             myInitialDelayInMs = timeUnit.toMillis(initialDelay);
             return this;
         }
 
+        /**
+         * Sets the update delay.
+         * @param updateDelay the update delay
+         * @param timeUnit the time unit
+         * @return this builder
+         */
         public final Builder withUpdateDelay(final long updateDelay, final TimeUnit timeUnit)
         {
             myUpdateDelayInMs = timeUnit.toMillis(updateDelay);
             return this;
         }
 
+        /**
+         * Builds the instance.
+         * @return the built instance
+         */
         public final TableStorageStatesImpl build()
         {
             if (myReplicatedTableProvider == null)

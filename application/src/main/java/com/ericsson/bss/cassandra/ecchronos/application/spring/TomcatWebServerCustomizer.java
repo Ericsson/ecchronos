@@ -38,11 +38,17 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+/** Customizes the embedded Tomcat server with TLS and connector settings. */
 @Component
 @EnableScheduling
 public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<TomcatServletWebServerFactory>
 {
     private static final Logger LOG = LoggerFactory.getLogger(TomcatWebServerCustomizer.class);
+
+    /** Default constructor. */
+    public TomcatWebServerCustomizer()
+    {
+    }
 
     private Http11NioProtocol defaultServerHttp11NioProtocol;
     private Http11NioProtocol metricsServerHttp11NioProtocol;
@@ -218,7 +224,7 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
 
     /**
      * Reload the {@code SSLHostConfig} for the default server if SSL is enabled.
-     * Doing so should update ssl settings and fetch certificates from Keystores/PEM files.
+     * Doing so should update SSL settings and fetch certificates from Keystores/PEM files.
      * It reloads them every 60 seconds by default
      */
     @Scheduled(initialDelayString = "${server.ssl.refresh-rate-in-ms:60000}",
@@ -237,7 +243,7 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
 
     /**
      * Reload the {@code SSLHostConfig} for the metrics server if SSL is enabled.
-     * Doing so should update ssl settings and fetch certificates from Keystores/PEM files.
+     * Doing so should update SSL settings and fetch certificates from Keystores/PEM files.
      * It reloads them every 60 seconds by default
      */
     @Scheduled(initialDelayString = "${metricsServer.ssl.refresh-rate-in-ms:60000}",

@@ -23,6 +23,10 @@ import java.util.Collection;
 public interface VnodeRepairStates
 {
 
+    /**
+     * Returns the vnode repair states.
+     * @return the vnode repair states
+     */
     Collection<VnodeRepairState> getVnodeRepairStates();
 
     /**
@@ -35,6 +39,7 @@ public interface VnodeRepairStates
      */
     VnodeRepairStates combineWithRepairedAt(long repairedAt);
 
+    /** Builder for constructing instances of the enclosing class. */
     interface Builder
     {
         /**
@@ -65,6 +70,10 @@ public interface VnodeRepairStates
          */
         Builder updateVnodeRepairState(VnodeRepairState vnodeRepairState);
 
+        /**
+         * Builds the instance.
+         * @return the built instance
+         */
         VnodeRepairStates build();
     }
 }

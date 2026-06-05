@@ -34,6 +34,12 @@ public class AlarmPostUpdateHook implements PostUpdateHook
     private final RepairConfiguration myRepairConfiguration;
     private final AtomicReference<Clock> myClock = new AtomicReference<>(Clock.systemDefaultZone());
 
+    /**
+     * Constructs a new AlarmPostUpdateHook.
+     * @param tableReference the table reference
+     * @param repairConfiguration the repair configuration
+     * @param faultReporter the fault reporter
+     */
     public AlarmPostUpdateHook(final TableReference tableReference,
                                final RepairConfiguration repairConfiguration,
                                final RepairFaultReporter faultReporter)

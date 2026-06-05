@@ -37,11 +37,20 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalNativeConnectionProvider;
 
+/** Default provider for native CQL connections to the local Cassandra node. */
 public class DefaultNativeConnectionProvider implements NativeConnectionProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultNativeConnectionProvider.class);
 
     private final LocalNativeConnectionProvider myLocalNativeConnectionProvider;
+    /**
+     * Constructs a new DefaultNativeConnectionProvider.
+     * @param config the configuration
+     * @param cqlSecuritySupplier the CQL security supplier
+     * @param certificateHandler the certificate handler
+     * @param defaultRepairConfigurationProvider the default repair configuration provider
+     * @param meterRegistry the meter registry
+     */
     public DefaultNativeConnectionProvider(final Config config,
                                            final Supplier<Security.CqlSecurity> cqlSecuritySupplier,
                                            final CertificateHandler certificateHandler,
@@ -94,6 +103,13 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
         ApplicationStateHolder.getInstance().put("connections.cql." + host + ".tls", tlsEnabled);
     }
 
+    /**
+     * Constructs a new DefaultNativeConnectionProvider.
+     * @param config the configuration
+     * @param cqlSecuritySupplier the CQL security supplier
+     * @param defaultRepairConfigurationProvider the default repair configuration provider
+     * @param meterRegistry the meter registry
+     */
     public DefaultNativeConnectionProvider(final Config config,
                                            final Supplier<Security.CqlSecurity> cqlSecuritySupplier,
                                            final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,

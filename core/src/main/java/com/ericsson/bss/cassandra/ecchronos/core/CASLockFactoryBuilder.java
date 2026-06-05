@@ -35,6 +35,17 @@ public class CASLockFactoryBuilder
     private long myCacheExpiryTimeInSeconds = DEFAULT_EXPIRY_TIME_IN_SECONDS;
     private ConsistencyType myConsistencyType = DEFAULT_CONSISTENCY_SERIAL;
 
+    /** Constructs a new CASLockFactoryBuilder. */
+    public CASLockFactoryBuilder()
+    {
+        // Default constructor
+    }
+
+    /**
+     * Sets the native connection provider.
+     * @param nativeConnectionProvider the native connection provider
+     * @return this builder
+     */
     public final CASLockFactoryBuilder withNativeConnectionProvider(
         final NativeConnectionProvider nativeConnectionProvider)
     {
@@ -42,36 +53,65 @@ public class CASLockFactoryBuilder
         return this;
     }
 
+    /**
+     * Sets the host states.
+     * @param hostStates the host states
+     * @return this builder
+     */
     public final CASLockFactoryBuilder withHostStates(final HostStates hostStates)
     {
         myHostStates = hostStates;
         return this;
     }
 
+    /**
+     * Sets the statement decorator.
+     * @param statementDecorator the statement decorator
+     * @return this builder
+     */
     public final CASLockFactoryBuilder withStatementDecorator(final StatementDecorator statementDecorator)
     {
         myStatementDecorator = statementDecorator;
         return this;
     }
 
+    /**
+     * Sets the keyspace name.
+     * @param keyspaceName the keyspace name
+     * @return this builder
+     */
     public final CASLockFactoryBuilder withKeyspaceName(final String keyspaceName)
     {
         myKeyspaceName = keyspaceName;
         return this;
     }
 
+    /**
+     * Sets the cache expiry in seconds.
+     * @param cacheExpiryInSeconds the cache expiry in seconds
+     * @return this builder
+     */
     public final CASLockFactoryBuilder withCacheExpiryInSeconds(final long cacheExpiryInSeconds)
     {
         myCacheExpiryTimeInSeconds = cacheExpiryInSeconds;
         return this;
     }
 
+    /**
+     * Sets the consistency serial.
+     * @param consistencyType the consistency type
+     * @return this builder
+     */
     public final CASLockFactoryBuilder withConsistencySerial(final ConsistencyType consistencyType)
     {
         myConsistencyType = consistencyType;
         return this;
     }
 
+    /**
+     * Builds and returns the instance.
+     * @return the built instance
+     */
     public final CASLockFactory build()
     {
         if (myNativeConnectionProvider == null)
@@ -92,31 +132,55 @@ public class CASLockFactoryBuilder
         return new CASLockFactory(this);
     }
 
+    /**
+     * Returns the native connection provider.
+     * @return the native connection provider
+     */
     public final NativeConnectionProvider getNativeConnectionProvider()
     {
         return myNativeConnectionProvider;
     }
 
+    /**
+     * Returns the host states.
+     * @return the host states
+     */
     public final HostStates getHostStates()
     {
         return myHostStates;
     }
 
+    /**
+     * Returns the statement decorator.
+     * @return the statement decorator
+     */
     public final StatementDecorator getStatementDecorator()
     {
         return myStatementDecorator;
     }
 
+    /**
+     * Returns the keyspace name.
+     * @return the keyspace name
+     */
     public final String getKeyspaceName()
     {
         return myKeyspaceName;
     }
 
+    /**
+     * Returns the cache expiry time in second.
+     * @return the cache expiry time in second
+     */
     public final long getCacheExpiryTimeInSecond()
     {
         return myCacheExpiryTimeInSeconds;
     }
 
+    /**
+     * Returns the consistency type.
+     * @return the consistency type
+     */
     public final ConsistencyType getConsistencyType()
     {
         return myConsistencyType;

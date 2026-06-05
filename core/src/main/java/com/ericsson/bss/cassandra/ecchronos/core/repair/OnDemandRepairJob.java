@@ -23,8 +23,12 @@ import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.base.Preconditions;
 
+/** Base class for user-triggered on-demand repair jobs. */
 public abstract class OnDemandRepairJob extends ScheduledJob
 {
+    /**
+     * Returns the repair lock factory.
+     */
     protected static final RepairLockFactory REPAIR_LOCK_FACTORY = new RepairLockFactoryImpl();
     private final JmxProxyFactory myJmxProxyFactory;
     private final RepairConfiguration myRepairConfiguration;
@@ -35,6 +39,16 @@ public abstract class OnDemandRepairJob extends ScheduledJob
 
     private boolean hasFailed;
 
+    /**
+     * Constructs a new OnDemandRepairJob.
+     * @param configuration the application configuration
+     * @param jmxProxyFactory the JMX proxy factory
+     * @param repairConfiguration the repair configuration
+     * @param repairLockType the repair lock type
+     * @param onFinishedHook the on finished hook
+     * @param tableRepairMetrics the table repair metrics
+     * @param ongoingJob the ongoing job
+     */
     public OnDemandRepairJob(final Configuration configuration, final JmxProxyFactory jmxProxyFactory,
             final RepairConfiguration repairConfiguration, final RepairLockType repairLockType,
             final Consumer<UUID> onFinishedHook, final TableRepairMetrics tableRepairMetrics,
@@ -65,6 +79,10 @@ public abstract class OnDemandRepairJob extends ScheduledJob
         return myOngoingJob.getTableReference();
     }
 
+    /**
+     * Returns the JMX proxy factory.
+     * @return the JMX proxy factory
+     */
     protected final JmxProxyFactory getJmxProxyFactory()
     {
         return myJmxProxyFactory;
@@ -79,36 +97,64 @@ public abstract class OnDemandRepairJob extends ScheduledJob
         return myRepairConfiguration;
     }
 
+    /**
+     * Returns the repair lock type.
+     * @return the repair lock type
+     */
     protected final RepairLockType getRepairLockType()
     {
         return myRepairLockType;
     }
 
+    /**
+     * Returns the table repair metrics.
+     * @return the table repair metrics
+     */
     protected final TableRepairMetrics getTableRepairMetrics()
     {
         return myTableRepairMetrics;
     }
 
+    /**
+     * Returns the on finished hook.
+     * @return the on finished hook
+     */
     protected final Consumer<UUID> getOnFinishedHook()
     {
         return myOnFinishedHook;
     }
 
+    /**
+     * Returns the ongoing job.
+     * @return the ongoing job
+     */
     protected final OngoingJob getOngoingJob()
     {
         return myOngoingJob;
     }
 
+    /**
+     * Sets the failed.
+     * @param failed whether the operation failed
+     */
     protected final void setFailed(final boolean failed)
     {
         hasFailed = failed;
     }
 
+    /**
+     * Returns whether it has failed.
+     * @return true if it has failed
+     */
     protected final boolean hasFailed()
     {
         return hasFailed;
     }
 
+    /**
+     * Returns the status.
+     * @return the status
+     */
     protected final OnDemandRepairJobView.Status getStatus()
     {
         if (hasFailed || getOngoingJob().getStatus() == OngoingJob.Status.failed)
@@ -122,6 +168,10 @@ public abstract class OnDemandRepairJob extends ScheduledJob
         return OnDemandRepairJobView.Status.IN_QUEUE;
     }
 
+    /**
+     * Returns the view.
+     * @return the view
+     */
     public abstract OnDemandRepairJobView getView();
 
     @Override

@@ -18,17 +18,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
+/** Configuration for authentication credentials. */
 public class Credentials
 {
     private boolean myIsEnabled;
     private String myUsername;
     private String myPassword;
 
+    /** Constructs a new Credentials. */
     public Credentials()
     {
         // Default constructor
     }
 
+    /**
+     * Constructs a new Credentials.
+     * @param enabled whether enabled
+     * @param username the authentication username
+     * @param password the authentication password
+     */
     public Credentials(final boolean enabled, final String username, final String password)
     {
         myIsEnabled = enabled;
@@ -36,36 +44,60 @@ public class Credentials
         myPassword = password;
     }
 
+    /**
+     * Returns whether enabled.
+     * @return true if enabled
+     */
     @JsonProperty("enabled")
     public final boolean isEnabled()
     {
         return myIsEnabled;
     }
 
+    /**
+     * Sets the enabled.
+     * @param enabled whether enabled
+     */
     @JsonProperty("enabled")
     public final void setEnabled(final boolean enabled)
     {
         myIsEnabled = enabled;
     }
 
+    /**
+     * Returns the username.
+     * @return the username
+     */
     @JsonProperty("username")
     public final String getUsername()
     {
         return myUsername;
     }
 
+    /**
+     * Sets the username.
+     * @param username the authentication username
+     */
     @JsonProperty("username")
     public final void setUsername(final String username)
     {
         myUsername = username;
     }
 
+    /**
+     * Returns the password.
+     * @return the password
+     */
     @JsonProperty("password")
     public final String getPassword()
     {
         return myPassword;
     }
 
+    /**
+     * Sets the password.
+     * @param password the authentication password
+     */
     @JsonProperty("password")
     public final void setPassword(final String password)
     {

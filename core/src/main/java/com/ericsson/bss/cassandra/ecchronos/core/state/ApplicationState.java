@@ -44,6 +44,7 @@ public interface ApplicationState
      * @param key The key to retrieve
      * @param type The expected type of the value
      * @return Optional containing the typed value if present and of correct type
+     * @param <T> the type parameter
      */
     <T> Optional<T> get(String key, Class<T> type);
 

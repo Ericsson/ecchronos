@@ -20,10 +20,12 @@ import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 
 import java.util.function.Supplier;
 
+/** Configuration for the JMX connection to Cassandra. */
 public class JmxConnection extends Connection<JmxConnectionProvider>
 {
     private static final int DEFAULT_PORT = 7199;
 
+    /** Constructs a new JmxConnection. */
     public JmxConnection()
     {
         try

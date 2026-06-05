@@ -31,6 +31,7 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+/** Tracks the current repair state for a table. */
 public class RepairStateImpl implements RepairState
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairStateImpl.class);
@@ -48,6 +49,16 @@ public class RepairStateImpl implements RepairState
     private final ReplicaRepairGroupFactory myReplicaRepairGroupFactory;
     private final PostUpdateHook myPostUpdateHook;
 
+    /**
+     * Constructs a new RepairStateImpl.
+     * @param tableReference the table reference
+     * @param repairConfiguration the repair configuration
+     * @param vnodeRepairStateFactory the vnode repair state factory
+     * @param hostStates the host states
+     * @param tableRepairMetrics the table repair metrics
+     * @param replicaRepairGroupFactory the replica repair group factory
+     * @param postUpdateHook the post update hook
+     */
     public RepairStateImpl(final TableReference tableReference,
                            final RepairConfiguration repairConfiguration,
                            final VnodeRepairStateFactory vnodeRepairStateFactory,

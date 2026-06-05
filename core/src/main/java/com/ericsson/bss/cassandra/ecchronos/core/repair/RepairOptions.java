@@ -99,10 +99,14 @@ public final class RepairOptions
         }
     }
 
+    /** Defines the available repair strategies. */
     public enum RepairType
     {
+        /** Vnode repair type. */
         VNODE,
+        /** Parallel vnode repair type. */
         PARALLEL_VNODE,
+        /** Incremental repair type. */
         INCREMENTAL
     }
 }

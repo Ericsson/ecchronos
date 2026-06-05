@@ -34,17 +34,28 @@ import java.util.Set;
 import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
+/** REST controller for exposing Prometheus metrics. */
 @Tag(name = "Metrics", description = "Retrieve metrics about ecChronos")
 @RestController
 public class MetricsREST
 {
     private final PrometheusMeterRegistry myPrometheusMeterRegistry;
 
+    /**
+     * Constructs the MetricsREST controller with the given Prometheus registry.
+     * @param prometheusMeterRegistry the prometheus meter registry
+     */
     public MetricsREST(@Autowired(required = false) final PrometheusMeterRegistry prometheusMeterRegistry)
     {
         myPrometheusMeterRegistry = prometheusMeterRegistry;
     }
 
+    /**
+     * Returns metrics in the requested format.
+     * @param acceptHeader the accept header
+     * @param includedMetrics the included metrics
+     * @return the metrics response
+     */
     @GetMapping(value = "/metrics", produces = { PrometheusTextFormatWriter.CONTENT_TYPE,
             OpenMetricsTextFormatWriter.CONTENT_TYPE })
     @Operation(operationId = "metrics", description = "Get metrics in the specified format", summary = "Get metrics")

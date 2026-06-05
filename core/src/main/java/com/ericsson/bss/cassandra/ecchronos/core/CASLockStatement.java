@@ -50,6 +50,11 @@ public class CASLockStatement
     private final CASLockProperties myCasLockProperties;
     private final CASLockFactory.CASLockFactoryCacheContext myCasLockFactoryCacheContext;
 
+    /**
+     * Constructs a new CASLockStatement.
+     * @param casLockProperties the CAS lock properties
+     * @param casLockFactoryCacheContext the CAS lock factory cache context
+     */
     public CASLockStatement(
         final CASLockProperties casLockProperties,
         final CASLockFactory.CASLockFactoryCacheContext casLockFactoryCacheContext)
@@ -65,6 +70,12 @@ public class CASLockStatement
         myGetLockMetadataStatement = myCasLockProperties.getSession().prepare(lockMetadataStatement());
     }
 
+    /**
+     * Executes the task.
+     * @param dataCenter the data center
+     * @param statement the CQL statement
+     * @return the execution result
+     */
     public final ResultSet execute(final String dataCenter, final BoundStatement statement)
     {
         Statement executeStatement;
@@ -176,46 +187,82 @@ public class CASLockStatement
         return lockMetadataStatement;
     }
 
+    /**
+     * Returns the compete statement.
+     * @return the compete statement
+     */
     public final PreparedStatement getCompeteStatement()
     {
         return myCompeteStatement;
     }
 
+    /**
+     * Returns the lock statement.
+     * @return the lock statement
+     */
     public final PreparedStatement getLockStatement()
     {
         return myLockStatement;
     }
 
+    /**
+     * Returns the remove lock statement.
+     * @return the remove lock statement
+     */
     public final PreparedStatement getRemoveLockStatement()
     {
         return myRemoveLockStatement;
     }
 
+    /**
+     * Returns the update lock statement.
+     * @return the update lock statement
+     */
     public final PreparedStatement getUpdateLockStatement()
     {
         return myUpdateLockStatement;
     }
 
+    /**
+     * Returns the remove lock priority statement.
+     * @return the remove lock priority statement
+     */
     public final PreparedStatement getRemoveLockPriorityStatement()
     {
         return myRemoveLockPriorityStatement;
     }
 
+    /**
+     * Returns the get priority statement.
+     * @return the get priority statement
+     */
     public final PreparedStatement getGetPriorityStatement()
     {
         return myGetPriorityStatement;
     }
 
+    /**
+     * Returns the lock metadata statement.
+     * @return the lock metadata statement
+     */
     public final PreparedStatement getLockMetadataStatement()
     {
         return myGetLockMetadataStatement;
     }
 
+    /**
+     * Returns the CAS lock factory cache context.
+     * @return the CAS lock factory cache context
+     */
     public final CASLockFactory.CASLockFactoryCacheContext getCasLockFactoryCacheContext()
     {
         return myCasLockFactoryCacheContext;
     }
 
+    /**
+     * Returns the CAS lock properties.
+     * @return the CAS lock properties
+     */
     public final CASLockProperties getCasLockProperties()
     {
         return myCasLockProperties;

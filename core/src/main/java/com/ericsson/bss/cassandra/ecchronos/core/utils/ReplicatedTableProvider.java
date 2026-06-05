@@ -25,6 +25,8 @@ import java.util.Set;
 public interface ReplicatedTableProvider
 {
     /**
+     * Returns the full set of tables replicated on the local node which should be repaired.
+     *
      * @return The full set of tables replicated on the local node which should be repaired.
      */
     Set<TableReference> getAll();

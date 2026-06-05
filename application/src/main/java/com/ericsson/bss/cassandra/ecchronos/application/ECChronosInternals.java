@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.util.concurrent.TimeUnit;
 
+/** Holds the internal components and services used by ecChronos. */
 public class ECChronosInternals implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ECChronosInternals.class);
@@ -65,6 +66,14 @@ public class ECChronosInternals implements Closeable
 
     private final MetricInspector myMetricInspector;
 
+    /**
+     * Constructs the ecChronos internal components.
+     * @param configuration the application configuration
+     * @param nativeConnectionProvider the native connection provider
+     * @param jmxConnectionProvider the JMX connection provider
+     * @param statementDecorator the statement decorator
+     * @param meterRegistry the meter registry
+     */
     public ECChronosInternals(final Config configuration,
                               final NativeConnectionProvider nativeConnectionProvider,
                               final JmxConnectionProvider jmxConnectionProvider,
@@ -132,21 +141,37 @@ public class ECChronosInternals implements Closeable
                 .build();
     }
 
+    /**
+     * Returns the table reference factory.
+     * @return the table reference factory
+     */
     public final TableReferenceFactory getTableReferenceFactory()
     {
         return myTableReferenceFactory;
     }
 
+    /**
+     * Returns the host states.
+     * @return the host states
+     */
     public final HostStates getHostStates()
     {
         return myHostStatesImpl;
     }
 
+    /**
+     * Returns the replicated table provider.
+     * @return the replicated table provider
+     */
     public final ReplicatedTableProvider getReplicatedTableProvider()
     {
         return myReplicatedTableProvider;
     }
 
+    /**
+     * Returns the table repair metrics.
+     * @return the table repair metrics
+     */
     public final TableRepairMetrics getTableRepairMetrics()
     {
         if (myTableRepairMetricsImpl == null)
@@ -157,16 +182,28 @@ public class ECChronosInternals implements Closeable
         return myTableRepairMetricsImpl;
     }
 
+    /**
+     * Returns the schedule manager.
+     * @return the schedule manager
+     */
     public final ScheduleManager getScheduleManager()
     {
         return myScheduleManagerImpl;
     }
 
+    /**
+     * Returns the JMX proxy factory.
+     * @return the JMX proxy factory
+     */
     public final JmxProxyFactory getJmxProxyFactory()
     {
         return myJmxProxyFactory;
     }
 
+    /**
+     * Returns the table storage states.
+     * @return the table storage states
+     */
     public final TableStorageStates getTableStorageStates()
     {
         if (myTableStorageStatesImpl == null)
@@ -176,16 +213,30 @@ public class ECChronosInternals implements Closeable
         return myTableStorageStatesImpl;
     }
 
+    /**
+     * Returns the cassandra metrics.
+     * @return the cassandra metrics
+     */
     public final CassandraMetrics getCassandraMetrics()
     {
         return myCassandraMetrics;
     }
 
+    /**
+     * Adds run policy.
+     * @param runPolicy the run policy
+     * @return true if the policy was added
+     */
     public final boolean addRunPolicy(final RunPolicy runPolicy)
     {
         return myScheduleManagerImpl.addRunPolicy(runPolicy);
     }
 
+    /**
+     * Removes a previously registered run policy.
+     * @param runPolicy the run policy
+     * @return true if the policy was removed
+     */
     public final boolean removeRunPolicy(final RunPolicy runPolicy)
     {
         return myScheduleManagerImpl.removeRunPolicy(runPolicy);

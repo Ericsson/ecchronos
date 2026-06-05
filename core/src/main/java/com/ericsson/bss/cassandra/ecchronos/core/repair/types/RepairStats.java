@@ -20,21 +20,33 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import java.util.Objects;
 
+/** REST response model containing repair statistics. */
 @SuppressWarnings("VisibilityModifier")
 public class RepairStats
 {
+    /** The keyspace. */
     @NotBlank
     public String keyspace;
+    /** The table. */
     @NotBlank
     public String table;
+    /** The repaired ratio. */
     @NotBlank
     @Min(0)
     @Max(1)
     public double repairedRatio;
+    /** The repair time taken ms. */
     @NotBlank
     @Min(0)
     public long repairTimeTakenMs;
 
+    /**
+     * Constructs a new RepairStats.
+     * @param theKeyspace the keyspace
+     * @param theTable the table
+     * @param theRepairedRatio the repaired ratio
+     * @param theRepairTimeTakenMs the repair time taken ms
+     */
     public RepairStats(final String theKeyspace,
                        final String theTable,
                        final double theRepairedRatio,

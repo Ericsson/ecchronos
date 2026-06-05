@@ -24,61 +24,90 @@ import com.ericsson.bss.cassandra.ecchronos.application.ConfigurationException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
+/** Helper for loading and parsing YAML configuration files. */
 public class ConfigurationHelper
 {
     private static final String CONFIGURATION_DIRECTORY_PATH = "ecchronos.config";
 
+    /** The default configuration helper instance. */
     public static final ConfigurationHelper DEFAULT_INSTANCE = new ConfigurationHelper(CONFIGURATION_DIRECTORY_PATH);
 
     private final String configurationDirectory;
     private final boolean usePath;
 
+    /**
+     * Constructs a new ConfigurationHelper.
+     * @param theConfigurationDirectory the configuration directory
+     */
     public ConfigurationHelper(final String theConfigurationDirectory)
     {
         this.configurationDirectory = theConfigurationDirectory;
         this.usePath = System.getProperty(this.configurationDirectory) != null;
     }
 
+    /**
+     * Returns whether file-based configuration paths are used.
+     * @return true if using path-based configuration
+     */
     public final boolean usePath()
     {
         return usePath;
     }
 
-    public final <T> T getConfiguration(final String file, final Class<T> clazz) throws ConfigurationException
+    /**
+     * Returns the configuration.
+     * @param <T> the type parameter
+     * @param file the file path
+     * @param configClass the class to instantiate
+     * @return the configuration
+     * @throws ConfigurationException if the configuration is invalid
+     */
+    public final <T> T getConfiguration(final String file, final Class<T> configClass) throws ConfigurationException
     {
         if (usePath())
         {
-            return getConfiguration(configFile(file), clazz);
+            return getConfiguration(configFile(file), configClass);
         }
         else
         {
-            return getFileFromClassPath(file, clazz);
+            return getFileFromClassPath(file, configClass);
         }
     }
 
+    /**
+     * Returns the configuration file path.
+     * @param configFile the config file
+     * @return the configuration file
+     */
     public final File configFile(final String configFile)
     {
         return new File(getConfigPath().toFile(), configFile);
     }
 
+    /**
+     * Returns the config path.
+     * @return the config path
+     */
     public final Path getConfigPath()
     {
         return FileSystems.getDefault().getPath(System.getProperty(configurationDirectory));
     }
 
-    private <T> T getFileFromClassPath(final String file, final Class<T> clazz) throws ConfigurationException
+    private <T> T getFileFromClassPath(final String file, final Class<T> configClass)
+            throws ConfigurationException
     {
         ClassLoader loader = ClassLoader.getSystemClassLoader();
-        return getConfiguration(loader.getResourceAsStream(file), clazz);
+        return getConfiguration(loader.getResourceAsStream(file), configClass);
     }
 
-    private <T> T getConfiguration(final File configurationFile, final Class<T> clazz) throws ConfigurationException
+    private <T> T getConfiguration(final File configurationFile, final Class<T> configClass)
+            throws ConfigurationException
     {
         try
         {
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
 
-            T config = objectMapper.readValue(configurationFile, clazz);
+            T config = objectMapper.readValue(configurationFile, configClass);
             if (config == null)
             {
                 throw new IOException("parsed config is null");
@@ -92,13 +121,13 @@ public class ConfigurationHelper
     }
 
     private <T> T getConfiguration(final InputStream configurationFile,
-                                   final Class<T> clazz) throws ConfigurationException
+                                   final Class<T> configClass) throws ConfigurationException
     {
         try
         {
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
 
-            T config = objectMapper.readValue(configurationFile, clazz);
+            T config = objectMapper.readValue(configurationFile, configClass);
             if (config == null)
             {
                 throw new IOException("parsed config is null");

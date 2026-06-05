@@ -18,8 +18,13 @@ import com.datastax.oss.driver.api.core.cql.Statement;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 
+/** A no-op statement decorator that returns statements unchanged. */
 public class NoopStatementDecorator implements StatementDecorator
 {
+    /**
+     * Constructs a new NoopStatementDecorator.
+     * @param config the configuration
+     */
     public NoopStatementDecorator(final Config config)
     {
         // Nothing to do

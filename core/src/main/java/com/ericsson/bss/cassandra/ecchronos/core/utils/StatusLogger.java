@@ -20,6 +20,7 @@ import io.micrometer.core.instrument.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Periodically logs the repair status of all managed tables. */
 public final class StatusLogger
 {
     private static final Logger LOG = LoggerFactory.getLogger(StatusLogger.class);
@@ -33,6 +34,10 @@ public final class StatusLogger
         throw new AssertionError("Utility classes should not be instantiated");
     }
 
+    /**
+     * Logs the current state.
+     * @param myMeterRegistry the meter registry
+     */
     public static void log(final MeterRegistry myMeterRegistry)
     {
         Timer failedRepairSessions = myMeterRegistry.find(NODE_REPAIR_SESSIONS)

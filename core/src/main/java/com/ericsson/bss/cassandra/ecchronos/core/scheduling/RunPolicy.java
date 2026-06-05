@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.scheduling;
 
+/** Interface that determines when a scheduled job is allowed to run. */
 @FunctionalInterface
 public interface RunPolicy
 {

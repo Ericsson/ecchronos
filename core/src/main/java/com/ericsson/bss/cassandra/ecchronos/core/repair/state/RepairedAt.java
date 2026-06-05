@@ -21,6 +21,9 @@ import java.util.Collection;
  *
  * A value of {@link Long#MAX_VALUE} indicates that no repair information is available.
  * A value of {@link VnodeRepairState#UNREPAIRED} indicates that the status is unknown.
+ *
+ * @param minRepairedAt the minimum repaired at timestamp
+ * @param maxRepairedAt the maximum repaired at timestamp
  */
 public record RepairedAt(long minRepairedAt, long maxRepairedAt)
 {
@@ -62,6 +65,11 @@ public record RepairedAt(long minRepairedAt, long maxRepairedAt)
         return RepairedAt.generate(vnodeRepairStates.getVnodeRepairStates());
     }
 
+    /**
+     * Generates the output.
+     * @param vnodeRepairStates the vnode repair states
+     * @return the generated result
+     */
     public static RepairedAt generate(final Collection<VnodeRepairState> vnodeRepairStates)
     {
         long minRepairedAt = Long.MAX_VALUE;

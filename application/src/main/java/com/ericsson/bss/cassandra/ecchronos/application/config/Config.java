@@ -23,6 +23,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.runpolicy.RunPoli
 import com.ericsson.bss.cassandra.ecchronos.application.config.scheduler.SchedulerConfig;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/** Root configuration model for the ecChronos application. */
 public class Config
 {
     private ConnectionConfig myConnectionConfig = new ConnectionConfig();
@@ -33,12 +34,25 @@ public class Config
     private SchedulerConfig mySchedulerConfig = new SchedulerConfig();
     private RestServerConfig myRestServerConfig = new RestServerConfig();
 
+    /** Default constructor. */
+    public Config()
+    {
+    }
+
+    /**
+     * Returns the connection config.
+     * @return the connection config
+     */
     @JsonProperty("connection")
     public final ConnectionConfig getConnectionConfig()
     {
         return myConnectionConfig;
     }
 
+    /**
+     * Sets the connection config.
+     * @param connectionConfig the connection config
+     */
     @JsonProperty("connection")
     public final void setConnectionConfig(final ConnectionConfig connectionConfig)
     {
@@ -74,12 +88,20 @@ public class Config
         }
     }
 
+    /**
+     * Returns the statistics config.
+     * @return the statistics config
+     */
     @JsonProperty("statistics")
     public final StatisticsConfig getStatisticsConfig()
     {
         return myStatisticsConfig;
     }
 
+    /**
+     * Sets the statistics config.
+     * @param statisticsConfig the statistics config
+     */
     @JsonProperty("statistics")
     public final void setStatisticsConfig(final StatisticsConfig statisticsConfig)
     {
@@ -90,12 +112,20 @@ public class Config
         }
     }
 
+    /**
+     * Returns the lock factory.
+     * @return the lock factory
+     */
     @JsonProperty("lock_factory")
     public final LockFactoryConfig getLockFactory()
     {
         return myLockFactoryConfig;
     }
 
+    /**
+     * Sets the lock factory config.
+     * @param lockFactoryConfig the lock factory config
+     */
     @JsonProperty("lock_factory")
     public final void setLockFactoryConfig(final LockFactoryConfig lockFactoryConfig)
     {
@@ -105,12 +135,20 @@ public class Config
         }
     }
 
+    /**
+     * Returns the run policy.
+     * @return the run policy
+     */
     @JsonProperty("run_policy")
     public final RunPolicyConfig getRunPolicy()
     {
         return myRunPolicyConfig;
     }
 
+    /**
+     * Sets the run policy config.
+     * @param runPolicyConfig the run policy config
+     */
     @JsonProperty("run_policy")
     public final void setRunPolicyConfig(final RunPolicyConfig runPolicyConfig)
     {
@@ -120,6 +158,10 @@ public class Config
         }
     }
 
+    /**
+     * Returns the scheduler config.
+     * @return the scheduler config
+     */
     @JsonProperty("scheduler")
     public final SchedulerConfig getSchedulerConfig()
     {
@@ -140,12 +182,20 @@ public class Config
         }
     }
 
+    /**
+     * Returns the REST server.
+     * @return the REST server
+     */
     @JsonProperty("rest_server")
     public final RestServerConfig getRestServer()
     {
         return myRestServerConfig;
     }
 
+    /**
+     * Sets the REST server config.
+     * @param restServerConfig the REST server config
+     */
     @JsonProperty("rest_server")
     public final void setRestServerConfig(final RestServerConfig restServerConfig)
     {
