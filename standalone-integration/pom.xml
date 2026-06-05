@@ -182,8 +182,7 @@
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <release>${java.version}</release>
                     <generatedSourcesDirectory>${project.build.directory}/generated-sources/</generatedSourcesDirectory>
                 </configuration>
             </plugin>
@@ -193,6 +192,20 @@
                 <artifactId>central-publishing-maven-plugin</artifactId>
                 <configuration>
                     <excludeArtifacts>standalone-integration</excludeArtifacts>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <skipIfEmpty>true</skipIfEmpty>
                 </configuration>
             </plugin>
 
