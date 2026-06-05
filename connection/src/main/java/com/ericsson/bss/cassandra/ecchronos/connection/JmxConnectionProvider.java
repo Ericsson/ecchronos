@@ -24,6 +24,11 @@ import javax.management.remote.JMXConnector;
 @FunctionalInterface
 public interface JmxConnectionProvider extends Closeable
 {
+    /**
+     * Returns a JMX connector to the local Cassandra node.
+     * @return the JMX connector
+     * @throws IOException if an I/O error occurs
+     */
     JMXConnector getJmxConnector() throws IOException;
 
     @Override

@@ -25,6 +25,7 @@ import java.util.Set;
  */
 public class VnodeRepairState
 {
+    /** The unrepaired sentinel value. */
     public static final long UNREPAIRED = -1L;
 
     private final LongTokenRange myTokenRange;

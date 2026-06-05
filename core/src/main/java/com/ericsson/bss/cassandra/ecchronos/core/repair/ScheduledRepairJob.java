@@ -25,8 +25,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+/** Base class for periodically scheduled repair jobs. */
 public abstract class ScheduledRepairJob extends ScheduledJob
 {
+    /**
+     * Returns the repair lock factory.
+     */
     protected static final RepairLockFactory REPAIR_LOCK_FACTORY = new RepairLockFactoryImpl();
     private final TableReference myTableReference;
     private final JmxProxyFactory myJmxProxyFactory;
@@ -35,6 +39,16 @@ public abstract class ScheduledRepairJob extends ScheduledJob
     private final List<TableRepairPolicy> myRepairPolicies;
     private final TableRepairMetrics myTableRepairMetrics;
 
+    /**
+     * Constructs a new ScheduledRepairJob.
+     * @param configuration the application configuration
+     * @param tableReference the table reference
+     * @param jmxProxyFactory the JMX proxy factory
+     * @param repairConfiguration the repair configuration
+     * @param repairLockType the repair lock type
+     * @param repairPolicies the repair policies
+     * @param tableRepairMetrics the table repair metrics
+     */
     public ScheduledRepairJob(final Configuration configuration, final TableReference tableReference,
             final JmxProxyFactory jmxProxyFactory, final RepairConfiguration repairConfiguration,
             final RepairLockType repairLockType, final List<TableRepairPolicy> repairPolicies,
@@ -49,6 +63,17 @@ public abstract class ScheduledRepairJob extends ScheduledJob
         myTableRepairMetrics = Preconditions.checkNotNull(tableRepairMetrics, "Table repair metrics must be set");
     }
 
+    /**
+     * Constructs a new ScheduledRepairJob.
+     * @param configuration the application configuration
+     * @param id the identifier
+     * @param tableReference the table reference
+     * @param jmxProxyFactory the JMX proxy factory
+     * @param repairConfiguration the repair configuration
+     * @param repairLockType the repair lock type
+     * @param repairPolicies the repair policies
+     * @param tableRepairMetrics the table repair metrics
+     */
     public ScheduledRepairJob(final Configuration configuration, final UUID id, final TableReference tableReference,
             final JmxProxyFactory jmxProxyFactory, final RepairConfiguration repairConfiguration,
             final RepairLockType repairLockType, final List<TableRepairPolicy> repairPolicies,
@@ -72,6 +97,10 @@ public abstract class ScheduledRepairJob extends ScheduledJob
         return myTableReference;
     }
 
+    /**
+     * Returns the JMX proxy factory.
+     * @return the JMX proxy factory
+     */
     protected final JmxProxyFactory getJmxProxyFactory()
     {
         return myJmxProxyFactory;
@@ -86,21 +115,37 @@ public abstract class ScheduledRepairJob extends ScheduledJob
         return myRepairConfiguration;
     }
 
+    /**
+     * Returns the repair lock type.
+     * @return the repair lock type
+     */
     protected final RepairLockType getRepairLockType()
     {
         return myRepairLockType;
     }
 
+    /**
+     * Returns the repair policies.
+     * @return the repair policies
+     */
     protected final List<TableRepairPolicy> getRepairPolicies()
     {
         return myRepairPolicies;
     }
 
+    /**
+     * Returns the table repair metrics.
+     * @return the table repair metrics
+     */
     protected final TableRepairMetrics getTableRepairMetrics()
     {
         return myTableRepairMetrics;
     }
 
+    /**
+     * Returns the view.
+     * @return the view
+     */
     public abstract ScheduledRepairJobView getView();
 
     /**

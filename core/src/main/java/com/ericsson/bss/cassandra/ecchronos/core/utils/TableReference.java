@@ -21,11 +21,27 @@ import java.util.UUID;
  */
 public interface TableReference
 {
+    /**
+     * Returns the id.
+     * @return the id
+     */
     UUID getId();
 
+    /**
+     * Returns the table.
+     * @return the table
+     */
     String getTable();
 
+    /**
+     * Returns the keyspace.
+     * @return the keyspace
+     */
     String getKeyspace();
 
+    /**
+     * Returns the gc grace seconds.
+     * @return the gc grace seconds
+     */
     int getGcGraceSeconds();
 }

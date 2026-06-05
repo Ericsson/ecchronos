@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.scheduling;
 
+/** Interface for managing the lifecycle of scheduled jobs. */
 public interface ScheduleManager
 {
     /**

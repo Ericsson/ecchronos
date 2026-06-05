@@ -23,6 +23,10 @@ public class RetryPolicyException extends RuntimeException
 {
     private static final long serialVersionUID = 8519513326549621415L;
 
+    /**
+     * Constructs a new RetryPolicyException.
+     * @param message the log message
+     */
     public RetryPolicyException(final String message)
     {
         super(message);

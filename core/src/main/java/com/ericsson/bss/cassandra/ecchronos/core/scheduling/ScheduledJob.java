@@ -28,19 +28,30 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
 
     private final Priority myPriority;
     private final long myBackoffInMs;
+    /** The run interval in ms. */
     protected final long myRunIntervalInMs;
 
+    /** The last successful run. */
     protected volatile long myLastSuccessfulRun = -1;
     private volatile long myNextRunTime = -1;
     private volatile long myRunOffset = 0;
     private final UUID myId;
     private final TimeUnit myPriorityGranularity;
 
+    /**
+     * Constructs a new ScheduledJob.
+     * @param configuration the application configuration
+     */
     public ScheduledJob(final Configuration configuration)
     {
         this(configuration, UUID.randomUUID());
     }
 
+    /**
+     * Constructs a new ScheduledJob.
+     * @param configuration the application configuration
+     * @param id the identifier
+     */
     public ScheduledJob(final Configuration configuration, final UUID id)
     {
         myId = id;
@@ -105,7 +116,6 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
 
     /**
      * Check if this job is runnable now.
-     *
      * @return True if able to run now.
      */
     public boolean runnable()
@@ -115,7 +125,6 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
 
     /**
      * Get current State of the job.
-     *
      * @return current State
      */
     public State getState()
@@ -129,7 +138,6 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
 
     /**
      * Get the unix timestamp of the last time this job was run.
-     *
      * @return The last time the job ran successfully.
      */
     public long getLastSuccessfulRun()
@@ -162,6 +170,11 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
         return getRealPriority(getLastSuccessfulRun());
     }
 
+    /**
+     * Returns the real priority.
+     * @param lastSuccessfulRun the last successful run
+     * @return the real priority
+     */
     public final int getRealPriority(final long lastSuccessfulRun)
     {
         long now = System.currentTimeMillis();
@@ -186,6 +199,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     }
 
     /**
+     * Gets the run offset for the job.
      * @return The offset for the job.
      */
     public long getRunOffset()
@@ -194,6 +208,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     }
 
     /**
+     * Gets the unique identifier for this job.
      * @return unique identifier for Job
      */
     public final UUID getId()
@@ -272,12 +287,17 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
             this.value = aValue;
         }
 
+        /**
+         * Returns the value.
+         * @return the value
+         */
         public int getValue()
         {
             return value;
         }
     }
 
+    /** Represents the possible states of a repair operation. */
     public enum State
     {
         /**
@@ -303,7 +323,6 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
 
     /**
      * The configuration of a job.
-     *
      * @param priority The priority of the job
      * @param runIntervalInMs The minimum amount of time to wait between each successful run
      * @param backoffInMs The amount of time to wait before marking job as runnable after failing
@@ -322,30 +341,62 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
         private long backoffInMs = TimeUnit.MINUTES.toMillis(DEFAULT_BACKOFF_IN_MINUTES);
         private TimeUnit granularityUnit = TimeUnit.HOURS;
 
+        /** Constructs a new ConfigurationBuilder. */
+        public ConfigurationBuilder()
+        {
+            // Default constructor
+        }
+
+        /**
+         * Sets the priority granularity.
+         * @param granularityTimeUnit the granularity time unit
+         * @return this builder
+         */
         public final ConfigurationBuilder withPriorityGranularity(final TimeUnit granularityTimeUnit)
         {
             this.granularityUnit = granularityTimeUnit;
             return this;
         }
 
+        /**
+         * Sets the priority.
+         * @param aPriority the priority
+         * @return this builder
+         */
         public final ConfigurationBuilder withPriority(final Priority aPriority)
         {
             this.priority = aPriority;
             return this;
         }
 
+        /**
+         * Sets the run interval.
+         * @param runInterval the run interval
+         * @param unit the time unit
+         * @return this builder
+         */
         public final ConfigurationBuilder withRunInterval(final long runInterval, final TimeUnit unit)
         {
             this.runIntervalInMs = unit.toMillis(runInterval);
             return this;
         }
 
+        /**
+         * Sets the backoff.
+         * @param backoff the backoff delay between retries
+         * @param unit the time unit
+         * @return this builder
+         */
         public final ConfigurationBuilder withBackoff(final long backoff, final TimeUnit unit)
         {
             this.backoffInMs = unit.toMillis(backoff);
             return this;
         }
 
+        /**
+         * Builds the instance.
+         * @return the built instance
+         */
         public final Configuration build()
         {
             return new Configuration(priority, runIntervalInMs, backoffInMs, granularityUnit);

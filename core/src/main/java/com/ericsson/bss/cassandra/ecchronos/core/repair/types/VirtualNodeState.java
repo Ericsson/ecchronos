@@ -33,24 +33,38 @@ import java.util.stream.Collectors;
 @SuppressWarnings("VisibilityModifier")
 public class VirtualNodeState
 {
+    /** The start token. */
     @NotBlank
     @Min(Long.MIN_VALUE)
     public long startToken;
+    /** The end token. */
     @NotBlank
     @Max(Long.MAX_VALUE)
     public long endToken;
+    /** The replicas. */
     @NotBlank
     public Set<String> replicas;
+    /** The last repaired at timestamp in milliseconds. */
     @NotBlank
     @Min(0)
     public long lastRepairedAtInMs;
+    /** Whether the vnode is repaired. */
     @NotBlank
     public boolean repaired;
 
+    /** Constructs a new VirtualNodeState. */
     public VirtualNodeState()
     {
     }
 
+    /**
+     * Constructs a new VirtualNodeState.
+     * @param theStartToken the start token
+     * @param theEndToken the end token
+     * @param theReplicas the replicas
+     * @param wasLastRepairedAtInMs the was last repaired at in ms
+     * @param isRepaired the is repaired
+     */
     public VirtualNodeState(final long theStartToken,
                             final long theEndToken,
                             final Set<String> theReplicas,
@@ -64,6 +78,12 @@ public class VirtualNodeState
         this.repaired = isRepaired;
     }
 
+    /**
+     * Converts the value to the target type.
+     * @param vnodeRepairState the vnode repair state
+     * @param repairedAfter the repaired after
+     * @return the converted value
+     */
     public static VirtualNodeState convert(final VnodeRepairState vnodeRepairState, final long repairedAfter)
     {
         long startToken = vnodeRepairState.getTokenRange().start;

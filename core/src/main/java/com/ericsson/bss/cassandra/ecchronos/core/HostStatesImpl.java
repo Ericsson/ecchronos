@@ -152,28 +152,53 @@ public final class HostStatesImpl implements HostStates, Closeable
         return oldValue == null || oldValue != newValue;
     }
 
+    /**
+     * Builds and returns the instance.
+     * @return the built instance
+     */
     public static Builder builder()
     {
         return new Builder();
     }
 
+    /** Builder for constructing instances of the enclosing class. */
     public static class Builder
     {
         private JmxProxyFactory myJmxProxyFactory;
         private long myRefreshIntervalInMs = DEFAULT_REFRESH_INTERVAL_IN_MS;
 
+        /** Constructs a new Builder. */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
+         * Sets the JMX proxy factory.
+         * @param jmxProxyFactory the JMX proxy factory
+         * @return this builder
+         */
         public final Builder withJmxProxyFactory(final JmxProxyFactory jmxProxyFactory)
         {
             myJmxProxyFactory = jmxProxyFactory;
             return this;
         }
 
+        /**
+         * Sets the refresh interval in ms.
+         * @param refreshIntervalInMs the refresh interval in ms
+         * @return this builder
+         */
         public final Builder withRefreshIntervalInMs(final long refreshIntervalInMs)
         {
             myRefreshIntervalInMs = refreshIntervalInMs;
             return this;
         }
 
+        /**
+         * Builds and returns the instance.
+         * @return the built instance
+         */
         public final HostStatesImpl build()
         {
             if (myJmxProxyFactory == null)

@@ -27,6 +27,12 @@ public final class ApplicationStateImpl implements ApplicationState
 
     private final Map<String, Object> state = new ConcurrentHashMap<>();
 
+    /** Constructs a new ApplicationStateImpl. */
+    public ApplicationStateImpl()
+    {
+        // Default constructor
+    }
+
     @Override
     @SuppressWarnings("unchecked")
     public void put(final String key, final Object value)

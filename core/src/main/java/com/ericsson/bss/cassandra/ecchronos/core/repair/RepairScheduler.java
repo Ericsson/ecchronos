@@ -21,7 +21,6 @@ import java.util.Set;
 
 /**
  * A factory which takes repair configuration and schedules tables for repair based on the provided configuration.
- *
  * It is the responsibility of the configuration provider to remove the configuration.
  */
 public interface RepairScheduler
@@ -42,6 +41,8 @@ public interface RepairScheduler
     void removeConfiguration(TableReference tableReference);
 
     /**
+     * Returns the currently scheduled repair jobs.
+     *
      * @return the list of the currently scheduled repair jobs.
      */
     List<ScheduledRepairJobView> getCurrentRepairJobs();

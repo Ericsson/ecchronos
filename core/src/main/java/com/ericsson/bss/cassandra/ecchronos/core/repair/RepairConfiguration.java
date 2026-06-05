@@ -24,7 +24,9 @@ import java.util.concurrent.TimeUnit;
  */
 public final class RepairConfiguration
 {
+    /** No unwind ratio. */
     public static final double NO_UNWIND = 0.0d;
+    /** Full repair size constant. */
     public static final long FULL_REPAIR_SIZE = Long.MAX_VALUE;
 
     private static final long DEFAULT_REPAIR_INTERVAL_IN_MS = TimeUnit.DAYS.toMillis(7);
@@ -39,7 +41,13 @@ public final class RepairConfiguration
     private static final boolean DEFAULT_IGNORE_TWCS_TABLES = false;
     private static final long DEFAULT_INITIAL_DELAY_IN_MS = TimeUnit.DAYS.toMillis(1);
 
+    /**
+     * Creates a new instance.
+     */
     public static final RepairConfiguration DEFAULT = newBuilder().build();
+    /**
+     * Creates a new instance.
+     */
     public static final RepairConfiguration DISABLED = newBuilder()
             .withRepairInterval(0, TimeUnit.MILLISECONDS)
             .build();
@@ -73,66 +81,119 @@ public final class RepairConfiguration
         myInitialDelayInMs = builder.myInitialDelayInMs;
     }
 
+    /**
+     * Returns the priority granularity unit.
+     * @return the priority granularity unit
+     */
     public TimeUnit getPriorityGranularityUnit()
     {
         return myPriorityGranularityUnit;
     }
 
+    /**
+     * Returns the repair parallelism.
+     * @return the repair parallelism
+     */
     public RepairOptions.RepairParallelism getRepairParallelism()
     {
         return myRepairParallelism;
     }
 
+    /**
+     * Returns the repair interval in ms.
+     * @return the repair interval in ms
+     */
     public long getRepairIntervalInMs()
     {
         return myRepairIntervalInMs;
     }
 
+    /**
+     * Returns the initial delay in ms.
+     * @return the initial delay in ms
+     */
     public long getInitialDelayInMs()
     {
         return myInitialDelayInMs;
     }
 
+    /**
+     * Returns the repair warning time in ms.
+     * @return the repair warning time in ms
+     */
     public long getRepairWarningTimeInMs()
     {
         return myRepairWarningTimeInMs;
     }
 
+    /**
+     * Returns the repair error time in ms.
+     * @return the repair error time in ms
+     */
     public long getRepairErrorTimeInMs()
     {
         return myRepairErrorTimeInMs;
     }
 
+    /**
+     * Returns the repair unwind ratio.
+     * @return the repair unwind ratio
+     */
     public double getRepairUnwindRatio()
     {
         return myRepairUnwindRatio;
     }
 
+    /**
+     * Returns the target repair size in bytes.
+     * @return the target repair size in bytes
+     */
     public long getTargetRepairSizeInBytes()
     {
         return myTargetRepairSizeInBytes;
     }
 
+    /**
+     * Returns the backoff in ms.
+     * @return the backoff in ms
+     */
     public long getBackoffInMs()
     {
         return myBackoffInMs;
     }
 
+    /**
+     * Returns the ignore TWCS tables.
+     * @return the ignore TWCS tables
+     */
     public boolean getIgnoreTWCSTables()
     {
         return myIgnoreTWCSTables;
     }
 
+    /**
+     * Returns the repair type.
+     * @return the repair type
+     */
     public RepairOptions.RepairType getRepairType()
     {
         return myRepairType;
     }
 
+    /**
+     * Creates a new instance.
+     * @param from the start of the range
+     * @return the built instance
+     */
     public static Builder newBuilder(final RepairConfiguration from)
     {
         return new Builder(from);
     }
 
+    /**
+     * Creates a new instance.
+     * @return the built instance
+     */
     public static Builder newBuilder()
     {
         return new Builder();
@@ -198,6 +259,7 @@ public final class RepairConfiguration
                 myBackoffInMs, myRepairType, myPriorityGranularityUnit);
     }
 
+    /** Builder for constructing instances of the enclosing class. */
     public static class Builder
     {
         private RepairOptions.RepairParallelism myRepairParallelism = DEFAULT_REPAIR_PARALLELISM;

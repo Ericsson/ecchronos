@@ -29,6 +29,10 @@ public class DriverNode
 {
     private final Node node;
 
+    /**
+     * Constructs a new DriverNode.
+     * @param aNode the node
+     */
     public DriverNode(final Node aNode)
     {
         this.node = aNode;
@@ -45,9 +49,9 @@ public class DriverNode
     }
 
     /**
-     * Get the public ip address of the node.
+     * Get the public IP address of the node.
      *
-     * @return The public ip address of the node.
+     * @return The public IP address of the node.
      */
     public InetAddress getPublicAddress()
     {

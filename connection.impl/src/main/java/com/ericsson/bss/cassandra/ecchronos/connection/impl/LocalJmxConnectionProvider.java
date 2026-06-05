@@ -30,13 +30,16 @@ import org.slf4j.LoggerFactory;
 
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 
+/** JMX connection provider that connects to a local Cassandra node. */
 public class LocalJmxConnectionProvider implements JmxConnectionProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(LocalJmxConnectionProvider.class);
 
     private static final String JMX_FORMAT_URL = "service:jmx:rmi:///jndi/rmi://%s:%d/jmxrmi";
 
+    /** Default JMX port. */
     public static final int DEFAULT_PORT = 7199;
+    /** Default JMX host. */
     public static final String DEFAULT_HOST = "localhost";
 
     private final AtomicReference<JMXConnector> myJmxConnection = new AtomicReference<>();
@@ -46,11 +49,25 @@ public class LocalJmxConnectionProvider implements JmxConnectionProvider
     private final Supplier<String[]> credentialsSupplier;
     private final Supplier<Map<String, String>> tlsSupplier;
 
+    /**
+     * Constructs a JMX connection provider for the given host and port without authentication.
+     * @param localhost the local host address
+     * @param port the port number
+     * @throws IOException if an I/O error occurs
+     */
     public LocalJmxConnectionProvider(final String localhost, final int port) throws IOException
     {
         this(localhost, port, () -> null, HashMap::new);
     }
 
+    /**
+     * Constructs a JMX connection provider with credentials and TLS configuration.
+     * @param localhost the local host address
+     * @param port the port number
+     * @param aCredentialsSupplier the credentials supplier
+     * @param aTLSSupplier the TLS supplier
+     * @throws IOException if an I/O error occurs
+     */
     public LocalJmxConnectionProvider(final String localhost,
                                       final int port,
                                       final Supplier<String[]> aCredentialsSupplier,

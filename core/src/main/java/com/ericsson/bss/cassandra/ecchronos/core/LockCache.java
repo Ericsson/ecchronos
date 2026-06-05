@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+/** Caches distributed locks to reduce Cassandra round-trips. */
 public final class LockCache
 {
     private static final Logger LOG = LoggerFactory.getLogger(LockCache.class);
@@ -35,6 +36,11 @@ public final class LockCache
     private final Cache<LockKey, LockException> myFailureCache;
     private final LockSupplier myLockSupplier;
 
+    /**
+     * Constructs a new LockCache.
+     * @param lockSupplier the lock supplier
+     * @param expireTimeInSeconds the expire time in seconds
+     */
     public LockCache(final LockSupplier lockSupplier, final long expireTimeInSeconds)
     {
         this(lockSupplier, expireTimeInSeconds, TimeUnit.SECONDS);
@@ -50,11 +56,26 @@ public final class LockCache
                 .build();
     }
 
+    /**
+     * Returns the cached failure.
+     * @param dataCenter the data center
+     * @param resource the resource to lock
+     * @return the cached failure
+     */
     public Optional<LockException> getCachedFailure(final String dataCenter, final String resource)
     {
         return getCachedFailure(new LockKey(dataCenter, resource));
     }
 
+    /**
+     * Returns the lock.
+     * @param dataCenter the data center
+     * @param resource the resource to lock
+     * @param priority the job priority value
+     * @param metadata the associated metadata
+     * @return the lock
+     * @throws LockException if the lock cannot be acquired
+     */
     public DistributedLock getLock(final String dataCenter,
                                    final String resource,
                                    final int priority,
@@ -92,9 +113,19 @@ public final class LockCache
         return Optional.ofNullable(myFailureCache.getIfPresent(lockKey));
     }
 
+    /** Functional interface for supplying distributed locks. */
     @FunctionalInterface
     public interface LockSupplier
     {
+        /**
+         * Returns the lock.
+         * @param dataCenter the data center
+         * @param resource the resource to lock
+         * @param priority the job priority value
+         * @param metadata the associated metadata
+         * @return the lock
+         * @throws LockException if the lock cannot be acquired
+         */
         DistributedLock getLock(String dataCenter, String resource, int priority, Map<String, String> metadata)
                 throws LockException;
     }

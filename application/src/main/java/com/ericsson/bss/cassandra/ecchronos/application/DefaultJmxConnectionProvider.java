@@ -33,12 +33,19 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalJmxConnectionProvider;
 
+/** Default provider for JMX connections to the local Cassandra node. */
 public class DefaultJmxConnectionProvider implements JmxConnectionProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultJmxConnectionProvider.class);
 
     private final LocalJmxConnectionProvider myLocalJmxConnectionProvider;
 
+    /**
+     * Constructs a new DefaultJmxConnectionProvider.
+     * @param config the configuration
+     * @param jmxSecurity the JMX security
+     * @throws IOException if an I/O error occurs
+     */
     public DefaultJmxConnectionProvider(final Config config,
                                         final Supplier<Security.JmxSecurity> jmxSecurity) throws IOException
     {

@@ -21,10 +21,17 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.google.common.base.Predicate;
 
+/**
+ * Predicate that matches fully repaired repair entries.
+ */
 public class FullyRepairedRepairEntryPredicate implements Predicate<RepairEntry>
 {
     private final Map<LongTokenRange, Collection<DriverNode>> myTokenToNodeMap;
 
+    /**
+     * Constructs a new FullyRepairedRepairEntryPredicate.
+     * @param tokenToNodeMap the token to node map
+     */
     public FullyRepairedRepairEntryPredicate(final Map<LongTokenRange, Collection<DriverNode>> tokenToNodeMap)
     {
         myTokenToNodeMap = tokenToNodeMap;

@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ConsistencyType;
 import java.util.Locale;
 
+/** Configuration for the CAS-based distributed lock factory. */
 public class CasLockFactoryConfig
 {
     private static final long DEFAULT_EXPIRY_TIME_IN_SECONDS = 30L;
@@ -26,34 +27,63 @@ public class CasLockFactoryConfig
     private long myExpiryTimeInSeconds = DEFAULT_EXPIRY_TIME_IN_SECONDS;
     private ConsistencyType myConsistencySerial = ConsistencyType.DEFAULT;
 
+    /** Default constructor. */
+    public CasLockFactoryConfig()
+    {
+    }
+
+    /**
+     * Returns the failure cache expiry time in seconds.
+     * @return the failure cache expiry time in seconds
+     */
     public final long getFailureCacheExpiryTimeInSeconds()
     {
         return myExpiryTimeInSeconds;
     }
 
+    /**
+     * Sets the failure cache expiry time in seconds.
+     * @param expiryTimeInSeconds the expiry time in seconds
+     */
     @JsonProperty ("cache_expiry_time_in_seconds")
     public final void setFailureCacheExpiryTimeInSeconds(final long expiryTimeInSeconds)
     {
         myExpiryTimeInSeconds = expiryTimeInSeconds;
     }
 
+    /**
+     * Returns the keyspace name.
+     * @return the keyspace name
+     */
     public final String getKeyspaceName()
     {
         return myKeyspaceName;
     }
 
+    /**
+     * Sets the keyspace name.
+     * @param keyspaceName the keyspace name
+     */
     @JsonProperty ("keyspace")
     public final void setKeyspaceName(final String keyspaceName)
     {
         myKeyspaceName = keyspaceName;
     }
 
+    /**
+     * Returns the consistency serial.
+     * @return the consistency serial
+     */
     @JsonProperty("consistencySerial")
     public final ConsistencyType getConsistencySerial()
     {
         return myConsistencySerial;
     }
 
+    /**
+     * Sets the consistency serial.
+     * @param consistencySerial the consistency serial
+     */
     @JsonProperty("consistencySerial")
     public final void setConsistencySerial(final String consistencySerial)
     {

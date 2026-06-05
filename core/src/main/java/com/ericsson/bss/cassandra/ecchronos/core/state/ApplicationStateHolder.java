@@ -25,6 +25,10 @@ public final class ApplicationStateHolder
     {
     }
 
+    /**
+     * Returns the instance.
+     * @return the instance
+     */
     public static ApplicationState getInstance()
     {
         INSTANCE.put("running", true);

@@ -26,6 +26,12 @@ public class TableGauges implements Closeable
     private final AtomicReference<Long> myLastRepairedAt = new AtomicReference<>(0L);
     private final AtomicReference<Long> myRemainingRepairTime = new AtomicReference<>(0L);
 
+    /** Constructs a new TableGauges. */
+    public TableGauges()
+    {
+        // Default constructor
+    }
+
     /**
      * Update repair ratio.
      *

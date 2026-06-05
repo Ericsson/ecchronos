@@ -30,17 +30,27 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
+/** A BoundStatement wrapper that targets a specific data center. */
 public class DataCenterAwareStatement implements BoundStatement
 {
     private final String myDataCenter;
     private final BoundStatement myBoundStatement;
 
+    /**
+     * Constructs a DataCenterAwareStatement wrapping the given statement for the specified data center.
+     * @param statement the CQL statement
+     * @param dataCenter the data center
+     */
     public DataCenterAwareStatement(final BoundStatement statement, final String dataCenter)
     {
         myBoundStatement = statement;
         myDataCenter = dataCenter;
     }
 
+    /**
+     * Returns the target data center for this statement.
+     * @return the data center
+     */
     public final String getDataCenter()
     {
         return myDataCenter;

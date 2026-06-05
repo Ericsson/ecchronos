@@ -70,6 +70,12 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     @Autowired
     private final RepairStatsProvider myRepairStatsProvider;
 
+    /**
+     * Constructs the repair management REST controller.
+     * @param tableReferenceFactory the table reference factory
+     * @param replicatedTableProvider the replicated table provider
+     * @param repairStatsProvider the repair stats provider
+     */
     public RepairManagementRESTImpl(final TableReferenceFactory tableReferenceFactory,
                                     final ReplicatedTableProvider replicatedTableProvider,
                                     final RepairStatsProvider repairStatsProvider)

@@ -18,6 +18,17 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
 import java.util.UUID;
 
+/**
+ * Read-only view of an on-demand repair job.
+ *
+ * @param id the job identifier
+ * @param hostId the host identifier
+ * @param tableReference the table reference
+ * @param status the job status
+ * @param progress the job progress
+ * @param completionTime the completion time
+ * @param repairType the repair type
+ */
 public record OnDemandRepairJobView(UUID id,
                                     UUID hostId,
                                     TableReference tableReference,
@@ -26,8 +37,18 @@ public record OnDemandRepairJobView(UUID id,
                                     long completionTime,
                                     RepairOptions.RepairType repairType)
 {
+    /** Represents the possible states of this job. */
     public enum Status
     {
-        COMPLETED, IN_QUEUE, WARNING, ERROR, BLOCKED
+        /** Completed status. */
+        COMPLETED,
+        /** In queue status. */
+        IN_QUEUE,
+        /** Warning status. */
+        WARNING,
+        /** Error status. */
+        ERROR,
+        /** Blocked status. */
+        BLOCKED
     }
 }

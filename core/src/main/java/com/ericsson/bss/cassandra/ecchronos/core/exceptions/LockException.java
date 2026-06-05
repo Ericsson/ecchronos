@@ -21,16 +21,29 @@ public class LockException extends Exception
 {
     private static final long serialVersionUID = 1699712279389641954L;
 
+    /**
+     * Constructs a new LockException.
+     * @param message the log message
+     */
     public LockException(final String message)
     {
         super(message);
     }
 
+    /**
+     * Constructs a new LockException.
+     * @param message the log message
+     * @param t the throwable
+     */
     public LockException(final String message, final Throwable t)
     {
         super(message, t);
     }
 
+    /**
+     * Constructs a new LockException.
+     * @param t the throwable
+     */
     public LockException(final Throwable t)
     {
         super(t);

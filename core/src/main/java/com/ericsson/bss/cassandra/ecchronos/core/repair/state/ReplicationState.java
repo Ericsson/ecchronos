@@ -65,5 +65,10 @@ public interface ReplicationState
      */
     Map<LongTokenRange, Set<DriverNode>> getTokenRangeToReplicas(TableReference tableReference);
 
+    /**
+     * Returns the token ranges.
+     * @param tableReference the table reference
+     * @return the token ranges
+     */
     Map<LongTokenRange, Set<DriverNode>> getTokenRanges(TableReference tableReference);
 }

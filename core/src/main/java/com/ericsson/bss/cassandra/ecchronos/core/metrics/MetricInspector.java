@@ -23,6 +23,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Timer;
 import java.util.TimerTask;
 
+/** Inspects and validates repair metrics for monitoring purposes. */
 public final class MetricInspector
 {
     private final MeterRegistry myMeterRegistry;
@@ -52,6 +53,13 @@ public final class MetricInspector
         return myRecordingStartTimestamp;
     }
 
+    /**
+     * Constructs a new MetricInspector.
+     * @param meterRegistry the meter registry
+     * @param repairFailureThreshold the repair failure threshold
+     * @param repairFailuresTimeWindow the repair failures time window
+     * @param triggerIntervalForMetricInspection the trigger interval for metric inspection
+     */
     public MetricInspector(final MeterRegistry meterRegistry,
                     final int repairFailureThreshold,
                     final long repairFailuresTimeWindow,
@@ -63,6 +71,7 @@ public final class MetricInspector
         myTriggerIntervalForMetricInspection = triggerIntervalForMetricInspection;
     }
 
+    /** Begins metric inspection. */
     public void startInspection()
     {
         timer = new Timer();
@@ -76,6 +85,7 @@ public final class MetricInspector
         }, 0, myTriggerIntervalForMetricInspection);
     }
 
+    /** Ends metric inspection. */
     public void stopInspection()
     {
         if (timer != null)

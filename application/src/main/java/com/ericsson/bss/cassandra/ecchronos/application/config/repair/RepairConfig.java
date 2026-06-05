@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Configuration for table repair scheduling parameters. */
 public class RepairConfig
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairConfig.class);
@@ -48,47 +49,84 @@ public class RepairConfig
 
     private Interval myInitialDelay = new Interval(DAYS_INITIAL_DELAY, TimeUnit.DAYS);
 
+    /** Default constructor. */
+    public RepairConfig()
+    {
+    }
+
+    /**
+     * Returns the priority.
+     * @return the priority
+     */
     public final Priority getPriority()
     {
         return  myPriority;
     }
 
+    /**
+     * Sets the priority.
+     * @param priority the job priority value
+     */
     @JsonProperty("priority")
     public final void setPriority(final Priority priority)
     {
         myPriority = priority;
     }
 
+    /**
+     * Returns the repair interval.
+     * @return the repair interval
+     */
     @JsonProperty("interval")
     public final Interval getRepairInterval()
     {
         return myRepairInterval;
     }
 
+    /**
+     * Sets the repair interval.
+     * @param repairInterval the repair interval
+     */
     @JsonProperty("interval")
     public final void setRepairInterval(final Interval repairInterval)
     {
         myRepairInterval = repairInterval;
     }
 
+    /**
+     * Returns the alarm.
+     * @return the alarm
+     */
     @JsonProperty("alarm")
     public final Alarm getAlarm()
     {
         return myAlarm;
     }
 
+    /**
+     * Sets the alarm.
+     * @param alarm the alarm configuration
+     */
     @JsonProperty("alarm")
     public final void setAlarm(final Alarm alarm)
     {
         myAlarm = alarm;
     }
 
+    /**
+     * Sets the unwind ratio.
+     * @param unwindRatio the unwind ratio
+     */
     @JsonProperty("unwind_ratio")
     public final void setUnwindRatio(final double unwindRatio)
     {
         myUnwindRatio = unwindRatio;
     }
 
+    /**
+     * Sets the size target.
+     * @param sizeTarget the size target
+     */
     @JsonProperty("size_target")
     public final void setSizeTarget(final String sizeTarget)
     {
@@ -102,42 +140,70 @@ public class RepairConfig
         }
     }
 
+    /**
+     * Returns the backoff.
+     * @return the backoff
+     */
     @JsonProperty("backoff")
     public final Interval getBackoff()
     {
         return myBackoff;
     }
 
+    /**
+     * Sets the backoff.
+     * @param backoff the backoff delay between retries
+     */
     @JsonProperty("backoff")
     public final void setBackoff(final Interval backoff)
     {
         myBackoff = backoff;
     }
 
+    /**
+     * Returns the ignore TWCS tables.
+     * @return the ignore TWCS tables
+     */
     @JsonProperty("ignore_twcs_tables")
     public final boolean getIgnoreTWCSTables()
     {
         return myIgnoreTwcsTables;
     }
 
+    /**
+     * Sets the ignore TWCS tables.
+     * @param ignoreTWCSTables the ignore TWCS tables
+     */
     @JsonProperty("ignore_twcs_tables")
     public final void setIgnoreTwcsTables(final boolean ignoreTWCSTables)
     {
         myIgnoreTwcsTables = ignoreTWCSTables;
     }
 
+    /**
+     * Returns the repair type.
+     * @return the repair type
+     */
     @JsonProperty("repair_type")
     public final RepairOptions.RepairType getRepairType()
     {
         return myRepairType;
     }
 
+    /**
+     * Sets the repair type.
+     * @param repairType the repair type
+     */
     @JsonProperty("repair_type")
     public final void setRepairType(final String repairType)
     {
         myRepairType = RepairOptions.RepairType.valueOf(repairType.toUpperCase(Locale.US));
     }
 
+    /**
+     * Validates the current state.
+     * @param repairConfigType the repair config type
+     */
     public final void validate(final String repairConfigType)
     {
         long repairIntervalSeconds = myRepairInterval.getInterval(TimeUnit.SECONDS);
@@ -177,12 +243,20 @@ public class RepairConfig
         }
     }
 
+    /**
+     * Returns the initial delay.
+     * @return the initial delay
+     */
     @JsonProperty("initial_delay")
     public final Interval getInitialDelay()
     {
         return myInitialDelay;
     }
 
+    /**
+     * Sets the initial delay.
+     * @param initialDelay the initial delay
+     */
     @JsonProperty("initial_delay")
     public final void setInitialDelay(final Interval initialDelay)
     {

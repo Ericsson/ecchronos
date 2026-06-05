@@ -50,6 +50,10 @@ public class ScheduleRepairManagementRESTImpl implements ScheduleRepairManagemen
     @Autowired
     private final RepairScheduler myRepairScheduler;
 
+    /**
+     * Constructs the schedule repair management REST controller.
+     * @param repairScheduler the repair scheduler
+     */
     public ScheduleRepairManagementRESTImpl(final RepairScheduler repairScheduler)
     {
         myRepairScheduler = repairScheduler;

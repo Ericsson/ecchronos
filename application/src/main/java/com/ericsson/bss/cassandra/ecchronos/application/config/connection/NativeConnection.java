@@ -26,6 +26,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 
 import java.util.function.Supplier;
 
+/** Configuration for the native CQL connection to Cassandra. */
 public class NativeConnection extends Connection<NativeConnectionProvider>
 {
     private static final int DEFAULT_PORT = 9042;
@@ -33,6 +34,7 @@ public class NativeConnection extends Connection<NativeConnectionProvider>
     private Class<? extends StatementDecorator> myDecoratorClass = NoopStatementDecorator.class;
     private boolean myRemoteRouting = true;
 
+    /** Constructs a new NativeConnection. */
     public NativeConnection()
     {
         try
@@ -47,12 +49,21 @@ public class NativeConnection extends Connection<NativeConnectionProvider>
         }
     }
 
+    /**
+     * Returns the decorator class.
+     * @return the decorator class
+     */
     @JsonProperty("decoratorClass")
     public final Class<? extends StatementDecorator> getDecoratorClass()
     {
         return myDecoratorClass;
     }
 
+    /**
+     * Sets the decorator class.
+     * @param decoratorClass the decorator class
+     * @throws NoSuchMethodException if the method is not found
+     */
     @JsonProperty("decoratorClass")
     public final void setDecoratorClass(final Class<StatementDecorator> decoratorClass)
             throws NoSuchMethodException
@@ -62,12 +73,20 @@ public class NativeConnection extends Connection<NativeConnectionProvider>
         myDecoratorClass = decoratorClass;
     }
 
+    /**
+     * Returns the remote routing.
+     * @return the remote routing
+     */
     @JsonProperty("remoteRouting")
     public final boolean getRemoteRouting()
     {
         return myRemoteRouting;
     }
 
+    /**
+     * Sets the remote routing.
+     * @param remoteRouting the remote routing
+     */
     @JsonProperty("remoteRouting")
     public final void setRemoteRouting(final boolean remoteRouting)
     {

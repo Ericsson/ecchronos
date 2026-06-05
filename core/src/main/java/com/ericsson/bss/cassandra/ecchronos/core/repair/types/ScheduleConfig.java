@@ -30,25 +30,35 @@ import java.util.Objects;
 @SuppressWarnings("VisibilityModifier")
 public class ScheduleConfig
 {
+    /** The interval in ms. */
     @NotBlank
     @Min(0)
     public long intervalInMs;
+    /** The unwind ratio. */
     @NotBlank
     @Min(0)
     public double unwindRatio;
+    /** The warning time in ms. */
     @NotBlank
     @Min(0)
     public long warningTimeInMs;
+    /** The error time in ms. */
     @NotBlank
     @Min(0)
     public long errorTimeInMs;
+    /** The parallelism. */
     @NotBlank
     public RepairParallelism parallelism;
 
+    /** Constructs a new ScheduleConfig. */
     public ScheduleConfig()
     {
     }
 
+    /**
+     * Constructs a new ScheduleConfig.
+     * @param repairJobView the repair job view
+     */
     public ScheduleConfig(final ScheduledRepairJobView repairJobView)
     {
         RepairConfiguration config = repairJobView.getRepairConfiguration();

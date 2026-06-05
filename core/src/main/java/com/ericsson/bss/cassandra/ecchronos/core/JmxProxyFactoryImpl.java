@@ -377,14 +377,25 @@ public final class JmxProxyFactoryImpl implements JmxProxyFactory
 
     }
 
+    /**
+     * Builds and returns the instance.
+     * @return the built instance
+     */
     public static Builder builder()
     {
         return new Builder();
     }
 
+    /** Builder for constructing instances of the enclosing class. */
     public static class Builder
     {
         private JmxConnectionProvider myJmxConnectionProvider;
+
+        /** Constructs a new Builder. */
+        public Builder()
+        {
+            // Default constructor
+        }
 
         /**
          * Build with JMX connection provider.
@@ -399,7 +410,7 @@ public final class JmxProxyFactoryImpl implements JmxProxyFactory
         }
 
         /**
-         * Build.
+         * Builds the configured instance.
          *
          * @return JmxProxyFactoryImpl
          */

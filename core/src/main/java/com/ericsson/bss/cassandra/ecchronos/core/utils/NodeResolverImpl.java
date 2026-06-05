@@ -24,6 +24,7 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.Node;
 
+/** Resolves Cassandra node metadata from the driver session. */
 public class NodeResolverImpl implements NodeResolver
 {
     private final ConcurrentMap<InetAddress, DriverNode> addressToNodeMap = new ConcurrentHashMap<>();
@@ -31,6 +32,10 @@ public class NodeResolverImpl implements NodeResolver
 
     private final CqlSession session;
 
+    /**
+     * Constructs a new NodeResolverImpl.
+     * @param aSession the session
+     */
     public NodeResolverImpl(final CqlSession aSession)
     {
         this.session = aSession;

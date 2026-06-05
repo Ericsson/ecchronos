@@ -43,6 +43,7 @@ import java.util.UUID;
 import java.util.Optional;
 import java.util.Map;
 
+/** Native CQL connection provider for the local Cassandra node. */
 public final class LocalNativeConnectionProvider implements NativeConnectionProvider
 {
     private static final List<String> SCHEMA_REFRESHED_KEYSPACES = ImmutableList.of("/.*/", "!system",
@@ -69,7 +70,9 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
             DefaultSessionMetric.CQL_PREPARED_CACHE_SIZE.getPath(), DefaultSessionMetric.THROTTLING_DELAY.getPath(),
             DefaultSessionMetric.THROTTLING_QUEUE_SIZE.getPath(), DefaultSessionMetric.THROTTLING_ERRORS.getPath());
 
+    /** Default native CQL port. */
     public static final int DEFAULT_NATIVE_PORT = 9042;
+    /** Default local hostname. */
     public static final String DEFAULT_LOCAL_HOST = "localhost";
 
     private final CqlSession mySession;
@@ -106,11 +109,16 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
         mySession.close();
     }
 
+    /**
+     * Creates a new Builder instance.
+     * @return the built instance
+     */
     public static Builder builder()
     {
         return new Builder();
     }
 
+    /** Builder for constructing a LocalNativeConnectionProvider. */
     public static class Builder
     {
         private static final int MAX_NODES_PER_DC = 999;
@@ -126,64 +134,124 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
         private MeterRegistry myMeterRegistry = null;
         private String myRepairHistoryKeyspace = "ecchronos";
 
+        /** Constructs a new Builder. */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
+         * Sets the local hostname.
+         * @param localhost the local host address
+         * @return this builder
+         */
         public final Builder withLocalhost(final String localhost)
         {
             myLocalhost = localhost;
             return this;
         }
 
+        /**
+         * Sets the native CQL port.
+         * @param port the port number
+         * @return this builder
+         */
         public final Builder withPort(final int port)
         {
             myPort = port;
             return this;
         }
 
+        /**
+         * Sets whether remote routing is enabled.
+         * @param remoteRouting the remote routing
+         * @return this builder
+         */
         public final Builder withRemoteRouting(final boolean remoteRouting)
         {
             myRemoteRouting = remoteRouting;
             return this;
         }
 
+        /**
+         * Sets the authentication provider.
+         * @param authProvider the auth provider
+         * @return this builder
+         */
         public final Builder withAuthProvider(final AuthProvider authProvider)
         {
             this.myAuthProvider = authProvider;
             return this;
         }
 
+        /**
+         * Sets the SSL engine factory.
+         * @param sslEngineFactory the SSL engine factory
+         * @return this builder
+         */
         public final Builder withSslEngineFactory(final SslEngineFactory sslEngineFactory)
         {
             this.mySslEngineFactory = sslEngineFactory;
             return this;
         }
 
+        /**
+         * Sets the schema change listener.
+         * @param schemaChangeListener the schema change listener
+         * @return this builder
+         */
         public final Builder withSchemaChangeListener(final SchemaChangeListener schemaChangeListener)
         {
             this.mySchemaChangeListener = schemaChangeListener;
             return this;
         }
 
+        /**
+         * Sets the node state listener.
+         * @param nodeStateListener the node state listener
+         * @return this builder
+         */
         public final Builder withNodeStateListener(final NodeStateListener nodeStateListener)
         {
             this.myNodeStateListener = nodeStateListener;
             return this;
         }
 
+        /**
+         * Sets whether metrics collection is enabled.
+         * @param enabled whether enabled
+         * @return this builder
+         */
         public final Builder withMetricsEnabled(final boolean enabled)
         {
             myIsMetricsEnabled = enabled;
             return this;
         }
 
+        /**
+         * Sets the meter registry for metrics.
+         * @param meterRegistry the meter registry
+         * @return this builder
+         */
         public final Builder withMeterRegistry(final MeterRegistry meterRegistry)
         {
             myMeterRegistry = meterRegistry;
             return this;
         }
+        /**
+         * Sets the repair history keyspace name.
+         * @param repairHistoryKeyspace the repair history keyspace
+         * @return this builder
+         */
         public final Builder withRepairHistoryKeyspace(final String repairHistoryKeyspace)
         {
             myRepairHistoryKeyspace = repairHistoryKeyspace;
             return this;
         }
+        /**
+         * Builds and returns the LocalNativeConnectionProvider.
+         * @return the built instance
+         */
         public final LocalNativeConnectionProvider build()
         {
             CqlSession session = createSession(this);

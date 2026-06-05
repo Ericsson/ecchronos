@@ -33,12 +33,21 @@ import org.springframework.context.annotation.Primary;
 
 import java.util.concurrent.TimeUnit;
 
+/** Spring bean providing access to repair history. */
 @Configuration
 public class RepairHistoryBean
 {
     private final RepairHistory repairHistory;
     private final RepairHistoryProvider repairHistoryProvider;
 
+    /**
+     * Constructs a new RepairHistoryBean.
+     * @param configuration the application configuration
+     * @param nativeConnectionProvider the native connection provider
+     * @param nodeResolver the node resolver
+     * @param statementDecorator the statement decorator
+     * @param replicationState the replication state
+     */
     public RepairHistoryBean(final Config configuration,
                              final NativeConnectionProvider nativeConnectionProvider,
                              final NodeResolver nodeResolver,
@@ -86,12 +95,20 @@ public class RepairHistoryBean
         }
     }
 
+    /**
+     * Returns the repair history provider.
+     * @return the repair history
+     */
     @Bean
     public RepairHistory repairHistory()
     {
         return repairHistory;
     }
 
+    /**
+     * Returns the repair history provider.
+     * @return the repair scheduler
+     */
     @Bean
     @Primary
     public RepairHistoryProvider repairHistoryProvider()

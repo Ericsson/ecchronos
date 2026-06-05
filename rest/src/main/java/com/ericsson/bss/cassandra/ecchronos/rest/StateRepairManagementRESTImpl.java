@@ -37,6 +37,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 public final class StateRepairManagementRESTImpl implements StateRepairManagementREST
 {
 
+    /** Constructs the state repair management REST controller. */
     public StateRepairManagementRESTImpl()
     {
     }

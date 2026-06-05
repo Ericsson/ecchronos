@@ -32,6 +32,9 @@ import java.util.Set;
  */
 public final class VnodeRepairGroupFactory implements ReplicaRepairGroupFactory
 {
+    /**
+     * Returns the vnode repair group factory.
+     */
     public static final VnodeRepairGroupFactory INSTANCE = new VnodeRepairGroupFactory();
 
     private VnodeRepairGroupFactory()

@@ -24,6 +24,12 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup
  */
 public class DataCenterRepairResourceFactory implements RepairResourceFactory
 {
+    /** Constructs a new DataCenterRepairResourceFactory. */
+    public DataCenterRepairResourceFactory()
+    {
+        // Default constructor
+    }
+
     @Override
     public final Set<RepairResource> getRepairResources(final ReplicaRepairGroup replicaRepairGroup)
     {

@@ -33,30 +33,49 @@ import java.util.UUID;
 @SuppressWarnings("VisibilityModifier")
 public class OnDemandRepair
 {
+    /** The id. */
     @NotBlank
     public UUID id;
+    /** The host id. */
     @NotBlank
     public UUID hostId;
+    /** The keyspace. */
     @NotBlank
     public String keyspace;
+    /** The table. */
     @NotBlank
     public String table;
+    /** The status. */
     @NotBlank
     public OnDemandRepairJobView.Status status;
+    /** The repaired ratio. */
     @NotBlank
     @Min(0)
     @Max(1)
     public double repairedRatio;
+    /** The completed at. */
     @NotBlank
     @Min(-1)
     public long completedAt;
+    /** The repair type. */
     @NotBlank
     public RepairOptions.RepairType repairType;
 
+    /** Constructs a new OnDemandRepair. */
     public OnDemandRepair()
     {
     }
-
+    /**
+     * Constructs a new OnDemandRepair.
+     * @param theId the id
+     * @param theHostId the host id
+     * @param theKeyspace the keyspace
+     * @param theTable the table
+     * @param theStatus the status
+     * @param theRepairedRatio the repaired ratio
+     * @param wasCompletedAt the was completed at
+     * @param theRepairType the repair type
+     */
     @VisibleForTesting
     public OnDemandRepair(final UUID theId,
                           final UUID theHostId,
@@ -78,6 +97,10 @@ public class OnDemandRepair
     }
 
 
+    /**
+     * Constructs a new OnDemandRepair.
+     * @param repairJobView the repair job view
+     */
     public OnDemandRepair(final OnDemandRepairJobView repairJobView)
     {
         this.id = repairJobView.id();

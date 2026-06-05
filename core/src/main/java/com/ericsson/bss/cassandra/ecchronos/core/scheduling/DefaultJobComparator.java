@@ -27,6 +27,12 @@ public class DefaultJobComparator implements Comparator<ScheduledJob>, Serializa
 {
     private static final long serialVersionUID = 9107238791889095329L;
 
+    /** Constructs a new DefaultJobComparator. */
+    public DefaultJobComparator()
+    {
+        // Default constructor
+    }
+
     @Override
     public final int compare(final ScheduledJob j1, final ScheduledJob j2)
     {

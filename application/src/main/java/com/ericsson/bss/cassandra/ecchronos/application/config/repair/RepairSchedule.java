@@ -26,10 +26,20 @@ import java.util.stream.Collectors;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/** Configuration for per-table repair schedules. */
 public class RepairSchedule
 {
     private Map<String, KeyspaceSchedule> myKeyspaceSchedules = new HashMap<>();
 
+    /** Default constructor. */
+    public RepairSchedule()
+    {
+    }
+
+    /**
+     * Sets the keyspace schedules.
+     * @param keyspaceSchedules the keyspace schedules
+     */
     @JsonProperty("keyspaces")
     public final void setKeyspaceSchedules(final List<KeyspaceSchedule> keyspaceSchedules)
     {
@@ -40,6 +50,12 @@ public class RepairSchedule
         }
     }
 
+    /**
+     * Returns the repair configurations.
+     * @param keyspaceName the keyspace name
+     * @param tableName the table name
+     * @return the repair configurations
+     */
     public final Set<RepairConfiguration> getRepairConfigurations(final String keyspaceName, final String tableName)
     {
         return findMatching(keyspaceName, myKeyspaceSchedules,

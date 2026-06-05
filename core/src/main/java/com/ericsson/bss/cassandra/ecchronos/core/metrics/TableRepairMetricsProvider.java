@@ -25,7 +25,9 @@ import java.util.Optional;
 public interface TableRepairMetricsProvider
 {
     /**
-     * @param tableReference the table
+     * Returns the repair ratio for the given table.
+     *
+     * @param tableReference the table reference
      * @return an Optional describing the repair ratio for the given table, or an empty Optional if the table was
      * not found.
      */

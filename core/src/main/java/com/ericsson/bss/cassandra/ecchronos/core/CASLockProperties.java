@@ -50,6 +50,11 @@ public class CASLockProperties
         myStatementDecorator = statementDecorator;
     }
 
+    /**
+     * Defines the serial consistency level for CAS operations.
+     * @param consistencyType the consistency type
+     * @return the serial consistency level
+     */
     public final ConsistencyLevel defineSerialConsistencyLevel(final ConsistencyType consistencyType)
     {
         ConsistencyLevel serialConsistencyLevel;
@@ -69,31 +74,55 @@ public class CASLockProperties
         return serialConsistencyLevel;
     }
 
+    /**
+     * Returns whether remote routing.
+     * @return true if remote routing
+     */
     public final boolean isRemoteRouting()
     {
         return myRemoteRouting;
     }
 
+    /**
+     * Returns the keyspace name.
+     * @return the keyspace name
+     */
     public final String getKeyspaceName()
     {
         return myKeyspaceName;
     }
 
+    /**
+     * Returns the executor.
+     * @return the executor
+     */
     public final ScheduledExecutorService getExecutor()
     {
         return myExecutor;
     }
 
+    /**
+     * Returns the serial consistency level.
+     * @return the serial consistency level
+     */
     public final ConsistencyLevel getSerialConsistencyLevel()
     {
         return mySerialConsistencyLevel;
     }
 
+    /**
+     * Returns the session.
+     * @return the session
+     */
     public final CqlSession getSession()
     {
         return mySession;
     }
 
+    /**
+     * Returns the statement decorator.
+     * @return the statement decorator
+     */
     public final StatementDecorator getStatementDecorator()
     {
         return myStatementDecorator;

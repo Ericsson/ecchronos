@@ -51,6 +51,7 @@ import java.util.stream.Collectors;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 
+/** Repair history implementation backed by the ecChronos Cassandra table. */
 public final class EccRepairHistory implements RepairHistory, RepairHistoryProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(EccRepairHistory.class);
@@ -407,11 +408,16 @@ public final class EccRepairHistory implements RepairHistory, RepairHistoryProvi
         }
     }
 
+    /**
+     * Creates a new builder instance.
+     * @return the built instance
+     */
     public static Builder newBuilder()
     {
         return new Builder();
     }
 
+    /** Builder for constructing instances of the enclosing class. */
     public static class Builder
     {
         private CqlSession session;
@@ -420,6 +426,12 @@ public final class EccRepairHistory implements RepairHistory, RepairHistoryProvi
         private ReplicationState replicationState;
         private long lookbackTimeInMs;
         private String keyspaceName = "ecchronos";
+
+        /** Constructs a new Builder. */
+        public Builder()
+        {
+            // Default constructor
+        }
 
         /**
          * Build ECC repair history with session.

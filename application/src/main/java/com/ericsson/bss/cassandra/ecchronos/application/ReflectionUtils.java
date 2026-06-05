@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
+/** Utility methods for constructing objects via reflection. */
 public final class ReflectionUtils
 {
     private ReflectionUtils()
@@ -68,18 +69,18 @@ public final class ReflectionUtils
     }
 
     /**
-     * Resolve a class by name that is extending the wanted class type.
+     * Resolve a class by name that is extending the wantedClass type.
      *
      * @param className The class to resolve.
-     * @param wantedClass The wanted class type.
+     * @param wantedClass The wantedClass type.
      * @param parameterClasses The expected parameters for the constructor.
-     * @param <T> The wanted class
-     * @return The resolved class that extends &lt;T&gt; and has the provided constructor.
+     * @param <T> The wantedClass
+     * @return The resolvedClass that extends &lt;T&gt; and has the providedConstructor.
      * @throws ConfigurationException
      *     Thrown if either:
      *     <ul>
      *          <li>The class is not found</li>
-     *          <li>The class is not extending the wanted class</li>
+     *          <li>The class is not extending the wantedClass</li>
      *          <li>The class does not have a constructor matching the expected parameters</li>
      *     </ul>
      */
@@ -88,11 +89,11 @@ public final class ReflectionUtils
                                                             final Class<?>... parameterClasses)
             throws ConfigurationException
     {
-        Class<? extends T> clazz;
+        Class<? extends T> resolvedClass;
 
         try
         {
-            clazz = Class.forName(className).asSubclass(wantedClass);
+            resolvedClass = Class.forName(className).asSubclass(wantedClass);
         }
         catch (ClassCastException e)
         {
@@ -103,9 +104,9 @@ public final class ReflectionUtils
             throw new ConfigurationException("Class " + className + " not found in classpath", e);
         }
 
-        getConstructor(clazz, parameterClasses);
+        getConstructor(resolvedClass, parameterClasses);
 
-        return clazz;
+        return resolvedClass;
     }
 
     private static <T> Constructor<? extends T> getConstructor(final Class<? extends T> type,

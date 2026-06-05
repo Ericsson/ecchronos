@@ -16,16 +16,30 @@ package com.ericsson.bss.cassandra.ecchronos.application.config.runpolicy;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/** Configuration for the run policy that throttles repair execution. */
 public class RunPolicyConfig
 {
     private TimeBasedConfig myTimeBasedConfig = new TimeBasedConfig();
 
+    /** Default constructor. */
+    public RunPolicyConfig()
+    {
+    }
+
+    /**
+     * Returns the time based config.
+     * @return the time based config
+     */
     @JsonProperty("time_based")
     public final TimeBasedConfig getTimeBasedConfig()
     {
         return myTimeBasedConfig;
     }
 
+    /**
+     * Sets the time based config.
+     * @param timeBasedConfig the time based config
+     */
     @JsonProperty("time_based")
     public final void setTimeBasedConfig(final TimeBasedConfig timeBasedConfig)
     {

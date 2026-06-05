@@ -51,6 +51,7 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.update;
 
+/** Persists and retrieves on-demand repair job status from Cassandra. */
 public class OnDemandStatus
 {
     private static final Logger LOG = LoggerFactory.getLogger(OnDemandStatus.class);
@@ -296,6 +297,7 @@ public class OnDemandStatus
      * @param jobId The job id.
      * @param tableReference The table reference.
      * @param tokenMapHash The token map hash.
+     * @param repairType the repair type
      */
     public void addNewJob(final UUID jobId, final TableReference tableReference, final int tokenMapHash,
             final RepairOptions.RepairType repairType)
@@ -311,6 +313,7 @@ public class OnDemandStatus
      * @param tableReference The table reference.
      * @param tokenMapHash The token map hash.
      * @param repairedRanges The ranges.
+     * @param repairType the repair type
      */
     public void addNewJob(final UUID host,
                           final UUID jobId,

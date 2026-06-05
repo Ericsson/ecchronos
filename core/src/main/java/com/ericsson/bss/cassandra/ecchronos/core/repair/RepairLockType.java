@@ -21,8 +21,11 @@ import java.util.function.Supplier;
  */
 public enum RepairLockType
 {
+    /** Locks per data center. */
     DATACENTER(DataCenterRepairResourceFactory::new),
+    /** Locks per vnode. */
     VNODE(VnodeRepairResourceFactory::new),
+    /** Locks per data center and vnode. */
     DATACENTER_AND_VNODE(() -> new CombinedRepairResourceFactory(new DataCenterRepairResourceFactory(),
             new VnodeRepairResourceFactory()));
 

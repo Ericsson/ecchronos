@@ -27,6 +27,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/** Provides information about replicated tables in the cluster. */
 public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(ReplicatedTableProviderImpl.class);
@@ -67,6 +68,12 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
     private final CqlSession mySession;
     private final TableReferenceFactory myTableReferenceFactory;
 
+    /**
+     * Constructs a new ReplicatedTableProviderImpl.
+     * @param node the Cassandra node
+     * @param session the CQL session
+     * @param tableReferenceFactory the table reference factory
+     */
     public ReplicatedTableProviderImpl(final Node node,
                                        final CqlSession session,
                                        final TableReferenceFactory tableReferenceFactory)

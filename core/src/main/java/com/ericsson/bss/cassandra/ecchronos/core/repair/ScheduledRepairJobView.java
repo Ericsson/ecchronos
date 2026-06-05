@@ -20,11 +20,22 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import java.util.Objects;
 import java.util.UUID;
 
+/** Read-only view of a scheduled repair job's current state. */
 public class ScheduledRepairJobView
 {
+    /** Represents the possible states of this job. */
     public enum Status
     {
-        COMPLETED, ON_TIME, LATE, OVERDUE, BLOCKED
+        /** Completed status. */
+        COMPLETED,
+        /** On time status. */
+        ON_TIME,
+        /** Late status. */
+        LATE,
+        /** Overdue status. */
+        OVERDUE,
+        /** Blocked status. */
+        BLOCKED
     }
 
     private final UUID myId;
@@ -37,6 +48,17 @@ public class ScheduledRepairJobView
     private final long myCompletionTime;
     private final RepairOptions.RepairType myRepairType;
 
+    /**
+     * Constructs a new ScheduledRepairJobView.
+     * @param id the identifier
+     * @param tableReference the table reference
+     * @param repairConfiguration the repair configuration
+     * @param status the current status
+     * @param progress the completion progress ratio
+     * @param nextRepair the next repair
+     * @param completionTime the completion time
+     * @param repairType the repair type
+     */
     public ScheduledRepairJobView(final UUID id, final TableReference tableReference,
             final RepairConfiguration repairConfiguration, final Status status, final double progress,
             final long nextRepair, final long completionTime, final RepairOptions.RepairType repairType)
@@ -51,6 +73,17 @@ public class ScheduledRepairJobView
         myRepairType = repairType;
     }
 
+    /**
+     * Constructs a new ScheduledRepairJobView.
+     * @param id the identifier
+     * @param tableReference the table reference
+     * @param repairConfiguration the repair configuration
+     * @param repairStateSnapshot the repair state snapshot
+     * @param status the current status
+     * @param progress the completion progress ratio
+     * @param nextRepair the next repair
+     * @param repairType the repair type
+     */
     public ScheduledRepairJobView(final UUID id, final TableReference tableReference,
             final RepairConfiguration repairConfiguration, final RepairStateSnapshot repairStateSnapshot,
             final Status status, final double progress, final long nextRepair,

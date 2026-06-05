@@ -19,6 +19,7 @@ import com.datastax.oss.driver.api.core.metadata.EndPoint;
 import java.net.InetSocketAddress;
 import java.util.Objects;
 
+/** An EndPoint implementation that resolves a contact point by hostname and port. */
 public class ContactEndPoint implements EndPoint
 {
     private final String hostName;
@@ -26,6 +27,11 @@ public class ContactEndPoint implements EndPoint
     private final int port;
     private volatile InetSocketAddress lastResolvedAddress;
 
+    /**
+     * Constructs a ContactEndPoint with the given hostname and port.
+     * @param aHostName the host name
+     * @param aPort the port
+     */
     public ContactEndPoint(final String aHostName, final int aPort)
     {
         this.hostName = aHostName;

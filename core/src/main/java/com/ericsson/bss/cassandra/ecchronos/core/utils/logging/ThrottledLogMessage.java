@@ -19,12 +19,18 @@ import org.slf4j.Logger;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+/** A log message that suppresses repeated emissions within a time window. */
 public class ThrottledLogMessage
 {
     private final String myMessage;
     private final long myIntervalNanos;
     private final AtomicLong myLastLogTime;
 
+    /**
+     * Constructs a new ThrottledLogMessage.
+     * @param message the log message
+     * @param intervalNanos the interval nanos
+     */
     public ThrottledLogMessage(final String message, final long intervalNanos)
     {
         myMessage = message;
@@ -38,6 +44,12 @@ public class ThrottledLogMessage
         return timeInNanos >= lastLogTime && myLastLogTime.compareAndSet(lastLogTime, timeInNanos + myIntervalNanos);
     }
 
+    /**
+     * Logs an informational message.
+     * @param logger the logger instance
+     * @param timeInMs the time in ms
+     * @param objects the message format arguments
+     */
     public final void info(final Logger logger, final long timeInMs, final Object... objects)
     {
         if (isAllowedToLog(timeInMs))
@@ -46,6 +58,12 @@ public class ThrottledLogMessage
         }
     }
 
+    /**
+     * Logs a warning message.
+     * @param logger the logger instance
+     * @param timeInMs the time in ms
+     * @param objects the message format arguments
+     */
     public final void warn(final Logger logger, final long timeInMs, final Object... objects)
     {
         if (isAllowedToLog(timeInMs))
@@ -54,6 +72,12 @@ public class ThrottledLogMessage
         }
     }
 
+    /**
+     * Logs an error message.
+     * @param logger the logger instance
+     * @param timeInMs the time in ms
+     * @param objects the message format arguments
+     */
     public final void error(final Logger logger, final long timeInMs, final Object... objects)
     {
         if (isAllowedToLog(timeInMs))

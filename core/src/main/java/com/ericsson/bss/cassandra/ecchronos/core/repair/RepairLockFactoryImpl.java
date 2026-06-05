@@ -28,11 +28,18 @@ import com.ericsson.bss.cassandra.ecchronos.core.LockCollection;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 
+/** Manages distributed locks required during repair execution. */
 public class RepairLockFactoryImpl implements RepairLockFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairLockFactoryImpl.class);
 
     private static final int LOCKS_PER_RESOURCE = 1;
+
+    /** Constructs a new RepairLockFactoryImpl. */
+    public RepairLockFactoryImpl()
+    {
+        // Default constructor
+    }
 
     @Override
     public final LockFactory.DistributedLock getLock(final LockFactory lockFactory,

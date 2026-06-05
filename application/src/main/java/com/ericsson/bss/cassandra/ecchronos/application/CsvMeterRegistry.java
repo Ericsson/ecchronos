@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
+/** Meter registry that exports metrics to CSV files. */
 public final class CsvMeterRegistry extends DropwizardMeterRegistry
 {
     private static final Logger LOG = LoggerFactory.getLogger(CsvMeterRegistry.class);
@@ -33,23 +34,52 @@ public final class CsvMeterRegistry extends DropwizardMeterRegistry
 
     private final CsvReporter myReporter;
 
+    /**
+     * Constructs a new CsvMeterRegistry.
+     * @param config the configuration
+     * @param clock the clock used for time calculations
+     * @param outputDirectory the output directory
+     */
     public CsvMeterRegistry(final CsvConfig config, final Clock clock, final File outputDirectory)
     {
         this(config, clock, HierarchicalNameMapper.DEFAULT, outputDirectory);
     }
 
+    /**
+     * Constructs a new CsvMeterRegistry.
+     * @param config the configuration
+     * @param clock the clock used for time calculations
+     * @param nameMapper the name mapper
+     * @param outputDirectory the output directory
+     */
     public CsvMeterRegistry(final CsvConfig config, final Clock clock, final HierarchicalNameMapper nameMapper,
             final File outputDirectory)
     {
         this(config, clock, nameMapper, new MetricRegistry(), outputDirectory);
     }
 
+    /**
+     * Constructs a new CsvMeterRegistry.
+     * @param config the configuration
+     * @param clock the clock used for time calculations
+     * @param nameMapper the name mapper
+     * @param metricRegistry the metric registry
+     * @param outputDirectory the output directory
+     */
     public CsvMeterRegistry(final CsvConfig config, final Clock clock, final HierarchicalNameMapper nameMapper,
             final MetricRegistry metricRegistry, final File outputDirectory)
     {
         this(config, clock, nameMapper, metricRegistry, defaultCsvReporter(metricRegistry, outputDirectory));
     }
 
+    /**
+     * Constructs a new CsvMeterRegistry.
+     * @param config the configuration
+     * @param clock the clock used for time calculations
+     * @param nameMapper the name mapper
+     * @param metricRegistry the metric registry
+     * @param csvReporter the CSV reporter
+     */
     public CsvMeterRegistry(final CsvConfig config, final Clock clock, final HierarchicalNameMapper nameMapper,
             final MetricRegistry metricRegistry, final CsvReporter csvReporter)
     {
@@ -69,11 +99,13 @@ public final class CsvMeterRegistry extends DropwizardMeterRegistry
                 .build(outputDirectory);
     }
 
+    /** Stops this component and releases resources. */
     public void stop()
     {
         myReporter.stop();
     }
 
+    /** Starts this component. */
     public void start()
     {
         myReporter.start(DEFAULT_STATISTICS_REPORT_INTERVAL_IN_MS, DEFAULT_STATISTICS_REPORT_INTERVAL_IN_MS,

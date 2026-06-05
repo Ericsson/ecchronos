@@ -24,12 +24,17 @@ import java.util.UUID;
 public interface NodeResolver
 {
     /**
-     * Retrieve a node based on public ip address.
+     * Retrieve a node based on public IP address.
      *
-     * @param inetAddress The public ip address of the node instance.
+     * @param inetAddress The public IP address of the node instance.
      * @return The node.
      */
     Optional<DriverNode> fromIp(InetAddress inetAddress);
 
+    /**
+     * Resolves a driver node from its UUID.
+     * @param nodeId the node id
+     * @return the resolved driver node
+     */
     Optional<DriverNode> fromUUID(UUID nodeId);
 }

@@ -25,6 +25,8 @@ import com.google.common.collect.AbstractIterator;
 /**
  * An iterator that takes multiple iterables and merge them together into one iterator by sorting the elements based on
  * the provided comparator.
+ *
+ * @param <T> the type of elements returned by the iterator
  */
 public class ManyToOneIterator<T> extends AbstractIterator<T>
 {

@@ -16,23 +16,41 @@ package com.ericsson.bss.cassandra.ecchronos.application.config.connection;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/** Configuration holder for CQL and JMX connection settings. */
 public class ConnectionConfig
 {
     private NativeConnection myCqlConnection = new NativeConnection();
     private JmxConnection myJmxConnection = new JmxConnection();
 
+    /** Default constructor. */
+    public ConnectionConfig()
+    {
+    }
+
+    /**
+     * Returns the CQL connection.
+     * @return the CQL connection
+     */
     @JsonProperty("cql")
     public final NativeConnection getCqlConnection()
     {
         return myCqlConnection;
     }
 
+    /**
+     * Returns the JMX connection.
+     * @return the JMX connection
+     */
     @JsonProperty("jmx")
     public final JmxConnection getJmxConnection()
     {
         return myJmxConnection;
     }
 
+    /**
+     * Sets the CQL connection.
+     * @param cqlConnection the CQL connection
+     */
     @JsonProperty("cql")
     public final void setCqlConnection(final NativeConnection cqlConnection)
     {
@@ -42,6 +60,10 @@ public class ConnectionConfig
         }
     }
 
+    /**
+     * Sets the JMX connection.
+     * @param jmxConnection the JMX connection
+     */
     @JsonProperty("jmx")
     public final void setJmxConnection(final JmxConnection jmxConnection)
     {

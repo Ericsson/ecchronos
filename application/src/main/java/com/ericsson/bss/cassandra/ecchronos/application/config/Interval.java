@@ -19,45 +19,73 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+/** Represents a time interval with a value and time unit. */
 public class Interval
 {
     private long myTime;
     private TimeUnit myUnit;
 
+    /** Constructs a new Interval. */
     public Interval()
     {
         // Default constructor for jackson
     }
 
+    /**
+     * Constructs a new Interval.
+     * @param time the timestamp
+     * @param timeUnit the time unit
+     */
     public Interval(final long time, final TimeUnit timeUnit)
     {
         myTime = time;
         myUnit = timeUnit;
     }
 
+    /**
+     * Returns the interval.
+     * @param timeUnit the time unit
+     * @return the interval
+     */
     public final long getInterval(final TimeUnit timeUnit)
     {
         return timeUnit.convert(myTime, myUnit);
     }
 
+    /**
+     * Returns the time.
+     * @return the time
+     */
     @JsonProperty("time")
     public final long getTime()
     {
         return myTime;
     }
 
+    /**
+     * Sets the time.
+     * @param time the timestamp
+     */
     @JsonProperty("time")
     public final void setTime(final long time)
     {
         myTime = time;
     }
 
+    /**
+     * Returns the unit.
+     * @return the unit
+     */
     @JsonProperty("unit")
     public final TimeUnit getUnit()
     {
         return myUnit;
     }
 
+    /**
+     * Sets the unit.
+     * @param unit the time unit
+     */
     @JsonProperty("unit")
     public final void setUnit(final String unit)
     {

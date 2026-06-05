@@ -56,6 +56,12 @@ public class ReplicationStateImpl implements ReplicationState
     private final CqlSession mySession;
     private final Node myLocalNode;
 
+    /**
+     * Constructs a new ReplicationStateImpl.
+     * @param nodeResolver the node resolver
+     * @param session the CQL session
+     * @param localNode the local node
+     */
     public ReplicationStateImpl(final NodeResolver nodeResolver, final CqlSession session, final Node localNode)
     {
         myNodeResolver = nodeResolver;

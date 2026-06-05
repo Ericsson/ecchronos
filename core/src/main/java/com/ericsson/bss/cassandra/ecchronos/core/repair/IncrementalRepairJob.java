@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+/** Scheduled repair job that uses incremental repair strategy. */
 public class IncrementalRepairJob extends ScheduledRepairJob
 {
     private static final Logger LOG = LoggerFactory.getLogger(IncrementalRepairJob.class);
@@ -177,6 +178,7 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         return Objects.hash(super.hashCode(), myReplicationState, myCassandraMetrics);
     }
 
+    /** Builder for constructing instances of the enclosing class. */
     @SuppressWarnings("VisibilityModifier")
     public static class Builder
     {
@@ -190,6 +192,12 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         private RepairLockType myRepairLockType;
         private final List<TableRepairPolicy> myRepairPolicies = new ArrayList<>();
         private CassandraMetrics myCassandraMetrics;
+
+        /** Constructs a new Builder. */
+        public Builder()
+        {
+            // Default constructor
+        }
 
         /**
          * Build with configuration.

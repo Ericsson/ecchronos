@@ -50,6 +50,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 
+/** Main ecChronos application lifecycle manager. */
 @Configuration
 public class ECChronos implements Closeable
 {
@@ -59,6 +60,21 @@ public class ECChronos implements Closeable
     private final OnDemandRepairSchedulerImpl myOnDemandRepairSchedulerImpl;
     private final RepairStatsProvider myRepairStatsProvider;
 
+    /**
+     * Constructs a new ecChronos instance.
+     * @param applicationContext the application context
+     * @param configuration the application configuration
+     * @param repairFaultReporter the repair fault reporter
+     * @param nativeConnectionProvider the native connection provider
+     * @param jmxConnectionProvider the JMX connection provider
+     * @param statementDecorator the statement decorator
+     * @param replicationState the replication state
+     * @param repairHistory the repair history
+     * @param repairHistoryProvider the repair history provider
+     * @param defaultRepairConfigurationProvider the default repair configuration provider
+     * @param eccCompositeMeterRegistry the ECC composite meter registry
+     * @throws ConfigurationException if the configuration is invalid
+     */
     @SuppressWarnings({"checkstyle:ParameterNumber", "PMD.ExcessiveParameterList"})
     public ECChronos(final ApplicationContext applicationContext,
                      final Config configuration,
@@ -138,36 +154,60 @@ public class ECChronos implements Closeable
         myECChronosInternals.addRunPolicy(myTimeBasedRunPolicy);
     }
 
+    /**
+     * Returns the table reference factory.
+     * @return the table reference factory
+     */
     @Bean
     public TableReferenceFactory tableReferenceFactory()
     {
         return myECChronosInternals.getTableReferenceFactory();
     }
 
+    /**
+     * Returns the on-demand repair scheduler.
+     * @return the on demand repair scheduler
+     */
     @Bean
     public OnDemandRepairScheduler onDemandRepairScheduler()
     {
         return myOnDemandRepairSchedulerImpl;
     }
 
+    /**
+     * Returns the repair scheduler.
+     * @return the repair scheduler
+     */
     @Bean(destroyMethod = "")
     public RepairScheduler repairScheduler()
     {
         return myRepairSchedulerImpl;
     }
 
+    /**
+     * Returns the replicated table provider.
+     * @return the replicated table provider
+     */
     @Bean
     public ReplicatedTableProvider replicatedTableProvider()
     {
         return myECChronosInternals.getReplicatedTableProvider();
     }
 
+    /**
+     * Returns the repair statistics provider.
+     * @return the repair stats provider
+     */
     @Bean
     public RepairStatsProvider repairStatsProvider()
     {
         return myRepairStatsProvider;
     }
 
+    /**
+     * Returns the time-based run policy.
+     * @return the time based run policy
+     */
     @Bean
     public TimeBasedRunPolicy timeBasedRunPolicy()
     {

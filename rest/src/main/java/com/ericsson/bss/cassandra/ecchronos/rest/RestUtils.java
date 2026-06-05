@@ -27,8 +27,11 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
  */
 public final class RestUtils
 {
+    /** Root path for repair management endpoints. */
     public static final String ROOT = "/repair-management/";
+    /** API protocol version. */
     public static final String PROTOCOL_VERSION = "v2";
+    /** Full prefix for repair management REST endpoints. */
     public static final String REPAIR_MANAGEMENT_ENDPOINT_PREFIX = ROOT + PROTOCOL_VERSION;
 
     private RestUtils()
@@ -36,6 +39,11 @@ public final class RestUtils
         // Utility Class
     }
 
+    /**
+     * Parses a UUID string or throws a BAD_REQUEST exception.
+     * @param id the identifier
+     * @return the parsed value
+     */
     public static UUID parseIdOrThrow(final String id)
     {
         try
@@ -53,7 +61,7 @@ public final class RestUtils
      * Fetches duration provided.
      * if no duration and since are provided, it will fetch the table default
      *
-     * @param tableReference the table to fetch the default from
+     * @param tableReference the table reference
      * @param duration provided duration
      * @param since provided since
      * @return the duration

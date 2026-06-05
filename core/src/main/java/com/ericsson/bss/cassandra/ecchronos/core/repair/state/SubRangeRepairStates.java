@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/** Tracks repair states for individual sub-ranges within a vnode. */
 public final class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
 {
     private final List<VnodeRepairState> myVnodeRepairStatuses;
@@ -64,6 +65,11 @@ public final class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
         return myVnodeRepairStatuses.toString();
     }
 
+    /**
+     * Creates a new instance.
+     * @param vnodeRepairStates the vnode repair states
+     * @return the built instance
+     */
     public static Builder newBuilder(final Collection<VnodeRepairState> vnodeRepairStates)
     {
         return new Builder(vnodeRepairStates);
@@ -90,11 +96,16 @@ public final class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
         return Objects.hash(myVnodeRepairStatuses);
     }
 
+    /** Builder for constructing instances of the enclosing class. */
     public static class Builder implements VnodeRepairStates.Builder
     {
         private final List<VnodeRepairState> myVnodeRepairStatesBase;
         private final Map<LongTokenRange, VnodeRepairState> myActualVnodeRepairStates = new HashMap<>();
 
+        /**
+         * Constructs a new Builder.
+         * @param vnodeRepairStates the vnode repair states
+         */
         public Builder(final Collection<VnodeRepairState> vnodeRepairStates)
         {
             ImmutableList.Builder<VnodeRepairState> builder = ImmutableList.builder();

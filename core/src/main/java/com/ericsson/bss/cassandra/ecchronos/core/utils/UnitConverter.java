@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.utils;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/** Converts between time units and byte units. */
 @SuppressWarnings("constantname")
 public final class UnitConverter
 {
@@ -31,6 +32,11 @@ public final class UnitConverter
         // Utility class
     }
 
+    /**
+     * Converts the value to bytes.
+     * @param value the value to set
+     * @return the converted bytes
+     */
     public static long toBytes(final String value)
     {
         Matcher matcher = BYTE_PATTERN.matcher(value);

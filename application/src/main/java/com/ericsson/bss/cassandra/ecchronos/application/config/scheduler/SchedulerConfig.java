@@ -19,18 +19,32 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.concurrent.TimeUnit;
 
+/** Configuration for the job scheduler. */
 public class SchedulerConfig
 {
     private static final int THIRTY_SECONDS = 30;
 
     private Interval myFrequency = new Interval(THIRTY_SECONDS, TimeUnit.SECONDS);
 
+    /** Default constructor. */
+    public SchedulerConfig()
+    {
+    }
+
+    /**
+     * Returns the frequency.
+     * @return the frequency
+     */
     @JsonProperty("frequency")
     public final Interval getFrequency()
     {
         return myFrequency;
     }
 
+    /**
+     * Sets the frequency.
+     * @param frequency the reporting frequency
+     */
     @JsonProperty("frequency")
     public final void setFrequency(final Interval frequency)
     {

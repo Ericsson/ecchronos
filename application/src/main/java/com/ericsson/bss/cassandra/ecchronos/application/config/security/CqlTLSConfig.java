@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
+/** TLS configuration for CQL connections. */
 public class CqlTLSConfig
 {
     private static final int HASH_SEED = 31;
@@ -41,6 +42,17 @@ public class CqlTLSConfig
     // Since CRL is optional, make sure there always is a disabled default CRL config available.
     private CRLConfig myCRLConfig = new CRLConfig();
 
+    /**
+     * Constructs a new CqlTLSConfig.
+     * @param isEnabled whether TLS is enabled
+     * @param keyStorePath the key store path
+     * @param keyStorePassword the key store password
+     * @param trustStorePath the trust store path
+     * @param trustStorePassword the trust store password
+     * @param certificatePath the certificate path
+     * @param certificatePrivateKeyPath the certificate private key path
+     * @param trustCertificatePath the trust certificate path
+     */
     @JsonCreator
     public CqlTLSConfig(@JsonProperty("enabled") final boolean isEnabled,
                         @JsonProperty("keystore") final String keyStorePath,
@@ -74,12 +86,24 @@ public class CqlTLSConfig
                 && myTrustStorePassword != null && !myTrustStorePassword.isEmpty();
     }
 
+    /**
+     * Returns whether certificate configured.
+     * @return true if certificate configured
+     */
     public final boolean isCertificateConfigured()
     {
         return getCertificatePath().isPresent() && getCertificatePrivateKeyPath().isPresent()
                 && getTrustCertificatePath().isPresent();
     }
 
+    /**
+     * Constructs a new CqlTLSConfig.
+     * @param isEnabled the is enabled
+     * @param keyStorePath the key store path
+     * @param keyStorePassword the key store password
+     * @param trustStorePath the trust store path
+     * @param trustStorePassword the trust store password
+     */
     public CqlTLSConfig(final boolean isEnabled, final String keyStorePath, final String keyStorePassword,
             final String trustStorePath, final String trustStorePassword)
     {
@@ -90,6 +114,13 @@ public class CqlTLSConfig
         myTrustStorePassword = trustStorePassword;
     }
 
+    /**
+     * Constructs a new CqlTLSConfig.
+     * @param isEnabled the is enabled
+     * @param certificatePath the certificate path
+     * @param certificatePrivateKeyPath the certificate private key path
+     * @param trustCertificatePath the trust certificate path
+     */
     public CqlTLSConfig(final boolean isEnabled, final String certificatePath, final String certificatePrivateKeyPath,
             final String trustCertificatePath)
     {
@@ -99,74 +130,130 @@ public class CqlTLSConfig
         myTrustCertificatePath = trustCertificatePath;
     }
 
+    /**
+     * Returns whether enabled.
+     * @return true if enabled
+     */
     public final boolean isEnabled()
     {
         return myIsEnabled;
     }
 
+    /**
+     * Returns the key store path.
+     * @return the key store path
+     */
     public final String getKeyStorePath()
     {
         return myKeyStorePath;
     }
 
+    /**
+     * Returns the key store password.
+     * @return the key store password
+     */
     public final String getKeyStorePassword()
     {
         return myKeyStorePassword;
     }
 
+    /**
+     * Returns the trust store path.
+     * @return the trust store path
+     */
     public final String getTrustStorePath()
     {
         return myTrustStorePath;
     }
 
+    /**
+     * Returns the trust store password.
+     * @return the trust store password
+     */
     public final String getTrustStorePassword()
     {
         return myTrustStorePassword;
     }
 
+    /**
+     * Returns the store type.
+     * @return the store type
+     */
     public final Optional<String> getStoreType()
     {
         return Optional.ofNullable(myStoreType);
     }
 
+    /**
+     * Sets the store type.
+     * @param storeType the store type
+     */
     @JsonProperty("store_type")
     public final void setStoreType(final String storeType)
     {
         myStoreType = storeType;
     }
 
+    /**
+     * Returns the algorithm.
+     * @return the algorithm
+     */
     public final Optional<String> getAlgorithm()
     {
         return Optional.ofNullable(myAlgorithm);
     }
 
+    /**
+     * Sets the algorithm.
+     * @param algorithm the encryption algorithm
+     */
     @JsonProperty("algorithm")
     public final void setAlgorithm(final String algorithm)
     {
         myAlgorithm = algorithm;
     }
 
+    /**
+     * Returns the certificate path.
+     * @return the certificate path
+     */
     public final Optional<String> getCertificatePath()
     {
         return Optional.ofNullable(myCertificatePath);
     }
 
+    /**
+     * Returns the certificate private key path.
+     * @return the certificate private key path
+     */
     public final Optional<String> getCertificatePrivateKeyPath()
     {
         return Optional.ofNullable(myCertificatePrivateKeyPath);
     }
 
+    /**
+     * Returns the trust certificate path.
+     * @return the trust certificate path
+     */
     public final Optional<String> getTrustCertificatePath()
     {
         return Optional.ofNullable(myTrustCertificatePath);
     }
 
+    /**
+     * Sets the protocol.
+     * @param protocol the TLS protocol version
+     */
     @JsonProperty("protocol")
     public final void setProtocol(final String protocol)
     {
         myProtocol = protocol;
     }
 
+    /**
+     * Returns the cipher suites.
+     * @return the cipher suites
+     */
     public final Optional<String[]> getCipherSuites()
     {
         if (myCipherSuites == null)
@@ -177,6 +264,10 @@ public class CqlTLSConfig
         return Optional.of(Arrays.copyOf(myCipherSuites, myCipherSuites.length));
     }
 
+    /**
+     * Sets the cipher suites.
+     * @param cipherSuites the cipher suites
+     */
     @JsonProperty("cipher_suites")
     public final void setCipherSuites(final String cipherSuites)
     {
@@ -188,6 +279,10 @@ public class CqlTLSConfig
         return cipherSuites == null ? null : cipherSuites.split(",");
     }
 
+    /**
+     * Returns the protocols.
+     * @return the protocols
+     */
     public final String[] getProtocols()
     {
         if (myProtocol == null)
@@ -197,23 +292,39 @@ public class CqlTLSConfig
         return myProtocol.split(",");
     }
 
+    /**
+     * Returns whether endpoint verification is required.
+     * @return true if endpoint verification is required
+     */
     public final boolean requiresEndpointVerification()
     {
         return myRequireEndpointVerification;
     }
 
+    /**
+     * Sets the require endpoint verification.
+     * @param requireEndpointVerification the require endpoint verification
+     */
     @JsonProperty("require_endpoint_verification")
     public final void setRequireEndpointVerification(final boolean requireEndpointVerification)
     {
         myRequireEndpointVerification = requireEndpointVerification;
     }
 
+    /**
+     * Returns the CRL config.
+     * @return the CRL config
+     */
     @JsonProperty("crl")
     public final CRLConfig getCRLConfig()
     {
         return myCRLConfig;
     }
 
+    /**
+     * Sets the CRL config.
+     * @param crlConfig the CRL config
+     */
     @JsonProperty("crl")
     public final void setCRLConfig(final CRLConfig crlConfig)
     {

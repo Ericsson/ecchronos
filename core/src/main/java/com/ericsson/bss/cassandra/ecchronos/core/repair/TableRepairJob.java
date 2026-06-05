@@ -342,6 +342,7 @@ public class TableRepairJob extends ScheduledRepairJob
                 myTimeBasedRunPolicy);
     }
 
+    /** Builder for constructing instances of the enclosing class. */
     @SuppressWarnings("VisibilityModifier")
     public static class Builder
     {
@@ -359,6 +360,12 @@ public class TableRepairJob extends ScheduledRepairJob
         private final List<TableRepairPolicy> repairPolicies = new ArrayList<>();
         private RepairHistory repairHistory;
         private TimeBasedRunPolicy myTimeBasedRunPolicy;
+
+        /** Constructs a new Builder. */
+        public Builder()
+        {
+            // Default constructor
+        }
 
         /**
          * Build table repair job with configuration.

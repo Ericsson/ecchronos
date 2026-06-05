@@ -65,6 +65,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+/** Certificate handler that reloads TLS certificates on refresh. */
 public class ReloadingCertificateHandler implements CertificateHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger(ReloadingCertificateHandler.class);
@@ -73,6 +74,10 @@ public class ReloadingCertificateHandler implements CertificateHandler
     private final Supplier<CqlTLSConfig> myCqlTLSConfigSupplier;
     private static final String DEFAULT_STORE_TYPE_JKS = "JKS";
 
+    /**
+     * Constructs a new ReloadingCertificateHandler.
+     * @param cqlTLSConfigSupplier the CQL TLS config supplier
+     */
     public ReloadingCertificateHandler(final Supplier<CqlTLSConfig> cqlTLSConfigSupplier)
     {
         this.myCqlTLSConfigSupplier = cqlTLSConfigSupplier;
@@ -81,7 +86,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
     /**
      * Create new SSL Engine.
      *
-     * @param remoteEndpoint the remote endpoint.
+     * @param remoteEndpoint the remote endpoint
      * @return The SSLEngine.
      */
     @Override
@@ -103,11 +108,14 @@ public class ReloadingCertificateHandler implements CertificateHandler
             sslEngine = sslContext.newEngine(ByteBufAllocator.DEFAULT);
         }
         sslEngine.setUseClientMode(true);
-
         tlsConfig.getCipherSuites().ifPresent(sslEngine::setEnabledCipherSuites);
         return sslEngine;
     }
 
+    /**
+     * Returns the context.
+     * @return the context
+     */
     protected final Context getContext()
     {
         CqlTLSConfig tlsConfig = myCqlTLSConfigSupplier.get();
@@ -144,6 +152,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
 
     }
 
+    /** Returns the application context. */
     protected static final class Context
     {
         private final CqlTLSConfig myTlsConfig;
@@ -210,6 +219,16 @@ public class ReloadingCertificateHandler implements CertificateHandler
         }
     }
 
+    /**
+     * Creates a new instance.
+     * @param tlsConfig the TLS config
+     * @return a new instance
+     * @throws IOException if an I/O error occurs
+     * @throws NoSuchAlgorithmException if the algorithm is not available
+     * @throws KeyStoreException if a keystore error occurs
+     * @throws CertificateException if a certificate error occurs
+     * @throws UnrecoverableKeyException if the key cannot be recovered
+     */
     protected static SslContext createSSLContext(final CqlTLSConfig tlsConfig) throws IOException,  // NOPMD
             NoSuchAlgorithmException,
             KeyStoreException,
@@ -330,6 +349,12 @@ public class ReloadingCertificateHandler implements CertificateHandler
         return sslContext;
     }
 
+    /**
+     * Sets the trust managers.
+     * @param builder the builder to configure
+     * @param config the configuration
+     * @param tmf the trust manager factory
+     */
     protected static void setTrustManagers(final SslContextBuilder builder,
                                            final CqlTLSConfig config,
                                            final TrustManagerFactory tmf)
@@ -371,6 +396,12 @@ public class ReloadingCertificateHandler implements CertificateHandler
         }
     }
 
+    /**
+     * Loads the private key from the configured path.
+     * @param file the file path
+     * @return the SSL context
+     * @throws IOException if an I/O error occurs
+     */
     @SuppressWarnings("PMD.PreserveStackTrace")
     protected static PrivateKey loadPrivateKey(final File file) throws IOException
     {
@@ -422,6 +453,16 @@ public class ReloadingCertificateHandler implements CertificateHandler
         }
     }
 
+    /**
+     * Returns the key manager factory.
+     * @param tlsConfig the TLS config
+     * @return the key manager factory
+     * @throws IOException if an I/O error occurs
+     * @throws NoSuchAlgorithmException if the algorithm is not available
+     * @throws KeyStoreException if a keystore error occurs
+     * @throws CertificateException if a certificate error occurs
+     * @throws UnrecoverableKeyException if the key cannot be recovered
+     */
     protected static KeyManagerFactory getKeyManagerFactory(final CqlTLSConfig tlsConfig) throws IOException,
             NoSuchAlgorithmException, KeyStoreException, CertificateException, UnrecoverableKeyException
     {
@@ -439,6 +480,15 @@ public class ReloadingCertificateHandler implements CertificateHandler
         }
     }
 
+    /**
+     * Returns the trust manager factory.
+     * @param tlsConfig the TLS config
+     * @return the trust manager factory
+     * @throws IOException if an I/O error occurs
+     * @throws NoSuchAlgorithmException if the algorithm is not available
+     * @throws KeyStoreException if a keystore error occurs
+     * @throws CertificateException if a certificate error occurs
+     */
     protected static TrustManagerFactory getTrustManagerFactory(final CqlTLSConfig tlsConfig)
             throws IOException, NoSuchAlgorithmException, KeyStoreException, CertificateException
     {
@@ -457,6 +507,11 @@ public class ReloadingCertificateHandler implements CertificateHandler
     }
 
 
+    /**
+     * Returns the certificates list.
+     * @param keyStore the key store
+     * @return the certificates list
+     */
     protected static List<Map<String, Object>> getCertificatesList(final KeyStore keyStore)
     {
         List<Map<String, Object>> certificates = new ArrayList<>();

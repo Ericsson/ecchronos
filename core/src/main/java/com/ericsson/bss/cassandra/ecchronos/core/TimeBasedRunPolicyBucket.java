@@ -16,6 +16,16 @@ package com.ericsson.bss.cassandra.ecchronos.core;
 
 import java.util.Set;
 
+/**
+ * Represents a time bucket for the time-based run policy.
+ * @param keyspaceName the keyspace name
+ * @param tableName the table name
+ * @param startHour the start hour
+ * @param startMinute the start minute
+ * @param endHour the end hour
+ * @param endMinute the end minute
+ * @param dcExclusions the DC exclusions
+ */
 public record TimeBasedRunPolicyBucket(
     String keyspaceName,
     String tableName,

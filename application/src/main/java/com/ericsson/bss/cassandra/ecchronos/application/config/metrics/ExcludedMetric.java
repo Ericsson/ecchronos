@@ -20,29 +20,51 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+/** Defines a metric to be excluded from reporting. */
 public class ExcludedMetric
 {
     private String myMetricName;
     private Map<String, String> myMetricTags = new HashMap<>();
 
+    /** Default constructor. */
+    public ExcludedMetric()
+    {
+    }
+
+    /**
+     * Returns the metric name.
+     * @return the metric name
+     */
     @JsonProperty("name")
     public final String getMetricName()
     {
         return myMetricName;
     }
 
+    /**
+     * Sets the metric name.
+     * @param name the identifier name
+     */
     @JsonProperty("name")
     public final void setMetricName(final String name)
     {
         myMetricName = name;
     }
 
+    /**
+     * Returns the metric tags.
+     * @return the metric tags
+     */
     @JsonProperty("tags")
     public final Map<String, String> getMetricTags()
     {
         return myMetricTags;
     }
 
+    /**
+     * Sets the metric tags.
+     * @param tags the metric tags
+     */
     @JsonProperty("tags")
     public final void setMetricTags(final Map<String, String> tags)
     {

@@ -32,12 +32,17 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+/** On-demand repair job that uses incremental repair strategy. */
 public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
 {
     private static final Logger LOG = LoggerFactory.getLogger(IncrementalOnDemandRepairJob.class);
     private final ReplicationState myReplicationState;
     private final List<ScheduledTask> myTasks;
     private final int myTotalTasks;
+    /**
+     * Constructs a new IncrementalOnDemandRepairJob.
+     * @param builder the builder to configure
+     */
     public IncrementalOnDemandRepairJob(final Builder builder)
     {
         super(builder.myConfiguration, builder.myJmxProxyFactory, builder.myRepairConfiguration,
@@ -85,6 +90,10 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
                 getOngoingJob().getCompletedTime(), getOngoingJob().getRepairType());
     }
 
+    /**
+     * Returns the progress.
+     * @return the progress
+     */
     public double getProgress()
     {
         int finishedTasks = myTotalTasks - myTasks.size();
@@ -141,6 +150,7 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
         return String.format("Incremental On Demand Repair job of %s", getTableReference());
     }
 
+    /** Builder for constructing instances of the enclosing class. */
     public static class Builder
     {
         private final Configuration myConfiguration = new ConfigurationBuilder()
@@ -158,48 +168,93 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
         private OngoingJob myOngoingJob;
         private ReplicationState myReplicationState;
 
+        /** Constructs a new Builder. */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
+         * Sets the JMX proxy factory.
+         * @param jmxProxyFactory the JMX proxy factory
+         * @return this builder
+         */
         public final Builder withJmxProxyFactory(final JmxProxyFactory jmxProxyFactory)
         {
             this.myJmxProxyFactory = jmxProxyFactory;
             return this;
         }
 
+        /**
+         * Sets the table repair metrics.
+         * @param tableRepairMetrics the table repair metrics
+         * @return this builder
+         */
         public final Builder withTableRepairMetrics(final TableRepairMetrics tableRepairMetrics)
         {
             this.myTableRepairMetrics = tableRepairMetrics;
             return this;
         }
 
+        /**
+         * Sets the repair lock type.
+         * @param repairLockType the repair lock type
+         * @return this builder
+         */
         public final Builder withRepairLockType(final RepairLockType repairLockType)
         {
             this.myRepairLockType = repairLockType;
             return this;
         }
 
+        /**
+         * Sets the on finished.
+         * @param onFinishedHook the on finished hook
+         * @return this builder
+         */
         public final Builder withOnFinished(final Consumer<UUID> onFinishedHook)
         {
             this.myOnFinishedHook = onFinishedHook;
             return this;
         }
 
+        /**
+         * Sets the repair configuration.
+         * @param repairConfiguration the repair configuration
+         * @return this builder
+         */
         public final Builder withRepairConfiguration(final RepairConfiguration repairConfiguration)
         {
             this.myRepairConfiguration = repairConfiguration;
             return this;
         }
 
+        /**
+         * Sets the ongoing job.
+         * @param ongoingJob the ongoing job
+         * @return this builder
+         */
         public final Builder withOngoingJob(final OngoingJob ongoingJob)
         {
             this.myOngoingJob = ongoingJob;
             return this;
         }
 
+        /**
+         * Sets the replication state.
+         * @param replicationState the replication state
+         * @return this builder
+         */
         public final Builder withReplicationState(final ReplicationState replicationState)
         {
             this.myReplicationState = replicationState;
             return this;
         }
 
+        /**
+         * Builds and returns the instance.
+         * @return the built instance
+         */
         public final IncrementalOnDemandRepairJob build()
         {
             return new IncrementalOnDemandRepairJob(this);

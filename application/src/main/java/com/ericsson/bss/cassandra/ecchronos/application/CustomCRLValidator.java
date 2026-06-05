@@ -27,6 +27,7 @@ import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.Date;
 
+/** Validates X.509 certificates against Certificate Revocation Lists. */
 public final class CustomCRLValidator
 {
     private static final Logger LOG = LoggerFactory.getLogger(CustomCRLValidator.class);
@@ -36,22 +37,36 @@ public final class CustomCRLValidator
     private static final String INVALID = "invalid";
     private static final String REVOKED = "revoked";
 
+    /** Represents the validation state of a certificate against a CRL. */
     public enum CRLState
     {
-        INVALID,    // Dates etc failed verification
-        VALID,      // Everything is valid and fine, but there is no specific non-revoked CRL
-        REVOKED     // The certificate is specifically revoked by the CRL
+        /** Certificate is invalid; Dates etc failed verification. */
+        INVALID,
+        /** Certificate is valid; Everything is valid and fine, but there is no specific non-revoked CRL. */
+        VALID,
+        /** Certificate is revoked; The certificate is specifically revoked by the CRL. */
+        REVOKED
     }
 
+    /** The CRL file manager. */
     @VisibleForTesting
     protected CRLFileManager myCRLFileManager;
 
+    /**
+     * Constructs a new CustomCRLValidator.
+     * @param crlConfig the CRL config
+     */
     public CustomCRLValidator(final CRLConfig crlConfig)
     {
         // Create a new CRL File Manager to be used by this validator
         this.myCRLFileManager = new CRLFileManager(crlConfig);
     }
 
+    /**
+     * Returns whether certificate CRL valid.
+     * @param cert the certificate to validate
+     * @return true if certificate CRL valid
+     */
     public CRLState isCertificateCRLValid(final X509Certificate cert) // NOPMD
     {
         // Make sure previous state is cleared
@@ -109,31 +124,52 @@ public final class CustomCRLValidator
         return CRLState.INVALID;
     }
 
+    /**
+     * Adds refresh listener.
+     * @param listener the event listener to register
+     */
     public void addRefreshListener(final Runnable listener)
     {
         this.myCRLFileManager.addRefreshListener(listener);
     }
 
+    /** Resets the attempt counter. */
     public void resetAttempts()
     {
         this.myCRLFileManager.resetAttempts();
     }
 
+    /**
+     * Increments the attempt counter.
+     * @return the new attempt count
+     */
     public int increaseAttempts()
     {
         return this.myCRLFileManager.increaseAttempts();
     }
 
+    /**
+     * Returns the maximum number of attempts.
+     * @return the maximum number of attempts
+     */
     public int maxAttempts()
     {
         return this.myCRLFileManager.maxAttempts();
     }
 
+    /**
+     * Returns whether it has more attempts.
+     * @return true if it has more attempts
+     */
     public boolean hasMoreAttempts()
     {
         return this.myCRLFileManager.hasMoreAttempts();
     }
 
+    /**
+     * Returns whether strict mode is enabled.
+     * @return true if in strict mode
+     */
     public boolean inStrictMode()
     {
         return this.myCRLFileManager.inStrictMode();

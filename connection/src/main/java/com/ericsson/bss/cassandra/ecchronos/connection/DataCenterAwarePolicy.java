@@ -54,6 +54,11 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
             new ConcurrentHashMap<>();
     private final AtomicInteger myIndex = new AtomicInteger();
 
+    /**
+     * Constructs a DataCenterAwarePolicy with the given driver context and profile.
+     * @param context the application context
+     * @param profileName the profile name
+     */
     public DataCenterAwarePolicy(final DriverContext context, final String profileName)
     {
         super(context, profileName);
@@ -108,7 +113,7 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
      * is {@code LOCAL} according to a Round-robin algorithm.
      * If no specific data center is asked for the child policy is used.
      *
-     * @param request the query for which to build the plan.
+     * @param request the HTTP request
      * @return the new query plan.
      */
     @Override
@@ -161,8 +166,8 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
     /**
      * Return the {@link NodeDistance} for the provided host according to the selected data center.
      *
-     * @param node the node of which to return the distance of.
-     * @param dataCenter the selected data center.
+     * @param node the Cassandra node
+     * @param dataCenter the data center
      * @return the HostDistance to {@code host}.
      */
     public NodeDistance distance(final Node node, final String dataCenter)

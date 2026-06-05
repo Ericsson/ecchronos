@@ -121,6 +121,10 @@ public final class VnodeRepairStateSummarizer
         return vnodeRepairStates;
     }
 
+    /**
+     * Summarizes the repair states into an aggregated view.
+     * @return the summarized states
+     */
     public List<VnodeRepairState> summarize()
     {
         splitOverlapping();
@@ -228,6 +232,12 @@ public final class VnodeRepairStateSummarizer
     @FunctionalInterface
     public interface MergeStrategy
     {
+        /**
+         * Determines whether adjacent ranges should be merged.
+         * @param range1 the first token range
+         * @param range2 the second token range
+         * @return the built instance
+         */
         boolean shouldMerge(NormalizedRange range1, NormalizedRange range2);
     }
 }

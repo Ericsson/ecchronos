@@ -24,12 +24,18 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.annotations.VisibleForTesting;
 
+/** Provides repair configurations loaded from a YAML schedule file. */
 public class FileBasedRepairConfiguration extends AbstractRepairConfigurationProvider
 {
     private static final String CONFIGURATION_FILE = "schedule.yml";
 
     private final RepairSchedule repairSchedule;
 
+    /**
+     * Constructs a new FileBasedRepairConfiguration.
+     * @param applicationContext the application context
+     * @throws ConfigurationException if the configuration is invalid
+     */
     public FileBasedRepairConfiguration(final ApplicationContext applicationContext) throws ConfigurationException
     {
         this(applicationContext, ConfigurationHelper.DEFAULT_INSTANCE, CONFIGURATION_FILE);

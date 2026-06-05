@@ -35,18 +35,35 @@ public final class Metadata
         //Intentionally left empty
     }
 
+    /**
+     * Returns the keyspace.
+     * @param session the CQL session
+     * @param keyspace the keyspace name
+     * @return the keyspace
+     */
     public static Optional<KeyspaceMetadata> getKeyspace(final CqlSession session, final String keyspace)
     {
         String keyspaceName = quoteIfNeeded(keyspace);
         return session.getMetadata().getKeyspace(keyspaceName);
     }
 
+    /**
+     * Returns the table.
+     * @param keyspaceMetadata the keyspace metadata
+     * @param table the table reference
+     * @return the table
+     */
     public static Optional<TableMetadata> getTable(final KeyspaceMetadata keyspaceMetadata, final String table)
     {
         String tableName = quoteIfNeeded(table);
         return keyspaceMetadata.getTable(tableName);
     }
 
+    /**
+     * Quotes the identifier if it contains special characters.
+     * @param keyspaceOrTable the keyspace or table
+     * @return the quoted string if needed
+     */
     public static String quoteIfNeeded(final String keyspaceOrTable)
     {
         return Strings.needsDoubleQuotes(keyspaceOrTable) && !Strings.isDoubleQuoted(keyspaceOrTable)
