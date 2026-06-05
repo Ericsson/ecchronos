@@ -290,6 +290,149 @@ public class TestRepairLockFactoryImpl
         verify(mockLockFactory, times(6)).tryLock(anyString(), anyString(), anyInt(), anyMap(), any());
     }
 
+    @Test
+    public void testResourceGateBlocksOverlappingThreads() throws Exception
+    {
+        RepairResource shared = new RepairResource("DC1", "shared-res");
+        Map<String, String> metadata = Collections.singletonMap("key", "value");
+        int priority = 1;
+
+        java.util.concurrent.CountDownLatch t1InCAS = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch t1Proceed = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch t2Started = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch t2Acquired = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.atomic.AtomicBoolean t2WasBlocked = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+        // t1's CAS blocks until we signal it to proceed
+        for (int slot = 1; slot <= LOCKS_PER_RESOURCE; slot++)
+        {
+            when(mockLockFactory.tryLock(eq("DC1"), eq(shared.getResourceName(slot)), eq(priority), eq(metadata), any()))
+                    .thenAnswer(invocation -> {
+                        t1InCAS.countDown(); // Signal t1 is inside CAS (holding resource gate)
+                        t1Proceed.await();   // Wait until test signals to proceed
+                        return mockLock;
+                    });
+        }
+
+        Thread t1 = new Thread(() -> {
+            try
+            {
+                repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(shared), metadata, priority, UUID.randomUUID());
+            }
+            catch (Exception ignored) { }
+        });
+
+        Thread t2 = new Thread(() -> {
+            try
+            {
+                t2Started.countDown();
+                repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(shared), metadata, priority, UUID.randomUUID());
+            }
+            catch (Exception ignored) { }
+            t2Acquired.countDown();
+        });
+
+        t1.start();
+        t1InCAS.await(); // t1 is now inside CAS, holding the resource gate
+
+        t2.start();
+        t2Started.await();
+        Thread.sleep(20); // Give t2 time to hit the resource gate
+
+        // t2 should be blocked (not yet acquired)
+        t2WasBlocked.set(t2Acquired.getCount() == 1);
+
+        // Release t1
+        t1Proceed.countDown();
+
+        // t2 should now complete
+        assertThat(t2Acquired.await(2, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+        assertThat(t2WasBlocked.get()).isTrue();
+
+        t1.join(2000);
+        t2.join(2000);
+    }
+
+    @Test
+    public void testResourceGateAllowsNonOverlappingThreads() throws Exception
+    {
+        RepairResource res1 = new RepairResource("DC1", "disjoint-a");
+        RepairResource res2 = new RepairResource("DC1", "disjoint-b");
+        Map<String, String> metadata = Collections.singletonMap("key", "value");
+        int priority = 1;
+
+        java.util.concurrent.CountDownLatch bothInCAS = new java.util.concurrent.CountDownLatch(2);
+        java.util.concurrent.CountDownLatch proceed = new java.util.concurrent.CountDownLatch(1);
+
+        // Both resources' CAS blocks until signaled — if they're serialized, we'd deadlock
+        for (int slot = 1; slot <= LOCKS_PER_RESOURCE; slot++)
+        {
+            when(mockLockFactory.tryLock(eq("DC1"), eq(res1.getResourceName(slot)), eq(priority), eq(metadata), any()))
+                    .thenAnswer(invocation -> {
+                        bothInCAS.countDown();
+                        proceed.await();
+                        return mockLock;
+                    });
+            when(mockLockFactory.tryLock(eq("DC1"), eq(res2.getResourceName(slot)), eq(priority), eq(metadata), any()))
+                    .thenAnswer(invocation -> {
+                        bothInCAS.countDown();
+                        proceed.await();
+                        return mockLock;
+                    });
+        }
+
+        Thread t1 = new Thread(() -> {
+            try { repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(res1), metadata, priority, UUID.randomUUID()); }
+            catch (Exception ignored) { }
+        });
+        Thread t2 = new Thread(() -> {
+            try { repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(res2), metadata, priority, UUID.randomUUID()); }
+            catch (Exception ignored) { }
+        });
+
+        t1.start();
+        t2.start();
+
+        // Both threads must reach CAS concurrently (non-overlapping resources = no blocking)
+        assertThat(bothInCAS.await(2, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+
+        proceed.countDown();
+        t1.join(2000);
+        t2.join(2000);
+    }
+
+    @Test
+    public void testResourceGateReleasedOnLockFailure() throws Exception
+    {
+        RepairResource resource = new RepairResource("DC1", "fail-release");
+        Map<String, String> metadata = Collections.singletonMap("key", "value");
+        int priority = 1;
+
+        for (int slot = 1; slot <= LOCKS_PER_RESOURCE; slot++)
+        {
+            when(mockLockFactory.tryLock(eq("DC1"), eq(resource.getResourceName(slot)), eq(priority), eq(metadata), any()))
+                    .thenThrow(new LockException("fail"));
+        }
+
+        // First attempt fails
+        assertThatExceptionOfType(LockException.class)
+                .isThrownBy(() -> repairLockFactory.getLock(
+                        mockLockFactory, Sets.newHashSet(resource), metadata, priority, UUID.randomUUID()));
+
+        // Resource gate must be released - second attempt should not deadlock
+        java.util.concurrent.CountDownLatch done = new java.util.concurrent.CountDownLatch(1);
+        Thread t = new Thread(() -> {
+            try
+            {
+                repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(resource), metadata, priority, UUID.randomUUID());
+            }
+            catch (LockException ignored) { }
+            done.countDown();
+        });
+        t.start();
+        assertThat(done.await(2, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+    }
+
     private void verifyNoLockWasTried() throws LockException
     {
         verify(mockLockFactory, never()).tryLock(anyString(), anyString(), anyInt(), anyMap(), any());

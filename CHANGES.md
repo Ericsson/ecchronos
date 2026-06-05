@@ -2,6 +2,7 @@
 
 ## Version 1.0.2 (Not yet Released)
 
+* Add resource-level blocking gate to serialize overlapping lock acquisition - Issue #1643
 * Add local lock gate to eliminate intra-instance CAS contention - Issue #1640
 * Add runtime configuration of scheduler parameters via ecctool - Issue #1638
 * Implement Batched Lock Acquisition Strategy to Improve Repair Throughput in Large Clusters - Issue #1618

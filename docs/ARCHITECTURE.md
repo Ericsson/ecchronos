@@ -180,6 +180,8 @@ As some jobs might take more than 10 minutes to run the lease is continuously up
   <figcaption>Figure 3: Compare-And-Set.</figcaption>
 </div>
 
+**Two-layer local gating:** Before attempting distributed CAS locks, ecChronos serializes threads that need overlapping repair resources. This ensures only one thread at a time performs the multi-resource lock acquisition for a given resource, preventing wasted Paxos rounds and rollback cascades. Threads with non-overlapping resources proceed fully in parallel. Within each resource's slot iteration, a non-blocking slot gate further prevents redundant CAS attempts on the same lock row.
+
 ### Scheduling flow
 
 The scheduling in ecChronos is handled by the `schedule manager`.
