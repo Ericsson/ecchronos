@@ -18,6 +18,7 @@
 from __future__ import print_function
 
 import os
+import json
 import signal
 import sys
 import glob
@@ -159,6 +160,7 @@ def get_parser():
     )
     sub_parsers = parser.add_subparsers(dest="subcommand", help="")
 
+    add_config_subcommand(sub_parsers)
     add_rejections_subcommand(sub_parsers)
     add_repair_info_subcommand(sub_parsers)
     add_repairs_subcommand(sub_parsers)
@@ -177,6 +179,61 @@ def add_running_job_subcommand(sub_parsers):
     parser_repairs = sub_parsers.add_parser("running-job", description="Show which (if any) job is currently running.")
     add_common_arg(parser_repairs, ARG_OUTPUT_JSON)
     add_common_arg(parser_repairs, ARG_URL)
+
+
+def parse_duration_ms(value):
+    """Parse duration string (e.g. '5m', '30s', '300000') to milliseconds."""
+    try:
+        if value.endswith("ms"):
+            result = int(value[:-2])
+        elif value.endswith("s"):
+            result = int(value[:-1]) * 1000
+        elif value.endswith("m"):
+            result = int(value[:-1]) * 60 * 1000
+        elif value.endswith("h"):
+            result = int(value[:-1]) * 3600 * 1000
+        else:
+            result = int(value)
+    except ValueError:
+        print(f"Invalid duration format: '{value}'. Use e.g. 5m, 30s, 2h, 500ms, or raw milliseconds.")
+        sys.exit(1)
+    if result < 0:
+        print(f"Duration must not be negative: '{value}'")
+        sys.exit(1)
+    return result
+
+
+def add_config_subcommand(sub_parsers):
+    parser_config = sub_parsers.add_parser("config", description="Show or update ecChronos configuration.")
+    parser_config.add_argument("--session-window", type=str, help="session window duration (e.g. 5m, 30s, 300000)")
+    parser_config.add_argument("--cooldown", type=str, help="cooldown duration (e.g. 5m, 30s, 300000)")
+    parser_config.add_argument("--locks-per-resource", type=int, help="locks per resource")
+    add_common_arg(parser_config, ARG_URL)
+
+
+def config(arguments):
+    request = rest.ConfigRequest(base_url=arguments.url)
+    has_updates = (
+        arguments.session_window is not None
+        or arguments.cooldown is not None
+        or arguments.locks_per_resource is not None
+    )
+    if has_updates:
+        session_window_ms = parse_duration_ms(arguments.session_window) if arguments.session_window else None
+        cooldown_ms = parse_duration_ms(arguments.cooldown) if arguments.cooldown else None
+        result = request.patch(
+            session_window_ms=session_window_ms,
+            cooldown_ms=cooldown_ms,
+            locks_per_resource=arguments.locks_per_resource,
+        )
+    else:
+        result = request.get()
+
+    if result.is_successful():
+        print(json.dumps(result.data, indent=2))
+    else:
+        print(result.format_exception())
+        sys.exit(1)
 
 
 def add_repairs_subcommand(sub_parsers):
@@ -760,7 +817,10 @@ def running_job(arguments):
 
 
 def run_subcommand(arguments):
-    if arguments.subcommand == "rejections":
+    if arguments.subcommand == "config":
+        status(arguments)
+        config(arguments)
+    elif arguments.subcommand == "rejections":
         status(arguments)
         rejections(arguments)
     elif arguments.subcommand == "repair-info":

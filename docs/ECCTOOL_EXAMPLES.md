@@ -491,3 +491,42 @@ ecctool repair-info --keyspace test --table table1 --id 8a9d2a57-1388-42be-aab6-
 ```
 
 If the `output` option is set to JSON, the `columns` option will be ignored and a full JSON will be returned.
+
+## ecctool config
+
+### View current configuration
+
+```console
+$ ecctool config
+{
+  "session_window_ms": 300000,
+  "cooldown_ms": 0,
+  "locks_per_resource": 3
+}
+```
+
+### Update session window to 10 minutes
+
+```console
+$ ecctool config --session-window 10m
+{
+  "session_window_ms": 600000,
+  "cooldown_ms": 0,
+  "locks_per_resource": 3
+}
+```
+
+### Update multiple parameters
+
+```console
+$ ecctool config --session-window 5m --cooldown 30s --locks-per-resource 5
+{
+  "session_window_ms": 300000,
+  "cooldown_ms": 30000,
+  "locks_per_resource": 5
+}
+```
+
+Duration values accept: `5m` (minutes), `30s` (seconds), `2h` (hours), `500ms` (milliseconds), or raw milliseconds as integers.
+
+Changes are in-memory only. Restarting ecChronos restores values from `ecc.yml`.

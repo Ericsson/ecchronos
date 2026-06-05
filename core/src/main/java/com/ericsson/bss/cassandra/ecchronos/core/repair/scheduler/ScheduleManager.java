@@ -61,4 +61,40 @@ public interface ScheduleManager
      * @param nodeID the node to remove
      */
     void removeScheduleFutureForNode(UUID nodeID);
+
+    /**
+     * Get the current session window in milliseconds.
+     * @return session window in ms
+     */
+    long getSessionWindowInMs();
+
+    /**
+     * Set the session window at runtime.
+     * @param sessionWindowInMs new session window in milliseconds, must be greater than 0
+     */
+    void setSessionWindowInMs(long sessionWindowInMs);
+
+    /**
+     * Get the current cooldown in milliseconds.
+     * @return cooldown in ms
+     */
+    long getCooldownInMs();
+
+    /**
+     * Set the cooldown at runtime.
+     * @param cooldownInMs new cooldown in milliseconds, must be greater than or equal to 0
+     */
+    void setCooldownInMs(long cooldownInMs);
+
+    /**
+     * Get the current locks per resource value.
+     * @return locks per resource
+     */
+    int getLocksPerResource();
+
+    /**
+     * Set locks per resource at runtime.
+     * @param locksPerResource new value, must be at least 1
+     */
+    void setLocksPerResource(int locksPerResource);
 }

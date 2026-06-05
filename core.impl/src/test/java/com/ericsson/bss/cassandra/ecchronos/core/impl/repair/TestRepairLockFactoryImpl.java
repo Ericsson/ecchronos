@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -194,6 +195,33 @@ public class TestRepairLockFactoryImpl
         verifyExceptionIsThrownWhenGettingLock(repairLockFactory, priority, metadata, repairResourceDc1, repairResourceDc2);
         verifyNoLockWasTried();
         verify(mockLock, never()).close();
+    }
+
+    @Test
+    public void testGetLocksPerResourceReturnsConfiguredValue()
+    {
+        assertThat(RepairLockFactoryImpl.getLocksPerResource()).isEqualTo(LOCKS_PER_RESOURCE);
+    }
+
+    @Test
+    public void testRuntimeReconfiguration()
+    {
+        try
+        {
+            RepairLockFactoryImpl.configure(5);
+            assertThat(RepairLockFactoryImpl.getLocksPerResource()).isEqualTo(5);
+        }
+        finally
+        {
+            RepairLockFactoryImpl.configure(LOCKS_PER_RESOURCE);
+        }
+    }
+
+    @Test
+    public void testConfigureWithInvalidValueThrows()
+    {
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> RepairLockFactoryImpl.configure(0));
     }
 
     private void verifyNoLockWasTried() throws LockException
