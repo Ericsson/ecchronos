@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -64,6 +65,7 @@ public class TestRepairLockFactoryImpl
     @Before
     public void setup()
     {
+        RepairLockFactoryImpl.resetLocalGates();
         when(mockLockFactory.getCachedFailure(any(UUID.class), anyString(), anyString())).thenReturn(Optional.empty());
     }
 
@@ -222,6 +224,70 @@ public class TestRepairLockFactoryImpl
     {
         assertThatExceptionOfType(IllegalArgumentException.class)
                 .isThrownBy(() -> RepairLockFactoryImpl.configure(0));
+    }
+
+    @Test
+    public void testLocalGateBlocksConcurrentAccessToSameSlot() throws LockException
+    {
+        RepairResource repairResource = new RepairResource("DC1", "gate-test");
+        Map<String, String> metadata = Collections.singletonMap("key", "value");
+        int priority = 1;
+
+        for (int slot = 1; slot <= LOCKS_PER_RESOURCE; slot++)
+        {
+            when(mockLockFactory.tryLock(eq("DC1"), eq(repairResource.getResourceName(slot)), eq(priority), eq(metadata), any()))
+                    .thenReturn(mockLock);
+        }
+
+        // Acquire all 3 slots
+        LockFactory.DistributedLock lock1 = repairLockFactory.getLock(
+                mockLockFactory, Sets.newHashSet(repairResource), metadata, priority, UUID.randomUUID());
+        LockFactory.DistributedLock lock2 = repairLockFactory.getLock(
+                mockLockFactory, Sets.newHashSet(repairResource), metadata, priority, UUID.randomUUID());
+        LockFactory.DistributedLock lock3 = repairLockFactory.getLock(
+                mockLockFactory, Sets.newHashSet(repairResource), metadata, priority, UUID.randomUUID());
+
+        // Fourth acquire fails - all local gates held
+        assertThatExceptionOfType(LockException.class)
+                .isThrownBy(() -> repairLockFactory.getLock(
+                        mockLockFactory, Sets.newHashSet(repairResource), metadata, priority, UUID.randomUUID()));
+
+        // Release one - next acquire succeeds
+        lock1.close();
+        LockFactory.DistributedLock lock4 = repairLockFactory.getLock(
+                mockLockFactory, Sets.newHashSet(repairResource), metadata, priority, UUID.randomUUID());
+        assertThat(lock4).isNotNull();
+
+        lock2.close();
+        lock3.close();
+        lock4.close();
+    }
+
+    @Test
+    public void testLocalGateReleasedOnCASFailure() throws LockException
+    {
+        RepairResource repairResource = new RepairResource("DC1", "cas-fail-test");
+        Map<String, String> metadata = Collections.singletonMap("key", "value");
+        int priority = 1;
+
+        for (int slot = 1; slot <= LOCKS_PER_RESOURCE; slot++)
+        {
+            when(mockLockFactory.tryLock(eq("DC1"), eq(repairResource.getResourceName(slot)), eq(priority), eq(metadata), any()))
+                    .thenThrow(new LockException("CAS failed"));
+        }
+
+        // First attempt fails, gates released
+        assertThatExceptionOfType(LockException.class)
+                .isThrownBy(() -> repairLockFactory.getLock(
+                        mockLockFactory, Sets.newHashSet(repairResource), metadata, priority, UUID.randomUUID()));
+
+        // Second attempt also tries CAS (gates were released)
+        assertThatExceptionOfType(LockException.class)
+                .isThrownBy(() -> repairLockFactory.getLock(
+                        mockLockFactory, Sets.newHashSet(repairResource), metadata, priority, UUID.randomUUID()));
+
+        // 6 CAS attempts total (3 slots × 2 rounds)
+        verify(mockLockFactory, times(6)).tryLock(anyString(), anyString(), anyInt(), anyMap(), any());
     }
 
     private void verifyNoLockWasTried() throws LockException

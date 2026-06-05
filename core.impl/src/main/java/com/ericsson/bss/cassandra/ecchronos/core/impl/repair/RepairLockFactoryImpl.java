@@ -19,6 +19,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairResource;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
+import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -26,6 +27,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -38,6 +41,18 @@ public class RepairLockFactoryImpl implements RepairLockFactory
     private static final int DEFAULT_LOCKS_PER_RESOURCE = 3;
     private static final AtomicInteger CONFIGURED_LOCKS_PER_RESOURCE = new AtomicInteger(DEFAULT_LOCKS_PER_RESOURCE);
     private static final AtomicInteger LOCK_COUNTER = new AtomicInteger(0);
+    // Entries accumulate for each unique resource name seen (typically <20 for a few DCs × slots).
+    // Not bounded, but growth is negligible (~100 bytes per entry).
+    private static final ConcurrentHashMap<String, Semaphore> LOCAL_GATES = new ConcurrentHashMap<>();
+
+    /**
+     * Reset local gates. Intended for testing only.
+     */
+    @VisibleForTesting
+    static void resetLocalGates()
+    {
+        LOCAL_GATES.clear();
+    }
 
     /**
      * Configure the global locks per resource value.
@@ -153,13 +168,20 @@ public class RepairLockFactoryImpl implements RepairLockFactory
         {
             int lockNumber = ((startLock + i) % locksPerResource) + 1;
             String resource = repairResource.getResourceName(lockNumber);
+
+            Semaphore gate = LOCAL_GATES.computeIfAbsent(resource, k -> new Semaphore(1));
+            if (!gate.tryAcquire())
+            {
+                LOG.debug("Local gate busy for {}, trying next slot", resource);
+                continue;
+            }
+
             try
             {
                 myLock = lockFactory.tryLock(dataCenter, resource, priority, metadata, nodeId);
-
                 if (myLock != null)
                 {
-                    return myLock;
+                    return new LocallyGatedLock(myLock, gate);
                 }
             }
             catch (LockException e)
@@ -169,11 +191,37 @@ public class RepairLockFactoryImpl implements RepairLockFactory
                         dataCenter,
                         e);
             }
+            gate.release();
         }
 
         String msg = String.format("Lock resources exhausted for %s", repairResource);
         LOG.warn(msg);
         throw new LockException(msg);
+    }
+
+    private static final class LocallyGatedLock implements LockFactory.DistributedLock
+    {
+        private final LockFactory.DistributedLock myDelegate;
+        private final Semaphore myGate;
+
+        LocallyGatedLock(final LockFactory.DistributedLock delegate, final Semaphore gate)
+        {
+            myDelegate = delegate;
+            myGate = gate;
+        }
+
+        @Override
+        public void close()
+        {
+            try
+            {
+                myDelegate.close();
+            }
+            finally
+            {
+                myGate.release();
+            }
+        }
     }
 
     static class TemporaryLockHolder implements AutoCloseable
