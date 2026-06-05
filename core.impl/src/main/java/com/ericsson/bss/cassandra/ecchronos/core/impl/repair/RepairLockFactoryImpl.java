@@ -22,6 +22,7 @@ import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -30,6 +31,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +46,7 @@ public class RepairLockFactoryImpl implements RepairLockFactory
     // Entries accumulate for each unique resource name seen (typically <20 for a few DCs × slots).
     // Not bounded, but growth is negligible (~100 bytes per entry).
     private static final ConcurrentHashMap<String, Semaphore> LOCAL_GATES = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<RepairResource, Semaphore> RESOURCE_GATES = new ConcurrentHashMap<>();
 
     /**
      * Reset local gates. Intended for testing only.
@@ -52,6 +55,7 @@ public class RepairLockFactoryImpl implements RepairLockFactory
     static void resetLocalGates()
     {
         LOCAL_GATES.clear();
+        RESOURCE_GATES.clear();
     }
 
     /**
@@ -129,9 +133,22 @@ public class RepairLockFactoryImpl implements RepairLockFactory
                                                                            final UUID nodeId)
                                                                                                throws LockException
     {
+        // Sort resources to prevent ABBA deadlock
+        List<RepairResource> sorted = repairResources.stream()
+                .sorted(Comparator.comparing(RepairResource::toString))
+                .collect(Collectors.toList());
+
+        List<Semaphore> heldResourceGates = new ArrayList<>();
+        for (RepairResource resource : sorted)
+        {
+            Semaphore gate = RESOURCE_GATES.computeIfAbsent(resource, k -> new Semaphore(1));
+            gate.acquireUninterruptibly();
+            heldResourceGates.add(gate);
+        }
+
         try (TemporaryLockHolder lockHolder = new TemporaryLockHolder())
         {
-            for (RepairResource repairResource : repairResources)
+            for (RepairResource repairResource : sorted)
             {
                 try
                 {
@@ -148,6 +165,13 @@ public class RepairLockFactoryImpl implements RepairLockFactory
             }
 
             return lockHolder.getAndClear();
+        }
+        finally
+        {
+            for (Semaphore gate : heldResourceGates)
+            {
+                gate.release();
+            }
         }
     }
 
