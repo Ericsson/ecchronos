@@ -538,8 +538,7 @@
                         <compilerArgs>
                             <arg>-parameters</arg>
                         </compilerArgs>
-                        <source>${java.version}</source>
-                        <target>${java.version}</target>
+                        <release>${java.version}</release>
                     </configuration>
                 </plugin>
 
@@ -643,6 +642,7 @@ limitations under the License.
                             <exclude>**/*.rst</exclude>
                             <exclude>**/docker/*.properties</exclude>
                             <exclude>**/docker/*.yml</exclude>
+                            <exclude>**/*.csv</exclude>
                         </excludes>
                     </configuration>
                 </plugin>
