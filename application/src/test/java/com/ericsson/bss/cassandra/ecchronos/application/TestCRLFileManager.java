@@ -30,7 +30,6 @@ import com.ericsson.bss.cassandra.ecchronos.application.utils.CertUtils;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
@@ -133,15 +132,13 @@ public class TestCRLFileManager
     /**
      * Test case for where the getCurrentCRLs actually returns a valid CRL.
      */
-    @Ignore //temporary ignore due to blinking
     @Test
     public void testRefreshWithValidCRLFile() throws Exception
     {
         CRLConfig crlConfig = getCustomCRLConfig(true, crlNotRevoked, true, 5, 1);
         CRLFileManager manager = new CRLFileManager(crlConfig);
-        await().atLeast(5, TimeUnit.SECONDS);
+        await().atMost(10, TimeUnit.SECONDS).until(() -> !manager.getCurrentCRLs().isEmpty());
         Collection<? extends CRL> crls = manager.getCurrentCRLs();
-        await().atMost(5, TimeUnit.SECONDS).until(() -> !manager.getCurrentCRLs().isEmpty());
         assertNotNull(crls);
         assertFalse(crls.isEmpty());
     }
