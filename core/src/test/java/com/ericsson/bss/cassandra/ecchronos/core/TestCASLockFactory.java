@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.fail;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -598,7 +599,23 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
 
     private void awaitSchemaAgreement()
     {
-        mySession.checkSchemaAgreement();
+        long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30);
+        while (!mySession.checkSchemaAgreement())
+        {
+            if (System.currentTimeMillis() > deadline)
+            {
+                fail("Schema agreement not reached within timeout");
+            }
+            try
+            {
+                Thread.sleep(500);
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+                fail("Interrupted while waiting for schema agreement");
+            }
+        }
         mySession.refreshSchema();
     }
 
