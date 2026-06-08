@@ -24,9 +24,9 @@ public class TestReflectionUtils
     @Test
     public void testResolveAndConstructNewInstanceWithPrimitiveConstructor() throws ConfigurationException
     {
-        Class<? extends TestInterface> clazz = ReflectionUtils.resolveClassOfType(OverridingClassWithPrimitiveConstructor.class.getName(), TestInterface.class, Integer.TYPE);
+        Class<? extends TestInterface> resolvedClass = ReflectionUtils.resolveClassOfType(OverridingClassWithPrimitiveConstructor.class.getName(), TestInterface.class, Integer.TYPE);
 
-        TestInterface testInterface = ReflectionUtils.construct(clazz, new Class<?>[]{Integer.TYPE} , 1);
+        TestInterface testInterface = ReflectionUtils.construct(resolvedClass, new Class<?>[]{Integer.TYPE} , 1);
 
         assertThat(testInterface.getValue()).isEqualTo(1);
         assertThat(testInterface.getClass()).isEqualTo(OverridingClassWithPrimitiveConstructor.class);
@@ -35,9 +35,9 @@ public class TestReflectionUtils
     @Test
     public void testResolveAndConstructNewInstanceWithObjectConstructor() throws ConfigurationException
     {
-        Class<? extends TestInterface> clazz = ReflectionUtils.resolveClassOfType(OverridingClassWithObjectConstructor.class.getName(), TestInterface.class, Integer.class);
+        Class<? extends TestInterface> resolvedClass = ReflectionUtils.resolveClassOfType(OverridingClassWithObjectConstructor.class.getName(), TestInterface.class, Integer.class);
 
-        TestInterface testInterface = ReflectionUtils.construct(clazz, 2);
+        TestInterface testInterface = ReflectionUtils.construct(resolvedClass, 2);
 
         assertThat(testInterface.getValue()).isEqualTo(2);
         assertThat(testInterface.getClass()).isEqualTo(OverridingClassWithObjectConstructor.class);
@@ -46,9 +46,9 @@ public class TestReflectionUtils
     @Test
     public void testResolveAndConstructNewInstanceWithoutConstructor() throws ConfigurationException
     {
-        Class<? extends TestInterface> clazz = ReflectionUtils.resolveClassOfType(OverridingClassWithoutConstructor.class.getName(), TestInterface.class);
+        Class<? extends TestInterface> resolvedClass = ReflectionUtils.resolveClassOfType(OverridingClassWithoutConstructor.class.getName(), TestInterface.class);
 
-        TestInterface testInterface = ReflectionUtils.construct(clazz);
+        TestInterface testInterface = ReflectionUtils.construct(resolvedClass);
 
         assertThat(testInterface.getValue()).isEqualTo(OverridingClassWithoutConstructor.VALUE);
         assertThat(testInterface.getClass()).isEqualTo(OverridingClassWithoutConstructor.class);
