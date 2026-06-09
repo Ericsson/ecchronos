@@ -82,7 +82,7 @@
         <org.bouncycastle.bcpkix-jdk18on.version>1.84</org.bouncycastle.bcpkix-jdk18on.version>
         <org.springdoc.openapi-starter-webmvc-ui.version>2.8.17</org.springdoc.openapi-starter-webmvc-ui.version>
         <org.springframework.boot.spring-boot.version>3.5.14</org.springframework.boot.spring-boot.version>
-        <org.springframework.spring-test.version>6.2.18</org.springframework.spring-test.version>
+        <org.springframework.spring-test.version>6.2.19</org.springframework.spring-test.version>
         <org.yaml.snakeyaml.version>2.6</org.yaml.snakeyaml.version>
         <slf4j.version>2.0.18</slf4j.version>
         <swagger-annotations.version>2.2.50</swagger-annotations.version>
