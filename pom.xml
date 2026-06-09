@@ -65,10 +65,10 @@
         <equalsverifier.version>4.5</equalsverifier.version>
         <guava.version>33.6.0-jre</guava.version>
         <io.dropwizard.metrics.version>4.2.39</io.dropwizard.metrics.version>
-        <io.micrometer.version>1.16.5</io.micrometer.version>
+        <io.micrometer.version>1.17.0</io.micrometer.version>
         <io.netty.version>4.1.135.Final</io.netty.version>
         <io.prometheus.simpleclient.version>0.16.0</io.prometheus.simpleclient.version>
-        <io.prometheus.prometheus-metrics.version>1.6.1</io.prometheus.prometheus-metrics.version>
+        <io.prometheus.prometheus-metrics.version>1.7.0</io.prometheus.prometheus-metrics.version>
         <jakarta.servlet-api.version>6.1.0</jakarta.servlet-api.version>
         <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>
         <jcip.version>1.0</jcip.version>
