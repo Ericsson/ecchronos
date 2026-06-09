@@ -14,5 +14,5 @@
 # limitations under the License.
 #
 
-cqlsh -f /etc/cassandra/create_keyspaces.cql
-cqlsh -f /etc/cassandra/users.cql
+cqlsh -u cassandra -p cassandra -f /etc/cassandra/create_keyspaces.cql
+cqlsh -u cassandra -p cassandra -f /etc/cassandra/users.cql

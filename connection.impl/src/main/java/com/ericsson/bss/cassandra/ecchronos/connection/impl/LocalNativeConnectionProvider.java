@@ -320,6 +320,11 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
                         // check to ensure ecchronos keyspace is replicated correctly
                         Optional<KeyspaceMetadata> keyspaceMetadata =
                                 session.getMetadata().getKeyspace(builder.myRepairHistoryKeyspace);
+                        if (keyspaceMetadata.isEmpty())
+                        {
+                            throw new IllegalStateException("Keyspace " + builder.myRepairHistoryKeyspace
+                                    + " does not exist.");
+                        }
                         Map<String, String> replication = keyspaceMetadata.get().getReplication();
                         if (!replication.containsKey(node.getDatacenter()))
                         {
