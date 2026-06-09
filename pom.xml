@@ -109,27 +109,27 @@
 
         <!-- Spring boot -->
         <org.springframework.boot.spring-boot.version>3.5.14</org.springframework.boot.spring-boot.version>
-        <org.springframework.spring.version>6.2.18</org.springframework.spring.version>
+        <org.springframework.spring.version>6.2.19</org.springframework.spring.version>
         <org.springdoc.openapi-starter-webmvc-ui.version>2.8.17</org.springdoc.openapi-starter-webmvc-ui.version>
         <jakarta.servlet-api.version>6.1.0</jakarta.servlet-api.version>
         <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>
         <swagger-annotations.version>2.2.50</swagger-annotations.version>
 
         <!-- Metrics -->
-        <io.micrometer.version>1.16.5</io.micrometer.version>
+        <io.micrometer.version>1.17.0</io.micrometer.version>
         <io.prometheus.simpleclient.version>0.16.0</io.prometheus.simpleclient.version>
-        <io.prometheus.prometheus-metrics.version>1.6.1</io.prometheus.prometheus-metrics.version>
+        <io.prometheus.prometheus-metrics.version>1.7.0</io.prometheus.prometheus-metrics.version>
 
         <!-- Cassandra -->
         <cassandra.driver.core.version>4.19.3</cassandra.driver.core.version>
-        <com.typesafe.config.version>1.4.8</com.typesafe.config.version>
+        <com.typesafe.config.version>1.4.9</com.typesafe.config.version>
         <guava.version>33.6.0-jre</guava.version>
         <caffeine.version>3.2.4</caffeine.version>
         <slf4j.version>2.0.18</slf4j.version>
         <logback.version>1.5.34</logback.version>
 
         <!-- Jackson -->
-        <com.fasterxml.jackson.version>2.21.4</com.fasterxml.jackson.version>
+        <com.fasterxml.jackson.version>2.22.0</com.fasterxml.jackson.version>
         <com.fasterxml.jackson.annotations.version>2.22</com.fasterxml.jackson.annotations.version>
         <org.yaml.snakeyaml.version>2.6</org.yaml.snakeyaml.version>
 
@@ -174,7 +174,7 @@
         <org.apache.servicemix.tooling.depends-maven-plugin.version>1.5.0</org.apache.servicemix.tooling.depends-maven-plugin.version>
         <org.codehaus.mojo.exec-maven-plugin.version>3.6.3</org.codehaus.mojo.exec-maven-plugin.version>
         <org.codehaus.mojo.license-maven-plugin.version>2.7.1</org.codehaus.mojo.license-maven-plugin.version>
-        <org.jacoco.jacoco-maven-plugin.version>0.8.14</org.jacoco.jacoco-maven-plugin.version>
+        <org.jacoco.jacoco-maven-plugin.version>0.8.15</org.jacoco.jacoco-maven-plugin.version>
         <org.sonatype.central-central-publishing-maven-plugin>0.10.0</org.sonatype.central-central-publishing-maven-plugin>
 
         <jolokia.adapter.version>2.6.0</jolokia.adapter.version>
