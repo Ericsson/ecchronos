@@ -50,6 +50,7 @@ class CassandraCluster:
         )
 
     def create_cluster(self):
+        self._cleanup_previous()
         try:
             self.cassandra_compose.start()
         except Exception as e:
@@ -123,15 +124,22 @@ class CassandraCluster:
         raise TimeoutError(f"Nodes did not go up after {max_wait_time_in_millis}ms")
 
     def _setup_db(self):
+        logger.info("Setting up database keyspaces and tables")
         command = ["docker", "exec", self.container_id, "bash", "/etc/cassandra/setup_db.sh"]
 
-        subprocess.run(
+        result = subprocess.run(
             command,
             timeout=DEFAULT_WAIT_TIME_IN_SECS * 3,
             encoding="utf-8",
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
+        if result.returncode != 0:
+            logger.error(f"setup_db.sh failed (exit code {result.returncode})")
+            logger.error(f"stdout: {result.stdout}")
+            logger.error(f"stderr: {result.stderr}")
+            raise RuntimeError(f"setup_db.sh failed with exit code {result.returncode}")
+        logger.info("Database setup completed successfully")
 
     def _modify_system_auth_keyspace(self):
         logger.info("Changing system_auth replication strategy")
@@ -162,6 +170,21 @@ class CassandraCluster:
             command,
             timeout=DEFAULT_WAIT_TIME_IN_SECS * 3,
             encoding="utf-8",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+    def _cleanup_previous(self):
+        subprocess.run(
+            [
+                "docker",
+                "compose",
+                "-f",
+                f"{global_vars.CASSANDRA_DOCKER_COMPOSE_FILE_PATH}/docker-compose.yml",
+                "down",
+                "--volumes",
+                "--remove-orphans",
+            ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
