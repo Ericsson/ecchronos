@@ -212,8 +212,11 @@ def run_ecctool(context, params):
     client_cert = context.config.userdata.get("ecc_client_cert")
     client_key = context.config.userdata.get("ecc_client_key")
     client_ca = context.config.userdata.get("ecc_client_ca")
-    env = {}
+    env = None
     if client_cert and client_key and client_ca:
-        env = {"ECCTOOL_CERT_FILE": client_cert, "ECCTOOL_KEY_FILE": client_key, "ECCTOOL_CA_FILE": client_ca}
+        env = os.environ.copy()
+        env["ECCTOOL_CERT_FILE"] = client_cert
+        env["ECCTOOL_KEY_FILE"] = client_key
+        env["ECCTOOL_CA_FILE"] = client_ca
     context.proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env)  # pylint: disable=consider-using-with
     (context.out, context.err) = context.proc.communicate()
