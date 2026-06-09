@@ -19,6 +19,7 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -55,6 +56,7 @@ public class AbstractCassandraCluster
                 .resolve("certificates/cert")
                 .toAbsolutePath()
                 .toString();
+        Files.createDirectories(Path.of(certificateDirectory));
         Path dockerComposePath = Paths.get("")
                 .toAbsolutePath()
                 .getParent()
@@ -65,11 +67,11 @@ public class AbstractCassandraCluster
                 .withLogConsumer(CASSANDRA_SEED_NODE_NAME, new Slf4jLogConsumer(LOG));
 
         composeContainer.start();
-        
+
         containerIP = composeContainer.getContainerByServiceName(CASSANDRA_SEED_NODE_NAME).get()
                 .getContainerInfo()
                 .getNetworkSettings().getNetworks().values().stream().findFirst().get().getIpAddress();
-        
+
         LOG.info("Waiting for the Cassandra cluster to finish starting up.");
         waitForNodesToBeUp(CASSANDRA_SEED_NODE_NAME,4,DEFAULT_WAIT_TIME_IN_MS);
         modifySystemAuthKeyspace();
