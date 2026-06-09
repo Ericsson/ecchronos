@@ -42,6 +42,7 @@
 # cert/client.csr
 #
 
+rm -rf ca cert
 mkdir -p ca
 mkdir -p cert
 
@@ -88,7 +89,7 @@ openssl pkcs12 -export\
  -out "$USER_PKCS12" -passout pass:"ecctest"
 
 ## Import PKCS12 key to keystore
-keytool -importkeystore\
+keytool -importkeystore -noprompt\
  -srckeystore "$USER_PKCS12" -srcalias "1" -srcstorepass "ecctest"\
  -destkeystore "$KEYSTORE" -destalias "cert" -deststorepass "ecctest"
 

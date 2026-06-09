@@ -38,7 +38,7 @@ if [ -f /etc/certificates/.keystore ]; then
 #
 # Setup CQL certificates
 #
-  sed -i "/client_encryption_options:/{n;s/enabled: false/enabled: true/}" "$CASSANDRA_CONF"/cassandra.yaml
+  sed -i '/client_encryption_options:/{n;/^[^e]*enabled: false/s/enabled: false/enabled: true/;t;n;s/enabled: false/enabled: true/}' "$CASSANDRA_CONF"/cassandra.yaml
 
   sed -i "s;keystore: .*;keystore: /etc/certificates/.keystore;g" "$CASSANDRA_CONF"/cassandra.yaml
   # Cassandra 5: 'keystore_password' must not be empty, e.g. remove comment if present
@@ -95,6 +95,7 @@ fi
 -Djavax.net.ssl.trustStore=/etc/certificates/.truststore
 -Djavax.net.ssl.trustStorePassword=ecctest
 -Dcom.sun.management.jmxremote.ssl.need.client.auth=true
+-Djdk.rmi.ssl.client.enableEndpointIdentification=false
 EOF
 
 #
