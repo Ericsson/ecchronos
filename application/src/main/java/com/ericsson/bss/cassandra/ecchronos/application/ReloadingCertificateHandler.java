@@ -62,6 +62,7 @@ import java.util.HashMap;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -537,7 +538,8 @@ public class ReloadingCertificateHandler implements CertificateHandler
                     temp.put("valid_until", x509Cert.getNotAfter().toString());
                     temp.put("serial_number", x509Cert.getSerialNumber());
                     temp.put("signature_algorithm", x509Cert.getSigAlgName());
-                    temp.put("critical_extensions", String.join(",", x509Cert.getCriticalExtensionOIDs()));
+                    Set<String> criticalOIDs = x509Cert.getCriticalExtensionOIDs();
+                    temp.put("critical_extensions", criticalOIDs != null ? String.join(",", criticalOIDs) : "");
                     temp.put("is_ca", (x509Cert.getBasicConstraints() != -1));
 
                     // Get the public key
