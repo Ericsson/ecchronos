@@ -1,6 +1,8 @@
 # Changes
 
-## Version 1.0.2 (Not yet Released)
+## Version 1.0.3 (Not yet Released)
+
+## Version 1.0.2
 
 * Fix TLS certificate hot-reload for Jolokia HTTP client - Issue #1657
 * Add resource-level blocking gate to serialize overlapping lock acquisition - Issue #1643
