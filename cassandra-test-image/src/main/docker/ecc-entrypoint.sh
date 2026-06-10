@@ -16,18 +16,6 @@
 
 set -e
 
-# Wait for rackdc properties to be available
-elapsed=0
-while ! grep -q "^dc=" /etc/cassandra/cassandra-rackdc.properties 2>/dev/null; do
-  elapsed=$((elapsed + 1))
-  if [ $elapsed -ge 30 ]; then
-    echo "ERROR: cassandra-rackdc.properties not available after 30s"
-    exit 1
-  fi
-  sleep 1
-done
-echo "INFO: cassandra-rackdc.properties available after ${elapsed}s"
-
 sed -i "s/authenticator: .*/authenticator: PasswordAuthenticator/g" "$CASSANDRA_CONF"/cassandra.yaml
 # Start of for 5.X
 sed -i "/^authenticator:/{n;s/class_name : .*/class_name : PasswordAuthenticator/}" "$CASSANDRA_CONF"/cassandra.yaml
