@@ -2,6 +2,7 @@
 
 ## Version 1.0.2 (Not yet Released)
 
+* Fix TLS certificate hot-reload for Jolokia HTTP client - Issue #1657
 * Add resource-level blocking gate to serialize overlapping lock acquisition - Issue #1643
 * Add local lock gate to eliminate intra-instance CAS contention - Issue #1640
 * Add runtime configuration of scheduler parameters via ecctool - Issue #1638

@@ -20,6 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.NotificationRegis
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
+import com.google.common.annotations.VisibleForTesting;
 import com.ericsson.bss.cassandra.ecchronos.utils.dns.ReverseDNS;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -52,7 +53,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class JolokiaNotificationController implements Closeable
+public class JolokiaNotificationController implements Closeable // NOPMD GodClass
 {
     private static final Logger LOG = LoggerFactory.getLogger(JolokiaNotificationController.class);
     private static final int SHUTDOWN_TIMEOUT_SECONDS = 1;
@@ -81,7 +82,8 @@ public class JolokiaNotificationController implements Closeable
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final CertificateHandler myCertificateHandler;
-    private final HttpClient myHttpClient;
+    private volatile HttpClient myHttpClient;
+    private volatile SSLContext myCurrentSSLContext;
     private final ConcurrentHashMap<UUID, ReentrantLock> myNodeLocks = new ConcurrentHashMap<>();
     private final Semaphore myPollingSemaphore;
 
@@ -107,6 +109,20 @@ public class JolokiaNotificationController implements Closeable
         myHttpClient = buildHttpClient();
     }
 
+    @VisibleForTesting
+    final HttpClient getHttpClient()
+    {
+        if (myCertificateHandler != null)
+        {
+            SSLContext latestContext = myCertificateHandler.getSSLContext();
+            if (latestContext != null && latestContext != myCurrentSSLContext) // NOPMD CompareObjectsWithEquals - intentional identity check
+            {
+                myHttpClient = buildHttpClient();
+            }
+        }
+        return myHttpClient;
+    }
+
     private HttpClient buildHttpClient()
     {
         HttpClient.Builder builder = HttpClient.newBuilder()
@@ -119,6 +135,7 @@ public class JolokiaNotificationController implements Closeable
                 sslContext.getClientSessionContext().setSessionCacheSize(SSL_SESSION_CACHE_SIZE);
                 sslContext.getClientSessionContext().setSessionTimeout(SSL_SESSION_TIMEOUT_SECONDS);
                 builder.sslContext(sslContext);
+                myCurrentSSLContext = sslContext;
             }
         }
         return builder.build();
@@ -351,35 +368,28 @@ public class JolokiaNotificationController implements Closeable
         }
     }
 
-    private void registerClientId(final UUID nodeID)
+    private void registerClientId(final UUID nodeID) throws IOException, InterruptedException
     {
-        try
-        {
-            String url = mountJolokiaBaseURL(nodeID) + "/notification/register";
+        String url = mountJolokiaBaseURL(nodeID) + "/notification/register";
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .timeout(java.time.Duration.ofSeconds(HTTP_REQUEST_TIMEOUT_SECONDS))
-                    .GET()
-                    .build();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(java.time.Duration.ofSeconds(HTTP_REQUEST_TIMEOUT_SECONDS))
+                .GET()
+                .build();
 
-            HttpResponse<String> response = myHttpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = getHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
-            LOG.debug("Raw response from {}: Status={}, Body={}", url, response.statusCode(), response.body());
+        LOG.debug("Raw response from {}: Status={}, Body={}", url, response.statusCode(), response.body());
 
-            ClientRegisterResponse clientRegisterResponse = objectMapper.readValue(
-                    decodeHtmlEntities(response.body()), ClientRegisterResponse.class);
+        ClientRegisterResponse clientRegisterResponse = objectMapper.readValue(
+                decodeHtmlEntities(response.body()), ClientRegisterResponse.class);
 
-            Map<String, String> properties = new HashMap<>();
-            properties.put(CLIENT_ID_PROPERTY, clientRegisterResponse.getValue().getId());
-            properties.put("store", clientRegisterResponse.getValue().getBackend().getPull().getStore());
+        Map<String, String> properties = new HashMap<>();
+        properties.put(CLIENT_ID_PROPERTY, clientRegisterResponse.getValue().getId());
+        properties.put("store", clientRegisterResponse.getValue().getBackend().getPull().getStore());
 
-            myClientIdMap.put(nodeID, properties);
-        }
-        catch (IOException | InterruptedException e)
-        {
-            LOG.error("Unable to register Jolokia Client in node with ID {}", nodeID, e);
-        }
+        myClientIdMap.put(nodeID, properties);
     }
 
     private String registerJolokiaNotification(final UUID nodeID) throws IOException, InterruptedException
@@ -391,7 +401,7 @@ public class JolokiaNotificationController implements Closeable
                 .timeout(java.time.Duration.ofSeconds(HTTP_REQUEST_TIMEOUT_SECONDS))
                 .POST(HttpRequest.BodyPublishers.ofString(jolokiaCreateNotificationOptions(nodeID)))
                 .build();
-        HttpResponse<String> response = myHttpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = getHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
         NotificationRegisterResponse notificationRegisterResponse = objectMapper.readValue(
                 decodeHtmlEntities(response.body()), NotificationRegisterResponse.class);
@@ -410,7 +420,7 @@ public class JolokiaNotificationController implements Closeable
                 .build();
         try
         {
-            myHttpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            getHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
         }
         catch (IOException | InterruptedException e)
         {
@@ -545,7 +555,7 @@ public class JolokiaNotificationController implements Closeable
                 .GET()
                 .build();
 
-        HttpResponse<String> response = myHttpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = getHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
         return decodeHtmlEntities(response.body());
     }
 
