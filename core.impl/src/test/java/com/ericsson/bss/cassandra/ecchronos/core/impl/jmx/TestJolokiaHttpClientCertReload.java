@@ -20,6 +20,7 @@ import static org.mockito.Mockito.when;
 
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
 import org.junit.Test;
 
 import javax.net.ssl.SSLContext;
@@ -32,6 +33,7 @@ public class TestJolokiaHttpClientCertReload
     {
         CertificateHandler certHandler = mock(CertificateHandler.class);
         DistributedNativeConnectionProvider ncp = mock(DistributedNativeConnectionProvider.class);
+        IpTranslator ipTranslator = mock(IpTranslator.class);
 
         SSLContext ctx1 = SSLContext.getInstance("TLS");
         ctx1.init(null, null, null);
@@ -41,28 +43,22 @@ public class TestJolokiaHttpClientCertReload
         // Initial context
         when(certHandler.getSSLContext()).thenReturn(ctx1);
 
-        JolokiaNotificationController controller = new JolokiaNotificationController.Builder()
-                .withNativeConnection(ncp)
-                .withCertificateHandler(certHandler)
-                .withJolokiaPort(8778)
-                .withJolokiaPEM(true)
-                .withRunDelay(500)
-                .build();
+        JolokiaHttpClient client = new JolokiaHttpClient(certHandler, ncp, 8778, true, false, ipTranslator);
 
-        HttpClient client1 = controller.getHttpClient();
+        HttpClient client1 = client.getHttpClient();
         assertThat(client1).isNotNull();
 
         // Same context — no rebuild
-        HttpClient client1Again = controller.getHttpClient();
+        HttpClient client1Again = client.getHttpClient();
         assertThat(client1Again).isSameAs(client1);
 
         // New context — should rebuild
         when(certHandler.getSSLContext()).thenReturn(ctx2);
-        HttpClient client2 = controller.getHttpClient();
+        HttpClient client2 = client.getHttpClient();
         assertThat(client2).isNotSameAs(client1);
 
         // Same new context — no rebuild
-        HttpClient client2Again = controller.getHttpClient();
+        HttpClient client2Again = client.getHttpClient();
         assertThat(client2Again).isSameAs(client2);
     }
 
@@ -70,16 +66,12 @@ public class TestJolokiaHttpClientCertReload
     public void testHttpClientNotRebuiltWhenNoCertHandler()
     {
         DistributedNativeConnectionProvider ncp = mock(DistributedNativeConnectionProvider.class);
+        IpTranslator ipTranslator = mock(IpTranslator.class);
 
-        JolokiaNotificationController controller = new JolokiaNotificationController.Builder()
-                .withNativeConnection(ncp)
-                .withJolokiaPort(8778)
-                .withJolokiaPEM(false)
-                .withRunDelay(500)
-                .build();
+        JolokiaHttpClient client = new JolokiaHttpClient(null, ncp, 8778, false, false, ipTranslator);
 
-        HttpClient client1 = controller.getHttpClient();
-        HttpClient client2 = controller.getHttpClient();
+        HttpClient client1 = client.getHttpClient();
+        HttpClient client2 = client.getHttpClient();
         assertThat(client2).isSameAs(client1);
     }
 }
