@@ -14,14 +14,10 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.impl.jmx;
 
-import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.ClientRegisterResponse;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.NotificationListenerResponse;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.NotificationRegisterResponse;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
-import com.ericsson.bss.cassandra.ecchronos.utils.dns.ReverseDNS;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
@@ -29,14 +25,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.management.Notification;
 import javax.management.NotificationListener;
-import javax.net.ssl.SSLContext;
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.URI;
 import java.net.UnknownHostException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -56,16 +47,7 @@ public class JolokiaNotificationController implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(JolokiaNotificationController.class);
     private static final int SHUTDOWN_TIMEOUT_SECONDS = 1;
-    private static final int HTTP_TIMEOUT_SECONDS = 5;
-    private static final int HTTP_REQUEST_TIMEOUT_SECONDS = 10;
-    private static final int SSL_SESSION_CACHE_SIZE = 50;
-    private static final int SSL_SESSION_TIMEOUT_SECONDS = 3600;
-    private static final int MAX_RETRIES = 3;
-    private static final long INITIAL_RETRY_DELAY_IN_MS = 500;
     private static final int MAX_CONSECUTIVE_FAILURES = 5;
-    private static final String CLIENT_ID_PROPERTY = "clientID";
-    private static final String SS_OBJ_NAME = "org.apache.cassandra.db:type=StorageService";
-    public static final String NO_BROADCAST_ADDRESS = "0.0.0.0"; //NOPMD AvoidUsingHardCodedIP
 
     private static final int NOTIFICATION_THREAD_POOL_SIZE = 4;
 
@@ -75,53 +57,28 @@ public class JolokiaNotificationController implements Closeable
             NOTIFICATION_THREAD_POOL_SIZE,
             new ThreadFactoryBuilder().setNameFormat("NotificationRefresher-%d").build());
 
-    private final Map<UUID, Map<String, String>> myClientIdMap = new ConcurrentHashMap<>();
     private final Map<UUID, Map<String, NotificationListener>> myNodeListenersMap = new ConcurrentHashMap<>();
     private final Map<UUID, Map<String, ScheduledFuture<?>>> myNotificationMonitors = new ConcurrentHashMap<>();
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final CertificateHandler myCertificateHandler;
-    private final HttpClient myHttpClient;
     private final ConcurrentHashMap<UUID, ReentrantLock> myNodeLocks = new ConcurrentHashMap<>();
     private final Semaphore myPollingSemaphore;
 
-    private final DistributedNativeConnectionProvider myNativeConnectionProvider;
-    private final int myJolokiaPort;
-    private final boolean myJolokiaPEM;
-    private final boolean myReverseDNSResolution;
-    private final String myURLPrefix;
+    private final JolokiaHttpClient myJolokiaHttpClient;
     private final long myRunDelay;
-    private final IpTranslator myIpTranslator;
 
     public JolokiaNotificationController(final Builder builder)
     {
-        myNativeConnectionProvider = builder.myNativeConnection;
-        myJolokiaPort = builder.myJolokiaPort;
-        myJolokiaPEM = builder.myJolokiaPEM;
-        myURLPrefix = myJolokiaPEM ? "https" : "http";
-        myReverseDNSResolution = builder.myReverseDNSResolution;
         myRunDelay = builder.myRunDelay;
-        myIpTranslator = builder.myIpTranslator;
-        myCertificateHandler = builder.myCertificateHandler;
         myPollingSemaphore = new Semaphore(NOTIFICATION_THREAD_POOL_SIZE);
-        myHttpClient = buildHttpClient();
-    }
-
-    private HttpClient buildHttpClient()
-    {
-        HttpClient.Builder builder = HttpClient.newBuilder()
-                .connectTimeout(java.time.Duration.ofSeconds(HTTP_TIMEOUT_SECONDS));
-        if (myCertificateHandler != null)
-        {
-            SSLContext sslContext = myCertificateHandler.getSSLContext();
-            if (sslContext != null)
-            {
-                sslContext.getClientSessionContext().setSessionCacheSize(SSL_SESSION_CACHE_SIZE);
-                sslContext.getClientSessionContext().setSessionTimeout(SSL_SESSION_TIMEOUT_SECONDS);
-                builder.sslContext(sslContext);
-            }
-        }
-        return builder.build();
+        myJolokiaHttpClient = new JolokiaHttpClient(
+                builder.myCertificateHandler,
+                builder.myNativeConnection,
+                builder.myJolokiaPort,
+                builder.myJolokiaPEM,
+                builder.myReverseDNSResolution,
+                builder.myIpTranslator
+        );
     }
 
     private ReentrantLock getNodeLock(final UUID nodeID)
@@ -131,9 +88,9 @@ public class JolokiaNotificationController implements Closeable
 
     public final void addStorageServiceListener(final UUID nodeID, final NotificationListener listener) throws IOException, InterruptedException
     {
-        registerClientId(nodeID);
+        myJolokiaHttpClient.registerClientId(nodeID);
 
-        String jolokiaNotificationID = registerJolokiaNotification(nodeID);
+        String jolokiaNotificationID = myJolokiaHttpClient.registerJolokiaNotification(nodeID);
 
         synchronized (myNodeListenersMap)
         {
@@ -159,7 +116,7 @@ public class JolokiaNotificationController implements Closeable
             }
             try
             {
-                removeJolokiaNotification(nodeID, jolokiaNotificationID);
+                myJolokiaHttpClient.removeJolokiaNotification(nodeID, jolokiaNotificationID);
             }
             catch (Exception removeEx)
             {
@@ -179,7 +136,7 @@ public class JolokiaNotificationController implements Closeable
             LOG.warn("No Jolokia notification ID found for listener on node {}, skipping removal", nodeID);
             return;
         }
-        removeJolokiaNotification(nodeID, jolokiaNotificationID);
+        myJolokiaHttpClient.removeJolokiaNotification(nodeID, jolokiaNotificationID);
         synchronized (myNotificationMonitors)
         {
             Map<String, ScheduledFuture<?>> monitors = myNotificationMonitors.get(nodeID);
@@ -255,7 +212,7 @@ public class JolokiaNotificationController implements Closeable
                 lock.lock();
                 try
                 {
-                    String response = checkForNotificationsWithRetry(myNodeID, myNotificationID);
+                    String response = myJolokiaHttpClient.checkForNotificationsWithRetry(myNodeID, myNotificationID);
                     NotificationListenerResponse notificationListenerResponse = objectMapper.readValue(response,
                             NotificationListenerResponse.class);
 
@@ -351,213 +308,6 @@ public class JolokiaNotificationController implements Closeable
         }
     }
 
-    private void registerClientId(final UUID nodeID)
-    {
-        try
-        {
-            String url = mountJolokiaBaseURL(nodeID) + "/notification/register";
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .timeout(java.time.Duration.ofSeconds(HTTP_REQUEST_TIMEOUT_SECONDS))
-                    .GET()
-                    .build();
-
-            HttpResponse<String> response = myHttpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-            LOG.debug("Raw response from {}: Status={}, Body={}", url, response.statusCode(), response.body());
-
-            ClientRegisterResponse clientRegisterResponse = objectMapper.readValue(
-                    decodeHtmlEntities(response.body()), ClientRegisterResponse.class);
-
-            Map<String, String> properties = new HashMap<>();
-            properties.put(CLIENT_ID_PROPERTY, clientRegisterResponse.getValue().getId());
-            properties.put("store", clientRegisterResponse.getValue().getBackend().getPull().getStore());
-
-            myClientIdMap.put(nodeID, properties);
-        }
-        catch (IOException | InterruptedException e)
-        {
-            LOG.error("Unable to register Jolokia Client in node with ID {}", nodeID, e);
-        }
-    }
-
-    private String registerJolokiaNotification(final UUID nodeID) throws IOException, InterruptedException
-    {
-        String url = mountJolokiaBaseURL(nodeID) + "/notification";
-
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .timeout(java.time.Duration.ofSeconds(HTTP_REQUEST_TIMEOUT_SECONDS))
-                .POST(HttpRequest.BodyPublishers.ofString(jolokiaCreateNotificationOptions(nodeID)))
-                .build();
-        HttpResponse<String> response = myHttpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-        NotificationRegisterResponse notificationRegisterResponse = objectMapper.readValue(
-                decodeHtmlEntities(response.body()), NotificationRegisterResponse.class);
-
-        return notificationRegisterResponse.getValue();
-    }
-
-    private void removeJolokiaNotification(final UUID nodeID, final String notificationID) throws UnknownHostException
-    {
-        String url = mountJolokiaBaseURL(nodeID) + "/notification";
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .timeout(java.time.Duration.ofSeconds(HTTP_REQUEST_TIMEOUT_SECONDS))
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        jolokiaRemoveNotificationOptions(nodeID, notificationID)))
-                .build();
-        try
-        {
-            myHttpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        }
-        catch (IOException | InterruptedException e)
-        {
-            LOG.error("Error trying to remove NotificationListener with ID {} in node {}",
-                    notificationID, nodeID, e);
-        }
-    }
-
-    private String jolokiaCreateNotificationOptions(final UUID nodeID)
-    {
-        Map<String, Object> params = new HashMap<>();
-        params.put("type", "notification");
-        params.put("command", "add");
-        params.put("client", myClientIdMap.get(nodeID).get(CLIENT_ID_PROPERTY));
-        params.put("mode", "pull");
-        params.put("mbean", SS_OBJ_NAME);
-        List<String> filter = List.of(
-                "progress",
-                "jmx.remote.connection.lost.notifications",
-                "jmx.remote.connection.failed",
-                "jmx.remote.connection.closed"
-        );
-        params.put("filter", filter);
-
-        try
-        {
-            return objectMapper.writeValueAsString(params);
-        }
-        catch (JsonProcessingException e)
-        {
-            LOG.error("Unable to serialize notification options for node {}", nodeID, e);
-        }
-        return "";
-    }
-
-    private String jolokiaRemoveNotificationOptions(final UUID nodeID, final String notificationID)
-    {
-        Map<String, Object> params = new HashMap<>();
-        params.put("type", "notification");
-        params.put("command", "remove");
-        params.put("client", myClientIdMap.get(nodeID).get(CLIENT_ID_PROPERTY));
-        params.put("handle", notificationID);
-
-        try
-        {
-            return objectMapper.writeValueAsString(params);
-        }
-        catch (JsonProcessingException e)
-        {
-            LOG.error("Unable to serialize Jolokia Notification Options for node {}", nodeID,
-                    e);
-        }
-        return "";
-    }
-
-    private String mountJolokiaBaseURL(final UUID nodeID) throws UnknownHostException
-    {
-        String host = myNativeConnectionProvider.getNodes().get(nodeID).getBroadcastRpcAddress().get().getAddress().getHostAddress();
-        if (NO_BROADCAST_ADDRESS.equals(host))
-        {
-            host = myNativeConnectionProvider.getNodes().get(nodeID).getListenAddress().get().getHostString();
-        }
-        if (myIpTranslator.isActive())
-        {
-            host = myIpTranslator.getInternalIp(host);
-        }
-        if (myReverseDNSResolution)
-        {
-            host = ReverseDNS.fromHostString(host);
-        }
-        if (host.contains(":") && !host.startsWith("[") && !host.endsWith("]"))
-        {
-            // Use square brackets to surround IPv6 addresses
-            host = "[" + host + "]";
-        }
-        return myURLPrefix + "://" + host + ":" + myJolokiaPort + "/jolokia";
-    }
-
-    private String checkForNotificationsWithRetry(final UUID nodeID, final String notificationID)
-            throws IOException, InterruptedException
-    {
-        IOException lastException = null;
-        for (int attempt = 1; attempt <= MAX_RETRIES; attempt++)
-        {
-            try
-            {
-                return checkForNotifications(nodeID, notificationID);
-            }
-            catch (IOException e)
-            {
-                lastException = e;
-                LOG.debug("Notification check attempt {}/{} failed for node {}",
-                        attempt, MAX_RETRIES, nodeID, e);
-                if (attempt < MAX_RETRIES)
-                {
-                    long delay = INITIAL_RETRY_DELAY_IN_MS * (1L << (attempt - 1));
-                    Thread.sleep(delay);
-                }
-            }
-        }
-        // All retries failed — attempt to re-register client and try once more
-        LOG.debug("All {} retries failed for node {}, attempting client re-registration", MAX_RETRIES, nodeID);
-        try
-        {
-            registerClientId(nodeID);
-            return checkForNotifications(nodeID, notificationID);
-        }
-        catch (IOException e)
-        {
-            LOG.warn("Re-registration attempt also failed for node {}", nodeID, e);
-        }
-        throw lastException;
-    }
-
-    private String checkForNotifications(final UUID nodeID, final String notificationID)
-            throws IOException, InterruptedException
-    {
-        String url;
-        Map<String, String> clientInfo = myClientIdMap.get(nodeID);
-        if (clientInfo == null)
-        {
-            LOG.debug("No client info found for node {}, skipping notification check", nodeID);
-            return "{}";
-        }
-
-        url = mountJolokiaBaseURL(nodeID) + "/exec/" + clientInfo.get("store") + "/pull/"
-            + clientInfo.get(CLIENT_ID_PROPERTY) + "/" + notificationID;
-
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .timeout(java.time.Duration.ofSeconds(HTTP_REQUEST_TIMEOUT_SECONDS))
-                .GET()
-                .build();
-
-        HttpResponse<String> response = myHttpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        return decodeHtmlEntities(response.body());
-    }
-
-    private String decodeHtmlEntities(final String input)
-    {
-        return input
-                .replace("&quot;", "\"")
-                .replace("&lt;", "<")
-                .replace("&gt;", ">")
-                .replace("&amp;", "&");
-    }
-
     @Override
     public final void close()
     {
@@ -569,7 +319,7 @@ public class JolokiaNotificationController implements Closeable
             {
                 try
                 {
-                    removeJolokiaNotification(nodeID, notificationID);
+                    myJolokiaHttpClient.removeJolokiaNotification(nodeID, notificationID);
                 }
                 catch (Exception e)
                 {
@@ -593,7 +343,6 @@ public class JolokiaNotificationController implements Closeable
 
         myNodeListenersMap.clear();
         myJolokiaRelationshipListeners.clear();
-        myClientIdMap.clear();
         myNodeLocks.clear();
 
         // Shutdown executor
