@@ -358,6 +358,7 @@ public class JolokiaNotificationController implements Closeable
         {
             myNotificationExecutor.shutdownNow();
         }
+        myJolokiaHttpClient.close();
     }
 
     public static Builder newBuilder()

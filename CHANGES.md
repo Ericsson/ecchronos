@@ -2,6 +2,8 @@
 
 ## Version 1.0.3 (Not yet Released)
 
+* Fix orphaned HttpClient thread/exchange leak on TLS cert reload - Issue #1662
+
 ## Version 1.0.2
 
 * Fix TLS certificate hot-reload for Jolokia HTTP client - Issue #1657
