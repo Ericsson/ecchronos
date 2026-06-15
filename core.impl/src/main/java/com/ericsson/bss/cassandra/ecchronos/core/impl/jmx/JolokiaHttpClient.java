@@ -38,8 +38,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
-final class JolokiaHttpClient
+final class JolokiaHttpClient implements java.io.Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(JolokiaHttpClient.class);
     private static final int HTTP_TIMEOUT_SECONDS = 5;
@@ -48,6 +51,7 @@ final class JolokiaHttpClient
     private static final int SSL_SESSION_TIMEOUT_SECONDS = 3600;
     private static final int MAX_RETRIES = 3;
     private static final long INITIAL_RETRY_DELAY_IN_MS = 500;
+    private static final int HTTP_EXECUTOR_POOL_SIZE = 8;
     private static final String CLIENT_ID_PROPERTY = "clientID";
     private static final String SS_OBJ_NAME = "org.apache.cassandra.db:type=StorageService";
     public static final String NO_BROADCAST_ADDRESS = "0.0.0.0"; //NOPMD AvoidUsingHardCodedIP
@@ -62,6 +66,7 @@ final class JolokiaHttpClient
     private final IpTranslator myIpTranslator;
     private volatile HttpClient myHttpClient;
     private volatile SSLContext myCurrentSSLContext;
+    private volatile ExecutorService myCurrentExecutor;
 
     JolokiaHttpClient(final CertificateHandler certificateHandler,
                       final DistributedNativeConnectionProvider nativeConnectionProvider,
@@ -87,7 +92,13 @@ final class JolokiaHttpClient
             SSLContext latestContext = myCertificateHandler.getSSLContext();
             if (latestContext != null && latestContext != myCurrentSSLContext) // NOPMD CompareObjectsWithEquals
             {
+                ExecutorService oldExecutor = myCurrentExecutor;
                 myHttpClient = buildHttpClient();
+                if (oldExecutor != null)
+                {
+                    oldExecutor.shutdownNow();
+                    LOG.info("Previous HttpClient executor shut down after certificate rotation");
+                }
             }
         }
         return myHttpClient;
@@ -95,7 +106,11 @@ final class JolokiaHttpClient
 
     private HttpClient buildHttpClient()
     {
+        ExecutorService executor = Executors.newFixedThreadPool(HTTP_EXECUTOR_POOL_SIZE,
+                new ThreadFactoryBuilder().setNameFormat("JolokiaHttp-%d").setDaemon(true).build());
+        myCurrentExecutor = executor;
         HttpClient.Builder builder = HttpClient.newBuilder()
+                .executor(executor)
                 .connectTimeout(java.time.Duration.ofSeconds(HTTP_TIMEOUT_SECONDS));
         if (myCertificateHandler != null)
         {
@@ -311,5 +326,14 @@ final class JolokiaHttpClient
                 .replace("&lt;", "<")
                 .replace("&gt;", ">")
                 .replace("&amp;", "&");
+    }
+
+    @Override
+    public void close()
+    {
+        if (myCurrentExecutor != null)
+        {
+            myCurrentExecutor.shutdownNow();
+        }
     }
 }

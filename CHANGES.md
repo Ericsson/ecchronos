@@ -2,6 +2,7 @@
 
 ## Version 1.0.3 (Not yet Released)
 
+* Fix orphaned HttpClient thread/exchange leak on TLS cert reload - Issue #1662
 * Fix repeated refreshState() in batched lock session causing snapshot accumulation - Issue #1661
 
 ## Version 1.0.2
