@@ -24,7 +24,9 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManage
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
 import java.io.Closeable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -411,12 +413,15 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             LOG.debug("Looking for Job for Node {}", nodeID);
             long tickStart = System.currentTimeMillis();
             boolean hadWork = false;
+
+            List<ScheduledJob> candidates = new ArrayList<>();
             for (ScheduledJob next : myQueue.get(nodeID))
             {
-                if (System.currentTimeMillis() - tickStart > myRunIntervalInMs)
-                {
-                    break;
-                }
+                candidates.add(next);
+            }
+
+            for (ScheduledJob next : candidates)
+            {
                 Long backoffUntil = myContentionBackoff.get(next);
                 if (backoffUntil != null)
                 {
@@ -429,7 +434,11 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 if (validate(next))
                 {
                     currentExecutingJobs.put(nodeID, next);
-                    hadWork = runSession(next);
+                    hadWork = runSession(next, candidates);
+                    break;
+                }
+                if (System.currentTimeMillis() - tickStart > myRunIntervalInMs)
+                {
                     break;
                 }
             }
@@ -451,7 +460,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             return true;
         }
 
-        private boolean runSession(final ScheduledJob firstJob)
+        private boolean runSession(final ScheduledJob firstJob, final List<ScheduledJob> candidates)
         {
             long sessionStart = System.currentTimeMillis();
             LOG.info("Session started for node {}, window={}ms", nodeID, mySessionWindowInMs);
@@ -463,7 +472,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
                 if (withinSessionWindow(sessionStart))
                 {
-                    tasksExecuted += runRemainingJobsInSession(sessionStart, firstJob, lockPool);
+                    tasksExecuted += runRemainingJobsInSession(sessionStart, firstJob, lockPool, candidates);
                 }
             }
 
@@ -476,10 +485,11 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         private int runRemainingJobsInSession(
                 final long sessionStart,
                 final ScheduledJob excludeJob,
-                final SessionLockPool lockPool)
+                final SessionLockPool lockPool,
+                final List<ScheduledJob> candidates)
         {
             int tasksExecuted = 0;
-            for (ScheduledJob job : myQueue.get(nodeID))
+            for (ScheduledJob job : candidates)
             {
                 if (!withinSessionWindow(sessionStart))
                 {

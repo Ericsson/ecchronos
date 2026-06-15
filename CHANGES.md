@@ -2,6 +2,8 @@
 
 ## Version 1.0.3 (Not yet Released)
 
+* Fix repeated refreshState() in batched lock session causing snapshot accumulation - Issue #1661
+
 ## Version 1.0.2
 
 * Fix TLS certificate hot-reload for Jolokia HTTP client - Issue #1657
