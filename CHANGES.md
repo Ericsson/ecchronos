@@ -1,5 +1,7 @@
 # Changes
 
+## Version 6.1.11
+
 ## Version 6.1.10
 
 ## Version 6.1.9
