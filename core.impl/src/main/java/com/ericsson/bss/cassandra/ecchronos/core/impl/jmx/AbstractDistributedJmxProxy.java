@@ -38,6 +38,7 @@ import javax.management.remote.JMXConnector;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -118,7 +119,13 @@ abstract class AbstractDistributedJmxProxy implements DistributedJmxProxy
         if (!myNodesMap.containsKey(nodeID))
         {
             LOG.debug("Node {} is not managed by local instance, using random connection to get live nodes", nodeID);
-            nodeIdConnection = myDistributedJmxConnectionProvider.getJmxConnections().keySet().stream().findFirst().get();
+            Optional<UUID> firstNode = myDistributedJmxConnectionProvider.getJmxConnections().keySet().stream().findFirst();
+            if (firstNode.isEmpty())
+            {
+                LOG.warn("No JMX connections available, cannot get live nodes for {}", nodeID);
+                throw new IllegalStateException("No JMX connections available to query live nodes for node " + nodeID);
+            }
+            nodeIdConnection = firstNode.get();
             nodeConnection = myDistributedJmxConnectionProvider.getJmxConnector(nodeIdConnection);
         }
         else
@@ -171,7 +178,13 @@ abstract class AbstractDistributedJmxProxy implements DistributedJmxProxy
         if (!myNodesMap.containsKey(nodeID))
         {
             LOG.debug("Node {} is not managed by local instance, using random connection to get unreachable nodes", nodeID);
-            nodeIdConnection = myDistributedJmxConnectionProvider.getJmxConnections().keySet().stream().findFirst().get();
+            Optional<UUID> firstNode = myDistributedJmxConnectionProvider.getJmxConnections().keySet().stream().findFirst();
+            if (firstNode.isEmpty())
+            {
+                LOG.warn("No JMX connections available, cannot get unreachable nodes for {}", nodeID);
+                throw new IllegalStateException("No JMX connections available to query unreachable nodes for node " + nodeID);
+            }
+            nodeIdConnection = firstNode.get();
             nodeConnection = myDistributedJmxConnectionProvider.getJmxConnector(nodeIdConnection);
         }
         else

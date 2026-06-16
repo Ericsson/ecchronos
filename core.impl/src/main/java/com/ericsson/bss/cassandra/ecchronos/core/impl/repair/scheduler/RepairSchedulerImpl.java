@@ -48,8 +48,8 @@ import java.util.AbstractMap;
 import java.util.Collection;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -63,13 +63,14 @@ import javax.management.RuntimeMBeanException;
 public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 {
     private static final int DEFAULT_TERMINATION_WAIT_IN_SECONDS = 10;
+    private static final long SCHEDULE_RETRY_DELAY_SECONDS = 30;
 
     private static final Logger LOG = LoggerFactory.getLogger(RepairSchedulerImpl.class);
 
     private final Map<UUID, Map<TableReference, Set<ScheduledRepairJob>>> myScheduledJobs = new ConcurrentHashMap<>();
     private final java.util.concurrent.locks.ReadWriteLock myLock = new java.util.concurrent.locks.ReentrantReadWriteLock();
 
-    private final ExecutorService myExecutor;
+    private final ScheduledExecutorService myExecutor;
     private final ScheduleManager myScheduleManager;
     private final ScheduledRepairJobFactory myJobFactory;
 
@@ -246,7 +247,11 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         }
         catch (Exception e)
         {
-            LOG.error("Unexpected error during schedule change of {}:", tableReference, e);
+            LOG.error("Unexpected error during schedule change of {}, retrying in {}s:",
+                    tableReference, SCHEDULE_RETRY_DELAY_SECONDS, e);
+            myExecutor.schedule(
+                    () -> handleTableConfigurationChange(node, tableReference, repairConfigurations),
+                    SCHEDULE_RETRY_DELAY_SECONDS, TimeUnit.SECONDS);
         }
         finally
         {
