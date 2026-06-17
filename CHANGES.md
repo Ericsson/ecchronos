@@ -1,6 +1,8 @@
 # Changes
 
-## Version 1.0.3 (Not yet Released)
+## Version 1.0.4
+
+## Version 1.0.3
 
 * Fix schedule discovery failure during DC upgrade never retried - Issue #1670
 * Fix orphaned HttpClient thread/exchange leak on TLS cert reload - Issue #1662
