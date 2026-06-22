@@ -2,6 +2,7 @@
 
 ## Version 1.0.4
 
+* Remove springdoc runtime dependency from packaged distribution - Issue #1686
 * Fix stale Jolokia connection after Cassandra pod recreation - Issue #1682
 
 ## Version 1.0.3
