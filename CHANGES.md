@@ -2,6 +2,8 @@
 
 ## Version 1.0.4
 
+* Fix stale Jolokia connection after Cassandra pod recreation - Issue #1682
+
 ## Version 1.0.3
 
 * Fix schedule discovery failure during DC upgrade never retried - Issue #1670

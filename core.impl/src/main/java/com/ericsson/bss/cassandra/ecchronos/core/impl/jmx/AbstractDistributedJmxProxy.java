@@ -36,6 +36,8 @@ import javax.management.ReflectionException;
 import javax.management.RuntimeMBeanException;
 import javax.management.remote.JMXConnector;
 import java.io.IOException;
+import java.net.ConnectException;
+import java.net.http.HttpConnectTimeoutException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Optional;
@@ -159,6 +161,7 @@ abstract class AbstractDistributedJmxProxy implements DistributedJmxProxy
                    | UncheckedJmxAdapterException e)
             {
                 rethrowIfOutOfMemory(e);
+                invalidateIfConnectionStale(nodeIdConnection, e);
                 LOG.error("Unable to get live nodes for node {}", nodeID, e);
             }
         }
@@ -219,6 +222,7 @@ abstract class AbstractDistributedJmxProxy implements DistributedJmxProxy
                    | UncheckedJmxAdapterException e)
             {
                 rethrowIfOutOfMemory(e);
+                invalidateIfConnectionStale(nodeIdConnection, e);
                 LOG.error("Unable to get unreachable nodes for node {}", nodeID, e);
             }
         }
@@ -277,6 +281,7 @@ abstract class AbstractDistributedJmxProxy implements DistributedJmxProxy
             catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException | UncheckedJmxAdapterException e)
             {
                 rethrowIfOutOfMemory(e);
+                invalidateIfConnectionStale(nodeID, e);
                 LOG.error("Unable to repair node {}", nodeID, e);
             }
         }
@@ -328,6 +333,7 @@ abstract class AbstractDistributedJmxProxy implements DistributedJmxProxy
             catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException | UncheckedJmxAdapterException e)
             {
                 rethrowIfOutOfMemory(e);
+                invalidateIfConnectionStale(nodeID, e);
                 LOG.error("Unable to terminate repair sessions for node {}", nodeID, e);
             }
         }
@@ -393,6 +399,7 @@ abstract class AbstractDistributedJmxProxy implements DistributedJmxProxy
                    | UncheckedJmxAdapterException e)
             {
                 rethrowIfOutOfMemory(e);
+                invalidateIfConnectionStale(nodeID, e);
                 LOG.error("Unable to retrieve disk space usage for table {} in node {}", tableReference,
                         nodeID,
                         e);
@@ -475,6 +482,7 @@ abstract class AbstractDistributedJmxProxy implements DistributedJmxProxy
                    | UncheckedJmxAdapterException e)
             {
                 rethrowIfOutOfMemory(e);
+                invalidateIfConnectionStale(nodeID, e);
                 LOG.error("Unable to retrieve percent repaired for {} in node {}",
                         tableReference, nodeID, e);
             }
@@ -529,6 +537,7 @@ abstract class AbstractDistributedJmxProxy implements DistributedJmxProxy
                    | UncheckedJmxAdapterException e)
             {
                 rethrowIfOutOfMemory(e);
+                invalidateIfConnectionStale(nodeID, e);
                 LOG.error("Unable to retrieve node status for {}", nodeID, e);
             }
         }
@@ -573,6 +582,7 @@ abstract class AbstractDistributedJmxProxy implements DistributedJmxProxy
             catch (Exception e)
             {
                 rethrowIfOutOfMemory(e);
+                invalidateIfConnectionStale(nodeID, e);
                 LOG.warn("Unable to check active repair status for command {} on node {}, assuming still active",
                         command, nodeID, e);
                 return true;
@@ -617,6 +627,42 @@ abstract class AbstractDistributedJmxProxy implements DistributedJmxProxy
         else
         {
             LOG.info("Node {} is not managed by local instance, cannot mark as unavailable", nodeID);
+        }
+    }
+
+    /**
+     * Invalidate the JMX connection for a node, forcing reconnection on next use.
+     * Called when HTTP timeouts indicate the cached connection points to a stale address.
+     */
+    protected void invalidateConnection(final UUID nodeID)
+    {
+        try
+        {
+            getConnectionProvider().close(nodeID);
+            LOG.info("Invalidated JMX connection for node {} to force reconnection", nodeID);
+        }
+        catch (IOException e)
+        {
+            LOG.debug("Error closing stale connection for node {}", nodeID, e);
+        }
+    }
+
+    /**
+     * Check if the exception indicates a stale connection (HTTP connect timeout)
+     * and invalidate the connection if so.
+     */
+    protected void invalidateIfConnectionStale(final UUID nodeID, final Throwable t)
+    {
+        Throwable cause = t;
+        while (cause != null)
+        {
+            if (cause instanceof HttpConnectTimeoutException
+                    || cause instanceof ConnectException)
+            {
+                invalidateConnection(nodeID);
+                return;
+            }
+            cause = cause.getCause();
         }
     }
 
@@ -701,6 +747,7 @@ abstract class AbstractDistributedJmxProxy implements DistributedJmxProxy
         catch (MBeanException | ReflectionException | IOException | UncheckedJmxAdapterException e)
         {
             rethrowIfOutOfMemory(e);
+            invalidateIfConnectionStale(nodeID, e);
             LOG.error("Unable to get maxRepaired for table {} in node {}", tableReference, nodeID, e);
         }
         catch (ClassCastException e)
