@@ -69,21 +69,6 @@
             </plugin>
 
             <plugin>
-                <artifactId>maven-project-info-reports-plugin</artifactId>
-                <version>3.9.0</version>
-                <executions>
-                    <execution>
-                        <id>licenses</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>dependencies</goal>
-                            <goal>licenses</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>license-maven-plugin</artifactId>
                 <executions>

@@ -54,6 +54,10 @@
         <fileSet>
             <directory>${project.basedir}/src/pylib</directory>
             <outputDirectory>pylib</outputDirectory>
+            <excludes>
+                <exclude>**/__pycache__/**</exclude>
+                <exclude>**/*.pyc</exclude>
+            </excludes>
         </fileSet>
         <fileSet>
             <directory>.</directory>
@@ -76,10 +80,7 @@
                 <include>THIRD-PARTY.txt</include>
             </includes>
         </fileSet>
-        <fileSet>
-            <directory>${project.basedir}/target/site</directory>
-            <outputDirectory>site</outputDirectory>
-        </fileSet>
+
     </fileSets>
     <dependencySets>
         <dependencySet>

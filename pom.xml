@@ -80,7 +80,7 @@
         <org.apache.commons.commons-compress.version>1.28.0</org.apache.commons.commons-compress.version>
         <org.apache.httpcomponents.client5.httpclient5.version>5.6.1</org.apache.httpcomponents.client5.httpclient5.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.84</org.bouncycastle.bcpkix-jdk18on.version>
-        <org.springdoc.openapi-starter-webmvc-ui.version>2.8.17</org.springdoc.openapi-starter-webmvc-ui.version>
+        <org.springdoc.openapi-starter-webmvc-api.version>2.8.17</org.springdoc.openapi-starter-webmvc-api.version>
         <org.springframework.boot.spring-boot.version>3.5.15</org.springframework.boot.spring-boot.version>
         <org.springframework.spring-test.version>6.2.19</org.springframework.spring-test.version>
         <org.yaml.snakeyaml.version>2.6</org.yaml.snakeyaml.version>
@@ -337,20 +337,14 @@
 
             <dependency>
                 <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-thymeleaf</artifactId>
-                <version>${org.springframework.boot.spring-boot.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-web</artifactId>
                 <version>${org.springframework.boot.spring-boot.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.springdoc</groupId>
-                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-                <version>${org.springdoc.openapi-starter-webmvc-ui.version}</version>
+                <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
+                <version>${org.springdoc.openapi-starter-webmvc-api.version}</version>
             </dependency>
 
             <!-- OpenAPI annotations -->
@@ -362,7 +356,7 @@
 
             <dependency>
                 <groupId>io.swagger.core.v3</groupId>
-                <artifactId>swagger-annotations</artifactId>
+                <artifactId>swagger-annotations-jakarta</artifactId>
                 <version>${swagger-annotations.version}</version>
             </dependency>
 
