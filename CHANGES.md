@@ -2,6 +2,7 @@
 
 ## Version 1.0.4
 
+* Throttle refreshState() per job to prevent RepairStateSnapshot accumulation under adaptive rescheduling - Issue #1685
 * Exclude spring-boot-starter-logging from distribution - Issue #1687
 * Remove springdoc runtime dependency from packaged distribution - Issue #1686
 * Fix stale Jolokia connection after Cassandra pod recreation - Issue #1682
