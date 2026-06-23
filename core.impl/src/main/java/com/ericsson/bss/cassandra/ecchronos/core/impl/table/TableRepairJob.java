@@ -57,11 +57,13 @@ public class TableRepairJob extends ScheduledRepairJob
 {
     private static final Logger LOG = LoggerFactory.getLogger(TableRepairJob.class);
     private static final int DAYS_IN_A_WEEK = 7;
+    private static final long MIN_REFRESH_INTERVAL_MS = TimeUnit.SECONDS.toMillis(30);
     private final Node myNode;
     private final RepairState myRepairState;
     private final TableStorageStates myTableStorageStates;
     private final RepairHistoryService myRepairHistory;
     private final TimeBasedRunPolicy myTimeBasedRunPolicy;
+    private volatile long myLastRefreshTime;
 
     TableRepairJob(final Builder builder)
     {
@@ -221,10 +223,18 @@ public class TableRepairJob extends ScheduledRepairJob
 
     /**
      * Refresh the repair state.
+     * Throttled to at most once per {@link #MIN_REFRESH_INTERVAL_MS} to prevent
+     * snapshot accumulation under adaptive 1-second rescheduling.
      */
     @Override
     public void refreshState()
     {
+        long now = System.currentTimeMillis();
+        if (now - myLastRefreshTime < MIN_REFRESH_INTERVAL_MS)
+        {
+            return;
+        }
+        myLastRefreshTime = now;
         try
         {
             myRepairState.update();

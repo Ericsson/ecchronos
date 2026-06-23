@@ -2,6 +2,7 @@
 
 ## Version 1.0.4
 
+* Throttle refreshState() per job to prevent RepairStateSnapshot accumulation under adaptive rescheduling - Issue #1685
 * Fix stale Jolokia connection after Cassandra pod recreation - Issue #1682
 
 ## Version 1.0.3
