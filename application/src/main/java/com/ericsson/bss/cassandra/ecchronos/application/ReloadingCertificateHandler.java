@@ -28,7 +28,7 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
-import jakarta.xml.bind.DatatypeConverter;
+import java.util.HexFormat;
 import javax.net.ssl.X509TrustManager;
 import java.io.File;
 import java.io.FileInputStream;
@@ -211,7 +211,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
         {
             MessageDigest md5 = MessageDigest.getInstance("MD5");
             byte[] digestBytes = md5.digest(Files.readAllBytes(Paths.get(file)));
-            return DatatypeConverter.printHexBinary(digestBytes);
+            return HexFormat.of().formatHex(digestBytes);
         }
 
         SslContext getSSLContext()
