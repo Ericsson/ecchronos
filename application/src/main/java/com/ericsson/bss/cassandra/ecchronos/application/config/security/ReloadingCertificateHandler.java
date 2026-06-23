@@ -18,7 +18,7 @@ import com.datastax.oss.driver.api.core.metadata.EndPoint;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.handler.ssl.SslContext;
-import jakarta.xml.bind.DatatypeConverter;
+import java.util.HexFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -299,7 +299,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
         {
             MessageDigest md5 = MessageDigest.getInstance("MD5");
             byte[] digestBytes = md5.digest(Files.readAllBytes(Paths.get(file)));
-            return DatatypeConverter.printHexBinary(digestBytes);
+            return HexFormat.of().formatHex(digestBytes);
         }
     }
 }
