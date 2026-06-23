@@ -222,7 +222,7 @@ public class TableRepairJob extends ScheduledRepairJob
     }
 
     @Override
-    public void postExecute(final boolean successful, final ScheduledTask task)
+    public final void postExecute(final boolean successful, final ScheduledTask task)
     {
         super.postExecute(successful, task);
         myLastRefreshTime = 0;
