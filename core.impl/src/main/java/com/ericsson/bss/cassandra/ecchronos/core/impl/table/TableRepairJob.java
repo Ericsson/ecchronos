@@ -221,6 +221,13 @@ public class TableRepairJob extends ScheduledRepairJob
         return myRepairState.getSnapshot().canRepair() && super.runnable();
     }
 
+    @Override
+    public void postExecute(final boolean successful, final ScheduledTask task)
+    {
+        super.postExecute(successful, task);
+        myLastRefreshTime = 0;
+    }
+
     /**
      * Refresh the repair state.
      * Throttled to at most once per {@link #MIN_REFRESH_INTERVAL_MS} to prevent
