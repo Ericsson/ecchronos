@@ -81,7 +81,6 @@ public class ReloadSchedulerService implements DisposableBean
         }
     }
 
-    @SuppressWarnings("CPD-START")
     public final DistributedNativeBuilder resolveAgentProviderBuilder(
           final DistributedNativeBuilder builder,
           final DistributedNativeConnection nativeConnectionConfig)

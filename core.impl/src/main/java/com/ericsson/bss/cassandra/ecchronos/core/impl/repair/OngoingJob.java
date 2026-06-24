@@ -30,7 +30,6 @@ import java.util.UUID;
 import com.datastax.oss.driver.api.core.data.UdtValue;
 import com.google.common.collect.ImmutableSet;
 
-@SuppressWarnings ("FinalClass")
 public final class OngoingJob
 {
     public enum Status
