@@ -46,11 +46,11 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     {
         myNodeID = nodeID;
         myJobID = jobID;
-        myPriority = configuration.priority;
-        myRunIntervalInMs = configuration.runIntervalInMs;
-        myBackoffInMs = configuration.backoffInMs;
+        myPriority = configuration.priority();
+        myRunIntervalInMs = configuration.runIntervalInMs();
+        myBackoffInMs = configuration.backoffInMs();
         myLastSuccessfulRun = System.currentTimeMillis() - myRunIntervalInMs;
-        myPriorityGranularity = configuration.priorityGranularity;
+        myPriorityGranularity = configuration.priorityGranularity();
     }
 
     /**
@@ -319,36 +319,8 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     /**
      * The configuration of a job.
      */
-    @SuppressWarnings("PMD.DataClass")
-    public static class Configuration
+    public record Configuration(Priority priority, long runIntervalInMs, long backoffInMs, TimeUnit priorityGranularity)
     {
-        /**
-         * The priority of the job.
-         */
-        public final Priority priority;
-
-        /**
-         * The minimum amount of time to wait between each successful run.
-         */
-        public final long runIntervalInMs;
-
-        /**
-         * The amount of time to wait before marking job as runnable after failing.
-         */
-        public final long backoffInMs;
-
-        /**
-         * The unit of time granularity used for priority calculation in scheduling jobs.
-         */
-        public final TimeUnit priorityGranularity;
-
-        Configuration(final ConfigurationBuilder builder)
-        {
-            priority = builder.priority;
-            runIntervalInMs = builder.runIntervalInMs;
-            backoffInMs = builder.backoffInMs;
-            priorityGranularity = builder.granularityUnit;
-        }
     }
 
     /**
@@ -387,7 +359,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
 
         public final Configuration build()
         {
-            return new Configuration(this);
+            return new Configuration(priority, runIntervalInMs, backoffInMs, granularityUnit);
         }
     }
 }
