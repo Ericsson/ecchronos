@@ -17,13 +17,13 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.config;
 /**
  * The repair options available for the repair.
  */
-@SuppressWarnings({"PMD.DataClass", "checkstyle:hideutilityclassconstructor"})
-public class RepairOptions
+@SuppressWarnings("PMD.DataClass")
+public final class RepairOptions
 {
     /**
      * Default constructor.
      */
-    public RepairOptions()
+    private RepairOptions()
     {
     }
 
