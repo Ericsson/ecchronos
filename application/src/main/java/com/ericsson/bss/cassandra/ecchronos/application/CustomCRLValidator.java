@@ -47,54 +47,55 @@ public final class CustomCRLValidator
     }
 
 
-    public CRLState isCertificateCRLValid(final X509Certificate cert) // NOPMD
+    public CRLState isCertificateCRLValid(final X509Certificate cert)
     {
-        // Sanity check of the provided certificate and chain
         if (cert == null)
         {
             return CRLState.INVALID;
         }
 
-        // Get the current CRLs and make sure there are CRLs at all
         Collection<? extends CRL> crls = myCRLFileManager.getCurrentCRLs();
         if (crls == null || crls.isEmpty())
         {
             return CRLState.INVALID;
         }
 
-        // Do the actual revoke checking
         for (CRL crl : crls)
         {
-            // Check if this CRL is for our certificate's issuer
-            if ((crl instanceof X509CRL x509Crl)
-                    && x509Crl.getIssuerX500Principal().equals(cert.getIssuerX500Principal()))
+            CRLState result = validateAgainstCrl(cert, crl);
+            if (result != null)
             {
-                // Certificate revoked?
-                if (x509Crl.isRevoked(cert))
-                {
-                    LOG.warn("Certificate with serial number {} is revoked by CRL", cert.getSerialNumber());
-                    return CRLState.REVOKED;
-                }
-
-                // Also, verify the CRL is actually current
-                Date next = x509Crl.getNextUpdate(); // NOPMD Rule:ReplaceJavaUtilDate
-                if (next != null)
-                {
-                    if (next.before(new Date())) // NOPMD Rule:ReplaceJavaUtilDate
-                    {
-                        LOG.debug("CRL for issuer {} is expired", ((X509CRL) crl).getIssuerX500Principal().getName());
-                        return CRLState.INVALID;
-                    }
-                    else
-                    {
-                        return CRLState.VALID;
-                    }
-                }
+                return result;
             }
         }
 
-        // Gone through all CRLs, nothing was valid for this certificate
         return CRLState.INVALID;
+    }
+
+    private CRLState validateAgainstCrl(final X509Certificate cert, final CRL crl)
+    {
+        if (!(crl instanceof X509CRL x509Crl))
+        {
+            return null;
+        }
+        if (!x509Crl.getIssuerX500Principal().equals(cert.getIssuerX500Principal()))
+        {
+            return null;
+        }
+
+        if (x509Crl.isRevoked(cert))
+        {
+            LOG.warn("Certificate with serial number {} is revoked by CRL", cert.getSerialNumber());
+            return CRLState.REVOKED;
+        }
+
+        Date next = x509Crl.getNextUpdate(); // NOPMD Rule:ReplaceJavaUtilDate
+        if (next != null && next.before(new Date())) // NOPMD Rule:ReplaceJavaUtilDate
+        {
+            LOG.debug("CRL for issuer {} is expired", x509Crl.getIssuerX500Principal().getName());
+            return CRLState.INVALID;
+        }
+        return next != null ? CRLState.VALID : null;
     }
 
     public void addRefreshListener(final Runnable listener)
