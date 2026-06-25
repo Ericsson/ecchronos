@@ -1,5 +1,7 @@
 # Changes
 
+## Version 1.0.5
+
 ## Version 1.0.4
 
 * Throttle refreshState() per job to prevent RepairStateSnapshot accumulation under adaptive rescheduling - Issue #1685
