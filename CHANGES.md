@@ -2,6 +2,8 @@
 
 ## Version 1.0.5
 
+* Bump Spring Boot to 3.5.16 and override Tomcat embed to 10.1.56 to fix CVE-2026-53434 - Issue #1706
+
 ## Version 1.0.4
 
 * Throttle refreshState() per job to prevent RepairStateSnapshot accumulation under adaptive rescheduling - Issue #1685
