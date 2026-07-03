@@ -119,6 +119,23 @@ public class TestScheduleManager
     }
 
     @Test
+    public void testSuccessfulJobIsNotRunAgainBeforeRunInterval() throws LockException
+    {
+        TestJob job = new TestJob(ScheduledJob.Priority.LOW, 1, nodeID1, "dc1", "resource1");
+        myScheduler.schedule(nodeID1, job);
+
+        when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap(), any()))
+                .thenReturn(new DummyLock());
+
+        myScheduler.run(nodeID1);
+        myScheduler.run(nodeID1);
+
+        assertThat(job.getTaskRuns()).isEqualTo(1);
+        assertThat(myScheduler.getQueueSize(nodeID1)).isEqualTo(1);
+        verify(myLockFactory, times(1)).tryLock(any(), anyString(), anyInt(), anyMap(), any());
+    }
+
+    @Test
     public void testRunningMultipleJobsInSingleTick()
     {
         DummyJob job1 = new DummyJob(ScheduledJob.Priority.LOW, nodeID1);
