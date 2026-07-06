@@ -151,7 +151,7 @@
         <testcontainers.version>2.0.5</testcontainers.version>
         <testcontainers-cassandra.version>1.21.4</testcontainers-cassandra.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.84</org.bouncycastle.bcpkix-jdk18on.version>
-        <org.apache.httpcomponents.client5.httpclient5.version>5.6.1</org.apache.httpcomponents.client5.httpclient5.version>
+        <org.apache.httpcomponents.client5.httpclient5.version>5.6.2</org.apache.httpcomponents.client5.httpclient5.version>
 
         <!-- Plugin versions -->
         <com.mycila.license-maven-plugin.version>5.0.0</com.mycila.license-maven-plugin.version>
