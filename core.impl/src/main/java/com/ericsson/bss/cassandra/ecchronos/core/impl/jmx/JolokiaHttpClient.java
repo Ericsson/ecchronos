@@ -19,13 +19,13 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.NotificationRegis
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
+import tools.jackson.databind.json.JsonMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.ericsson.bss.cassandra.ecchronos.utils.dns.ReverseDNS;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import tools.jackson.core.JacksonException;
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.net.URI;
@@ -57,7 +57,7 @@ final class JolokiaHttpClient implements java.io.Closeable
     public static final String NO_BROADCAST_ADDRESS = "0.0.0.0"; //NOPMD AvoidUsingHardCodedIP
 
     private final Map<UUID, Map<String, String>> myClientIdMap = new ConcurrentHashMap<>();
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new JsonMapper();
     private final CertificateHandler myCertificateHandler;
     private final DistributedNativeConnectionProvider myNativeConnectionProvider;
     private final int myJolokiaPort;
@@ -293,7 +293,7 @@ final class JolokiaHttpClient implements java.io.Closeable
         {
             return objectMapper.writeValueAsString(params);
         }
-        catch (JsonProcessingException e)
+        catch (JacksonException e)
         {
             LOG.error("Unable to serialize notification options for node {}", nodeID, e);
         }
@@ -312,7 +312,7 @@ final class JolokiaHttpClient implements java.io.Closeable
         {
             return objectMapper.writeValueAsString(params);
         }
-        catch (JsonProcessingException e)
+        catch (JacksonException e)
         {
             LOG.error("Unable to serialize Jolokia Notification Options for node {}", nodeID, e);
         }

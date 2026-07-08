@@ -15,10 +15,9 @@
 package com.ericsson.bss.cassandra.ecchronos.application.config.security;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.core.JacksonException;
 
 public final class Security
 {
@@ -59,12 +58,10 @@ public final class Security
     {
         try
         {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.registerModule(new Jdk8Module());
-            mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+            ObjectMapper mapper = JsonMapper.builder().build();
             return mapper.writeValueAsString(this);
         }
-        catch (JsonProcessingException e)
+        catch (JacksonException e)
         {
             return "Security{error=" + e.getMessage() + "}";
         }

@@ -1,5 +1,9 @@
 # Changes
 
+## Version 2.0.0
+
+* Upgrade ecChronos to Spring Boot 4 - Issue #1711
+
 ## Version 1.0.5
 
 * Bump Spring Boot to 3.5.16 and override Tomcat embed to 10.1.56 to fix CVE-2026-53434 - Issue #1706

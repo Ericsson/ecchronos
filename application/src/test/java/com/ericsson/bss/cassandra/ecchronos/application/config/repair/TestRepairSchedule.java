@@ -24,11 +24,11 @@ import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
 import org.junit.Test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.databind.DatabindException;
 
 public class TestRepairSchedule
 {
@@ -38,7 +38,7 @@ public class TestRepairSchedule
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         File file = new File(classLoader.getResource("schedule.yml").getFile());
 
-        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        ObjectMapper objectMapper = new YAMLMapper();
 
         RepairSchedule schedule = objectMapper.readValue(file, RepairSchedule.class);
 
@@ -51,7 +51,7 @@ public class TestRepairSchedule
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         File file = new File(classLoader.getResource("repair/test_schedule.yml").getFile());
 
-        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        ObjectMapper objectMapper = new YAMLMapper();
 
         RepairSchedule schedule = objectMapper.readValue(file, RepairSchedule.class);
 
@@ -90,7 +90,7 @@ public class TestRepairSchedule
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         File file = new File(classLoader.getResource("repair/regex_schedule.yml").getFile());
 
-        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        ObjectMapper objectMapper = new YAMLMapper();
 
         RepairSchedule schedule = objectMapper.readValue(file, RepairSchedule.class);
 
@@ -131,7 +131,7 @@ public class TestRepairSchedule
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         File file = new File(classLoader.getResource("repair/multiple_schedules.yml").getFile());
 
-        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        ObjectMapper objectMapper = new YAMLMapper();
 
         RepairSchedule schedule = objectMapper.readValue(file, RepairSchedule.class);
 
@@ -155,7 +155,7 @@ public class TestRepairSchedule
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         File file = new File(classLoader.getResource("repair/multiple_schedules_regex.yml").getFile());
 
-        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        ObjectMapper objectMapper = new YAMLMapper();
 
         RepairSchedule schedule = objectMapper.readValue(file, RepairSchedule.class);
 
@@ -180,9 +180,9 @@ public class TestRepairSchedule
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         File file = new File(classLoader.getResource("repair/schedule_repair_interval_longer_than_warn.yml").getFile());
 
-        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        ObjectMapper objectMapper = new YAMLMapper();
 
-        assertThatExceptionOfType(JsonMappingException.class).isThrownBy(() -> objectMapper.readValue(file, RepairSchedule.class));
+        assertThatExceptionOfType(DatabindException.class).isThrownBy(() -> objectMapper.readValue(file, RepairSchedule.class));
     }
 
     @Test
@@ -191,8 +191,8 @@ public class TestRepairSchedule
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         File file = new File(classLoader.getResource("repair/schedule_warn_interval_longer_than_error.yml").getFile());
 
-        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        ObjectMapper objectMapper = new YAMLMapper();
 
-        assertThatExceptionOfType(JsonMappingException.class).isThrownBy(() -> objectMapper.readValue(file, RepairSchedule.class));
+        assertThatExceptionOfType(DatabindException.class).isThrownBy(() -> objectMapper.readValue(file, RepairSchedule.class));
     }
 }

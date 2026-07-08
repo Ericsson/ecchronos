@@ -52,8 +52,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfig
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
-import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
+import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory;
+import org.springframework.boot.web.server.servlet.ConfigurableServletWebServerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -73,7 +73,6 @@ public class BeanConfigurator
 
     private static final String CONFIGURATION_FILE = "ecc.yml";
     private static final String SECURITY_FILE = "security.yml";
-    private static final String ECCHORONS_ID_PRE_STRING = "ecchronos-";
 
     private final AtomicReference<Security.CqlSecurity> cqlSecurity = new AtomicReference<>();
     private final AtomicReference<Security.JmxSecurity> jmxSecurity = new AtomicReference<>();
