@@ -58,7 +58,9 @@ import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnecti
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairStatsProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
@@ -121,6 +123,12 @@ public abstract class TestTomcatWebServerCustomizer
 
     @MockitoBean
     private RepairScheduler repairScheduler;
+
+    @MockitoBean
+    private OnDemandRepairScheduler onDemandRepairScheduler;
+
+    @MockitoBean
+    private ScheduleManager scheduleManager;
 
     @MockitoBean
     private DistributedNativeConnectionProvider nativeConnectionProvider;

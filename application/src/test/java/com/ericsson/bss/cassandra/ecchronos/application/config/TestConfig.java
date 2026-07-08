@@ -25,8 +25,8 @@ import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionTyp
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairHistoryProvider;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ConfigurationException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 import java.util.concurrent.TimeUnit;
 import org.junit.Before;
@@ -56,7 +56,7 @@ public class TestConfig
 
         File file = new File(classLoader.getResource(DEFAULT_AGENT_FILE_NAME).getFile());
 
-        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        ObjectMapper objectMapper = new YAMLMapper();
 
         config = objectMapper.readValue(file, Config.class);
 

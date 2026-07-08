@@ -15,8 +15,9 @@
 package com.ericsson.bss.cassandra.ecchronos.application.config.lockfactory;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
+
 import org.junit.Test;
 
 import java.io.File;
@@ -48,7 +49,7 @@ public class TestCasLockFactoryConfig
     {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         File file = new File(classLoader.getResource(fileName).getFile());
-        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        ObjectMapper mapper = new YAMLMapper();
         Config config = mapper.readValue(file, Config.class);
         return config.getLockFactory().getCasLockFactoryConfig();
     }

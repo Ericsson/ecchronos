@@ -22,8 +22,9 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.repair.Priority;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairHistoryProvider;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -48,7 +49,7 @@ public class TestDefaultConfig
 
         File file = new File(classLoader.getResource(DEFAULT_AGENT_FILE_NAME).getFile());
 
-        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        ObjectMapper objectMapper = new YAMLMapper();
 
         config = objectMapper.readValue(file, Config.class);
         repairConfig = config.getRepairConfig();
