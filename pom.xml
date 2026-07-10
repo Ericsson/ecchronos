@@ -20,7 +20,7 @@
 
     <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
     <artifactId>agent</artifactId>
-    <version>1.0.5-SNAPSHOT</version>
+    <version>1.0.6-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Ericsson Cassandra Chronos Agent</name>
@@ -108,7 +108,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- Spring boot -->
-        <org.springframework.boot.spring-boot.version>3.5.15</org.springframework.boot.spring-boot.version>
+        <org.springframework.boot.spring-boot.version>3.5.16</org.springframework.boot.spring-boot.version>
+        <org.apache.tomcat.embed.version>10.1.56</org.apache.tomcat.embed.version>
         <org.springframework.spring.version>6.2.19</org.springframework.spring.version>
         <org.springdoc.openapi-starter-webmvc-api.version>2.8.17</org.springdoc.openapi-starter-webmvc-api.version>
         <jakarta.servlet-api.version>6.1.0</jakarta.servlet-api.version>
@@ -142,7 +143,7 @@
         <assertj.version>3.27.7</assertj.version>
         <junit.junit.version>4.13.2</junit.junit.version>
         <junit.junit-vintage-engine.version>6.1.0</junit.junit-vintage-engine.version>
-        <junit.jupiter.junit-jupiter.version>6.1.0</junit.jupiter.junit-jupiter.version>
+        <junit.jupiter.junit-jupiter.version>6.1.1</junit.jupiter.junit-jupiter.version>
         <org.apache.commons.io.version>2.22.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.28.0</org.apache.commons.commons-compress.version>
         <equalsverifier.version>4.5</equalsverifier.version>
@@ -150,7 +151,7 @@
         <testcontainers.version>2.0.5</testcontainers.version>
         <testcontainers-cassandra.version>1.21.4</testcontainers-cassandra.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.84</org.bouncycastle.bcpkix-jdk18on.version>
-        <org.apache.httpcomponents.client5.httpclient5.version>5.6.1</org.apache.httpcomponents.client5.httpclient5.version>
+        <org.apache.httpcomponents.client5.httpclient5.version>5.6.2</org.apache.httpcomponents.client5.httpclient5.version>
 
         <!-- Plugin versions -->
         <com.mycila.license-maven-plugin.version>5.0.0</com.mycila.license-maven-plugin.version>
@@ -191,6 +192,22 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- Override tomcat-embed-* to 10.1.56 to fix CVE-2026-53434. Remove once Spring Boot ships with a version that includes the fix. -->
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-core</artifactId>
+                <version>${org.apache.tomcat.embed.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-el</artifactId>
+                <version>${org.apache.tomcat.embed.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-websocket</artifactId>
+                <version>${org.apache.tomcat.embed.version}</version>
+            </dependency>
 
             <!-- Temporary override versions of indirect dependencies (not yet stepped by the direct dependency) -->
 
