@@ -127,10 +127,10 @@
         <guava.version>33.6.0-jre</guava.version>
         <caffeine.version>3.2.4</caffeine.version>
         <slf4j.version>2.0.18</slf4j.version>
-        <logback.version>1.5.34</logback.version>
+        <logback.version>1.5.35</logback.version>
 
         <!-- Jackson -->
-        <com.fasterxml.jackson.version>2.22.0</com.fasterxml.jackson.version>
+        <com.fasterxml.jackson.version>2.22.1</com.fasterxml.jackson.version>
         <com.fasterxml.jackson.annotations.version>2.22</com.fasterxml.jackson.annotations.version>
         <org.yaml.snakeyaml.version>2.6</org.yaml.snakeyaml.version>
 
@@ -150,7 +150,7 @@
         <jcip.version>1.0</jcip.version>
         <testcontainers.version>2.0.5</testcontainers.version>
         <testcontainers-cassandra.version>1.21.4</testcontainers-cassandra.version>
-        <org.bouncycastle.bcpkix-jdk18on.version>1.84</org.bouncycastle.bcpkix-jdk18on.version>
+        <org.bouncycastle.bcpkix-jdk18on.version>1.85</org.bouncycastle.bcpkix-jdk18on.version>
         <org.apache.httpcomponents.client5.httpclient5.version>5.6.2</org.apache.httpcomponents.client5.httpclient5.version>
 
         <!-- Plugin versions -->
