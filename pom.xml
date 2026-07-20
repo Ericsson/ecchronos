@@ -142,7 +142,7 @@
         <mockito.core.version>5.23.0</mockito.core.version>
         <assertj.version>3.27.7</assertj.version>
         <junit.junit.version>4.13.2</junit.junit.version>
-        <junit.junit-vintage-engine.version>6.1.0</junit.junit-vintage-engine.version>
+        <junit.junit-vintage-engine.version>6.1.2</junit.junit-vintage-engine.version>
         <junit.jupiter.junit-jupiter.version>6.1.1</junit.jupiter.junit-jupiter.version>
         <org.apache.commons.io.version>2.22.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.28.0</org.apache.commons.commons-compress.version>
