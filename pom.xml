@@ -135,7 +135,7 @@
         <org.yaml.snakeyaml.version>2.6</org.yaml.snakeyaml.version>
 
         <!-- Other -->
-        <io.netty.version>4.1.135.Final</io.netty.version>
+        <io.netty.version>4.1.136.Final</io.netty.version>
 
         <!-- Tests -->
         <awaitility.version>4.3.0</awaitility.version>
