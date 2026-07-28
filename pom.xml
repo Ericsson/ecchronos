@@ -109,6 +109,7 @@
 
         <!-- Spring boot -->
         <org.springframework.boot.spring-boot.version>4.1.0</org.springframework.boot.spring-boot.version>
+        <org.apache.tomcat.embed.version>11.0.24</org.apache.tomcat.embed.version>
         <org.springframework.spring.version>7.0.8</org.springframework.spring.version>
         <org.springdoc.openapi-starter-webmvc-api.version>3.0.1</org.springdoc.openapi-starter-webmvc-api.version>
         <jakarta.servlet-api.version>6.1.0</jakarta.servlet-api.version>
@@ -190,6 +191,23 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- Override tomcat-embed-* to 11.0.24 to fix CVE-2026-53434. Remove once Spring Boot ships with a version that includes the fix. -->
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-core</artifactId>
+                <version>${org.apache.tomcat.embed.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-el</artifactId>
+                <version>${org.apache.tomcat.embed.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-websocket</artifactId>
+                <version>${org.apache.tomcat.embed.version}</version>
+            </dependency>
+
             <!-- Temporary override versions of indirect dependencies (not yet stepped by the direct dependency) -->
 
             <!-- Used by testcontainers-cassandra, steped due to CVE-2024-25710 -->
