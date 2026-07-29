@@ -131,7 +131,6 @@
 
         <!-- Jackson -->
         <tools.jackson.core.version>3.1.5</tools.jackson.core.version>
-        <org.yaml.snakeyaml.version>2.6</org.yaml.snakeyaml.version>
 
         <!-- Other -->
         <io.netty.version>4.1.136.Final</io.netty.version>
@@ -264,6 +263,12 @@
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-context</artifactId>
                 <version>${org.springframework.spring.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jspecify</groupId>
+                        <artifactId>jspecify</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>
@@ -375,6 +380,10 @@
                         <groupId>org.hdrhistogram</groupId>
                         <artifactId>HdrHistogram</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>com.fasterxml.jackson.core</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
             <dependency>
@@ -478,12 +487,6 @@
                 <groupId>tools.jackson.dataformat</groupId>
                 <artifactId>jackson-dataformat-yaml</artifactId>
                 <version>${tools.jackson.core.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.yaml</groupId>
-                <artifactId>snakeyaml</artifactId>
-                <version>${org.yaml.snakeyaml.version}</version>
             </dependency>
 
             <dependency>
