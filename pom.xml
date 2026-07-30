@@ -380,10 +380,6 @@
                         <groupId>org.hdrhistogram</groupId>
                         <artifactId>HdrHistogram</artifactId>
                     </exclusion>
-                    <exclusion>
-                        <groupId>com.fasterxml.jackson.core</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
                 </exclusions>
             </dependency>
             <dependency>
