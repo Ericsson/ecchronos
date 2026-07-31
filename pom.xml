@@ -263,12 +263,6 @@
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-context</artifactId>
                 <version>${org.springframework.spring.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.jspecify</groupId>
-                        <artifactId>jspecify</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
 
             <dependency>
