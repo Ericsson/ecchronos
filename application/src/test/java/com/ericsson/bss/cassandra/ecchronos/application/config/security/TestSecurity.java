@@ -14,9 +14,10 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.exc.ValueInstantiationException;
+import tools.jackson.dataformat.yaml.YAMLMapper;
+
 import org.junit.Test;
 
 import java.io.File;
@@ -32,7 +33,7 @@ public class TestSecurity
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         File file = new File(classLoader.getResource("security.yml").getFile());
 
-        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        ObjectMapper objectMapper = new YAMLMapper();
 
         Security config = objectMapper.readValue(file, Security.class);
 
@@ -61,7 +62,7 @@ public class TestSecurity
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         File file = new File(classLoader.getResource("security/enabled_keystore_jmxandcql.yml").getFile());
 
-        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        ObjectMapper objectMapper = new YAMLMapper();
 
         Security config = objectMapper.readValue(file, Security.class);
 
@@ -93,7 +94,7 @@ public class TestSecurity
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         File file = new File(classLoader.getResource("security/enabled_pem_cql.yml").getFile());
 
-        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        ObjectMapper objectMapper = new YAMLMapper();
 
         Security config = objectMapper.readValue(file, Security.class);
 
@@ -115,7 +116,7 @@ public class TestSecurity
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         File file = new File(classLoader.getResource("security/enabled_nokeystore_nopem_cql.yml").getFile());
 
-        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        ObjectMapper objectMapper = new YAMLMapper();
 
         assertThatExceptionOfType(ValueInstantiationException.class).isThrownBy(() -> objectMapper.readValue(file, Security.class));
     }
@@ -126,7 +127,7 @@ public class TestSecurity
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         File file = new File(classLoader.getResource("security/enabled_nokeystore_nopem_jmx.yml").getFile());
 
-        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        ObjectMapper objectMapper = new YAMLMapper();
 
         assertThatExceptionOfType(ValueInstantiationException.class).isThrownBy(() -> objectMapper.readValue(file, Security.class));
     }

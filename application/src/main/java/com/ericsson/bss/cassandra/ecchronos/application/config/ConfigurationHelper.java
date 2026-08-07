@@ -21,8 +21,9 @@ import java.io.InputStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.core.JacksonException;
 
 public class ConfigurationHelper
 {
@@ -76,7 +77,7 @@ public class ConfigurationHelper
     {
         try
         {
-            ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+            ObjectMapper objectMapper = new YAMLMapper();
 
             T config = objectMapper.readValue(configurationFile, clazz);
             if (config == null)
@@ -85,7 +86,7 @@ public class ConfigurationHelper
             }
             return config;
         }
-        catch (IOException e)
+        catch (JacksonException | IOException e)
         {
             throw new ConfigurationException("Unable to load configuration file " + configurationFile, e);
         }
@@ -96,7 +97,7 @@ public class ConfigurationHelper
     {
         try
         {
-            ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+            ObjectMapper objectMapper = new YAMLMapper();
 
             T config = objectMapper.readValue(configurationFile, clazz);
             if (config == null)
@@ -105,7 +106,7 @@ public class ConfigurationHelper
             }
             return config;
         }
-        catch (IOException e)
+        catch (JacksonException | IOException e)
         {
             throw new ConfigurationException("Unable to load configuration file from classpath", e);
         }

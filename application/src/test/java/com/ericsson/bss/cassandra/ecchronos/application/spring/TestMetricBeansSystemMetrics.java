@@ -15,8 +15,8 @@
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import org.junit.jupiter.api.Test;
 
@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class TestMetricBeansSystemMetrics
 {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(new YAMLFactory());
+    private static final ObjectMapper OBJECT_MAPPER = new YAMLMapper();
 
     @Test
     void testSystemMetricsRegisteredWhenStatisticsEnabled() throws IOException

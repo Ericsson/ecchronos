@@ -53,6 +53,12 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- Jackson -->
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
         <!-- Cassandra driver -->
         <dependency>
             <groupId>org.apache.cassandra</groupId>
