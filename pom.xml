@@ -114,7 +114,7 @@
         <org.springdoc.openapi-starter-webmvc-api.version>3.0.1</org.springdoc.openapi-starter-webmvc-api.version>
         <jakarta.servlet-api.version>6.1.0</jakarta.servlet-api.version>
         <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>
-        <swagger-annotations.version>2.2.52</swagger-annotations.version>
+        <swagger-annotations.version>2.2.53</swagger-annotations.version>
 
         <!-- Metrics -->
         <io.micrometer.version>1.17.0</io.micrometer.version>
@@ -133,15 +133,15 @@
         <tools.jackson.core.version>3.1.5</tools.jackson.core.version>
 
         <!-- Other -->
-        <io.netty.version>4.1.136.Final</io.netty.version>
+        <io.netty.version>4.1.137.Final</io.netty.version>
 
         <!-- Tests -->
         <awaitility.version>4.3.0</awaitility.version>
         <mockito.core.version>5.23.0</mockito.core.version>
         <assertj.version>3.27.7</assertj.version>
         <junit.junit.version>4.13.2</junit.junit.version>
-        <junit.junit-vintage-engine.version>6.1.2</junit.junit-vintage-engine.version>
-        <junit.jupiter.junit-jupiter.version>6.1.2</junit.jupiter.junit-jupiter.version>
+        <junit.junit-vintage-engine.version>6.1.3</junit.junit-vintage-engine.version>
+        <junit.jupiter.junit-jupiter.version>6.1.3</junit.jupiter.junit-jupiter.version>
         <org.apache.commons.io.version>2.22.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.28.0</org.apache.commons.commons-compress.version>
         <equalsverifier.version>4.5</equalsverifier.version>
@@ -149,7 +149,7 @@
         <testcontainers.version>2.0.5</testcontainers.version>
         <testcontainers-cassandra.version>1.21.4</testcontainers-cassandra.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.85</org.bouncycastle.bcpkix-jdk18on.version>
-        <org.apache.httpcomponents.client5.httpclient5.version>5.6.3</org.apache.httpcomponents.client5.httpclient5.version>
+        <org.apache.httpcomponents.client5.httpclient5.version>5.6.4</org.apache.httpcomponents.client5.httpclient5.version>
 
         <!-- Plugin versions -->
         <com.mycila.license-maven-plugin.version>5.1.1</com.mycila.license-maven-plugin.version>
