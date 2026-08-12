@@ -131,6 +131,7 @@
 
         <!-- Jackson -->
         <tools.jackson.core.version>3.1.5</tools.jackson.core.version>
+        <com.fasterxml.jackson.annotations.version>2.22</com.fasterxml.jackson.annotations.version>
 
         <!-- Other -->
         <io.netty.version>4.1.137.Final</io.netty.version>
@@ -462,9 +463,9 @@
             </dependency>
 
             <dependency>
-                <groupId>tools.jackson.core</groupId>
+                <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotations</artifactId>
-                <version>${tools.jackson.core.version}</version>
+                <version>${com.fasterxml.jackson.annotations.version}</version>
             </dependency>
 
             <dependency>
