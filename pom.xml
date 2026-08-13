@@ -128,6 +128,7 @@
         <caffeine.version>3.2.4</caffeine.version>
         <slf4j.version>2.0.18</slf4j.version>
         <logback.version>1.6.1</logback.version>
+        <com.fasterxml.jackson.version>2.22.1</com.fasterxml.jackson.version>
 
         <!-- Jackson -->
         <tools.jackson.core.version>3.1.5</tools.jackson.core.version>
@@ -192,23 +193,6 @@
     <dependencyManagement>
         <dependencies>
             <!-- Override tomcat-embed-* to 11.0.24 to fix CVE-2026-53434. Remove once Spring Boot ships with a version that includes the fix. -->
-            <dependency>
-                <groupId>org.apache.tomcat.embed</groupId>
-                <artifactId>tomcat-embed-core</artifactId>
-                <version>${org.apache.tomcat.embed.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.tomcat.embed</groupId>
-                <artifactId>tomcat-embed-el</artifactId>
-                <version>${org.apache.tomcat.embed.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.tomcat.embed</groupId>
-                <artifactId>tomcat-embed-websocket</artifactId>
-                <version>${org.apache.tomcat.embed.version}</version>
-            </dependency>
-
-            <!-- Temporary override versions of indirect dependencies (not yet stepped by the direct dependency) -->
 
             <!-- Used by testcontainers-cassandra, steped due to CVE-2024-25710 -->
             <dependency>
@@ -231,6 +215,21 @@
                 <groupId>com.typesafe</groupId>
                 <artifactId>config</artifactId>
                 <version>${com.typesafe.config.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${com.fasterxml.jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${com.fasterxml.jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-yaml</artifactId>
+                <version>${com.fasterxml.jackson.version}</version>
             </dependency>
 
             <!-- End of temporary override section -->
@@ -276,6 +275,24 @@
                 <groupId>jakarta.servlet</groupId>
                 <artifactId>jakarta.servlet-api</artifactId>
                 <version>${jakarta.servlet-api.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-core</artifactId>
+                <version>${org.apache.tomcat.embed.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-el</artifactId>
+                <version>${org.apache.tomcat.embed.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-websocket</artifactId>
+                <version>${org.apache.tomcat.embed.version}</version>
             </dependency>
 
             <!-- Metrics -->
