@@ -195,6 +195,9 @@ class NodeSyncState(object):
         self.node_endpoint = data["nodeEndpoint"] if "nodeEndpoint" in data else "<UNKNOWN>"
         self.node_status = data["nodeStatus"] if "nodeStatus" in data else "<UNKNOWN>"
 
+    def to_dict(self):
+        return self.__dict__
+
 
 class Rejection(object):
     # pylint: disable=too-few-public-methods

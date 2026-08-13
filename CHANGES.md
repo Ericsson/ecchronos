@@ -1,5 +1,9 @@
 # Changes
 
+## Version 1.0.7
+
+* Add JSON output format for ecctool state - Issue #1739
+
 ## Version 1.0.6
 
 * Bump dependency versions - Issue #1723
