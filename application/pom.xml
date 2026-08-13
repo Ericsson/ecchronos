@@ -121,6 +121,11 @@
             </exclusions>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-core</artifactId>
+        </dependency>
+
         <!-- Metrics -->
         <dependency>
             <groupId>io.micrometer</groupId>
