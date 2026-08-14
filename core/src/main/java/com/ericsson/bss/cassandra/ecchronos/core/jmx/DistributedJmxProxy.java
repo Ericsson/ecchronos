@@ -30,9 +30,9 @@ public interface DistributedJmxProxy extends Closeable
     /**
      * Add a listener to the storage service interface.
      *
-     * @param nodeID   The nodeID to get the JMXConnector
+     * @param nodeID   The nodeID to get the JMXConnector.
      * @param listener The listener to add.
-     * @return
+     * @return true if the listener was successfully added, false otherwise.
      * @see #removeStorageServiceListener(UUID, NotificationListener)
      */
     boolean addStorageServiceListener(UUID nodeID, NotificationListener listener);
@@ -41,7 +41,7 @@ public interface DistributedJmxProxy extends Closeable
      * Get a list of textual representations of IP addresses of the current live nodes.
      *
      * @param nodeID
-     *            The nodeID to get the JMXConnector
+     *            The nodeID to get the JMXConnector.
      * @return A list of the live nodes.
      * @see #getUnreachableNodes(UUID)
      */
@@ -50,6 +50,8 @@ public interface DistributedJmxProxy extends Closeable
     /**
      * Get a list of textual representations of IP addresses of the current unreachable nodes.
      *
+     * @param nodeID
+     *            The nodeID to get the JMXConnector.
      * @return A list of the unreachable nodes.
      * @see #getLiveNodes(UUID)
      */
@@ -58,6 +60,8 @@ public interface DistributedJmxProxy extends Closeable
     /**
      * Perform a repair using the provided keyspace and options.
      *
+     * @param nodeID
+     *            The nodeID to get the JMXConnector.
      * @param keyspace
      *            The keyspace to repair.
      * @param options
@@ -70,17 +74,16 @@ public interface DistributedJmxProxy extends Closeable
 
     /**
      * Force the termination of all repairs session on all the nodes.
-     * <p>
      * This will not terminate repairs on other nodes but will affect other nodes running repair.
      */
     void forceTerminateAllRepairSessions();
 
     /**
      * Force the termination of all repair session on the specified node.
-     * <p>
-     * @param nodeID
-     *            The nodeID to get the JMXConnector
      * This will not terminate repairs on other nodes but will affect other nodes running repair.
+     *
+     * @param nodeID
+     *            The nodeID to get the JMXConnector.
      */
     void forceTerminateAllRepairSessionsInSpecificNode(UUID nodeID);
     /**

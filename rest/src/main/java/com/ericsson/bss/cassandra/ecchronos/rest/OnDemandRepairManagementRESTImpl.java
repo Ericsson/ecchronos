@@ -47,6 +47,13 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
     private final OnDemandRepairJobOrchestrator myOrchestrator;
     private final OnDemandRepairRequestValidator myValidator;
 
+    /**
+     * Constructs the on-demand repair management REST controller.
+     * @param demandRepairScheduler the demand repair scheduler
+     * @param tableReferenceFactory the table reference factory
+     * @param replicatedTableProvider the replicated table provider
+     * @param distributedNativeConnectionProvider the distributed native connection provider
+     */
     @Autowired
     public OnDemandRepairManagementRESTImpl(
             final OnDemandRepairScheduler demandRepairScheduler,

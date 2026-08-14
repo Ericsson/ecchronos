@@ -60,6 +60,7 @@ import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ConfigurationException;
 
+/** Main ecChronos application lifecycle manager. */
 @Configuration
 public class ECChronos implements Closeable
 {
@@ -71,6 +72,37 @@ public class ECChronos implements Closeable
     private final RepairStatsProvider myRepairStatsProvider;
     private final NodeWorkerManager myNodeWorkerManager;
 
+    /**
+     * Constructs a new ecChronos instance, initializing the internal components, repair schedulers,
+     * on-demand repair scheduler, and node worker manager.
+     *
+     * @param configuration
+     *         the application configuration.
+     * @param applicationContext
+     *         the Spring application context.
+     * @param nativeConnectionProvider
+     *         the provider for Cassandra native connections.
+     * @param jmxConnectionProvider
+     *         the provider for JMX connections.
+     * @param replicationState
+     *         the replication state of the cluster.
+     * @param defaultRepairConfigurationProvider
+     *         the default repair configuration provider.
+     * @param eccNodesSync
+     *         the node synchronization instance.
+     * @param repairHistoryService
+     *         the repair history service.
+     * @param repairFaultReporter
+     *         the repair fault reporter.
+     * @param eccCompositeMeterRegistry
+     *         the meter registry for metrics.
+     * @param ipTranslator
+     *         the IP translator for address resolution.
+     * @param notificationController
+     *         the Jolokia notification controller, may be null.
+     * @throws ConfigurationException
+     *         if the configuration is invalid.
+     */
     public ECChronos(//NOPMD long parameter list
             final Config configuration,
             final ApplicationContext applicationContext,
@@ -169,48 +201,82 @@ public class ECChronos implements Closeable
         myECChronosInternals.getScheduleManager().createScheduleFutureForNodeIDList(nodeIDList);
     }
 
+    /**
+     * Returns the time-based run policy.
+     * @return the time-based run policy
+     */
     @Bean
     public TimeBasedRunPolicy timeBasedRunPolicy()
     {
         return myTimeBasedRunPolicy;
     }
 
+    /**
+     * Returns the table reference factory.
+     * @return the table reference factory
+     */
     @Bean
     public TableReferenceFactory tableReferenceFactory()
     {
         return myECChronosInternals.getTableReferenceFactory();
     }
 
+    /**
+     * Returns the repair scheduler.
+     * @return the repair scheduler
+     */
     @Bean(destroyMethod = "")
     public RepairScheduler repairScheduler()
     {
         return myRepairSchedulerImpl;
     }
 
+    /**
+     * Returns the replicated table provider.
+     * @return the replicated table provider
+     */
     @Bean
     public ReplicatedTableProvider replicatedTableProvider()
     {
         return myECChronosInternals.getReplicatedTableProvider();
     }
 
+    /**
+     * Returns the on-demand repair scheduler.
+     * @return the on-demand repair scheduler
+     */
     @Bean
     public OnDemandRepairScheduler onDemandRepairScheduler()
     {
         return myOnDemandRepairSchedulerImpl;
     }
 
+    /**
+     * Returns the schedule manager responsible for managing scheduled repair tasks.
+     *
+     * @return the {@link ScheduleManager} instance.
+     */
     @Bean
     public ScheduleManager scheduleManager()
     {
         return myECChronosInternals.getScheduleManager();
     }
 
+    /**
+     * Returns the repair statistics provider for querying repair stats.
+     *
+     * @return the {@link RepairStatsProvider} instance.
+     */
     @Bean
     public RepairStatsProvider repairStatsProvider()
     {
         return myRepairStatsProvider;
     }
 
+    /**
+     * Returns the node worker manager.
+     * @return the node worker manager
+     */
     @Bean
     public NodeWorkerManager nodeWorkerManager()
     {

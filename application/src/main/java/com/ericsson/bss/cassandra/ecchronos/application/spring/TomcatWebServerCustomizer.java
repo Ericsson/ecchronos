@@ -38,11 +38,23 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+/**
+ * Customizes the embedded Tomcat web server, adding a metrics connector
+ * with optional SSL support and periodic certificate reload.
+ */
 @Component
 @EnableScheduling
 public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<TomcatServletWebServerFactory>
 {
     private static final Logger LOG = LoggerFactory.getLogger(TomcatWebServerCustomizer.class);
+
+    /**
+     * Default constructor.
+     */
+    public TomcatWebServerCustomizer()
+    {
+        // Default constructor
+    }
 
     private Http11NioProtocol metricsServerHttp11NioProtocol;
     private SSLHostConfig metricsSSLHostConfig;
@@ -202,7 +214,7 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
 
     /**
      * Reload the {@code SSLHostConfig} for the metrics server if SSL is enabled.
-     * Doing so should update ssl settings and fetch certificates from Keystores/PEM files.
+     * Doing so should update SSL settings and fetch certificates from Keystores/PEM files.
      * It reloads them every 60 seconds by default
      */
     @Scheduled(initialDelayString = "${metricsServer.ssl.refresh-rate-in-ms:60000}",

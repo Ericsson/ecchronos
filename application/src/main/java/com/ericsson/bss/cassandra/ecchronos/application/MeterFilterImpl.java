@@ -29,12 +29,18 @@ import org.slf4j.LoggerFactory;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.metrics.ExcludedMetric;
 
+/** Meter filter that applies prefix and exclusion rules to metrics. */
 public class MeterFilterImpl implements MeterFilter
 {
     private static final Logger LOG = LoggerFactory.getLogger(MeterFilterImpl.class);
     private final String myPrefix;
     private final Set<ExcludedMetric> myExcludedMetrics;
 
+    /**
+     * Constructs a new MeterFilterImpl.
+     * @param prefix the metric name prefix
+     * @param excludedMetrics the excluded metrics
+     */
     public MeterFilterImpl(final String prefix, final Set<ExcludedMetric> excludedMetrics)
     {
         myPrefix = prefix;

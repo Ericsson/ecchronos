@@ -22,6 +22,11 @@ import javax.net.ssl.X509ExtendedTrustManager;
 import java.net.Socket;
 import javax.net.ssl.SSLParameters;
 
+/**
+ * An {@link X509ExtendedTrustManager} that wraps a delegate trust manager and disables
+ * endpoint identification during certificate validation. This is used when endpoint
+ * verification is not required by the TLS configuration.
+ */
 public final class NoEndpointValidationTrustManager extends X509ExtendedTrustManager
 {
     private static final String NO_ENDPOINT_IDENTIFICATION_ALGORITHM = "";

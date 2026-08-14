@@ -39,6 +39,11 @@ public class NormalizedBaseRange
     private final VnodeRepairState baseVnode;
     final BigInteger end;
 
+    /**
+     * Constructs a NormalizedBaseRange from the given base vnode repair state.
+     *
+     * @param aBaseVnode the base vnode repair state to normalize.
+     */
     public NormalizedBaseRange(final VnodeRepairState aBaseVnode)
     {
         this.baseVnode = aBaseVnode;

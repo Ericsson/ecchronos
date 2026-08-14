@@ -131,6 +131,11 @@ public final class EccNodesSync
         connectionDelayUnit = builder.myConnectionDelayUnit;
     }
 
+    /**
+     * Queries the nodes_sync table for all nodes belonging to this ecChronos instance.
+     *
+     * @return the result set containing node status information.
+     */
     public ResultSet getResultSet()
     {
         // Bind the parameters
@@ -138,18 +143,34 @@ public final class EccNodesSync
         return mySession.execute(boundStatement);
     }
 
+    /**
+     * Gets all records for the local ecChronos instance.
+     *
+     * @return the result set containing all node records.
+     */
     public ResultSet getAllByLocalInstance()
     {
         BoundStatement boundStatement = myGetByEccInstanceStatement.bind(ecChronosID);
         return mySession.execute(boundStatement);
     }
 
+    /**
+     * Gets all records for the local ecChronos instance filtered by datacenter.
+     *
+     * @param dcName the datacenter name to filter by.
+     * @return the result set containing filtered node records.
+     */
     public ResultSet getAllByLocalAndDCInstance(final String dcName)
     {
         BoundStatement boundStatement = myGetByEccInstanceAndDCStatement.bind(ecChronosID, dcName);
         return mySession.execute(boundStatement);
     }
 
+    /**
+     * Acquires all nodes from the native connection provider by inserting them into the nodes_sync table.
+     *
+     * @throws EcChronosException if there are no nodes to acquire.
+     */
     public void acquireNodes() throws EcChronosException
     {
         if (myNativeConnectionProvider.getNodes().isEmpty())
@@ -186,6 +207,12 @@ public final class EccNodesSync
                 node.getHostId());
     }
 
+    /**
+     * Acquires a node and returns the result set. Exposed for testing purposes.
+     *
+     * @param node the node to acquire.
+     * @return the result set from the acquire operation.
+     */
     @VisibleForTesting
     public ResultSet verifyAcquireNode(final Node node)
     {
@@ -206,6 +233,14 @@ public final class EccNodesSync
         return execute(insertNodeSyncInfo);
     }
 
+    /**
+     * Updates the status of a node in the nodes_sync table.
+     *
+     * @param nodeStatus the new status for the node.
+     * @param datacenterName the datacenter the node belongs to.
+     * @param nodeID the unique identifier of the node.
+     * @return the result set from the update operation.
+     */
     public ResultSet updateNodeStatus(
             final NodeStatus nodeStatus,
             final String datacenterName,
@@ -224,6 +259,13 @@ public final class EccNodesSync
         return tmpResultSet;
     }
 
+    /**
+     * Deletes a node entry from the nodes_sync table.
+     *
+     * @param datacenterName the datacenter the node belongs to.
+     * @param nodeID the unique identifier of the node.
+     * @return the result set from the delete operation.
+     */
     public ResultSet deleteNodeStatus(
             final String datacenterName,
             final UUID nodeID
@@ -269,6 +311,17 @@ public final class EccNodesSync
         return execute(deleteNodeStatus);
     }
 
+    /**
+     * Inserts node information into the nodes_sync table. Exposed for testing purposes.
+     *
+     * @param datacenterName the datacenter name of the node.
+     * @param nodeEndpoint the endpoint address of the node.
+     * @param nodeStatus the current status of the node.
+     * @param lastConnection the timestamp of the last connection.
+     * @param nextConnection the timestamp of the next scheduled connection.
+     * @param nodeID the unique identifier of the node.
+     * @return the result set from the insert operation.
+     */
     @VisibleForTesting
     public ResultSet verifyInsertNodeInfo(
             final String datacenterName,
@@ -289,18 +342,40 @@ public final class EccNodesSync
         );
     }
 
+    /**
+     * Executes the given bound statement against the CQL session.
+     *
+     * @param statement the bound statement to execute.
+     * @return the result set from the execution.
+     */
     public ResultSet execute(final BoundStatement statement)
     {
         return mySession.execute(statement);
     }
 
+    /**
+     * Creates a new builder for constructing {@link EccNodesSync} instances.
+     *
+     * @return a new builder.
+     */
     public static Builder newBuilder()
     {
         return new Builder();
     }
 
+    /**
+     * Builder class for constructing {@link EccNodesSync} instances.
+     */
     public static class Builder
     {
+        /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
         private CqlSession mySession;
         private DistributedNativeConnectionProvider myNativeConnection;
         private String myEcchronosID;
@@ -375,8 +450,8 @@ public final class EccNodesSync
         /**
          * Builds EccNodesSync.
          *
-         * @return Builder
-         * @throws UnknownHostException
+         * @return the constructed EccNodesSync instance.
+         * @throws UnknownHostException if a host cannot be resolved.
          */
         public EccNodesSync build() throws UnknownHostException
         {

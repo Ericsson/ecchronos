@@ -32,7 +32,7 @@ public interface RepairLockFactory
      * @param repairResources The repair resources to lock.
      * @param metadata The metadata to add to the locks.
      * @param priority The priority of the repair resources.
-     * @param nodeId
+     * @param nodeId The UUID of the node requesting the lock.
      * @return The collected lock for the repair resources.
      * @throws LockException Thrown in case there is an issue with taking the locks for the repair resources.
      */

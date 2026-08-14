@@ -20,8 +20,20 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 
+/**
+ * A Spring {@link Condition} that evaluates to true when the Jolokia JMX connector is enabled
+ * in the application configuration.
+ */
 public class JolokiaCondition implements Condition
 {
+    /**
+     * Default constructor.
+     */
+    public JolokiaCondition()
+    {
+        // Default constructor
+    }
+
     @Override
     public final boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata)
     {

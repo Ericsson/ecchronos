@@ -19,6 +19,17 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Represents the synchronization state of a node as stored in Cassandra.
+ *
+ * @param ecchronosId the ecChronos instance identifier.
+ * @param datacenterName the name of the datacenter the node belongs to.
+ * @param nodeId the unique identifier of the node.
+ * @param lastConnection the timestamp of the last connection.
+ * @param nextConnection the timestamp of the next expected connection.
+ * @param nodeEndpoint the endpoint address of the node.
+ * @param nodeStatus the current status of the node.
+ */
 public record NodeSyncState(
     String ecchronosId,
     String datacenterName,
@@ -29,14 +40,27 @@ public record NodeSyncState(
     String nodeStatus
 )
 {
+    /** Column name for the ecChronos instance identifier. */
     public static final String COLUMN_ECCHRONOS_ID = "ecchronos_id";
+    /** Column name for the datacenter name. */
     public static final String COLUMN_DATACENTER_NAME = "datacenter_name";
+    /** Column name for the node identifier. */
     public static final String COLUMN_NODE_ID = "node_id";
+    /** Column name for the last connection timestamp. */
     public static final String COLUMN_LAST_CONNECTION = "last_connection";
+    /** Column name for the next connection timestamp. */
     public static final String COLUMN_NEXT_CONNECTION = "next_connection";
+    /** Column name for the node endpoint address. */
     public static final String COLUMN_NODE_ENDPOINT = "node_endpoint";
+    /** Column name for the node status. */
     public static final String COLUMN_NODE_STATUS = "node_status";
 
+    /**
+     * Creates a {@link NodeSyncState} from a Cassandra row.
+     *
+     * @param row the Cassandra row to read from.
+     * @return a new NodeSyncState instance.
+     */
     public static NodeSyncState fromRow(final Row row)
     {
         return new NodeSyncState(

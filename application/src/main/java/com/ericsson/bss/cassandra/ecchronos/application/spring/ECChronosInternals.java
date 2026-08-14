@@ -50,6 +50,11 @@ import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Internal components of the ecChronos application. Manages the lifecycle of core services including
+ * the schedule manager, lock factory, JMX proxy factory, host states, table storage states,
+ * and repair metrics. Implements {@link Closeable} to ensure proper cleanup of all resources.
+ */
 public class ECChronosInternals implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ECChronosInternals.class);
@@ -67,6 +72,26 @@ public class ECChronosInternals implements Closeable
     private final MetricInspector myMetricInspector;
     private final JolokiaNotificationController myJolokiaNotificationController;
 
+    /**
+     * Constructs a new {@code ECChronosInternals} instance, initializing the JMX proxy factory,
+     * host states, replicated table provider, lock factory, schedule manager, and optionally
+     * metrics components based on the provided configuration.
+     *
+     * @param configuration
+     *         the application configuration.
+     * @param nativeConnectionProvider
+     *         the provider for Cassandra native connections.
+     * @param jmxConnectionProvider
+     *         the provider for JMX connections.
+     * @param eccNodesSync
+     *         the node synchronization instance.
+     * @param meterRegistry
+     *         the meter registry for metrics.
+     * @param ipTranslator
+     *         the IP translator for address resolution.
+     * @param notificationController
+     *         the Jolokia notification controller, may be null.
+     */
     public ECChronosInternals(
             final Config configuration,
             final DistributedNativeConnectionProvider nativeConnectionProvider,
@@ -161,51 +186,98 @@ public class ECChronosInternals implements Closeable
                 .build();
     }
 
+    /**
+     * Returns the table reference factory used to create table references.
+     *
+     * @return the {@link TableReferenceFactory} instance.
+     */
     public final TableReferenceFactory getTableReferenceFactory()
     {
         return myTableReferenceFactory;
     }
 
+    /**
+     * Returns the replicated table provider used to discover replicated tables.
+     *
+     * @return the {@link ReplicatedTableProvider} instance.
+     */
     public final ReplicatedTableProvider getReplicatedTableProvider()
     {
         return myReplicatedTableProvider;
     }
 
+    /**
+     * Returns the schedule manager responsible for managing scheduled repair tasks.
+     *
+     * @return the {@link ScheduleManager} instance.
+     */
     public final ScheduleManager getScheduleManager()
     {
         return myScheduleManagerImpl;
     }
 
+    /**
+     * Returns the distributed JMX proxy factory used to create JMX proxies for cluster nodes.
+     *
+     * @return the {@link DistributedJmxProxyFactory} instance.
+     */
     public final DistributedJmxProxyFactory getJmxProxyFactory()
     {
         return myJmxProxyFactory;
     }
 
+    /**
+     * Returns the Cassandra metrics instance for accessing node-level metrics via JMX.
+     *
+     * @return the {@link CassandraMetrics} instance.
+     */
     public final CassandraMetrics getCassandraMetrics()
     {
         return myCassandraMetrics;
     }
 
+    /**
+     * Returns the table repair metrics.
+     * @return the table repair metrics, or a no-op implementation if unavailable
+     */
     public final TableRepairMetrics getTableRepairMetrics()
     {
         return Objects.requireNonNullElse(myTableRepairMetricsImpl, NO_OP_REPAIR_METRICS);
     }
 
+    /**
+     * Returns the host states.
+     * @return the host states
+     */
     public final HostStates getHostStates()
     {
         return myHostStatesImpl;
     }
 
+    /**
+     * Returns the table storage states.
+     * @return the table storage states
+     */
     public final TableStorageStates getTableStorageStates()
     {
         return myTableStorageStatesImpl;
     }
 
+    /**
+     * Adds a run policy to the schedule manager.
+     * @param runPolicy the run policy to add
+     * @return true if the policy was added successfully
+     */
     public final boolean addRunPolicy(final RunPolicy runPolicy)
     {
         return myScheduleManagerImpl.addRunPolicy(runPolicy);
     }
 
+    /**
+     * Removes a run policy from the schedule manager.
+     * @param runPolicy the run policy to remove
+     * @return true if the policy was removed successfully
+     */
     public final boolean removeRunPolicy(final RunPolicy runPolicy)
     {
         return myScheduleManagerImpl.removeRunPolicy(runPolicy);

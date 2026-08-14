@@ -29,6 +29,11 @@ public class DriverNode
 {
     private final Node node;
 
+    /**
+     * Constructs a DriverNode wrapping the given Cassandra driver node.
+     *
+     * @param aNode the Cassandra driver node to wrap.
+     */
     public DriverNode(final Node aNode)
     {
         this.node = aNode;

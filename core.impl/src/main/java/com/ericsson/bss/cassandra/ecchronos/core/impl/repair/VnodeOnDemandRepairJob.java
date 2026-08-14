@@ -47,8 +47,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
- * A Job that will schedule and run vnode repair on one table once. It creates VnodeRepairTasks
- * to fully repair the table for the current node. Once all VnodeRepairTask VnodeRepairTasks are completed,
+ * A Job that will schedule and run vnode repair on one table once. It creates RepairGroup tasks
+ * to fully repair the table for the current node. Once all repair tasks are completed,
  * the repair is finished and the job will be descheduled.
  */
 public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
@@ -210,6 +210,11 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
         return myTasks.isEmpty() ? ScheduledJob.State.FINISHED : ScheduledJob.State.RUNNABLE;
     }
 
+    /**
+     * Get the progress of this on-demand repair job.
+     *
+     * @return the progress as a value between 0.0 and 1.0, where 1.0 means fully repaired.
+     */
     public double getProgress()
     {
         if (myTotalTokens == 0)
@@ -230,6 +235,9 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
         return String.format("Vnode On Demand Repair job of %s", getTableReference());
     }
 
+    /**
+     * Builder class for constructing {@link VnodeOnDemandRepairJob} instances.
+     */
     public static class Builder
     {
         private final ScheduledJob.Configuration configuration = new ScheduledJob.ConfigurationBuilder()
@@ -247,54 +255,115 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
         private OngoingJob ongoingJob;
         private Node currentNode;
 
+        /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
+         * Sets the current node for the repair job.
+         *
+         * @param node the node to run the repair on.
+         * @return this builder instance.
+         */
         public final Builder withNode(final Node node)
         {
             this.currentNode = node;
             return this;
         }
 
+        /**
+         * Sets the JMX proxy factory for the repair job.
+         *
+         * @param aJMXProxyFactory the JMX proxy factory to use.
+         * @return this builder instance.
+         */
         public final Builder withJmxProxyFactory(final DistributedJmxProxyFactory aJMXProxyFactory)
         {
             this.jmxProxyFactory = aJMXProxyFactory;
             return this;
         }
 
+        /**
+         * Sets the table repair metrics for the repair job.
+         *
+         * @param theTableRepairMetrics the table repair metrics to use.
+         * @return this builder instance.
+         */
         public final Builder withTableRepairMetrics(final TableRepairMetrics theTableRepairMetrics)
         {
             this.tableRepairMetrics = theTableRepairMetrics;
             return this;
         }
 
+        /**
+         * Sets the repair lock type for the repair job.
+         *
+         * @param aRepairLockType the repair lock type to use.
+         * @return this builder instance.
+         */
         public final Builder withRepairLockType(final RepairLockType aRepairLockType)
         {
             this.repairLockType = aRepairLockType;
             return this;
         }
 
+        /**
+         * Sets the callback to invoke when the repair job finishes.
+         *
+         * @param theOnFinishedHook the consumer to call with the job ID when finished.
+         * @return this builder instance.
+         */
         public final Builder withOnFinished(final Consumer<UUID> theOnFinishedHook)
         {
             this.onFinishedHook = theOnFinishedHook;
             return this;
         }
 
+        /**
+         * Sets the repair configuration for the repair job.
+         *
+         * @param aRepairConfiguration the repair configuration to use.
+         * @return this builder instance.
+         */
         public final Builder withRepairConfiguration(final RepairConfiguration aRepairConfiguration)
         {
             this.repairConfiguration = aRepairConfiguration;
             return this;
         }
 
+        /**
+         * Sets the repair history provider for the repair job.
+         *
+         * @param aRepairHistory the repair history to use.
+         * @return this builder instance.
+         */
         public final Builder withRepairHistory(final RepairHistory aRepairHistory)
         {
             this.repairHistory = aRepairHistory;
             return this;
         }
 
+        /**
+         * Sets the ongoing job for the repair job.
+         *
+         * @param anOngoingJob the ongoing job to use.
+         * @return this builder instance.
+         */
         public final Builder withOngoingJob(final OngoingJob anOngoingJob)
         {
             this.ongoingJob = anOngoingJob;
             return this;
         }
 
+        /**
+         * Builds a new {@link VnodeOnDemandRepairJob} instance.
+         *
+         * @return a new VnodeOnDemandRepairJob.
+         */
         public final VnodeOnDemandRepairJob build()
         {
             return new VnodeOnDemandRepairJob(this);

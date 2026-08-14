@@ -48,6 +48,11 @@ public final class RepairOptions
      */
     public static final String INCREMENTAL_KEY = "incremental";
 
+    /**
+     * If the repair should ignore unreplicated keyspaces.
+     * <p>
+     * Possible values: true | false
+     */
     public static final String UNREPLICATED_KEY = "ignoreUnreplicatedKeyspaces";
 
     /**

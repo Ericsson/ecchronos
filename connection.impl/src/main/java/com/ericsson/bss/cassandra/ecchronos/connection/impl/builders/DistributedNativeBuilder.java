@@ -37,9 +37,21 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Builder for constructing {@link DistributedNativeConnectionProviderImpl} instances with
+ * configurable contact points, datacenter/rack/host filtering, authentication, SSL, and metrics.
+ */
 public class DistributedNativeBuilder
 {
     private static final Logger LOG = LoggerFactory.getLogger(DistributedNativeBuilder.class);
+
+    /**
+     * Default constructor.
+     */
+    public DistributedNativeBuilder()
+    {
+        // Default constructor
+    }
 
     private ConnectionType myType = ConnectionType.datacenterAware;
     private List<InetSocketAddress> myInitialContactPoints = new ArrayList<>();
@@ -95,6 +107,12 @@ public class DistributedNativeBuilder
         return this;
     }
 
+    /**
+     * Sets the ecChronos keyspace name used for replication factor validation.
+     *
+     * @param keySpace the name of the ecChronos keyspace.
+     * @return the current instance of {@link DistributedNativeBuilder}.
+     */
     public final DistributedNativeBuilder withEcchronosKeyspaceName(final String keySpace)
     {
         ecchronosKeyspaceName = keySpace;

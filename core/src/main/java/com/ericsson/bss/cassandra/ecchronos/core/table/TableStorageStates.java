@@ -24,6 +24,7 @@ public interface TableStorageStates
     /**
      * Get the data size of the provided table on the local node.
      *
+     * @param nodeID The node identifier.
      * @param tableReference The table to get the data size of.
      * @return The data size of the provided table on this node.
      */
@@ -32,6 +33,7 @@ public interface TableStorageStates
     /**
      * Get the total data size of all tables on the local node.
      *
+     * @param nodeID The node identifier.
      * @return The data size of all tables on this node.
      */
     long getDataSize(UUID nodeID);

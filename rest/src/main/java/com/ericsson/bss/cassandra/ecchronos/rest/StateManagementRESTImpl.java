@@ -42,6 +42,11 @@ public class StateManagementRESTImpl implements StateManagementREST
     @Autowired
     private final EccNodesSync myEccNodesSync;
 
+    /**
+     * Constructs the state management REST controller.
+     *
+     * @param eccNodesSync the ECC nodes sync instance for querying managed nodes.
+     */
     public StateManagementRESTImpl(final EccNodesSync eccNodesSync)
     {
         myEccNodesSync = eccNodesSync;

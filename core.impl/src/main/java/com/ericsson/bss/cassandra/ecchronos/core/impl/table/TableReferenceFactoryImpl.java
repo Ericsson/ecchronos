@@ -43,6 +43,11 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
     private final CqlSession session;
     private static final String TIME_WINDOW_COMPACTION_STRATEGY =  "org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy";
 
+    /**
+     * Constructs a new TableReferenceFactoryImpl.
+     *
+     * @param aSession the CQL session used to access Cassandra metadata. Must not be {@code null}.
+     */
     public TableReferenceFactoryImpl(final CqlSession aSession)
     {
         this.session = Preconditions.checkNotNull(aSession, "Session must be set");

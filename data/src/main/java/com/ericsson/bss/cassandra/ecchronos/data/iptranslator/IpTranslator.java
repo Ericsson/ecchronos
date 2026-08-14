@@ -31,6 +31,10 @@ import java.util.concurrent.Executors;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
 
+/**
+ * Translates external (broadcast) IP addresses to internal IP addresses by reading
+ * the gossip_info system view in Cassandra. Refreshes the mapping when nodes are added or come up.
+ */
 public final class IpTranslator extends NodeStateListenerBase
 {
     private static final Logger LOG = LoggerFactory.getLogger(IpTranslator.class);
@@ -45,11 +49,19 @@ public final class IpTranslator extends NodeStateListenerBase
     private final Map<String, String> myIpMap = new ConcurrentHashMap<>();
     private final ExecutorService myExecutor = Executors.newSingleThreadExecutor();
 
+    /**
+     * Constructs an IpTranslator. The translator must be initialized via {@link #init(CqlSession)} before use.
+     */
     public IpTranslator()
     {
         // Do nothing
     }
 
+    /**
+     * Initializes the IP translator with the given CQL session and performs the initial IP mapping refresh.
+     *
+     * @param session the CQL session to use for querying gossip information.
+     */
     public void init(final CqlSession session)
     {
         if (mySession != null)
@@ -67,11 +79,23 @@ public final class IpTranslator extends NodeStateListenerBase
         refreshIpMap();
     }
 
+    /**
+     * Checks whether the IP translator has any IP mappings available.
+     *
+     * @return true if mappings exist, false otherwise.
+     */
     public boolean isActive()
     {
         return !myIpMap.isEmpty();
     }
 
+    /**
+     * Translates an external (broadcast) IP address to its corresponding internal IP address.
+     * If no mapping is found, attempts a refresh and falls back to the external IP.
+     *
+     * @param externalIp the external IP address to translate.
+     * @return the internal IP address, or the external IP if no mapping exists.
+     */
     public String getInternalIp(final String externalIp)
     {
         String internalIp = myIpMap.get(externalIp);

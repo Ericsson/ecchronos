@@ -21,10 +21,24 @@ import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairStatus;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Interface for tracking repair history sessions.
+ */
 public interface RepairHistory
 {
+    /** A no-op implementation that performs no tracking. */
     RepairHistory NO_OP = new NoOpRepairHistory();
 
+    /**
+     * Create a new repair session for the given table and token range.
+     *
+     * @param node The node performing the repair.
+     * @param tableReference The table being repaired.
+     * @param jobId The unique identifier of the repair job.
+     * @param range The token range being repaired.
+     * @param participants The set of nodes participating in the repair.
+     * @return A new repair session.
+     */
     RepairSession newSession(
             Node node,
             TableReference tableReference,
@@ -32,16 +46,38 @@ public interface RepairHistory
             LongTokenRange range,
             Set<DriverNode> participants);
 
+    /**
+     * Represents a single repair session that can be started and finished.
+     */
     interface RepairSession
     {
+        /**
+         * Mark the repair session as started.
+         */
         void start();
 
+        /**
+         * Mark the repair session as finished with the given status.
+         *
+         * @param repairStatus The final status of the repair.
+         */
         void finish(RepairStatus repairStatus);
     }
 
+    /**
+     * A no-op implementation of {@link RepairHistory} that does not record any repair history.
+     */
     class NoOpRepairHistory implements RepairHistory
     {
         private static final RepairSession NO_OP = new NoOpRepairSession();
+
+        /**
+         * Default constructor.
+         */
+        NoOpRepairHistory()
+        {
+            // Default constructor
+        }
 
         /**
          * New session.
@@ -58,8 +94,19 @@ public interface RepairHistory
         }
     }
 
+    /**
+     * A no-op implementation of {@link RepairSession} that does nothing on start or finish.
+     */
     class NoOpRepairSession implements RepairSession
     {
+        /**
+         * Default constructor.
+         */
+        NoOpRepairSession()
+        {
+            // Default constructor
+        }
+
         /**
          * Start.
          */

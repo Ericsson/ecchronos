@@ -387,6 +387,14 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         private TimeBasedRunPolicy myTimeBasedRunPolicy;
 
         /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
          * RepairSchedulerImpl build with repair lock type.
          *
          * @param repairLockType Repair lock type.

@@ -33,6 +33,9 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 
+/**
+ * Utility class for loading X.509 certificates and private keys from PEM-encoded files.
+ */
 public final class CertificateLoader
 {
     private static final Logger LOG = LoggerFactory.getLogger(CertificateLoader.class);
@@ -46,6 +49,8 @@ public final class CertificateLoader
      *
      * @param file the certificate file (may contain a chain).
      * @return list of certificates in file order.
+     * @throws IOException if the file cannot be read.
+     * @throws CertificateException if no valid certificates are found in the file.
      */
     public static List<Certificate> loadCertificates(final File file) throws IOException, CertificateException
     {
@@ -66,6 +71,7 @@ public final class CertificateLoader
      *
      * @param file the private key file.
      * @return the parsed private key.
+     * @throws IOException if the file cannot be read or the key format is unsupported.
      */
     @SuppressWarnings("PMD.PreserveStackTrace")
     public static PrivateKey loadPrivateKey(final File file) throws IOException

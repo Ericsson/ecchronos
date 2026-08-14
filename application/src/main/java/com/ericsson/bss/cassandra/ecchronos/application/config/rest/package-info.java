@@ -13,6 +13,6 @@
  * limitations under the License.
  */
 /**
- * Contains configurations related to rest server.
+ * Contains configurations related to REST server.
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config.rest;

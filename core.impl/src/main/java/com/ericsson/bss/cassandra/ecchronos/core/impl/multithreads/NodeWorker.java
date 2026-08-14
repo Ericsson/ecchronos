@@ -43,6 +43,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+/**
+ * A worker that processes repair events for a specific Cassandra node.
+ * Runs in its own thread, consuming events from a queue and applying
+ * configuration changes or scheduling repairs accordingly.
+ */
 public class NodeWorker implements Runnable
 {
     private static final Logger LOG = LoggerFactory.getLogger(NodeWorker.class);
@@ -55,6 +60,16 @@ public class NodeWorker implements Runnable
     private final CqlSession mySession;
 
 
+    /**
+     * Constructs a NodeWorker for the specified node.
+     *
+     * @param node the Cassandra node this worker handles.
+     * @param replicatedTableProvider the provider for replicated table information.
+     * @param repairScheduler the scheduler for managing repair configurations.
+     * @param tableReferenceFactory the factory for creating table references.
+     * @param repairConfigurationFunction the function providing repair configurations for a table.
+     * @param session the CQL session for metadata access.
+     */
     public NodeWorker(
             final Node node,
             final ReplicatedTableProvider replicatedTableProvider,
@@ -71,6 +86,11 @@ public class NodeWorker implements Runnable
         mySession = session;
     }
 
+    /**
+     * Submits a repair event to this worker's event queue for processing.
+     *
+     * @param event the repair event to submit.
+     */
     public final void submitEvent(final RepairEvent event)
     {
         myEventQueue.offer(event);
@@ -139,7 +159,8 @@ public class NodeWorker implements Runnable
 
     /**
      * Deal with keyspace creation.
-     * @param keyspaceEvent
+     *
+     * @param keyspaceEvent the keyspace creation event to handle.
      */
 
     protected void onKeyspaceCreated(final KeyspaceCreatedEvent keyspaceEvent)
@@ -157,7 +178,8 @@ public class NodeWorker implements Runnable
 
     /**
      * Deal with table creation.
-     * @param tableEvent
+     *
+     * @param tableEvent the table creation event to handle.
      */
     protected void onTableCreated(final TableCreatedEvent tableEvent)
     {
@@ -219,7 +241,8 @@ public class NodeWorker implements Runnable
 
     /**
      * Deal with Table removal.
-     * @param table
+     *
+     * @param table the table metadata for the table to remove configuration for.
      */
     protected void removeConfiguration(final TableMetadata table)
     {
@@ -229,7 +252,8 @@ public class NodeWorker implements Runnable
 
     /**
      * Used for testing only.
-     * @return
+     *
+     * @return the current size of the event queue.
      */
     @VisibleForTesting
     public int getQueueSize()

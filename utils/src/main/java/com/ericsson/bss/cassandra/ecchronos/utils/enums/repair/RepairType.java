@@ -19,7 +19,10 @@ package com.ericsson.bss.cassandra.ecchronos.utils.enums.repair;
  */
 public enum RepairType
 {
+    /** Standard vnode-based repair, repairing one vnode range at a time. */
     VNODE,
+    /** Parallel vnode-based repair, repairing multiple vnode ranges concurrently. */
     PARALLEL_VNODE,
+    /** Incremental repair, repairing only data that has changed since last repair. */
     INCREMENTAL
 }

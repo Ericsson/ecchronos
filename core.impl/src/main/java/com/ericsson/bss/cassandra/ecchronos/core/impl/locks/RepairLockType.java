@@ -22,8 +22,11 @@ import java.util.function.Supplier;
  */
 public enum RepairLockType
 {
+    /** Lock at the datacenter level. */
     DATACENTER(DataCenterRepairResourceFactory::new),
+    /** Lock at the vnode level. */
     VNODE(VnodeRepairResourceFactory::new),
+    /** Lock at both datacenter and vnode levels. */
     DATACENTER_AND_VNODE(() -> new CombinedRepairResourceFactory(new DataCenterRepairResourceFactory(),
             new VnodeRepairResourceFactory()));
 
@@ -34,6 +37,11 @@ public enum RepairLockType
         myRepairLockingFactoryProvider = repairLockingProvider;
     }
 
+    /**
+     * Get the repair resource factory for this lock type.
+     *
+     * @return the repair resource factory.
+     */
     public RepairResourceFactory getLockFactory()
     {
         return myRepairLockingFactoryProvider.get();

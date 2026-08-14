@@ -16,24 +16,42 @@ package com.ericsson.bss.cassandra.ecchronos.application.config.connection;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/** Configuration holder for CQL and JMX connection settings. */
 public class ConnectionConfig
 {
     private ThreadPoolTaskConfig myThreadPoolTaskConfig = new ThreadPoolTaskConfig();
     private DistributedNativeConnection myCqlConnection = new DistributedNativeConnection();
     private DistributedJmxConnection myJmxConnection = new DistributedJmxConnection();
 
+    /** Default constructor. */
+    public ConnectionConfig()
+    {
+    }
+
+    /**
+     * Returns the CQL connection.
+     * @return the CQL connection
+     */
     @JsonProperty("cql")
     public final DistributedNativeConnection getCqlConnection()
     {
         return myCqlConnection;
     }
 
+    /**
+     * Returns the JMX connection.
+     * @return the JMX connection
+     */
     @JsonProperty("jmx")
     public final DistributedJmxConnection getJmxConnection()
     {
         return myJmxConnection;
     }
 
+    /**
+     * Sets the CQL connection.
+     * @param cqlConnection the CQL connection
+     */
     @JsonProperty("cql")
     public final void setCqlConnection(final DistributedNativeConnection cqlConnection)
     {
@@ -43,6 +61,10 @@ public class ConnectionConfig
         }
     }
 
+    /**
+     * Sets the JMX connection.
+     * @param jmxConnection the JMX connection
+     */
     @JsonProperty("jmx")
     public final void setJmxConnection(final DistributedJmxConnection jmxConnection)
     {
@@ -52,12 +74,20 @@ public class ConnectionConfig
         }
     }
 
+    /**
+     * Returns the thread pool task config.
+     * @return the thread pool task config
+     */
     @JsonProperty("threadPool")
     public final ThreadPoolTaskConfig getThreadPoolTaskConfig()
     {
         return myThreadPoolTaskConfig;
     }
 
+    /**
+     * Sets the thread pool task config.
+     * @param threadPoolTaskConfig the thread pool task config
+     */
     @JsonProperty("threadPool")
     public final void setThreadPoolTaskConfig(final ThreadPoolTaskConfig threadPoolTaskConfig)
     {

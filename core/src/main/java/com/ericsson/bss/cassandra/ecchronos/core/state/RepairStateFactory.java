@@ -18,8 +18,20 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 
+/**
+ * Factory interface for creating {@link RepairState} instances.
+ */
 public interface RepairStateFactory
 {
+    /**
+     * Create a new repair state for the given table and configuration.
+     *
+     * @param node The node for which to create the repair state.
+     * @param tableReference The table to track repair state for.
+     * @param repairConfiguration The repair configuration to use.
+     * @param postUpdateHook A hook to invoke after the state is updated.
+     * @return A new repair state instance.
+     */
     RepairState create(
             Node node,
             TableReference tableReference,

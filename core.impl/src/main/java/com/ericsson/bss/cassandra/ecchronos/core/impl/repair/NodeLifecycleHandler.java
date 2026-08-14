@@ -45,6 +45,16 @@ public class NodeLifecycleHandler
     private final ExecutorService myService;
     private final ReplicaSetCache myReplicaSetCache;
 
+    /**
+     * Constructs a NodeLifecycleHandler without a replica set cache.
+     *
+     * @param eccNodesSync the node sync service.
+     * @param jmxConnectionProvider the JMX connection provider.
+     * @param agentNativeConnectionProvider the native connection provider.
+     * @param workerManager the node worker manager.
+     * @param scheduleManager the schedule manager.
+     * @param service the executor service for async actions.
+     */
     public NodeLifecycleHandler(final EccNodesSync eccNodesSync,
                                 final DistributedJmxConnectionProvider jmxConnectionProvider,
                                 final DistributedNativeConnectionProvider agentNativeConnectionProvider,
@@ -56,6 +66,17 @@ public class NodeLifecycleHandler
                 workerManager, scheduleManager, service, null);
     }
 
+    /**
+     * Constructs a NodeLifecycleHandler with a replica set cache.
+     *
+     * @param eccNodesSync the node sync service.
+     * @param jmxConnectionProvider the JMX connection provider.
+     * @param agentNativeConnectionProvider the native connection provider.
+     * @param workerManager the node worker manager.
+     * @param scheduleManager the schedule manager.
+     * @param service the executor service for async actions.
+     * @param replicaSetCache the replica set cache to invalidate on topology changes.
+     */
     public NodeLifecycleHandler(final EccNodesSync eccNodesSync,
                                 final DistributedJmxConnectionProvider jmxConnectionProvider,
                                 final DistributedNativeConnectionProvider agentNativeConnectionProvider,
@@ -75,6 +96,8 @@ public class NodeLifecycleHandler
 
     /**
      * Handle a node switching state to UP.
+     *
+     * @param node the node that switched to UP.
      */
     public void onUp(final Node node)
     {
@@ -103,6 +126,8 @@ public class NodeLifecycleHandler
 
     /**
      * Handle a node switching state to DOWN.
+     *
+     * @param node the node that switched to DOWN.
      */
     public void onDown(final Node node)
     {
@@ -111,6 +136,8 @@ public class NodeLifecycleHandler
 
     /**
      * Handle a new node being added to the cluster.
+     *
+     * @param node the node being added.
      */
     public void onAdd(final Node node)
     {
@@ -139,6 +166,8 @@ public class NodeLifecycleHandler
 
     /**
      * Handle a node being removed from the cluster.
+     *
+     * @param node the node being removed.
      */
     public void onRemove(final Node node)
     {

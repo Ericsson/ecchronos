@@ -24,6 +24,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Implementation of {@link VnodeRepairStates} that maintains vnode repair state information.
+ * Each vnode repair state tracks the last repaired timestamp for a specific token range.
+ */
 public final class VnodeRepairStatesImpl implements VnodeRepairStates // CPD-OFF
 {
     private final ImmutableList<VnodeRepairState> myVnodeRepairStatuses;
@@ -76,6 +80,12 @@ public final class VnodeRepairStatesImpl implements VnodeRepairStates // CPD-OFF
         return myVnodeRepairStatuses.toString();
     }
 
+    /**
+     * Creates a new builder initialized with the given vnode repair states.
+     *
+     * @param vnodeRepairStates the initial collection of vnode repair states.
+     * @return a new {@link Builder} instance.
+     */
     public static Builder newBuilder(final Collection<VnodeRepairState> vnodeRepairStates)
     {
         return new Builder(vnodeRepairStates);
@@ -102,10 +112,18 @@ public final class VnodeRepairStatesImpl implements VnodeRepairStates // CPD-OFF
         return Objects.hash(myVnodeRepairStatuses);
     }
 
+    /**
+     * Builder for constructing {@link VnodeRepairStatesImpl} instances.
+     */
     public static class Builder implements VnodeRepairStates.Builder
     {
         private final Map<LongTokenRange, VnodeRepairState> myVnodeRepairStates;
 
+        /**
+         * Constructs a new Builder initialized with the given vnode repair states.
+         *
+         * @param vnodeRepairStates the initial collection of vnode repair states.
+         */
         public Builder(final Collection<VnodeRepairState> vnodeRepairStates)
         {
             int capacity = (int) (vnodeRepairStates.size() / DEFAULT_LOAD_FACTOR) + 1;

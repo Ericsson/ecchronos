@@ -14,9 +14,17 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.utils.enums.history;
 
+/**
+ * Represents the state of a repair session and defines valid state transitions.
+ */
 public enum SessionState
 {
-    DONE(null), STARTED(DONE), NO_STATE(STARTED);
+    /** The session has completed. */
+    DONE(null),
+    /** The session has started. Can transition to DONE. */
+    STARTED(DONE),
+    /** No state has been assigned yet. Can transition to STARTED. */
+    NO_STATE(STARTED);
 
     private final SessionState nextValid;
 
@@ -25,6 +33,12 @@ public enum SessionState
         this.nextValid = theNextValid;
     }
 
+    /**
+     * Checks whether this state can transition to the given next state.
+     *
+     * @param nextState the proposed next state.
+     * @return {@code true} if the transition is valid, {@code false} otherwise.
+     */
     public boolean canTransition(final SessionState nextState)
     {
         return nextState.equals(nextValid);

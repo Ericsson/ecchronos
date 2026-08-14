@@ -37,6 +37,9 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+/**
+ * An on-demand repair job that performs incremental repairs on a table.
+ */
 public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
 {
     private static final Logger LOG = LoggerFactory.getLogger(IncrementalOnDemandRepairJob.class);
@@ -44,6 +47,11 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
     private final List<ScheduledTask> myTasks;
     private final int myTotalTasks;
 
+    /**
+     * Constructs an incremental on-demand repair job from the provided builder.
+     *
+     * @param builder the builder containing all configuration.
+     */
     public IncrementalOnDemandRepairJob(final Builder builder)
     {
         super(builder.myConfiguration, builder.myJmxProxyFactory, builder.myRepairConfiguration,
@@ -80,12 +88,18 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
                 .withJobId(getJobId());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Iterator<ScheduledTask> iterator()
     {
         return new ArrayList<>(myTasks).iterator();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public OnDemandRepairJobView getView()
     {
@@ -98,6 +112,11 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
                 getOngoingJob().getCompletedTime(), getOngoingJob().getRepairType());
     }
 
+    /**
+     * Gets the current progress of the incremental repair as a ratio between 0.0 and 1.0.
+     *
+     * @return the progress ratio.
+     */
     public double getProgress()
     {
         int finishedTasks = myTotalTasks - myTasks.size();
@@ -106,6 +125,9 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
                 : (double) finishedTasks / myTotalTasks;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void postExecute(final boolean successful, final ScheduledTask task)
     {
@@ -118,6 +140,9 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
         super.postExecute(successful, task);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void finishJob()
     {
@@ -136,6 +161,9 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
         super.finishJob();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public State getState()
     {
@@ -146,12 +174,18 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
         return myTasks.isEmpty() ? State.FINISHED : State.RUNNABLE;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String toString()
     {
         return String.format("Incremental On Demand Repair job of %s", getTableReference());
     }
 
+    /**
+     * Builder for constructing {@link IncrementalOnDemandRepairJob} instances.
+     */
     public static class Builder
     {
         private final Configuration myConfiguration = new ConfigurationBuilder()
@@ -169,54 +203,115 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
         private OngoingJob myOngoingJob;
         private ReplicationState myReplicationState;
 
+        /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
+         * Sets the current Cassandra node for the repair job.
+         *
+         * @param node the current node.
+         * @return this builder.
+         */
         public final Builder withNode(final Node node)
         {
             this.myCurrentNode = node;
             return this;
         }
 
+        /**
+         * Sets the JMX proxy factory.
+         *
+         * @param jmxProxyFactory the JMX proxy factory.
+         * @return this builder.
+         */
         public final Builder withJmxProxyFactory(final DistributedJmxProxyFactory jmxProxyFactory)
         {
             this.myJmxProxyFactory = jmxProxyFactory;
             return this;
         }
 
+        /**
+         * Sets the table repair metrics.
+         *
+         * @param tableRepairMetrics the table repair metrics.
+         * @return this builder.
+         */
         public final Builder withTableRepairMetrics(final TableRepairMetrics tableRepairMetrics)
         {
             this.myTableRepairMetrics = tableRepairMetrics;
             return this;
         }
 
+        /**
+         * Sets the repair lock type.
+         *
+         * @param repairLockType the repair lock type.
+         * @return this builder.
+         */
         public final Builder withRepairLockType(final RepairLockType repairLockType)
         {
             this.myRepairLockType = repairLockType;
             return this;
         }
 
+        /**
+         * Sets the callback to invoke when the job finishes.
+         *
+         * @param onFinishedHook the on-finished callback.
+         * @return this builder.
+         */
         public final Builder withOnFinished(final Consumer<UUID> onFinishedHook)
         {
             this.myOnFinishedHook = onFinishedHook;
             return this;
         }
 
+        /**
+         * Sets the repair configuration.
+         *
+         * @param repairConfiguration the repair configuration.
+         * @return this builder.
+         */
         public final Builder withRepairConfiguration(final RepairConfiguration repairConfiguration)
         {
             this.myRepairConfiguration = repairConfiguration;
             return this;
         }
 
+        /**
+         * Sets the ongoing job reference.
+         *
+         * @param ongoingJob the ongoing job.
+         * @return this builder.
+         */
         public final Builder withOngoingJob(final OngoingJob ongoingJob)
         {
             this.myOngoingJob = ongoingJob;
             return this;
         }
 
+        /**
+         * Sets the replication state.
+         *
+         * @param replicationState the replication state.
+         * @return this builder.
+         */
         public final Builder withReplicationState(final ReplicationState replicationState)
         {
             this.myReplicationState = replicationState;
             return this;
         }
 
+        /**
+         * Builds the {@link IncrementalOnDemandRepairJob} instance.
+         *
+         * @return the constructed job.
+         */
         public final IncrementalOnDemandRepairJob build()
         {
             return new IncrementalOnDemandRepairJob(this);

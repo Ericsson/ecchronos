@@ -48,6 +48,12 @@ public class CASLockStatement
     private final CASLockProperties myCasLockProperties;
     private final CASLockFactoryCacheContext myCasLockFactoryCacheContext;
 
+    /**
+     * Constructs a CASLockStatement, preparing all necessary CQL statements for lock operations.
+     *
+     * @param casLockProperties the lock properties containing session and keyspace information.
+     * @param casLockFactoryCacheContext the cache context for lock operations.
+     */
     public CASLockStatement(
                             final CASLockProperties casLockProperties,
                             final CASLockFactoryCacheContext casLockFactoryCacheContext)
@@ -63,6 +69,12 @@ public class CASLockStatement
         myGetLockMetadataStatement = myCasLockProperties.getSession().prepare(lockMetadataStatement());
     }
 
+    /**
+     * Executes the given bound statement against the CQL session.
+     *
+     * @param statement the bound statement to execute.
+     * @return the result set from the execution.
+     */
     public final ResultSet execute(final BoundStatement statement)
     {
         return myCasLockProperties.getSession().execute(statement);
@@ -161,46 +173,91 @@ public class CASLockStatement
         return lockMetadataStatement;
     }
 
+    /**
+     * Gets the prepared statement for competing for a lock priority.
+     *
+     * @return the compete prepared statement.
+     */
     public final PreparedStatement getCompeteStatement()
     {
         return myCompeteStatement;
     }
 
+    /**
+     * Gets the prepared statement for inserting a lock.
+     *
+     * @return the lock insert prepared statement.
+     */
     public final PreparedStatement getLockStatement()
     {
         return myLockStatement;
     }
 
+    /**
+     * Gets the prepared statement for removing a lock.
+     *
+     * @return the remove lock prepared statement.
+     */
     public final PreparedStatement getRemoveLockStatement()
     {
         return myRemoveLockStatement;
     }
 
+    /**
+     * Gets the prepared statement for updating a lock.
+     *
+     * @return the update lock prepared statement.
+     */
     public final PreparedStatement getUpdateLockStatement()
     {
         return myUpdateLockStatement;
     }
 
+    /**
+     * Gets the prepared statement for removing a lock priority entry.
+     *
+     * @return the remove lock priority prepared statement.
+     */
     public final PreparedStatement getRemoveLockPriorityStatement()
     {
         return myRemoveLockPriorityStatement;
     }
 
+    /**
+     * Gets the prepared statement for retrieving lock priorities.
+     *
+     * @return the get priority prepared statement.
+     */
     public final PreparedStatement getGetPriorityStatement()
     {
         return myGetPriorityStatement;
     }
 
+    /**
+     * Gets the prepared statement for retrieving lock metadata.
+     *
+     * @return the lock metadata prepared statement.
+     */
     public final PreparedStatement getLockMetadataStatement()
     {
         return myGetLockMetadataStatement;
     }
 
+    /**
+     * Gets the lock factory cache context.
+     *
+     * @return the CAS lock factory cache context.
+     */
     public final CASLockFactoryCacheContext getCasLockFactoryCacheContext()
     {
         return myCasLockFactoryCacheContext;
     }
 
+    /**
+     * Gets the lock properties.
+     *
+     * @return the CAS lock properties.
+     */
     public final CASLockProperties getCasLockProperties()
     {
         return myCasLockProperties;

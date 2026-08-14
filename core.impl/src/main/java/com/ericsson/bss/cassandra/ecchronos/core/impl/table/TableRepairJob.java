@@ -345,6 +345,9 @@ public class TableRepairJob extends ScheduledRepairJob
             myTimeBasedRunPolicy);
     }
 
+    /**
+     * Builder class for constructing {@link TableRepairJob} instances.
+     */
     @SuppressWarnings("VisibilityModifier")
     public static class Builder
     {
@@ -363,6 +366,14 @@ public class TableRepairJob extends ScheduledRepairJob
         private RepairHistoryService repairHistory;
         private RepairLockType repairLockType;
         private TimeBasedRunPolicy myTimeBasedRunPolicy;
+
+        /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
 
         /**
          * Build table repair job with repair lock type.

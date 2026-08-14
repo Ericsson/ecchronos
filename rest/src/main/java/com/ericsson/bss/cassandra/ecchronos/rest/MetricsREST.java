@@ -19,7 +19,7 @@ import org.springframework.http.ResponseEntity;
 import java.util.Set;
 
 /**
- * Metrics REST interface.
+ * REST interface for exposing Prometheus metrics.
  *
  * Whenever the interface is changed it must be reflected in docs.
  */

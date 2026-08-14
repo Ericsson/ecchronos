@@ -23,6 +23,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class JolokiaConfig
 {
     private static final int DEFAULT_JOLOKIA_PORT = 8778;
+
+    /**
+     * Default constructor.
+     */
+    public JolokiaConfig()
+    {
+        // Default constructor
+    }
+
     private boolean myEnabled = false;
     private int myPort = DEFAULT_JOLOKIA_PORT;
     private boolean myUsePem = false;
@@ -74,7 +83,7 @@ public class JolokiaConfig
     /**
      * Sets whether the PEM certificate is enabled.
      *
-     * @param enabled {@code true} to enable PEM certificate usage; {@code false} otherwise.
+     * @param usePem {@code true} to enable PEM certificate usage; {@code false} otherwise.
      */
     @JsonProperty("usePem")
     public void setUsePem(final boolean usePem)

@@ -32,30 +32,68 @@ public class CASLockFactoryBuilder
     private long myCacheExpiryTimeInSeconds = DEFAULT_EXPIRY_TIME_IN_SECONDS;
     private ConsistencyType myConsistencyType = DEFAULT_CONSISTENCY_SERIAL;
 
+    /**
+     * Default constructor.
+     */
+    public CASLockFactoryBuilder()
+    {
+        // Default constructor
+    }
+
+    /**
+     * Sets the native connection provider.
+     *
+     * @param nativeConnectionProvider the distributed native connection provider.
+     * @return this builder.
+     */
     public final CASLockFactoryBuilder withNativeConnectionProvider(final DistributedNativeConnectionProvider nativeConnectionProvider)
     {
         myNativeConnectionProvider = nativeConnectionProvider;
         return this;
     }
 
+    /**
+     * Sets the keyspace name for lock tables.
+     *
+     * @param keyspaceName the keyspace name.
+     * @return this builder.
+     */
     public final CASLockFactoryBuilder withKeyspaceName(final String keyspaceName)
     {
         myKeyspaceName = keyspaceName;
         return this;
     }
 
+    /**
+     * Sets the cache expiry time in seconds for lock caching.
+     *
+     * @param cacheExpiryInSeconds the cache expiry time in seconds.
+     * @return this builder.
+     */
     public final CASLockFactoryBuilder withCacheExpiryInSeconds(final long cacheExpiryInSeconds)
     {
         myCacheExpiryTimeInSeconds = cacheExpiryInSeconds;
         return this;
     }
 
+    /**
+     * Sets the serial consistency type for lock operations.
+     *
+     * @param consistencyType the consistency type (LOCAL or SERIAL).
+     * @return this builder.
+     */
     public final CASLockFactoryBuilder withConsistencySerial(final ConsistencyType consistencyType)
     {
         myConsistencyType = consistencyType;
         return this;
     }
 
+    /**
+     * Builds the {@link CASLockFactory} instance.
+     *
+     * @return the constructed CAS lock factory.
+     * @throws IllegalArgumentException if native connection provider is null.
+     */
     public final CASLockFactory build()
     {
         if (myNativeConnectionProvider == null)
@@ -66,21 +104,41 @@ public class CASLockFactoryBuilder
         return new CASLockFactory(this);
     }
 
+    /**
+     * Gets the configured native connection provider.
+     *
+     * @return the native connection provider.
+     */
     public final DistributedNativeConnectionProvider getNativeConnectionProvider()
     {
         return myNativeConnectionProvider;
     }
 
+    /**
+     * Gets the configured keyspace name.
+     *
+     * @return the keyspace name.
+     */
     public final String getKeyspaceName()
     {
         return myKeyspaceName;
     }
 
+    /**
+     * Gets the configured cache expiry time in seconds.
+     *
+     * @return the cache expiry time in seconds.
+     */
     public final long getCacheExpiryTimeInSecond()
     {
         return myCacheExpiryTimeInSeconds;
     }
 
+    /**
+     * Gets the configured consistency type.
+     *
+     * @return the consistency type.
+     */
     public final ConsistencyType getConsistencyType()
     {
         return myConsistencyType;

@@ -108,9 +108,7 @@ public class BeanConfigurator
         ecChronosID = getConfiguration().getConnectionConfig().getCqlConnection().getInstanceName();
     }
 
-    /**
-     * Closes the {@code ConfigRefresher} and releases any resources held by it.
-     */
+    /** Releases resources held by this instance. */
     public final void close()
     {
         if (configRefresher != null)
@@ -192,6 +190,12 @@ public class BeanConfigurator
         return factory;
     }
 
+    /**
+     * Returns the repair fault reporter.
+     * @param config the configuration
+     * @return the repair fault reporter
+     * @throws ConfigurationException if the configuration is invalid
+     */
     @Bean
     public RepairFaultReporter repairFaultReporter(final Config config) throws ConfigurationException
     {
@@ -203,6 +207,10 @@ public class BeanConfigurator
      *
      * @param config
      *         the {@link Config} object containing the Cassandra connection configuration.
+     * @param defaultRepairConfigurationProvider
+     *         the {@link DefaultRepairConfigurationProvider} for default repair configuration.
+     * @param ipTranslator
+     *         the {@link IpTranslator} used for IP address translation.
      * @return a {@link DistributedNativeConnectionProvider} instance.
      */
     @Bean
@@ -239,10 +247,14 @@ public class BeanConfigurator
     /**
      * Provides a {@link DistributedJmxConnectionProvider} bean for managing JMX connections to Cassandra nodes.
      *
+     * @param config
+     *         the {@link Config} object containing the JMX connection configuration.
      * @param distributedNativeConnectionProvider
      *         the provider for Cassandra native connections.
      * @param eccNodesSync
      *         the {@link EccNodesSync} instance for node synchronization.
+     * @param ipTranslator
+     *         the {@link IpTranslator} used for IP address translation.
      * @return a {@link DistributedJmxConnectionProvider} instance.
      * @throws IOException
      *         if there is an error creating the JMX connection provider.
@@ -259,6 +271,18 @@ public class BeanConfigurator
                 config, jmxSecurity::get, distributedNativeConnectionProvider, eccNodesSync, ipTranslator);
     }
 
+    /**
+     * Provides a {@link JolokiaNotificationController} bean for managing Jolokia JMX notifications.
+     * This bean is only created when the Jolokia condition is met.
+     *
+     * @param config
+     *         the {@link Config} object containing the Jolokia configuration.
+     * @param nativeConnectionProvider
+     *         the provider for Cassandra native connections.
+     * @param ipTranslator
+     *         the {@link IpTranslator} used for IP address translation.
+     * @return a {@link JolokiaNotificationController} instance.
+     */
     @Bean
     @Conditional(JolokiaCondition.class)
     public JolokiaNotificationController jolokiaNotificationController(
@@ -296,6 +320,19 @@ public class BeanConfigurator
             .build();
     }
 
+    /**
+     * Provides a {@link RetrySchedulerService} bean for handling retry scheduling of failed operations.
+     *
+     * @param config
+     *         the {@link Config} object containing the scheduler configuration.
+     * @param jmxConnectionProvider
+     *         the provider for JMX connections.
+     * @param eccNodesSync
+     *         the {@link EccNodesSync} instance for node synchronization.
+     * @param nativeConnectionProvider
+     *         the provider for Cassandra native connections.
+     * @return a {@link RetrySchedulerService} instance.
+     */
     @Bean
     public RetrySchedulerService retrySchedulerService(final Config config,
                                                        final DistributedJmxConnectionProvider jmxConnectionProvider,
@@ -305,6 +342,17 @@ public class BeanConfigurator
         return new RetrySchedulerService(eccNodesSync, config, jmxConnectionProvider, nativeConnectionProvider);
     }
 
+    /**
+     * Provides a {@link ReloadSchedulerService} bean for handling scheduled reload of repair configurations.
+     *
+     * @param config
+     *         the {@link Config} object containing the scheduler configuration.
+     * @param nativeConnectionProvider
+     *         the provider for Cassandra native connections.
+     * @param defaultRepairConfigurationProvider
+     *         the {@link DefaultRepairConfigurationProvider} for default repair configuration.
+     * @return a {@link ReloadSchedulerService} instance.
+     */
     @Bean
     public ReloadSchedulerService reloadSchedulerService(
         final Config config,
@@ -314,6 +362,11 @@ public class BeanConfigurator
         return new ReloadSchedulerService(config, nativeConnectionProvider, defaultRepairConfigurationProvider);
     }
 
+    /**
+     * Returns the node resolver.
+     * @param distributedNativeConnectionProvider the distributed native connection provider
+     * @return the node resolver
+     */
     @Bean
     public NodeResolver nodeResolver(final DistributedNativeConnectionProvider distributedNativeConnectionProvider)
     {
@@ -321,6 +374,15 @@ public class BeanConfigurator
         return new NodeResolverImpl(session);
     }
 
+    /**
+     * Provides a {@link ReplicationState} bean that tracks the replication state of the cluster.
+     *
+     * @param distributedNativeConnectionProvider
+     *         the provider for Cassandra native connections.
+     * @param nodeResolver
+     *         the {@link NodeResolver} for resolving cluster nodes.
+     * @return a {@link ReplicationState} instance.
+     */
     @Bean
     public ReplicationState replicationState(
             final DistributedNativeConnectionProvider distributedNativeConnectionProvider,
@@ -330,6 +392,14 @@ public class BeanConfigurator
         return new ReplicationStateImpl(nodeResolver, session);
     }
 
+    /**
+     * Returns the repair history service.
+     * @param distributedNativeConnectionProvider the distributed native connection provider
+     * @param nodeResolver the node resolver
+     * @param replicationState the replication state
+     * @param config the configuration
+     * @return the repair history service
+     */
     @Bean
     public RepairHistoryService repairHistoryService(
             final DistributedNativeConnectionProvider distributedNativeConnectionProvider,
@@ -395,6 +465,12 @@ public class BeanConfigurator
         }
     }
 
+    /**
+    /**
+     * Creates a certificate handler for TLS configuration.
+     * @param tlsSupplier the TLS configuration supplier
+     * @return the certificate handler
+     */
     private static CertificateHandler createCertificateHandler(
             final Supplier<TLSConfig> tlsSupplier
     )
@@ -402,6 +478,14 @@ public class BeanConfigurator
         return new ReloadingCertificateHandler(tlsSupplier);
     }
 
+    /**
+     * Creates and initializes the EccNodesSync instance for node synchronization.
+     * @param distributedNativeConnectionProvider the distributed native connection provider
+     * @return the EccNodesSync instance
+     * @throws UnknownHostException if the local host name cannot be determined
+     * @throws EcChronosException if there is an error during node synchronization
+     * @throws ConfigurationException if there is an error loading configuration
+     */
     private EccNodesSync getEccNodesSync(
             final DistributedNativeConnectionProvider distributedNativeConnectionProvider
     ) throws UnknownHostException, EcChronosException, ConfigurationException
@@ -419,6 +503,14 @@ public class BeanConfigurator
         return myEccNodesSync;
     }
 
+    /**
+     * Creates the repair history service.
+     * @param distributedNativeConnectionProvider the distributed native connection provider
+     * @param nodeResolver the node resolver
+     * @param replicationState the replication state
+     * @param config the configuration
+     * @return the repair history service
+     */
     private RepairHistoryService getRepairHistoryService(
             final DistributedNativeConnectionProvider distributedNativeConnectionProvider,
             final NodeResolver nodeResolver,

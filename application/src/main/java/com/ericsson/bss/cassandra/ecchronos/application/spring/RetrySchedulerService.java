@@ -71,6 +71,14 @@ public final class RetrySchedulerService implements DisposableBean
     private final RetryBackoffStrategy retryBackoffStrategy;
     private final ScheduledExecutorService myScheduler = Executors.newScheduledThreadPool(1);
 
+    /**
+     * Constructs a new RetrySchedulerService.
+     *
+     * @param eccNodesSync the data access object for node synchronization
+     * @param config the application configuration containing retry policy settings
+     * @param jmxConnectionProvider the provider for JMX connections to remote nodes
+     * @param distributedNativeConnectionProvider the provider for distributed native connections
+     */
     public RetrySchedulerService(final EccNodesSync eccNodesSync,
                                  final Config config,
                                  final DistributedJmxConnectionProvider jmxConnectionProvider,
@@ -82,6 +90,9 @@ public final class RetrySchedulerService implements DisposableBean
         this.retryBackoffStrategy = new RetryBackoffStrategy(config.getConnectionConfig().getJmxConnection().getRetryPolicyConfig());
     }
 
+    /**
+     * Starts the scheduled task that periodically retries connections to unavailable nodes.
+     */
     @PostConstruct
     public void startScheduler()
     {

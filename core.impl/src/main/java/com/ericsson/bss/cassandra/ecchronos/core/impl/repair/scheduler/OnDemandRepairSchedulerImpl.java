@@ -219,6 +219,11 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         }
     }
 
+    /**
+     * Get the list of currently active on-demand repair job views.
+     *
+     * @return list of active repair job views.
+     */
     public List<OnDemandRepairJobView> getActiveRepairJobs()
     {
         synchronized (myLock)
@@ -286,11 +291,19 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         return myRepairConfiguration;
     }
 
+    /**
+     * Create a new Builder instance.
+     *
+     * @return a new Builder.
+     */
     public static Builder builder()
     {
         return new Builder();
     }
 
+    /**
+     * Builder for constructing {@link OnDemandRepairSchedulerImpl}.
+     */
     public static class Builder
     {
         private DistributedJmxProxyFactory myJmxProxyFactory;
@@ -303,6 +316,14 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         private RepairHistory repairHistory;
         private OnDemandStatus onDemandStatus;
         private Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
+
+        /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
 
         /**
          * Build on demand repair scheduler with JMX proxy factory.

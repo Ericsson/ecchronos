@@ -16,6 +16,9 @@ package com.ericsson.bss.cassandra.ecchronos.core.jmx;
 
 import java.io.IOException;
 
+/**
+ * Factory interface for creating {@link DistributedJmxProxy} instances.
+ */
 public interface DistributedJmxProxyFactory
 {
     /**
@@ -27,6 +30,12 @@ public interface DistributedJmxProxyFactory
      * @throws IOException Thrown when unable to connect.
      */
     DistributedJmxProxy connect() throws IOException;
+
+    /**
+     * Get the maximum wait time in minutes for JMX connection attempts.
+     *
+     * @return The maximum wait time in minutes.
+     */
     Integer getMaxWaitTimeInMinutes();
 }
 

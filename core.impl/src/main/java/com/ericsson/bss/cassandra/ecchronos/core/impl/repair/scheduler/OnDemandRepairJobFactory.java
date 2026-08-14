@@ -158,54 +158,115 @@ public final class OnDemandRepairJobFactory
         private OnDemandStatus myOnDemandStatus;
         private BiConsumer<UUID, UUID> myOnFinishedHook;
 
+        /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
+         * Set the JMX proxy factory.
+         *
+         * @param jmxProxyFactory the JMX proxy factory.
+         * @return this builder.
+         */
         public Builder withJmxProxyFactory(final DistributedJmxProxyFactory jmxProxyFactory)
         {
             myJmxProxyFactory = jmxProxyFactory;
             return this;
         }
 
+        /**
+         * Set the table repair metrics.
+         *
+         * @param tableRepairMetrics the table repair metrics.
+         * @return this builder.
+         */
         public Builder withTableRepairMetrics(final TableRepairMetrics tableRepairMetrics)
         {
             myTableRepairMetrics = tableRepairMetrics;
             return this;
         }
 
+        /**
+         * Set the replication state.
+         *
+         * @param replicationState the replication state.
+         * @return this builder.
+         */
         public Builder withReplicationState(final ReplicationState replicationState)
         {
             myReplicationState = replicationState;
             return this;
         }
 
+        /**
+         * Set the repair lock type.
+         *
+         * @param repairLockType the repair lock type.
+         * @return this builder.
+         */
         public Builder withRepairLockType(final RepairLockType repairLockType)
         {
             myRepairLockType = repairLockType;
             return this;
         }
 
+        /**
+         * Set the repair history.
+         *
+         * @param repairHistory the repair history.
+         * @return this builder.
+         */
         public Builder withRepairHistory(final RepairHistory repairHistory)
         {
             myRepairHistory = repairHistory;
             return this;
         }
 
+        /**
+         * Set the repair configuration.
+         *
+         * @param repairConfiguration the repair configuration.
+         * @return this builder.
+         */
         public Builder withRepairConfiguration(final RepairConfiguration repairConfiguration)
         {
             myRepairConfiguration = repairConfiguration;
             return this;
         }
 
+        /**
+         * Set the on-demand status.
+         *
+         * @param onDemandStatus the on-demand status.
+         * @return this builder.
+         */
         public Builder withOnDemandStatus(final OnDemandStatus onDemandStatus)
         {
             myOnDemandStatus = onDemandStatus;
             return this;
         }
 
+        /**
+         * Set the on-finished hook.
+         *
+         * @param onFinishedHook the callback invoked when a job finishes.
+         * @return this builder.
+         */
         public Builder withOnFinishedHook(final BiConsumer<UUID, UUID> onFinishedHook)
         {
             myOnFinishedHook = onFinishedHook;
             return this;
         }
 
+        /**
+         * Build the {@link OnDemandRepairJobFactory}.
+         *
+         * @return a new OnDemandRepairJobFactory instance.
+         */
         public OnDemandRepairJobFactory build()
         {
             return new OnDemandRepairJobFactory(this);

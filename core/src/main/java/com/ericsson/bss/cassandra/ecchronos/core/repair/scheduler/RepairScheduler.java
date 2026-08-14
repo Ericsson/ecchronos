@@ -46,6 +46,8 @@ public interface RepairScheduler
     void removeConfiguration(Node node, TableReference tableReference);
 
     /**
+     * Gets the list of currently scheduled repair jobs.
+     *
      * @return the list of the currently scheduled repair jobs.
      */
     List<ScheduledRepairJobView> getCurrentRepairJobs();
@@ -61,6 +63,8 @@ public interface RepairScheduler
     String getCurrentJobStatus();
 
     /**
+     * Gets the list of currently scheduled repair jobs for the specified node.
+     *
      * @param nodeId the nodeId.
      * @return the list of the currently scheduled repair jobs for the specified nodeId.
      */

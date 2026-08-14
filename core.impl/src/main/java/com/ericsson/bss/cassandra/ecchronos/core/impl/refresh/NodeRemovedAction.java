@@ -24,6 +24,10 @@ import java.io.IOException;
 import java.util.concurrent.Callable;
 import com.datastax.oss.driver.api.core.metadata.Node;
 
+/**
+ * Action that handles the removal of a Cassandra node by cleaning up
+ * node status, closing JMX connections, and removing the node from the native connection provider.
+ */
 public class NodeRemovedAction implements Callable<Boolean>
 {
     private static final Logger LOG = LoggerFactory.getLogger(NodeRemovedAction.class);
@@ -33,6 +37,14 @@ public class NodeRemovedAction implements Callable<Boolean>
     private final DistributedNativeConnectionProvider myDistributedNativeConnectionProvider;
     private final Node myNode;
 
+    /**
+     * Constructs a NodeRemovedAction.
+     *
+     * @param eccNodesSync the node sync service.
+     * @param jmxConnectionProvider the JMX connection provider.
+     * @param distributedNativeConnectionProvider the native connection provider.
+     * @param node the node being removed.
+     */
     public NodeRemovedAction(final EccNodesSync eccNodesSync, final DistributedJmxConnectionProvider jmxConnectionProvider, final DistributedNativeConnectionProvider distributedNativeConnectionProvider, final Node node)
     {
         myEccNodesSync = eccNodesSync;
@@ -43,7 +55,8 @@ public class NodeRemovedAction implements Callable<Boolean>
 
     /**
      * Removes the node.
-     * @return
+     *
+     * @return true if the removal was successful, false if JMX connection closure failed.
      */
     @Override
     public Boolean call()

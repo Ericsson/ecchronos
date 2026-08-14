@@ -69,6 +69,13 @@ public class CassandraRepairHistoryService implements RepairHistoryProvider
     private final long myLookbackTime;
     private final Clock myClock;
 
+    /**
+     * Constructs a CassandraRepairHistoryService.
+     *
+     * @param nodeResolver the node resolver for mapping IP addresses to driver nodes.
+     * @param session the CQL session for querying the system_distributed.repair_history table.
+     * @param lookbackTime the maximum look-back time in milliseconds for iterating repair entries.
+     */
     public CassandraRepairHistoryService(final NodeResolver nodeResolver,
                                          final CqlSession session,
                                          final long lookbackTime)

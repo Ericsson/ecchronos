@@ -19,8 +19,11 @@ package com.ericsson.bss.cassandra.ecchronos.utils.enums.sync;
  */
 public enum NodeStatus
 {
+    /** The node is not reachable and JMX connection could not be established. */
     UNAVAILABLE,
+    /** The node is reachable and JMX connection was successfully established. */
     AVAILABLE,
+    /** The node was previously available but is currently unreachable. */
     UNREACHABLE
 }
 

@@ -34,6 +34,7 @@ public interface ReplicationState
      *
      * @param tableReference The table used to calculate the proper replication.
      * @param tokenRange The token range to get nodes for.
+     * @param currentNode The current node used as reference.
      * @return The responsible nodes or null if either the token range does not exist or is intersecting two ranges.
      */
     ImmutableSet<DriverNode> getNodes(TableReference tableReference, LongTokenRange tokenRange, Node currentNode);
@@ -42,6 +43,7 @@ public interface ReplicationState
      * Get the nodes that are a replica for the provided table that have ranges in common with the local node.
      *
      * @param tableReference The table to fetch replicas for.
+     * @param currentNode The current node used as reference.
      * @return The replicas for the table
      */
     ImmutableSet<DriverNode> getReplicas(TableReference tableReference, Node currentNode);
@@ -52,6 +54,7 @@ public interface ReplicationState
      *
      * @param tableReference The table used to calculate the proper replication.
      * @param tokenRange The token range to get nodes for.
+     * @param currentNode The current node used as reference.
      * @return The responsible nodes or null if either the token range does not exist or is intersecting two ranges.
      */
     ImmutableSet<DriverNode> getNodesClusterWide(TableReference tableReference, LongTokenRange tokenRange, Node currentNode);
@@ -59,11 +62,18 @@ public interface ReplicationState
     /**
      * Get a map of the current replication state for the provided table.
      *
-     * @param tableReference
-     *            The table used to calculate the proper replication.
+     * @param tableReference The table used to calculate the proper replication.
+     * @param currentNode The current node used as reference.
      * @return The map consisting of token -&gt; responsible nodes.
      */
     Map<LongTokenRange, ImmutableSet<DriverNode>> getTokenRangeToReplicas(TableReference tableReference, Node currentNode);
 
+    /**
+     * Get all token ranges and their replicas for the provided table.
+     *
+     * @param tableReference The table used to calculate the proper replication.
+     * @param currentNode The current node used as reference.
+     * @return The map consisting of token range -&gt; responsible nodes.
+     */
     Map<LongTokenRange, ImmutableSet<DriverNode>> getTokenRanges(TableReference tableReference, Node currentNode);
 }

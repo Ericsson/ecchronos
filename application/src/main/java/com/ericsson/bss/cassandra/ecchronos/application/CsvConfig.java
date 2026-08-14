@@ -17,9 +17,11 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 
 import io.micrometer.core.instrument.dropwizard.DropwizardConfig;
 
+/** Configuration interface for CSV-based metrics reporting. */
 @FunctionalInterface
 public interface CsvConfig extends DropwizardConfig
 {
+    /** The default configuration. */
     CsvConfig DEFAULT = k -> null;
 
     @Override

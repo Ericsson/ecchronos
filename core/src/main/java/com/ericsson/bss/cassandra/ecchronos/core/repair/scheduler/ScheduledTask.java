@@ -24,23 +24,41 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * An abstract base class representing a task that can be scheduled and executed within a {@link ScheduledJob}.
+ * Tasks require a lock to run and may define repair resources they need.
+ */
 @SuppressWarnings("VisibilityModifier")
 public abstract class ScheduledTask
 {
     private static final String DEFAULT_SCHEDULE_RESOURCE = "SCHEDULE_LOCK";
 
+    /** The priority of this task. */
     protected final int myPriority;
 
+    /**
+     * Constructs a scheduled task with default priority of 1.
+     */
     protected ScheduledTask()
     {
         this(1);
     }
 
+    /**
+     * Constructs a scheduled task with the specified priority.
+     *
+     * @param priority the priority value for this task.
+     */
     protected ScheduledTask(final int priority)
     {
         myPriority = priority;
     }
 
+    /**
+     * Pre-validates whether this task can be executed.
+     *
+     * @return true if the task passes pre-validation.
+     */
     public final boolean preValidate()
     {
         return true;
@@ -49,6 +67,7 @@ public abstract class ScheduledTask
     /**
      * Run the task.
      *
+     * @param nodeID the unique identifier of the node to execute the task on.
      * @return True if the task was executed successfully.
      * @throws ScheduledJobException
      *             if anything went wrong during running.
@@ -68,8 +87,8 @@ public abstract class ScheduledTask
      *
      * @param lockFactory
      *            The lock factory to use.
-      @param nodeId
-     *           The nodeId.
+     * @param nodeId
+     *            The nodeId.
      * @return The lock used by this scheduled job.
      * @throws LockException Thrown when it's not possible to get the lock.
      */

@@ -64,6 +64,10 @@ import org.slf4j.LoggerFactory;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
 
+/**
+ * Service responsible for reading and writing repair history entries to the ecchronos.repair_history Cassandra table.
+ * Implements both {@link RepairHistory} for writing and {@link RepairHistoryProvider} for reading.
+ */
 public final class RepairHistoryService implements RepairHistory, RepairHistoryProvider
 {
 
@@ -95,6 +99,14 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
     private final NodeResolver myNodeResolver;
     private final long myLookbackTimeInMs;
 
+    /**
+     * Constructs a RepairHistoryService.
+     *
+     * @param cqlSession the CQL session for database access.
+     * @param replicationState the replication state for resolving token ranges to nodes.
+     * @param nodeResolver the node resolver for mapping IDs to driver nodes.
+     * @param lookbackTimeInMs the maximum look-back time in milliseconds for iterating repair entries.
+     */
     public RepairHistoryService(
             final CqlSession cqlSession,
             final ReplicationState replicationState,
@@ -263,6 +275,12 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves all repair history entries for the given table and node.
+     *
+     * @param repairHistoryData the data containing table ID and node ID to query.
+     * @return the result set of repair history rows.
+     */
     public ResultSet getRepairHistoryInfo(final RepairHistoryData repairHistoryData)
     {
         BoundStatement boundStatement = mySelectStatement.bind(repairHistoryData.getTableId(),
@@ -284,6 +302,12 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
         return myCqlSession.execute(boundStatement);
     }
 
+    /**
+     * Inserts a new repair history entry into the repair_history table.
+     *
+     * @param repairHistoryData the repair history data to insert.
+     * @return the result set from the insert operation.
+     */
     public ResultSet insertRepairHistoryInfo(final RepairHistoryData repairHistoryData)
     {
         LOG.info("Preparing to insert repair history with tableId {} and nodeId {}",
@@ -357,6 +381,12 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
         return new RepairSessionImpl(tableReference.getId(), driverNode.getId(), jobId, range, participants);
     }
 
+    /**
+     * Updates an existing repair history entry in the repair_history table.
+     *
+     * @param repairHistoryData the repair history data to update.
+     * @return the result set from the update operation.
+     */
     public ResultSet updateRepairHistoryInfo(final RepairHistoryData repairHistoryData)
     {
         BoundStatement updateRepairHistoryInfo = myUpdateStatement.bind(repairHistoryData.getJobId(),
@@ -415,6 +445,9 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
                 .build();
     }
 
+    /**
+     * Iterator that lazily reads repair entries from a result set and filters them using a predicate.
+     */
     public final class RepairEntryIterator extends AbstractIterator<RepairEntry>
     {
         private final TableReference tableReference;
