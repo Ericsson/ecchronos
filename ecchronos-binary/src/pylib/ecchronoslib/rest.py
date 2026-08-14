@@ -308,11 +308,9 @@ class StateManagementRequest(RestRequest):
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)
 
-    def get_nodes(self, output=None):
+    def get_nodes(self):
         result = self.request(StateManagementRequest.NODES)
         if result.is_successful():
-            if output == "json":
-                return result
             result = result.transform_with_data(new_data=[NodeSyncState(x) for x in result.data])
         return result
 
