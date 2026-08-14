@@ -63,3 +63,14 @@ CREATE TABLE IF NOT EXISTS ecchronos.repair_history(
     WITH compaction = {'class': 'TimeWindowCompactionStrategy'}
     AND default_time_to_live = 2592000
     AND CLUSTERING ORDER BY (repair_id DESC);
+
+CREATE TABLE IF NOT EXISTS ecchronos.nodes_sync(
+    ecchronos_id TEXT,
+    datacenter_name TEXT,
+    node_id UUID,
+    node_endpoint TEXT,
+    node_status TEXT,
+    last_connection TIMESTAMP,
+    next_connection TIMESTAMP,
+    PRIMARY KEY(ecchronos_id, datacenter_name, node_id))
+    WITH CLUSTERING ORDER BY(datacenter_name DESC, node_id DESC);
