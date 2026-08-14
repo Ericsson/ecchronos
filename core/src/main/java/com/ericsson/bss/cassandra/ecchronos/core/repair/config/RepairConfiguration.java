@@ -19,9 +19,15 @@ import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Configuration for repair jobs, defining intervals, parallelism, unwind ratios, and alarm thresholds.
+ * Instances are created via the {@link Builder}.
+ */
 public final class RepairConfiguration
 {
+    /** Constant indicating no unwind ratio is configured. */
     public static final double NO_UNWIND = 0.0d;
+    /** Constant indicating a full repair with no sub-range splitting. */
     public static final long FULL_REPAIR_SIZE = Long.MAX_VALUE;
 
     private static final long DEFAULT_REPAIR_INTERVAL_IN_MS = TimeUnit.DAYS.toMillis(7);
@@ -36,7 +42,9 @@ public final class RepairConfiguration
     private static final boolean DEFAULT_IGNORE_TWCS_TABLES = false;
     private static final long DEFAULT_INITIAL_DELAY_IN_MS = TimeUnit.DAYS.toMillis(1);
 
+    /** The default repair configuration with standard settings. */
     public static final RepairConfiguration DEFAULT = newBuilder().build();
+    /** A disabled repair configuration with a zero interval. */
     public static final RepairConfiguration DISABLED = newBuilder()
             .withRepairInterval(0, TimeUnit.MILLISECONDS)
             .build();
@@ -70,66 +78,132 @@ public final class RepairConfiguration
         myInitialDelayInMs = builder.myInitialDelayInMs;
     }
 
+    /**
+     * Gets the priority granularity unit used for scheduling.
+     *
+     * @return the priority granularity time unit.
+     */
     public TimeUnit getPriorityGranularityUnit()
     {
         return myPriorityGranularityUnit;
     }
 
+    /**
+     * Gets the parallelism type used for repairs.
+     *
+     * @return the repair parallelism.
+     */
     public RepairParallelism getRepairParallelism()
     {
         return myRepairParallelism;
     }
 
+    /**
+     * Gets the repair interval in milliseconds.
+     *
+     * @return the repair interval in milliseconds.
+     */
     public long getRepairIntervalInMs()
     {
         return myRepairIntervalInMs;
     }
 
+    /**
+     * Gets the initial delay in milliseconds before a new table job starts.
+     *
+     * @return the initial delay in milliseconds.
+     */
     public long getInitialDelayInMs()
     {
         return myInitialDelayInMs;
     }
 
+    /**
+     * Gets the time in milliseconds after which a warning alarm is raised if repair has not run.
+     *
+     * @return the repair warning time in milliseconds.
+     */
     public long getRepairWarningTimeInMs()
     {
         return myRepairWarningTimeInMs;
     }
 
+    /**
+     * Gets the time in milliseconds after which an error alarm is raised if repair has not run.
+     *
+     * @return the repair error time in milliseconds.
+     */
     public long getRepairErrorTimeInMs()
     {
         return myRepairErrorTimeInMs;
     }
 
+    /**
+     * Gets the unwind ratio used to spread out repairs over time.
+     *
+     * @return the repair unwind ratio.
+     */
     public double getRepairUnwindRatio()
     {
         return myRepairUnwindRatio;
     }
 
+    /**
+     * Gets the target repair size in bytes for sub range repairs.
+     *
+     * @return the target repair size in bytes.
+     */
     public long getTargetRepairSizeInBytes()
     {
         return myTargetRepairSizeInBytes;
     }
 
+    /**
+     * Gets the backoff time in milliseconds between repair runs.
+     *
+     * @return the backoff time in milliseconds.
+     */
     public long getBackoffInMs()
     {
         return myBackoffInMs;
     }
 
+    /**
+     * Gets whether TWCS (TimeWindowCompactionStrategy) tables should be ignored for repair.
+     *
+     * @return true if TWCS tables should be ignored, false otherwise.
+     */
     public boolean getIgnoreTWCSTables()
     {
         return myIgnoreTWCSTables;
     }
 
+    /**
+     * Gets the type of repair to perform.
+     *
+     * @return the repair type.
+     */
     public RepairType getRepairType()
     {
         return myRepairType;
     }
 
+    /**
+     * Creates a new builder initialized with values from an existing configuration.
+     *
+     * @param from the repair configuration to copy values from.
+     * @return a new builder instance.
+     */
     public static Builder newBuilder(final RepairConfiguration from)
     {
         return new Builder(from);
     }
 
+    /**
+     * Creates a new builder with default values.
+     *
+     * @return a new builder instance.
+     */
     public static Builder newBuilder()
     {
         return new Builder();
@@ -194,6 +268,9 @@ public final class RepairConfiguration
                 myBackoffInMs, myRepairType, myPriorityGranularityUnit);
     }
 
+    /**
+     * Builder for constructing {@link RepairConfiguration} instances.
+     */
     public static class Builder
     {
         private RepairParallelism myRepairParallelism = DEFAULT_REPAIR_PARALLELISM;

@@ -51,6 +51,9 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.update;
 
+/**
+ * Manages the persistence and retrieval of on-demand repair job status in Cassandra.
+ */
 public final class OnDemandStatus
 {
     private static final Logger LOG = LoggerFactory.getLogger(OnDemandStatus.class);
@@ -154,6 +157,11 @@ public final class OnDemandStatus
         myUpdateJobToFailedStatement = mySession.prepare(updateJobToFailedStatement);
     }
 
+    /**
+     * Get the map of node UUIDs to their metadata nodes.
+     *
+     * @return map of node host IDs to Node instances.
+     */
     public Map<UUID, Node> getNodes()
     {
         return myNativeConnectionProvider.getNodes();
@@ -188,6 +196,7 @@ public final class OnDemandStatus
      * Get all jobs for this host that have the status 'started'.
      *
      * @param replicationState The replication state.
+     * @param hostId The host identifier to query jobs for.
      * @return Set of ongoing jobs
      */
     public Set<OngoingJob> getOngoingJobs(final ReplicationState replicationState, final UUID hostId)
@@ -251,7 +260,7 @@ public final class OnDemandStatus
      * Get all jobs for this host, independent of the status.
      *
      * @param replicationState The replication state
-     * @param hostId
+     * @param hostId The host identifier to query jobs for.
      * @return Set of ongoing jobs
      */
     public Set<OngoingJob> getAllJobs(final ReplicationState replicationState, final UUID hostId)
@@ -354,9 +363,11 @@ public final class OnDemandStatus
     /**
      * Add a new job.
      *
+     * @param hostId The host identifier.
      * @param jobId The job id.
      * @param tableReference The table reference.
      * @param tokenMapHash The token map hash.
+     * @param repairType The repair type.
      */
     public void addNewJob(final UUID hostId,
                           final UUID jobId,
@@ -370,11 +381,12 @@ public final class OnDemandStatus
     /**
      * Add a new job for a specific host.
      *
+     * @param host The host identifier.
      * @param jobId The job id.
-     * @param host The host.
      * @param tableReference The table reference.
      * @param tokenMapHash The token map hash.
-     * @param repairedRanges The ranges.
+     * @param repairedRanges The ranges already repaired.
+     * @param repairType The repair type.
      */
     public void addNewJob(final UUID host,
                           final UUID jobId,
@@ -400,7 +412,7 @@ public final class OnDemandStatus
     /**
      * Update job with repaired tokens.
      *
-     * @param hostId
+     * @param hostId The host identifier.
      * @param jobId Job id.
      * @param repairedTokens Repaired tokens.
      */
@@ -413,7 +425,7 @@ public final class OnDemandStatus
      * Update a job as finished with current time stamp.
      *
      * @param jobId Id of the job set as finished.
-     * @param hostId
+     * @param hostId The host identifier.
      */
     public void finishJob(final UUID jobId, final UUID hostId)
     {
@@ -425,7 +437,7 @@ public final class OnDemandStatus
      * Update a job to failed status with current timestamp.
      *
      * @param jobId Id of the job to set as failed.
-     * @param hostId
+     * @param hostId The host identifier.
      */
     public void failJob(final UUID jobId, final UUID hostId)
     {

@@ -27,6 +27,7 @@ public interface VnodeRepairStateFactory
      *
      * If the previous repair state is unknown it should be calculated from start.
      *
+     * @param node The Cassandra node to calculate the repair state for.
      * @param tableReference The table to calculate the new repair state for vnodes.
      * @param previous The previous repair state or null if non exists.
      * @param iterateToTime The time to iterate repair entries to.
@@ -40,6 +41,7 @@ public interface VnodeRepairStateFactory
     /**
      * Calculate the repair state for a time window.
      *
+     * @param node The Cassandra node to calculate the repair state for.
      * @param tableReference The table to calculate the repair state for vnodes.
      * @param to Timestamp from when the repair state should start
      * @param from Timestamp to when the repair state should stop

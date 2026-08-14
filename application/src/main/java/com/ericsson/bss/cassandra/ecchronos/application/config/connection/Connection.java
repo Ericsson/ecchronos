@@ -19,17 +19,38 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.function.Supplier;
 
+/**
+ * Base class for connection configuration.
+ * @param <T> the type parameter
+ */
 public abstract class Connection<T>
 {
     private Class<? extends T> myProviderClass;
     private Class<? extends CertificateHandler> myCertificateHandlerClass;
 
+    /**
+     * Default constructor.
+     */
+    protected Connection()
+    {
+        // Default constructor
+    }
+
+    /**
+     * Returns the provider class.
+     * @return the provider class
+     */
     @JsonProperty("provider")
     public final Class<? extends T> getProviderClass()
     {
         return myProviderClass;
     }
 
+    /**
+     * Sets the provider class. Validates that the class has the expected constructor signature.
+     * @param providerClass the provider class to set
+     * @throws NoSuchMethodException if the provider class does not have the expected constructor
+     */
     @JsonProperty("provider")
     public final void setProvider(final Class<? extends T> providerClass) throws NoSuchMethodException
     {
@@ -55,12 +76,20 @@ public abstract class Connection<T>
         myCertificateHandlerClass = certificateHandlerClass;
     }
 
+    /**
+     * Returns the certificate handler class.
+     * @return the certificate handler class
+     */
     @JsonProperty("certificateHandler")
     public final Class<? extends CertificateHandler> getCertificateHandlerClass()
     {
         return myCertificateHandlerClass;
     }
 
+    /**
+     * Returns the expected constructor signature.
+     * @return the expected constructor parameter types
+     */
     protected abstract Class<?>[] expectedConstructor();
 
     /**

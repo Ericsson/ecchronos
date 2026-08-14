@@ -367,6 +367,14 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         private ReplicaSetCache myReplicaSetCache;
 
         /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
          * Build with session.
          *
          * @param session The CQl session

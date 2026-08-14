@@ -59,6 +59,7 @@ public interface LockFactory
     /**
      * Utility method to return a cached lock exception if one is available.
      *
+     * @param nodeID The node ID to check for cached failures.
      * @param dataCenter The data center the lock is for or null if it's a global lock.
      * @param resource The resource the lock is for.
      * @return A cached exception if available.

@@ -52,10 +52,11 @@ public class AgentJmxConnectionProvider implements DistributedJmxConnectionProvi
     /**
      * Constructs an {@code AgentJmxConnectionProvider} with the specified parameters.
      *
+     * @param config                              the configuration object containing the connection settings.
      * @param jmxSecurity                         a {@link Supplier} providing the JMX security configuration.
      * @param distributedNativeConnectionProvider the provider responsible for managing native connections in a distributed environment.
      * @param eccNodesSync                        an {@link EccNodesSync} instance for synchronizing ECC nodes.
-     * @param ipTranslator
+     * @param ipTranslator                        the IP translator used to translate node addresses.
      * @throws IOException if an I/O error occurs during the initialization of the JMX connection provider.
      */
     public AgentJmxConnectionProvider(
@@ -190,10 +191,12 @@ public class AgentJmxConnectionProvider implements DistributedJmxConnectionProvi
     }
 
     /**
-     * Creates a new connection a node.
-     * @param node
+     * Creates a new connection to a node.
      *
+     * @param node
+     *         the node to create a JMX connection for.
      * @throws IOException
+     *         if an I/O error occurs while creating the connection.
      */
     @Override
     public void add(final Node node) throws IOException

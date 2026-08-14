@@ -24,6 +24,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Implementation of {@link VnodeRepairStates} that handles sub-range (partial) repair states.
+ * Sub-ranges are summarized back into full vnodes when possible to reduce memory overhead.
+ */
 public final class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
 {
     private final ImmutableList<VnodeRepairState> myVnodeRepairStatuses;
@@ -82,6 +86,12 @@ public final class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
         return myVnodeRepairStatuses.toString();
     }
 
+    /**
+     * Creates a new builder initialized with the given vnode repair states.
+     *
+     * @param vnodeRepairStates the initial collection of vnode repair states.
+     * @return a new {@link Builder} instance.
+     */
     public static Builder newBuilder(final Collection<VnodeRepairState> vnodeRepairStates)
     {
         return new Builder(vnodeRepairStates);
@@ -108,11 +118,19 @@ public final class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
         return Objects.hash(myVnodeRepairStatuses);
     }
 
+    /**
+     * Builder for constructing {@link SubRangeRepairStates} instances.
+     */
     public static class Builder implements VnodeRepairStates.Builder
     {
         private final ImmutableList<VnodeRepairState> myVnodeRepairStatesBase;
         private final Map<LongTokenRange, VnodeRepairState> myActualVnodeRepairStates;
 
+        /**
+         * Constructs a new Builder initialized with the given vnode repair states as base.
+         *
+         * @param vnodeRepairStates the initial collection of vnode repair states.
+         */
         public Builder(final Collection<VnodeRepairState> vnodeRepairStates)
         {
             int capacity = (int) (vnodeRepairStates.size() / DEFAULT_LOAD_FACTOR) + 1;

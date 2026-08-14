@@ -18,8 +18,13 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Configuration for the retry policy used when reconnecting to unavailable nodes.
+ * Contains settings for maximum retry attempts, delay between retries, and scheduled retry intervals.
+ */
 public final class RetryPolicyConfig
 {
+    /** Default constructor for Jackson deserialization. */
     public RetryPolicyConfig()
     {
     }
@@ -36,12 +41,22 @@ public final class RetryPolicyConfig
     @JsonProperty("maxAttempts")
     private Integer myMaxAttempts = DEFAULT_MAX_ATTEMPTS;
 
+    /**
+     * Returns the maximum number of retry attempts.
+     *
+     * @return the maximum number of retry attempts
+     */
     @JsonProperty ("maxAttempts")
     public Integer getMaxAttempts()
     {
         return myMaxAttempts;
     }
 
+    /**
+     * Sets the maximum number of retry attempts.
+     *
+     * @param maxAttempts the maximum number of retry attempts, or null to keep the default
+     */
     @JsonProperty("maxAttempts")
     public void setMaxAttempts(final Integer maxAttempts)
     {
@@ -51,24 +66,44 @@ public final class RetryPolicyConfig
         }
     }
 
+    /**
+     * Sets the retry delay configuration.
+     *
+     * @param retryDelay the retry delay configuration
+     */
     @JsonProperty("delay")
     public void setRetryDelay(final RetryDelay retryDelay)
     {
         myRetryDelay = retryDelay;
     }
 
+    /**
+     * Returns the retry delay configuration.
+     *
+     * @return the retry delay configuration
+     */
     @JsonProperty("delay")
     public RetryDelay getRetryDelay()
     {
         return myRetryDelay;
     }
 
+    /**
+     * Returns the retry schedule configuration.
+     *
+     * @return the retry schedule configuration
+     */
     @JsonProperty("retrySchedule")
     public RetrySchedule getRetrySchedule()
     {
         return myRetrySchedule;
     }
 
+    /**
+     * Sets the retry schedule configuration.
+     *
+     * @param retrySchedule the retry schedule configuration
+     */
     @JsonProperty("retrySchedule")
     public void setRetrySchedule(final RetrySchedule retrySchedule)
     {
@@ -81,10 +116,11 @@ public final class RetryPolicyConfig
     }
 
     /**
-     * Configuration for retry delay parameter.
+     * Configuration for retry delay parameters including start delay, maximum delay, and time unit.
      */
     public static final class RetryDelay
     {
+        /** Default constructor for Jackson deserialization. */
         public RetryDelay()
         {
 
@@ -99,12 +135,23 @@ public final class RetryPolicyConfig
         @JsonProperty("unit")
         private TimeUnit myTimeUnit = DEFAULT_TIME_UNIT_IN_SECONDS;
 
+        /**
+         * Returns the start delay in milliseconds.
+         *
+         * @return the start delay in milliseconds
+         */
         @JsonProperty("start")
         public long getStartDelay()
         {
             return myDelay;
         }
 
+        /**
+         * Sets the start delay. The value is converted to milliseconds using the configured time unit.
+         *
+         * @param delay the start delay in the configured time unit, or null to keep the default
+         * @throws IllegalArgumentException if the converted delay is greater than the maximum delay
+         */
         @JsonProperty("start")
         public void setStartDelay(final Long delay)
         {
@@ -119,12 +166,23 @@ public final class RetryPolicyConfig
             }
         }
 
+        /**
+         * Returns the maximum delay in milliseconds.
+         *
+         * @return the maximum delay in milliseconds
+         */
         @JsonProperty("max")
         public long getMaxDelay()
         {
             return myMaxDelay;
         }
 
+        /**
+         * Sets the maximum delay. The value is converted to milliseconds using the configured time unit.
+         *
+         * @param maxDelay the maximum delay in the configured time unit, or null to keep the default
+         * @throws IllegalArgumentException if the converted max delay is less than the start delay
+         */
         @JsonProperty("max")
         public void setMaxDelay(final Long maxDelay)
         {
@@ -139,12 +197,22 @@ public final class RetryPolicyConfig
             }
         }
 
+        /**
+         * Returns the time unit used for delay values.
+         *
+         * @return the time unit
+         */
         @JsonProperty("unit")
         public TimeUnit getUnit()
         {
             return myTimeUnit;
         }
 
+        /**
+         * Sets the time unit used for delay values.
+         *
+         * @param unit the time unit name (e.g., "SECONDS", "MILLISECONDS"), or null/blank to keep the default
+         */
         @JsonProperty("unit")
         public void setTimeUnit(final String unit)
         {
@@ -155,8 +223,12 @@ public final class RetryPolicyConfig
         }
     }
 
+    /**
+     * Configuration for the retry schedule including initial delay and fixed delay between retry cycles.
+     */
     public static final class RetrySchedule
     {
+        /** Default constructor for Jackson deserialization. */
         public RetrySchedule()
         {
 
@@ -171,12 +243,23 @@ public final class RetryPolicyConfig
         @JsonProperty("unit")
         private TimeUnit myTimeUnit = DEFAULT_TIME_UNIT_IN_SECONDS;
 
+        /**
+         * Returns the initial delay in milliseconds before the first retry cycle.
+         *
+         * @return the initial delay in milliseconds
+         */
         @JsonProperty("initialDelay")
         public long getInitialDelay()
         {
             return myInitialDelay;
         }
 
+        /**
+         * Sets the initial delay before the first retry cycle. The value is converted to milliseconds
+         * using the configured time unit.
+         *
+         * @param initialDelay the initial delay in the configured time unit, or null to keep the default
+         */
         @JsonProperty("initialDelay")
         public void setInitialDelay(final Long initialDelay)
         {
@@ -186,12 +269,23 @@ public final class RetryPolicyConfig
             }
         }
 
+        /**
+         * Returns the fixed delay in milliseconds between retry cycles.
+         *
+         * @return the fixed delay in milliseconds
+         */
         @JsonProperty("fixedDelay")
         public long getFixedDelay()
         {
             return myFixedDelay;
         }
 
+        /**
+         * Sets the fixed delay between retry cycles. The value is converted to milliseconds
+         * using the configured time unit.
+         *
+         * @param fixedDelay the fixed delay in the configured time unit, or null to keep the default
+         */
         @JsonProperty("fixedDelay")
         public void setFixedDelay(final Long fixedDelay)
         {
@@ -201,12 +295,22 @@ public final class RetryPolicyConfig
             }
         }
 
+        /**
+         * Returns the time unit used for schedule delay values.
+         *
+         * @return the time unit
+         */
         @JsonProperty("unit")
         public TimeUnit getUnit()
         {
             return myTimeUnit;
         }
 
+        /**
+         * Sets the time unit used for schedule delay values.
+         *
+         * @param unit the time unit name (e.g., "SECONDS", "MILLISECONDS"), or null/blank to keep the default
+         */
         @JsonProperty("unit")
         public void setTimeUnit(final String unit)
         {

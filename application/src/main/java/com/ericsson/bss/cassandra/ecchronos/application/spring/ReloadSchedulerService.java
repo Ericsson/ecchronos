@@ -36,6 +36,10 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfig
 
 import jakarta.annotation.PostConstruct;
 
+/**
+ * Service that periodically verifies and reloads the Cassandra nodes map
+ * to detect and reconcile disagreements between the local view and the cluster metadata.
+ */
 @Service
 public class ReloadSchedulerService implements DisposableBean
 {
@@ -48,6 +52,13 @@ public class ReloadSchedulerService implements DisposableBean
     private final DefaultRepairConfigurationProvider myDefaultRepairConfigurationProvider;
     private final MountConnectionHelper myConnectionHelper = new MountConnectionHelper();
 
+    /**
+     * Constructs a new ReloadSchedulerService.
+     *
+     * @param config the application configuration providing reload schedule settings
+     * @param distributedNativeConnectionProvider the distributed native connection provider for accessing nodes
+     * @param defaultRepairConfigurationProvider the repair configuration provider for handling node add/remove events
+     */
     public ReloadSchedulerService(
         final Config config,
         final DistributedNativeConnectionProvider distributedNativeConnectionProvider,
@@ -81,6 +92,13 @@ public class ReloadSchedulerService implements DisposableBean
         }
     }
 
+    /**
+     * Resolves the agent provider configuration on the given builder based on the connection type.
+     *
+     * @param builder the distributed native builder to configure
+     * @param nativeConnectionConfig the native connection configuration containing agent type details
+     * @return the builder configured with the appropriate agent provider
+     */
     public final DistributedNativeBuilder resolveAgentProviderBuilder(
           final DistributedNativeBuilder builder,
           final DistributedNativeConnection nativeConnectionConfig)
@@ -137,6 +155,9 @@ public class ReloadSchedulerService implements DisposableBean
         }
     }
 
+    /**
+     * Starts the scheduled task that periodically reloads and verifies the nodes map.
+     */
     @PostConstruct
     public final void startScheduler()
     {
@@ -148,6 +169,7 @@ public class ReloadSchedulerService implements DisposableBean
         myScheduler.scheduleWithFixedDelay(this::reloadNodesMap, initialDelay, fixedDelay, myScheduleConfig.getUnit());
     }
 
+    /** {@inheritDoc} */
     @Override
     public final void destroy()
     {

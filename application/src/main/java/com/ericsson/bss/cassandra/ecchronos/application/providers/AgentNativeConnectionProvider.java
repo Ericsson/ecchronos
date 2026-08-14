@@ -60,7 +60,9 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
      * @param config              the configuration object containing the connection settings.
      * @param cqlSecuritySupplier a {@link Supplier} providing the CQL security settings.
      * @param certificateHandler  the handler for managing SSL/TLS certificates.
-     * @param ipTranslator
+     * @param defaultRepairConfigurationProvider the provider for default repair configuration, used as schema change
+     *                                           and node state listener.
+     * @param ipTranslator        the IP translator used to translate node addresses, also used as a node state listener.
      */
     public AgentNativeConnectionProvider(
             final Config config,
@@ -143,6 +145,15 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
         };
     }
 
+    /**
+     * Establishes a connection to Cassandra nodes with retry logic based on the provided retry policy configuration.
+     *
+     * @param builder     the {@link DistributedNativeBuilder} used to build the connection.
+     * @param retryPolicy the retry policy configuration defining max attempts and delay strategy.
+     * @param timeout     the connection timeout in milliseconds.
+     * @return the established {@link DistributedNativeConnectionProviderImpl}.
+     * @throws RetryPolicyException if all retry attempts are exhausted without establishing a connection.
+     */
     public final DistributedNativeConnectionProviderImpl establishConnection(
         final DistributedNativeBuilder builder,
         final CQLRetryPolicyConfig retryPolicy,

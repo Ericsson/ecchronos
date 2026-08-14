@@ -20,13 +20,24 @@ import com.ericsson.bss.cassandra.ecchronos.utils.dns.ReverseDNS;
 
 import java.net.UnknownHostException;
 
+/**
+ * Resolves the JMX host address for Cassandra nodes, applying IP translation,
+ * reverse DNS resolution, and IPv6 bracket formatting as needed.
+ */
 public final class JmxHostResolver
 {
+    /** Default fallback address indicating no broadcast address is available. */
     public static final String NO_BROADCAST_ADDRESS = "0.0.0.0"; //NOPMD AvoidUsingHardCodedIP
 
     private final IpTranslator myIpTranslator;
     private final boolean myReverseDNSResolution;
 
+    /**
+     * Constructs a JmxHostResolver.
+     *
+     * @param ipTranslator the IP translator for mapping external to internal IPs.
+     * @param reverseDNSResolution whether to apply reverse DNS resolution.
+     */
     public JmxHostResolver(final IpTranslator ipTranslator, final boolean reverseDNSResolution)
     {
         myIpTranslator = ipTranslator;
@@ -35,6 +46,10 @@ public final class JmxHostResolver
 
     /**
      * Resolve the JMX host address for a node, applying IP translation, reverse DNS, and IPv6 formatting.
+     *
+     * @param node the Cassandra node to resolve the host address for.
+     * @return the resolved host string suitable for JMX connection.
+     * @throws UnknownHostException if the host cannot be resolved.
      */
     public String resolve(final Node node) throws UnknownHostException
     {

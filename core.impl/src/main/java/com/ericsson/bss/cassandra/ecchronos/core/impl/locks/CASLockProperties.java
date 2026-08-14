@@ -46,6 +46,12 @@ public class CASLockProperties
         mySession = session;
     }
 
+    /**
+     * Determines the serial consistency level based on the consistency type.
+     *
+     * @param consistencyType the consistency type (LOCAL or SERIAL).
+     * @return the corresponding serial consistency level.
+     */
     public final ConsistencyLevel defineSerialConsistencyLevel(final ConsistencyType consistencyType)
     {
         ConsistencyLevel serialConsistencyLevel = ConsistencyType.LOCAL.equals(consistencyType)
@@ -54,26 +60,51 @@ public class CASLockProperties
         return serialConsistencyLevel;
     }
 
+    /**
+     * Gets the keyspace name used for lock tables.
+     *
+     * @return the keyspace name.
+     */
     public final String getKeyspaceName()
     {
         return myKeyspaceName;
     }
 
+    /**
+     * Gets the scheduled executor service for lock refresh tasks.
+     *
+     * @return the scheduled executor service.
+     */
     public final ScheduledExecutorService getExecutor()
     {
         return myExecutor;
     }
 
+    /**
+     * Gets the serial consistency level for lock operations.
+     *
+     * @return the serial consistency level.
+     */
     public final ConsistencyLevel getSerialConsistencyLevel()
     {
         return mySerialConsistencyLevel;
     }
 
+    /**
+     * Gets the CQL session used for lock operations.
+     *
+     * @return the CQL session.
+     */
     public final CqlSession getSession()
     {
         return mySession;
     }
 
+    /**
+     * Checks if this instance is configured for datacenter-aware agent type.
+     *
+     * @return true if the connection type is datacenter-aware, false otherwise.
+     */
     public final boolean isDatacenterAwareAgentType()
 
     {

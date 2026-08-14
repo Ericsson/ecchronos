@@ -20,6 +20,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Utility class providing methods for calculating repair time estimates for vnode repair states.
+ */
 public final class VnodeRepairStateUtils
 {
     private VnodeRepairStateUtils()

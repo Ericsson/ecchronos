@@ -19,6 +19,10 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Utility class for gracefully shutting down a {@link ScheduledExecutorService}.
+ * Attempts an orderly shutdown, then forces termination if the executor does not stop within the timeout.
+ */
 public final class RetryServiceShutdownManager
 {
     private static final Logger LOG = LoggerFactory.getLogger(RetryServiceShutdownManager.class);
@@ -28,6 +32,14 @@ public final class RetryServiceShutdownManager
 
     }
 
+    /**
+     * Shuts down the given executor service gracefully, waiting up to the specified timeout.
+     * If the executor does not terminate within the timeout, a forced shutdown is initiated.
+     *
+     * @param executorService the scheduled executor service to shut down
+     * @param timeout the maximum time to wait for termination
+     * @param unit the time unit for the timeout
+     */
     public static void shutdownExecutorService(final ScheduledExecutorService executorService,
                                                final int timeout,
                                                final TimeUnit unit)

@@ -175,11 +175,22 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         myTimeRejectionCache = createConfigCache(builder.myCacheExpireTime);
     }
 
+    /**
+     * Retrieves all rejection configurations from the database.
+     *
+     * @return the {@link ResultSet} containing all rejection configurations.
+     */
     public final ResultSet getAllRejections()
     {
         return mySession.execute(myGetAllRejectionsStatement.bind());
     }
 
+    /**
+     * Adds a new rejection configuration to the database.
+     *
+     * @param bucket the {@link TimeBasedRunPolicyBucket} defining the rejection time window.
+     * @return the {@link ResultSet} from executing the insert statement.
+     */
     public final ResultSet addRejection(final TimeBasedRunPolicyBucket bucket)
     {
         Statement statement =
@@ -193,6 +204,12 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         return mySession.execute(statement);
     }
 
+    /**
+     * Adds a datacenter exclusion to an existing rejection configuration.
+     *
+     * @param bucket the {@link TimeBasedRunPolicyBucket} containing the datacenter exclusions to add.
+     * @return the {@link ResultSet} from executing the update statement.
+     */
     public final ResultSet addDatacenterExclusion(final TimeBasedRunPolicyBucket bucket)
     {
         Statement statement =
@@ -206,6 +223,12 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     }
 
 
+    /**
+     * Removes a datacenter exclusion from an existing rejection configuration.
+     *
+     * @param bucket the {@link TimeBasedRunPolicyBucket} containing the datacenter exclusions to remove.
+     * @return the {@link ResultSet} from executing the update statement.
+     */
     public final ResultSet dropDatacenterExclusion(final TimeBasedRunPolicyBucket bucket)
     {
         Statement statement =
@@ -217,6 +240,12 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         return mySession.execute(statement);
     }
 
+    /**
+     * Deletes a rejection configuration from the database.
+     *
+     * @param bucket the {@link TimeBasedRunPolicyBucket} identifying the rejection to delete.
+     * @return the {@link ResultSet} from executing the delete statement.
+     */
     public final ResultSet deleteRejection(final TimeBasedRunPolicyBucket bucket)
     {
         Statement statement =
@@ -228,6 +257,13 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         return mySession.execute(statement);
     }
 
+    /**
+     * Retrieves rejection configurations for a specific keyspace and table.
+     *
+     * @param keyspace the keyspace name.
+     * @param table the table name.
+     * @return the {@link ResultSet} containing matching rejection configurations.
+     */
     public final ResultSet getRejectionsByKsAndTb(final String keyspace, final String table)
     {
         Statement statement =
@@ -235,6 +271,12 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         return mySession.execute(statement);
     }
 
+    /**
+     * Retrieves rejection configurations for a specific keyspace.
+     *
+     * @param keyspace the keyspace name.
+     * @return the {@link ResultSet} containing matching rejection configurations.
+     */
     public final ResultSet getRejectionsByKs(final String keyspace)
     {
         Statement statement =
@@ -242,6 +284,11 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         return mySession.execute(statement);
     }
 
+    /**
+     * Truncates all rejection configurations from the database table.
+     *
+     * @return the {@link ResultSet} from executing the truncate statement.
+     */
     public final ResultSet truncate()
     {
         Statement statement =
@@ -293,6 +340,8 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
 
     /**
      * Create an instance of Builder class to construct TimeBasedRunPolicy.
+     *
+     * @return a new {@link Builder} instance.
      */
     public static Builder builder()
     {
@@ -310,6 +359,14 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
         private long myCacheExpireTime = DEFAULT_CACHE_EXPIRE_TIME_IN_MS;
         private Clock myClock = Clock.systemDefaultZone();
+
+        /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
 
         /**
          * Sets the {@link CqlSession} to be used by the {@link TimeBasedRunPolicy}.

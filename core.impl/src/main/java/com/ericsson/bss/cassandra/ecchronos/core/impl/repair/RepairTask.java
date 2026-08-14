@@ -312,6 +312,11 @@ public abstract class RepairTask
         return myRangeTracker.getFailedRanges();
     }
 
+    /**
+     * Returns the set of token ranges that have been successfully repaired during the repair task.
+     *
+     * @return a set of {@link LongTokenRange} representing the successful token ranges.
+     */
     @VisibleForTesting
     protected final Set<LongTokenRange> getSuccessfulRanges()
     {

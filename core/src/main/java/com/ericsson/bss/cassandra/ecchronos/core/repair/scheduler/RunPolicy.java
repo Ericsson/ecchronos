@@ -16,6 +16,9 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 
+/**
+ * Policy interface that determines whether a scheduled job is allowed to run.
+ */
 public interface RunPolicy
 {
     /**

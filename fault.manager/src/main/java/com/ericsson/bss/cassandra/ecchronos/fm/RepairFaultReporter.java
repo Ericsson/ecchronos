@@ -16,15 +16,27 @@ package com.ericsson.bss.cassandra.ecchronos.fm;
 
 import java.util.Map;
 
+/**
+ * Interface for reporting repair faults (alarms) such as warnings and errors.
+ * Implementations control alarm deduplication and lifecycle.
+ */
 public interface RepairFaultReporter
 {
+    /** Key for the keyspace name in fault data maps. */
     String FAULT_KEYSPACE = "KEYSPACE";
+    /** Key for the table name in fault data maps. */
     String FAULT_TABLE = "TABLE";
+    /** Key for the node ID in fault data maps. */
     String FAULT_NODE_ID = "NODE_ID";
 
+    /**
+     * Fault codes indicating the severity of a repair fault.
+     */
     enum FaultCode
     {
+        /** A non-critical repair warning. */
         REPAIR_WARNING,
+        /** A critical repair error. */
         REPAIR_ERROR
     }
 

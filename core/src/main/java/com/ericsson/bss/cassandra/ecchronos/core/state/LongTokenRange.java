@@ -39,12 +39,16 @@ public class LongTokenRange
 
     private static final int LONG_VALUE_BITS = 64;
 
+    /** The maximum token value (Long.MAX_VALUE), representing the end of the token range. */
     public static final BigInteger RANGE_END =
             BigInteger.valueOf(2).pow(LONG_VALUE_BITS - 1).subtract(BigInteger.ONE); // Long.MAX_VALUE
+    /** The full size of the token range (2^64). */
     public static final BigInteger FULL_RANGE =
             BigInteger.valueOf(2).pow(LONG_VALUE_BITS);
 
+    /** The start token of this range (exclusive). */
     public final long start;
+    /** The end token of this range (inclusive). */
     public final long end;
 
     /**
@@ -79,6 +83,12 @@ public class LongTokenRange
         CACHE.cleanUp();
     }
 
+    /**
+     * Constructs a new LongTokenRange with the specified start and end tokens.
+     *
+     * @param aStart the start token of the range (exclusive).
+     * @param anEnd the end token of the range (inclusive).
+     */
     public LongTokenRange(final long aStart, final long anEnd)
     {
         this.start = aStart;

@@ -51,6 +51,13 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
     private final boolean useSubRanges;
     private final ReplicaSetCache myReplicaSetCache;
 
+    /**
+     * Constructs a new VnodeRepairStateFactoryImpl with a default replica set cache.
+     *
+     * @param replicationState the replication state used to determine token range to replica mappings.
+     * @param repairHistoryProvider the repair history provider used to iterate over repair entries.
+     * @param toUseSubRanges whether to use sub-range repair states or full vnode repair states.
+     */
     public VnodeRepairStateFactoryImpl(
             final ReplicationState replicationState,
             final RepairHistoryProvider repairHistoryProvider,
@@ -59,6 +66,14 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         this(replicationState, repairHistoryProvider, toUseSubRanges, new ReplicaSetCache());
     }
 
+    /**
+     * Constructs a new VnodeRepairStateFactoryImpl with a specified replica set cache.
+     *
+     * @param replicationState the replication state used to determine token range to replica mappings.
+     * @param repairHistoryProvider the repair history provider used to iterate over repair entries.
+     * @param toUseSubRanges whether to use sub-range repair states or full vnode repair states.
+     * @param replicaSetCache the cache for interning replica sets to reduce memory usage.
+     */
     public VnodeRepairStateFactoryImpl(
             final ReplicationState replicationState,
             final RepairHistoryProvider repairHistoryProvider,

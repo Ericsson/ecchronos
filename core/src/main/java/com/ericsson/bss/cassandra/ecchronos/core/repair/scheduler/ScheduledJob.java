@@ -28,8 +28,10 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
 
     private final Priority myPriority;
     private final long myBackoffInMs;
+    /** The configured run interval in milliseconds. */
     protected final long myRunIntervalInMs;
 
+    /** The timestamp of the last successful run in milliseconds since epoch. */
     protected volatile long myLastSuccessfulRun = -1L;
     private volatile long myNextRunTimeInMs = -1L;
     private volatile long myRunOffset = 0;
@@ -37,11 +39,24 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     private final UUID myJobID;
     private final TimeUnit myPriorityGranularity;
 
+    /**
+     * Constructs a scheduled job with a randomly generated job ID.
+     *
+     * @param configuration the job configuration.
+     * @param nodeID the unique identifier of the node running the job.
+     */
     public ScheduledJob(final Configuration configuration, final UUID nodeID)
     {
         this(configuration, UUID.randomUUID(), nodeID);
     }
 
+    /**
+     * Constructs a scheduled job with the specified job ID.
+     *
+     * @param configuration the job configuration.
+     * @param jobID the unique identifier for this job.
+     * @param nodeID the unique identifier of the node running the job.
+     */
     public ScheduledJob(final Configuration configuration, final UUID jobID, final UUID nodeID)
     {
         myNodeID = nodeID;
@@ -60,6 +75,8 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
      *
      * @param successful
      *            If the job ran successfully.
+     * @param task
+     *            The task that was executed.
      */
     public void postExecute(final boolean successful, final ScheduledTask task)
     {
@@ -162,6 +179,12 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
         return getRealPriority(getLastSuccessfulRun());
     }
 
+    /**
+     * Get the current priority of the job based on a given last successful run timestamp.
+     *
+     * @param lastSuccessfulRun the timestamp of the last successful run in milliseconds since epoch.
+     * @return The current priority or -1 if the job shouldn't run now.
+     */
     public final int getRealPriority(final long lastSuccessfulRun)
     {
         long now = System.currentTimeMillis();
@@ -186,6 +209,8 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     }
 
     /**
+     * Gets the offset for the job.
+     *
      * @return The offset for the job.
      */
     public long getRunOffset()
@@ -194,6 +219,8 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     }
 
     /**
+     * Gets the unique identifier for this job.
+     *
      * @return unique identifier for Job
      */
     public final UUID getJobId()
@@ -202,6 +229,8 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     }
 
     /**
+     * Gets the unique identifier for the node running the job.
+     *
      * @return unique identifier for the node running the job.
      */
     public final UUID getNodeId()
@@ -282,12 +311,20 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
             this.value = aValue;
         }
 
+        /**
+         * Gets the numeric value of this priority level.
+         *
+         * @return the priority value.
+         */
         public int getValue()
         {
             return value;
         }
     }
 
+    /**
+     * Represents the possible states of a scheduled job.
+     */
     public enum State
     {
         /**
@@ -318,6 +355,11 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
 
     /**
      * The configuration of a job.
+     *
+     * @param priority the priority level of the job.
+     * @param runIntervalInMs the interval between runs in milliseconds.
+     * @param backoffInMs the backoff time in milliseconds after a failed run.
+     * @param priorityGranularity the time unit used for priority increment calculations.
      */
     public record Configuration(Priority priority, long runIntervalInMs, long backoffInMs, TimeUnit priorityGranularity)
     {
@@ -328,35 +370,74 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
      */
     public static class ConfigurationBuilder
     {
+        /**
+         * Default constructor.
+         */
+        public ConfigurationBuilder()
+        {
+            // Default constructor
+        }
+
         private Priority priority = Priority.LOW;
         private long runIntervalInMs = TimeUnit.DAYS.toMillis(1);
         private long backoffInMs = TimeUnit.MINUTES.toMillis(DEFAULT_BACKOFF_IN_MINUTES);
         private TimeUnit granularityUnit = TimeUnit.HOURS;
 
+        /**
+         * Sets the time unit used to calculate priority increments.
+         *
+         * @param granularityTimeUnit the time unit for priority granularity.
+         * @return this builder.
+         */
         public final ConfigurationBuilder withPriorityGranularity(final TimeUnit granularityTimeUnit)
         {
             this.granularityUnit = granularityTimeUnit;
             return this;
         }
 
+        /**
+         * Sets the priority of the job.
+         *
+         * @param aPriority the priority level.
+         * @return this builder.
+         */
         public final ConfigurationBuilder withPriority(final Priority aPriority)
         {
             this.priority = aPriority;
             return this;
         }
 
+        /**
+         * Sets the run interval of the job.
+         *
+         * @param runInterval the interval value.
+         * @param unit the time unit of the interval.
+         * @return this builder.
+         */
         public final ConfigurationBuilder withRunInterval(final long runInterval, final TimeUnit unit)
         {
             this.runIntervalInMs = unit.toMillis(runInterval);
             return this;
         }
 
+        /**
+         * Sets the backoff time after a failed run.
+         *
+         * @param backoff the backoff value.
+         * @param unit the time unit of the backoff.
+         * @return this builder.
+         */
         public final ConfigurationBuilder withBackoff(final long backoff, final TimeUnit unit)
         {
             this.backoffInMs = unit.toMillis(backoff);
             return this;
         }
 
+        /**
+         * Builds the {@link Configuration} instance.
+         *
+         * @return the constructed configuration.
+         */
         public final Configuration build()
         {
             return new Configuration(priority, runIntervalInMs, backoffInMs, granularityUnit);

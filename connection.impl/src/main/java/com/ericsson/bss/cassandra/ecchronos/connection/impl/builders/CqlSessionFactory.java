@@ -35,6 +35,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Factory for creating {@link CqlSession} instances with appropriate driver configuration,
+ * including schema refresh, authentication, SSL, and optional metrics.
+ */
 public final class CqlSessionFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(CqlSessionFactory.class);
@@ -54,6 +58,15 @@ public final class CqlSessionFactory
 
     /**
      * Create a CqlSession with the given configuration.
+     *
+     * @param contactPoints the initial contact points for the Cassandra cluster.
+     * @param localDatacenter the name of the local datacenter.
+     * @param authProvider the authentication provider.
+     * @param sslEngineFactory the SSL engine factory for secure connections.
+     * @param schemaChangeListener the listener for schema change events.
+     * @param nodeStateListeners the set of listeners for node state changes.
+     * @param metricsEnabled whether session metrics should be enabled.
+     * @return a new {@link CqlSession} instance.
      */
     public static CqlSession create(final List<InetSocketAddress> contactPoints,
                                     final String localDatacenter,

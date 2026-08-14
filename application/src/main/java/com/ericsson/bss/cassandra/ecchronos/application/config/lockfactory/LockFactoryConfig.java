@@ -16,16 +16,30 @@ package com.ericsson.bss.cassandra.ecchronos.application.config.lockfactory;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/** Configuration for the distributed lock factory. */
 public class LockFactoryConfig
 {
     private CasLockFactoryConfig myCasLockFactoryConfig = new CasLockFactoryConfig();
 
+    /** Default constructor. */
+    public LockFactoryConfig()
+    {
+    }
+
+    /**
+     * Returns the CAS lock factory config.
+     * @return the CAS lock factory config
+     */
     @JsonProperty("cas")
     public final CasLockFactoryConfig getCasLockFactoryConfig()
     {
         return myCasLockFactoryConfig;
     }
 
+    /**
+     * Sets the CAS lock factory config.
+     * @param casLockFactoryConfig the CAS lock factory config
+     */
     @JsonProperty("cas")
     public final void setCasLockFactoryConfig(final CasLockFactoryConfig casLockFactoryConfig)
     {

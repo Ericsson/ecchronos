@@ -19,11 +19,21 @@ import com.datastax.oss.driver.api.core.metadata.EndPoint;
 
 import java.util.function.Supplier;
 
+/**
+ * An authentication provider that reloads credentials from a supplier on each authentication request.
+ * Extends {@link ProgrammaticPlainTextAuthProvider} to support dynamically updated credentials
+ * without requiring application restart.
+ */
 public class ReloadingAuthProvider extends ProgrammaticPlainTextAuthProvider
 {
     private final Supplier<com.ericsson.bss.cassandra.ecchronos.application.config.security.Credentials>
             credentialSupplier;
 
+    /**
+     * Constructs a new ReloadingAuthProvider with the given credential supplier.
+     *
+     * @param aCredentialSupplier a supplier that provides the current credentials
+     */
     public ReloadingAuthProvider(
             final Supplier<com.ericsson.bss.cassandra.ecchronos.application.config.security.Credentials>
                     aCredentialSupplier)

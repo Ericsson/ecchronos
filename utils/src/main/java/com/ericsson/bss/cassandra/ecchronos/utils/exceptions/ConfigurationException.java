@@ -14,24 +14,46 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.utils.exceptions;
 
+/**
+ * Exception thrown when an invalid or missing configuration is encountered.
+ */
 public class ConfigurationException extends Exception
 {
     private static final long serialVersionUID = -2269440899665538081L;
 
+    /**
+     * Constructs a new ConfigurationException with no detail message.
+     */
     public ConfigurationException()
     {
     }
 
+    /**
+     * Constructs a new ConfigurationException with the specified detail message.
+     *
+     * @param message the detail message.
+     */
     public ConfigurationException(final String message)
     {
         super(message);
     }
 
+    /**
+     * Constructs a new ConfigurationException with the specified detail message and cause.
+     *
+     * @param message the detail message.
+     * @param cause the cause of the exception.
+     */
     public ConfigurationException(final String message, final Throwable cause)
     {
         super(message, cause);
     }
 
+    /**
+     * Constructs a new ConfigurationException with the specified cause.
+     *
+     * @param cause the cause of the exception.
+     */
     public ConfigurationException(final Throwable cause)
     {
         super(cause);

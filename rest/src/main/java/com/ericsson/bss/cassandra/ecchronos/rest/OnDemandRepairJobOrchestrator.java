@@ -48,6 +48,14 @@ public final class OnDemandRepairJobOrchestrator
     private final DistributedNativeConnectionProvider myDistributedNativeConnectionProvider;
     private final OnDemandRepairRequestValidator myValidator;
 
+    /**
+     * Constructs a new orchestrator for on-demand repair jobs.
+     *
+     * @param onDemandRepairScheduler the scheduler for on-demand repairs.
+     * @param tableReferenceFactory the factory for creating table references.
+     * @param distributedNativeConnectionProvider the provider for distributed native connections.
+     * @param validator the validator for on-demand repair requests.
+     */
     public OnDemandRepairJobOrchestrator(
             final OnDemandRepairScheduler onDemandRepairScheduler,
             final TableReferenceFactory tableReferenceFactory,
@@ -60,6 +68,14 @@ public final class OnDemandRepairJobOrchestrator
         myValidator = validator;
     }
 
+    /**
+     * Retrieves on-demand repairs filtered by keyspace, table, and/or host ID.
+     *
+     * @param keyspace the keyspace to filter by, may be {@code null}.
+     * @param table the table to filter by, may be {@code null}.
+     * @param hostId the host ID to filter by, may be {@code null}.
+     * @return a list of matching on-demand repairs.
+     */
     public List<OnDemandRepair> getRepairs(final String keyspace, final String table, final String hostId)
     {
         Collection<Predicate<OnDemandRepairJobView>> filters = new ArrayList<>();
@@ -80,6 +96,14 @@ public final class OnDemandRepairJobOrchestrator
         return getClusterWideOnDemandJobs(filter);
     }
 
+    /**
+     * Retrieves on-demand repairs for a specific node and optionally a specific job ID.
+     * If nodeID is "all", returns repairs from all cluster nodes.
+     *
+     * @param nodeID the node ID or "all" for cluster-wide results.
+     * @param jobID the job ID to filter by, may be {@code null}.
+     * @return a list of matching on-demand repairs.
+     */
     public List<OnDemandRepair> getRepairs(final String nodeID, final String jobID)
     {
         boolean allNodes = "all".equalsIgnoreCase(nodeID);
@@ -106,6 +130,18 @@ public final class OnDemandRepairJobOrchestrator
         return repairJobs;
     }
 
+    /**
+     * Schedules an on-demand repair for the specified parameters.
+     *
+     * @param nodeID the target node ID, may be {@code null} when targeting all nodes.
+     * @param keyspace the keyspace to repair, may be {@code null} for all keyspaces.
+     * @param table the table to repair, may be {@code null} for all tables in the keyspace.
+     * @param repairType the type of repair to run.
+     * @param all whether to target all nodes in the cluster.
+     * @param forceRepairTWCS whether to force repair of TWCS tables.
+     * @param forceRepairDisabled whether to force repair of disabled tables.
+     * @return a list of scheduled on-demand repairs.
+     */
     public List<OnDemandRepair> runRepair(
             final String nodeID,
             final String keyspace,

@@ -50,6 +50,9 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
         myJolokiaNotificationController = builder.myJolokiaController;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public DistributedJmxProxy connect() throws IOException
     {
@@ -76,20 +79,33 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
             throw new IOException("Unable to get StorageService object", e);
         }
     }
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Integer getMaxWaitTimeInMinutes()
     {
         return myMaxWaitTimeInMinutes;
     }
 
+    /**
+     * Creates a new builder for constructing {@link DistributedJmxProxyFactoryImpl} instances.
+     *
+     * @return a new builder.
+     */
     public static Builder builder()
     {
         return new Builder();
     }
 
+    /**
+     * Builder for constructing {@link DistributedJmxProxyFactoryImpl} instances.
+     */
     public static class Builder
     {
+        /** Default delay in milliseconds between runs. */
         public static final int DEFAULT_RUN_DELAY = 500;
+        /** Default maximum wait time in minutes for JMX proxy operations. */
         public static final int DEFAULT_MAX_WAIT_TIME_IN_MINUTES = 40;
         private DistributedJmxConnectionProvider myDistributedJmxConnectionProvider;
         private Map<UUID, Node> myNodesMap;
@@ -98,6 +114,14 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
         private Integer myMaxWaitTimeInMinutes = DEFAULT_MAX_WAIT_TIME_IN_MINUTES;
         private IpTranslator myIpTranslator;
         private JolokiaNotificationController myJolokiaController;
+
+        /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
 
         /**
          * Build with JMX connection provider.
@@ -162,7 +186,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
         /**
          * Build with IpTranslator.
          *
-         * @param ipTranslator
+         * @param ipTranslator The IP translator for resolving node addresses.
          * @return Builder
          */
         public Builder withIpTranslator(final IpTranslator ipTranslator)

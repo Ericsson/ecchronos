@@ -27,8 +27,13 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import com.google.common.base.Preconditions;
 
+/**
+ * Abstract base class for on-demand repair jobs, providing common fields for JMX connectivity,
+ * repair configuration, and lifecycle management.
+ */
 public abstract class OnDemandRepairJob extends ScheduledJob
 {
+    /** The shared repair lock factory instance. */
     protected static final RepairLockFactory REPAIR_LOCK_FACTORY = new RepairLockFactoryImpl();
     private final DistributedJmxProxyFactory myJmxProxyFactory;
     private final RepairConfiguration myRepairConfiguration;
@@ -40,6 +45,18 @@ public abstract class OnDemandRepairJob extends ScheduledJob
 
     private boolean hasFailed;
 
+    /**
+     * Constructs an on-demand repair job.
+     *
+     * @param configuration the job configuration.
+     * @param jmxProxyFactory the JMX proxy factory for communicating with Cassandra nodes.
+     * @param repairConfiguration the repair configuration.
+     * @param repairLockType the type of lock to use during repair.
+     * @param onFinishedHook the callback to invoke when the job finishes.
+     * @param tableRepairMetrics the metrics tracker for table repair.
+     * @param ongoingJob the ongoing job reference.
+     * @param currentNode the current Cassandra node.
+     */
     public OnDemandRepairJob(final Configuration configuration, final DistributedJmxProxyFactory jmxProxyFactory,
                              final RepairConfiguration repairConfiguration, final RepairLockType repairLockType,
                              final Consumer<UUID> onFinishedHook, final TableRepairMetrics tableRepairMetrics,
@@ -72,6 +89,11 @@ public abstract class OnDemandRepairJob extends ScheduledJob
         return myOngoingJob.getTableReference();
     }
 
+    /**
+     * Get the JMX proxy factory.
+     *
+     * @return the JMX proxy factory.
+     */
     protected final DistributedJmxProxyFactory getJmxProxyFactory()
     {
         return myJmxProxyFactory;
@@ -86,41 +108,81 @@ public abstract class OnDemandRepairJob extends ScheduledJob
         return myRepairConfiguration;
     }
 
+    /**
+     * Get the repair lock type.
+     *
+     * @return the repair lock type.
+     */
     protected final RepairLockType getRepairLockType()
     {
         return myRepairLockType;
     }
 
+    /**
+     * Get the table repair metrics.
+     *
+     * @return the table repair metrics.
+     */
     protected final TableRepairMetrics getTableRepairMetrics()
     {
         return myTableRepairMetrics;
     }
 
+    /**
+     * Get the on-finished callback hook.
+     *
+     * @return the on-finished consumer.
+     */
     protected final Consumer<UUID> getOnFinishedHook()
     {
         return myOnFinishedHook;
     }
 
+    /**
+     * Get the ongoing job associated with this repair job.
+     *
+     * @return the ongoing job.
+     */
     public final OngoingJob getOngoingJob()
     {
         return myOngoingJob;
     }
 
+    /**
+     * Get the current Cassandra node.
+     *
+     * @return the current node.
+     */
     protected final Node getCurrentNode()
     {
         return myCurrentNode;
     }
 
+    /**
+     * Set the failed status of this job.
+     *
+     * @param failed true if the job has failed, false otherwise.
+     */
     protected final void setFailed(final boolean failed)
     {
         hasFailed = failed;
     }
 
+    /**
+     * Check whether this job has failed.
+     *
+     * @return true if the job has failed.
+     */
     protected final boolean hasFailed()
     {
         return hasFailed;
     }
 
+    /**
+     * Get the current status of this on-demand repair job.
+     *
+     * @return the job status.
+     */
     protected final OnDemandRepairJobView.Status getStatus()
     {
         if (hasFailed || getOngoingJob().getStatus() == OngoingJob.Status.failed)
@@ -134,6 +196,11 @@ public abstract class OnDemandRepairJob extends ScheduledJob
         return OnDemandRepairJobView.Status.IN_QUEUE;
     }
 
+    /**
+     * Get a view representation of this on-demand repair job.
+     *
+     * @return the on-demand repair job view.
+     */
     public abstract OnDemandRepairJobView getView();
 
     @Override

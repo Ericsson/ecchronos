@@ -40,7 +40,7 @@ public interface OnDemandRepairManagementREST
      * Get a list of on demand repairs associated with a specific id.
      *
      * @param nodeId The hostId of the on demand repair.
-     *               * @param jobId The id of the on demand repair (optional).
+     * @param jobId The id of the on demand repair (optional).
      * @return A list of JSON representations of {@link OnDemandRepair}
      */
     ResponseEntity<List<OnDemandRepair>> getRepairs(String nodeId, String jobId);
@@ -52,8 +52,9 @@ public interface OnDemandRepairManagementREST
      * @param keyspace The keyspace of the table
      * @param table The table
      * @param repairType The type of repair (optional)
-     * @param all run for all nodes, must be true if nodeIDis missing (optional)
+     * @param all run for all nodes, must be true if nodeID is missing (optional)
      * @param forceRepairTWCS Force repair of TWCS tables, which are normally ignored.
+     * @param forceRepairDisabled Force repair of tables disabled in the schedule.
      * @return A JSON representation of {@link OnDemandRepair}
      */
     ResponseEntity<List<OnDemandRepair>> runRepair(

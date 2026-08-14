@@ -19,6 +19,7 @@ import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ConfigurationExcept
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
+/** Utility methods for constructing objects via reflection. */
 public final class ReflectionUtils
 {
     private ReflectionUtils()

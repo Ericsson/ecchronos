@@ -24,6 +24,7 @@ import java.util.Objects;
  */
 public class VnodeRepairState
 {
+    /** Constant indicating that a vnode has never been repaired. */
     public static final long UNREPAIRED = -1L;
 
     private final LongTokenRange myTokenRange;

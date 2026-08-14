@@ -22,16 +22,32 @@ public class ScheduledJobException extends Exception
 {
     private static final long serialVersionUID = 4099709033677299583L;
 
+    /**
+     * Constructs a new ScheduledJobException with the specified detail message.
+     *
+     * @param message the detail message.
+     */
     public ScheduledJobException(final String message)
     {
         super(message);
     }
 
+    /**
+     * Constructs a new ScheduledJobException with the specified cause.
+     *
+     * @param t the cause of the exception.
+     */
     public ScheduledJobException(final Throwable t)
     {
         super(t);
     }
 
+    /**
+     * Constructs a new ScheduledJobException with the specified detail message and cause.
+     *
+     * @param message the detail message.
+     * @param t the cause of the exception.
+     */
     public ScheduledJobException(final String message, final Throwable t)
     {
         super(message, t);
