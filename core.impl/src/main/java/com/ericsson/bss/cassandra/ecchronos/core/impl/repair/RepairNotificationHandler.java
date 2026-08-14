@@ -131,6 +131,8 @@ public final class RepairNotificationHandler implements NotificationListener
     }
 
     /**
+     * Gets the last error encountered during repair.
+     *
      * @return the last error encountered, or null if none
      */
     public ScheduledJobException getLastError()
@@ -139,6 +141,8 @@ public final class RepairNotificationHandler implements NotificationListener
     }
 
     /**
+     * Checks if a JMX notification was lost.
+     *
      * @return true if a JMX notification was lost
      */
     public boolean hasLostNotification()
@@ -147,6 +151,8 @@ public final class RepairNotificationHandler implements NotificationListener
     }
 
     /**
+     * Gets the repair command ID.
+     *
      * @return the repair command ID
      */
     public int getCommand()

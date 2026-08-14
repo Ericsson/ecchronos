@@ -157,6 +157,14 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
         private long myUpdateDelayInMs = DEFAULT_UPDATE_DELAY_IN_MS;
 
         /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
          * Sets the replicated table provider.
          *
          * @param replicatedTableProvider the provider for replicated tables.

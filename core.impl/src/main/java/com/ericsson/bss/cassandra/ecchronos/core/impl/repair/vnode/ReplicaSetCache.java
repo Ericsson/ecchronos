@@ -35,6 +35,14 @@ public class ReplicaSetCache
             = new ConcurrentHashMap<>();
 
     /**
+     * Default constructor.
+     */
+    public ReplicaSetCache()
+    {
+        // Default constructor
+    }
+
+    /**
      * Returns a cached instance equal to the given replica set.
      *
      * @param replicas The replica set to intern.

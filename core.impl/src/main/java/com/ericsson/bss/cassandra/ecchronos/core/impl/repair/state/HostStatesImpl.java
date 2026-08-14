@@ -179,6 +179,14 @@ public final class HostStatesImpl implements HostStates, Closeable
         private long myRefreshIntervalInMs = DEFAULT_REFRESH_INTERVAL_IN_MS;
 
         /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
          * Sets the JMX proxy factory for retrieving node states.
          *
          * @param jmxProxyFactory the JMX proxy factory.

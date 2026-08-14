@@ -161,6 +161,14 @@ public final class OnDemandJobPoller implements Closeable
         private Runnable myRemoveFinishedJobs;
 
         /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
          * Set the on-demand status.
          *
          * @param onDemandStatus the on-demand status.

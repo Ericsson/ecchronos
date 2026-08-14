@@ -21,6 +21,14 @@ import java.util.List;
  */
 public final class NotificationRegisterResponse
 {
+    /**
+     * Default constructor.
+     */
+    public NotificationRegisterResponse()
+    {
+        // Default constructor
+    }
+
     private Request myRequest;
     private String myValue;
     private int myStatus;
@@ -121,6 +129,14 @@ public final class NotificationRegisterResponse
      */
     public static final class Request
     {
+        /**
+         * Default constructor.
+         */
+        public Request()
+        {
+            // Default constructor
+        }
+
         private String myMode;
         private List<String> myFilter;
         private String myMbean;

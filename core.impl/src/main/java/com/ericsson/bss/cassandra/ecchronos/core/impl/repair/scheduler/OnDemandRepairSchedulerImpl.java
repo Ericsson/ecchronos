@@ -318,6 +318,14 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         private Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
 
         /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
          * Build on demand repair scheduler with JMX proxy factory.
          *
          * @param theJMXProxyFactory JMX proxy factory.

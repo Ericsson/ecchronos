@@ -324,6 +324,14 @@ public class RepairGroup extends ScheduledTask
         private TimeBasedRunPolicy myTimeBasedRunPolicy;
 
         /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
          * Build with repair lock factory.
          *
          * @param repairLockFactory Repair lock factory.

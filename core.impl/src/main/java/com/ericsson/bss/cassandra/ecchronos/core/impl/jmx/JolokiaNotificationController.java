@@ -414,6 +414,14 @@ public class JolokiaNotificationController implements Closeable
         private CertificateHandler myCertificateHandler;
 
         /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
          * Sets the native connection provider used by the controller.
          *
          * @param nativeConnectionProvider

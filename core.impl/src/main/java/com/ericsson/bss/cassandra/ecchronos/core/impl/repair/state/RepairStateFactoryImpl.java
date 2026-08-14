@@ -105,6 +105,14 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
         private TableRepairMetrics myTableRepairMetrics;
 
         /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
          * Build repair state factory with replication state.
          *
          * @param replicationState Replication state.

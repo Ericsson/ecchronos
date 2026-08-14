@@ -112,6 +112,14 @@ public final class CASLockFactoryCacheContext
         private int myFailedLockRetryAttempts;
 
         /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
          * Sets the lock update time in seconds.
          *
          * @param lockTimeInSeconds the lock update time.

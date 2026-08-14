@@ -53,6 +53,14 @@ public class RepairLockFactoryImpl implements RepairLockFactory
     private static final ConcurrentHashMap<RepairResource, Semaphore> RESOURCE_GATES = new ConcurrentHashMap<>();
 
     /**
+     * Default constructor.
+     */
+    public RepairLockFactoryImpl()
+    {
+        // Default constructor
+    }
+
+    /**
      * Reset local gates. Intended for testing only.
      */
     @VisibleForTesting

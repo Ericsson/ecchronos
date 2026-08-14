@@ -361,6 +361,14 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         private Clock myClock = Clock.systemDefaultZone();
 
         /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
          * Sets the {@link CqlSession} to be used by the {@link TimeBasedRunPolicy}.
          *
          * @param session the {@link CqlSession} to set. Must not be {@code null}.

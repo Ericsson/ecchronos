@@ -256,6 +256,14 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
         private Node currentNode;
 
         /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
          * Sets the current node for the repair job.
          *
          * @param node the node to run the repair on.

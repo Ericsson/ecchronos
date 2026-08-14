@@ -642,6 +642,14 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         private DistributedNativeConnectionProvider myNativeConnectionProvider;
 
         /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
          * Build SchedulerManager with run interval.
          *
          * @param runInterval the interval to run a repair task

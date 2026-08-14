@@ -23,6 +23,14 @@ import java.util.Map;
 public final class ClientRegisterResponse
 {
     // CPD-OFF
+    /**
+     * Default constructor.
+     */
+    public ClientRegisterResponse()
+    {
+        // Default constructor
+    }
+
     private Request myRequest;
     private Value myValue;
     private int myStatus;
@@ -121,6 +129,14 @@ public final class ClientRegisterResponse
      */
     public static final class Request
     {
+        /**
+         * Default constructor.
+         */
+        public Request()
+        {
+            // Default constructor
+        }
+
         private String myType;
         private String myCommand;
 
@@ -176,6 +192,14 @@ public final class ClientRegisterResponse
      */
     public static final class Value
     {
+        /**
+         * Default constructor.
+         */
+        public Value()
+        {
+            // Default constructor
+        }
+
         private Backend myBackend;
         private String myId;
 
@@ -232,6 +256,14 @@ public final class ClientRegisterResponse
      */
     public static final class Backend
     {
+        /**
+         * Default constructor.
+         */
+        public Backend()
+        {
+            // Default constructor
+        }
+
         private Pull myPull;
 
         @JsonProperty("sse")
@@ -289,6 +321,14 @@ public final class ClientRegisterResponse
      */
     public static final class Pull
     {
+        /**
+         * Default constructor.
+         */
+        public Pull()
+        {
+            // Default constructor
+        }
+
         private int myMaxEntries;
         private String myStore;
 

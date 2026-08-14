@@ -168,6 +168,14 @@ public final class ScheduledRepairJobFactory
         private TimeBasedRunPolicy myTimeBasedRunPolicy;
 
         /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
          * Set the table repair metrics.
          *
          * @param tableRepairMetrics the table repair metrics.

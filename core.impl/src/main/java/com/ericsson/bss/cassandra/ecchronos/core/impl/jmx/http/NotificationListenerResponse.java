@@ -22,6 +22,14 @@ import java.util.Map;
  */
 public final class NotificationListenerResponse
 {
+    /**
+     * Default constructor.
+     */
+    public NotificationListenerResponse()
+    {
+        // Default constructor
+    }
+
     private Request myRequest;
     private Value myValue;
     private int myStatus;
@@ -112,6 +120,14 @@ public final class NotificationListenerResponse
      */
     public static final class Request
     {
+        /**
+         * Default constructor.
+         */
+        public Request()
+        {
+            // Default constructor
+        }
+
         private String myMbean;
         private List<String> myArguments;
         private String myType;
@@ -204,6 +220,14 @@ public final class NotificationListenerResponse
      */
     public static final class Value
     {
+        /**
+         * Default constructor.
+         */
+        public Value()
+        {
+            // Default constructor
+        }
+
         private int myDropped;
         private String myHandle;
         private Object myHandback;
@@ -295,6 +319,14 @@ public final class NotificationListenerResponse
      */
     public static final class Notification
     {
+        /**
+         * Default constructor.
+         */
+        public Notification()
+        {
+            // Default constructor
+        }
+
         private long myTimeStamp;
         private long mySequenceNumber;
         private Map<String, Object> myUserData;

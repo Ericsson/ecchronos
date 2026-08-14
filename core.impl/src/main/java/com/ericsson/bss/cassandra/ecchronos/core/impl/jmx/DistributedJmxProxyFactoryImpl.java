@@ -116,6 +116,14 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
         private JolokiaNotificationController myJolokiaController;
 
         /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
          * Build with JMX connection provider.
          *
          * @param distributedJmxConnectionProvider The JMX connection provider

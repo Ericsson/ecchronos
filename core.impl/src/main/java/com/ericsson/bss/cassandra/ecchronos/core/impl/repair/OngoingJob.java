@@ -325,6 +325,14 @@ public final class OngoingJob
         private RepairType myRepairType = RepairType.VNODE;
 
         /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
          * Ongoing job build with ongoing job info.
          *
          * @param theJobId The job id.

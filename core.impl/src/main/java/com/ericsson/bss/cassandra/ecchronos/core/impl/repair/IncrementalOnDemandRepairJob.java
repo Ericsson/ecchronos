@@ -204,6 +204,14 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
         private ReplicationState myReplicationState;
 
         /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
          * Sets the current Cassandra node for the repair job.
          *
          * @param node the current node.

@@ -299,6 +299,14 @@ public class NodeWorkerManager
         private ThreadPoolTaskExecutor myThreadPool;
 
         /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
          * Build with repair configuration.
          *
          * @param defaultRepairConfiguration The default repair configuration

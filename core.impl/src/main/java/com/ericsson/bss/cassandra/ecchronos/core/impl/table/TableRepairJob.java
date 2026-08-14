@@ -368,6 +368,14 @@ public class TableRepairJob extends ScheduledRepairJob
         private TimeBasedRunPolicy myTimeBasedRunPolicy;
 
         /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
          * Build table repair job with repair lock type.
          *
          * @param theRepairLockType

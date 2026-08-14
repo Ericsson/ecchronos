@@ -159,6 +159,14 @@ public final class OnDemandRepairJobFactory
         private BiConsumer<UUID, UUID> myOnFinishedHook;
 
         /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
          * Set the JMX proxy factory.
          *
          * @param jmxProxyFactory the JMX proxy factory.

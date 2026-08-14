@@ -33,6 +33,14 @@ public class CASLockFactoryBuilder
     private ConsistencyType myConsistencyType = DEFAULT_CONSISTENCY_SERIAL;
 
     /**
+     * Default constructor.
+     */
+    public CASLockFactoryBuilder()
+    {
+        // Default constructor
+    }
+
+    /**
      * Sets the native connection provider.
      *
      * @param nativeConnectionProvider the distributed native connection provider.
