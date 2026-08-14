@@ -4,9 +4,9 @@
 
 Below matrix defines which ecChronos agent versions have been tested and verified with which Cassandra version.
 
-| ecchronos version      | Cassandra 3.0.X | Cassandra 3.11.X | Cassandra 4.0.X | Cassandra 4.1.X | Cassandra 5.0-alpha1 |
-|------------------------|-----------------|------------------|-----------------|-----------------|----------------------|
-| &gt;= 1.0.0            |                 |                  | X               | X               | X                    |
+| ecchronos version      | Cassandra 3.0.X | Cassandra 3.11.X | Cassandra 4.0.X | Cassandra 4.1.X | Cassandra 5.0.x |
+|------------------------|-----------------|------------------|-----------------|-----------------|-----------------|
+| &gt;= 1.0.0            |                 |                  | X               | X               | X               |
 
 ## Jolokia
 

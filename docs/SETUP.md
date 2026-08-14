@@ -2,14 +2,15 @@
 
 ## Preparation
 
-In order to allow ecChronos to run there are a few tables that needs to be present.
+In order to allow ecChronos to run there are a few tables that need to be present.
 The keyspace name is configurable and is `ecchronos` by default.
 It is important that the keyspace is configured to replicate to all data centers.
 It is also highly recommended to use `NetworkTopologyStrategy`.
 
 The required tables are shown below:
-```
-CREATE KEYSPACE IF NOT EXISTS ecchronos WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 1};
+
+```cql
+CREATE KEYSPACE IF NOT EXISTS ecchronos WITH replication = {'class': 'NetworkTopologyStrategy', 'dc1': 1};
 
 CREATE TABLE IF NOT EXISTS ecchronos.lock (
     resource text,
@@ -34,7 +35,6 @@ CREATE TABLE IF NOT EXISTS ecchronos.reject_configuration (
     start_minute int,
     end_hour int,
     end_minute int,
-    dc_exclusion set<text>,
     PRIMARY KEY(keyspace_name, table_name, start_hour, start_minute));
 
 CREATE TYPE IF NOT EXISTS ecchronos.token_range (
@@ -75,10 +75,26 @@ CREATE TABLE IF NOT EXISTS ecchronos.repair_history(
     WITH compaction = {'class': 'TimeWindowCompactionStrategy'}
     AND default_time_to_live = 2592000
     AND CLUSTERING ORDER BY (repair_id DESC);
+
+CREATE TABLE IF NOT EXISTS ecchronos.nodes_sync(
+    ecchronos_id TEXT,
+    datacenter_name TEXT,
+    node_id UUID,
+    node_endpoint TEXT,
+    node_status TEXT,
+    last_connection TIMESTAMP,
+    next_connection TIMESTAMP,
+    PRIMARY KEY(ecchronos_id, datacenter_name, node_id))
+    WITH CLUSTERING ORDER BY(datacenter_name DESC, node_id DESC);
 ```
 
-A sample file is located in `conf/create_keyspace_sample.cql` which can be executed by running `cqlsh -f conf/create_keyspace_sample.cql`.
-It is recommended to modify `SimpleStrategy` to `NetworkTopologyStrategy` with a replication factor according to your configuration.
+A sample file is located in `conf/create_keyspace_sample.cql` which can be executed by running:
+
+```bash
+cqlsh -f conf/create_keyspace_sample.cql
+```
+
+It is recommended to modify `NetworkTopologyStrategy` with a replication factor according to your configuration.
 
 ## Installation
 
@@ -88,6 +104,7 @@ or in the [github releases section](https://github.com/Ericsson/ecchronos/releas
 
 Unpack `ecchronos-binary-<version>.tar.gz`.
 The root directory should contain the following directories:
+
 ```
 bin/
 conf/
@@ -98,29 +115,132 @@ LICENSE.txt
 NOTICE.txt
 ```
 
+## Configuration
+
 Change the configuration in `conf/ecc.yml`.
-To get started the connection configuration needs to match your local setup:
+
+### Connection
+
+ecChronos uses an agent-based connection model. Each instance must have a unique `instanceName`, which is used as the partition key (`ecchronos_id`) in the `nodes_sync` table.
+
+The `type` property defines which nodes this instance is responsible for:
+
+- `datacenterAware` — all nodes in the specified datacenters
+- `rackAware` — nodes in specific racks within a datacenter
+- `hostAware` — a specific list of hosts
 
 ```yaml
 connection:
   cql:
-    host: localhost
-    port: 9042
+    instanceName: unique_identifier
+    type: datacenterAware
+    localDatacenter: datacenter1
+    contactPoints:
+      - host: 127.0.0.1
+        port: 9042
+      - host: 127.0.0.2
+        port: 9042
+
+    datacenterAware:
+      datacenters:
+        - name: datacenter1
+        - name: datacenter2
+
+    rackAware:
+      racks:
+        - datacenterName: datacenter1
+          rackName: rack1
+        - datacenterName: datacenter1
+          rackName: rack2
+
+    hostAware:
+      hosts:
+        - host: 127.0.0.1
+          port: 9042
+        - host: 127.0.0.2
+          port: 9042
+```
+
+#### Topology Reload
+
+ecChronos periodically reloads the cluster topology to detect node additions or removals that may have been missed by driver events. The interval is configurable:
+
+```yaml
+connection:
+  cql:
+    reloadSchedule:
+      initialDelay: 1
+      fixedDelay: 1
+      unit: days
+```
+
+For more details on topology change management see [ARCHITECTURE.md](ARCHITECTURE.md).
+
+### JMX Connection
+
+By default ecChronos connects to Cassandra JMX via native RMI on port `7199`:
+
+```yaml
+connection:
   jmx:
-    host: localhost
     port: 7199
 ```
 
-If ecChronos is deployed in a multi-site environment where clients can't connect to Cassandra nodes in remote sites
-the remoteRouting must be disabled. If remote routing is enabled, locks will be taken in the remote data center.
-Disabling remote routing will cause locks to be taken locally but with SERIAL consistency instead of LOCAL_SERIAL consistency.
+#### Jolokia
+
+ecChronos supports connecting to Cassandra JMX over HTTP/HTTPS using the [Jolokia](https://jolokia.org/) protocol instead of native RMI. This is the recommended approach for containerized environments.
 
 ```yaml
-cql:
-  remoteRouting: false
+connection:
+  jmx:
+    jolokia:
+      enabled: false
+      port: 8778
+      usePem: false   # Enable TLS with PEM certificates (Jolokia only, requires reverse proxy)
+    reverseDNSResolution: false
 ```
 
-If you have authentication/tls enabled you need to modify `conf/security.yml`:
+- `usePem` enables TLS communication using PEM certificates. Only supported with Jolokia in reverse proxy scenarios (e.g., NGINX). Certificate paths are configured in `conf/security.yml`.
+- `reverseDNSResolution` enables reverse DNS lookups to resolve IP addresses to hostnames. Useful in containerized environments where certificates use DNS names instead of IPs.
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the full Jolokia + reverse proxy architecture and PEM certificate setup.
+
+### Lock Factory
+
+The CAS lock factory controls distributed repair locking via Cassandra lightweight transactions:
+
+```yaml
+lock_factory:
+  cas:
+    keyspace: ecchronos
+    cache_expiry_time_in_seconds: 30
+    consistencySerial: "SERIAL"   # or "LOCAL" for LOCAL_SERIAL
+    locks_per_resource: 3
+```
+
+`locks_per_resource` defines how many parallel repairs can run per datacenter. All ecChronos instances managing the same cluster **must use the same value**. Increase this if jobs are falling behind (LATE/OVERDUE), but monitor compaction throughput and read latencies.
+
+### Scheduler
+
+```yaml
+scheduler:
+  frequency:
+    time: 30
+    unit: SECONDS
+  session_window:
+    time: 5
+    unit: MINUTES
+  cooldown:
+    time: 0
+    unit: SECONDS
+```
+
+- `session_window` — how long a node holds a distributed lock and executes repair tasks in a single batch before releasing. Reduces lock acquisition overhead in large clusters.
+- `cooldown` — wait time after a session completes before competing for a new lock. Set to `0` to disable.
+
+### Security
+
+If you have authentication or TLS enabled, modify `conf/security.yml`:
 
 ```yaml
 cql:
@@ -139,6 +259,7 @@ cql:
     store_type: JKS
     cipher_suites:
     require_endpoint_verification: false
+
 jmx:
   credentials:
     enabled: true
@@ -154,16 +275,12 @@ jmx:
     cipher_suites:
 ```
 
-CQL also supports certificates in PEM format (EC and RSA algorithms only).
+CQL also supports certificates in PEM format (EC and RSA algorithms only):
 
 ```yaml
 cql:
-  credentials:
-    enabled: true
-    username: cassandra
-    password: cassandra
   tls:
-    enabled: false
+    enabled: true
     certificate: /path/to/certificate
     certificate_private_key: /path/to/certificate_key
     trust_certificate: /path/to/certificate_authorities
@@ -171,35 +288,48 @@ cql:
     cipher_suites:
     require_endpoint_verification: false
 ```
-> **Note**
->
-> In case certificate stores and PEM certificates are declared in `conf/security.yml` for CQL,
-> PEM certificates takes precedence.
 
-If Certificate Revocation Lists (CRL) is to be used for the CQL connections, add the following
-section to the cql/tls section.
+> **Note:** If both keystore and PEM certificates are declared in `conf/security.yml` for CQL, PEM certificates take precedence.
+
+JMX PEM certificate support is available **only when Jolokia is enabled** with a reverse proxy:
 
 ```yaml
+jmx:
+  tls:
+    certificate: /path/to/certificate
+    certificate_private_key: /path/to/certificate_key
+    trust_certificate: /path/to/certificate_authorities
+    algorithm: "EC"
+```
+
+#### Certificate Revocation Lists (CRL)
+
+To use CRL for CQL connections, add the following to the `cql.tls` section in `conf/security.yml`:
+
+```yaml
+cql:
+  tls:
     crl:
       enabled: true
       path: /path/to/crl/file.crl
-      strict: true/false
+      strict: false   # true = reject if CRL is missing or empty
       attempts: 5
-      interval: 300
+      interval: 300   # seconds between CRL file rescans
 ```
-The security parameters can be updated during runtime and will automatically be picked up by ecc.
 
-It's possible to override the default connection providers if needed.
-More information about the custom connection provider can be found [here](STANDALONE.md).
+The security parameters are reloaded at runtime and picked up automatically by ecChronos.
 
-For more advanced use-cases, it's possible to override the java-driver configuration,
-please see [reference configuration](https://docs.datastax.com/en/developer/java-driver/4.17/manual/core/configuration/reference/) for available configuration options.
-To override default java-driver configuration,
-follow any of the supported methods documented at [datastax docs](https://docs.datastax.com/en/developer/java-driver/4.17/manual/core/configuration/#default-implementation-typesafe-config).
+### Custom Connection Providers
 
-Examples:
+It is possible to override the default connection providers if needed.
+More information about custom connection providers can be found in [STANDALONE.md](STANDALONE.md).
 
-`application.conf` in `conf` directory of ecChronos:
+### Java Driver Configuration
+
+For advanced use-cases, the java-driver configuration can be overridden.
+See the [reference configuration](https://docs.datastax.com/en/developer/java-driver/4.17/manual/core/configuration/reference/) for available options.
+
+Example `application.conf` in the `conf` directory:
 
 ```
 datastax-java-driver {
@@ -212,16 +342,15 @@ datastax-java-driver {
 }
 ```
 
-system properties (you can put these in `jvm.options` file of ecChronos:
+Or via system properties in `conf/jvm.options`:
 
 ```
--Ddatastax-java-driver.advanced.prepared-statements.prepare-on-all-nodes=false -Ddatastax-java-driver.advanced.prepared-statements.reprepare-on-up.enabled=false
+-Ddatastax-java-driver.advanced.prepared-statements.prepare-on-all-nodes=false
+-Ddatastax-java-driver.advanced.prepared-statements.reprepare-on-up.enabled=false
 ```
-
-
 
 ## Running ecChronos
 
-To run ecChronos execute `bin/ecc` or `bin/ecctool start` from the root directory.
-It is possible to use the flag `-f` to keep the process running in the foreground.
+To run ecChronos execute `bin/ecctool start` from the root directory.
+It is also possible to run `bin/ecc` directly, using the flag `-f` to keep the process running in the foreground.
 With the default setup a logfile will be created in the root directory called `ecc.log`.
