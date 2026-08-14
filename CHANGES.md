@@ -1,7 +1,8 @@
 # Changes
 
-## Version 1.0.7
+## Version 1.1.0
 
+* Upgrade ecChronos to Spring Boot 4 - Issue #1711
 * Add JSON output format for ecctool state - Issue #1739
 ## Version 1.1.0
 
