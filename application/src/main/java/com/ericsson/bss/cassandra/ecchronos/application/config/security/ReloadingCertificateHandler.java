@@ -45,6 +45,11 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+/**
+ * A {@link CertificateHandler} implementation that automatically reloads TLS certificates
+ * when the underlying certificate files change. It detects changes by comparing file checksums
+ * and creates new SSL contexts as needed.
+ */
 public class ReloadingCertificateHandler implements CertificateHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger(ReloadingCertificateHandler.class);
@@ -53,6 +58,11 @@ public class ReloadingCertificateHandler implements CertificateHandler
     private final AtomicReference<Context> currentContext = new AtomicReference<>();
     private final Supplier<TLSConfig> myTLSConfigSupplier;
 
+    /**
+     * Constructs a new ReloadingCertificateHandler with the given TLS configuration supplier.
+     *
+     * @param tlsConfigSupplier a supplier that provides the current TLS configuration
+     */
     public ReloadingCertificateHandler(final Supplier<TLSConfig> tlsConfigSupplier)
     {
         this.myTLSConfigSupplier = tlsConfigSupplier;
@@ -81,6 +91,12 @@ public class ReloadingCertificateHandler implements CertificateHandler
         return sslEngine;
     }
 
+    /**
+     * Returns the current SSL context, reloading certificates if the TLS configuration or
+     * certificate files have changed since the last invocation.
+     *
+     * @return the current context containing the SSL context and TLS configuration
+     */
     protected final Context getContext()
     {
         TLSConfig tlsConfig = myTLSConfigSupplier.get();
@@ -111,6 +127,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
         return context;
     }
 
+    /** {@inheritDoc} */
     @Override
     public void close() throws Exception
     {
@@ -206,6 +223,10 @@ public class ReloadingCertificateHandler implements CertificateHandler
         return trustManagers;
     }
 
+    /**
+     * Holds the current TLS configuration, SSL context, and key/trust manager factories.
+     * Detects configuration changes by comparing file checksums.
+     */
     protected static final class Context
     {
         private final TLSConfig myTlsConfig;

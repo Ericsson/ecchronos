@@ -32,6 +32,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableStorageStates;
 
+/** Tracks and reports per-table repair progress metrics. */
 public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRepairMetricsProvider, Closeable
 {
     private static final String KEYSPACE_TAG = "keyspace";
@@ -176,14 +177,26 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         }
     }
 
+    /**
+     * Creates a new builder for constructing {@link TableRepairMetricsImpl} instances.
+     *
+     * @return a new builder instance.
+     */
     public static Builder builder()
     {
         return new Builder();
     }
 
+    /** Builder for constructing instances of the enclosing class. */
     public static class Builder
     {
         private MeterRegistry myMeterRegistry;
+
+        /** Constructs a new Builder. */
+        public Builder()
+        {
+            // Default constructor
+        }
 
         /**
          * Build with table storage states.

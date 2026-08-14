@@ -57,6 +57,9 @@ public final class HostStatesImpl implements HostStates, Closeable
         myJmxProxyFactory = builder.myJmxProxyFactory;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isUp(final Node node)
     {
@@ -65,6 +68,9 @@ public final class HostStatesImpl implements HostStates, Closeable
         return status != null && status;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isUp(final DriverNode node)
     {
@@ -73,6 +79,9 @@ public final class HostStatesImpl implements HostStates, Closeable
         return status != null && status;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void close()
     {
@@ -151,28 +160,54 @@ public final class HostStatesImpl implements HostStates, Closeable
         return oldValue == null || oldValue != newValue;
     }
 
+    /**
+     * Creates a new builder for constructing {@link HostStatesImpl} instances.
+     *
+     * @return a new builder.
+     */
     public static Builder builder()
     {
         return new Builder();
     }
 
+    /**
+     * Builder for constructing {@link HostStatesImpl} instances.
+     */
     public static class Builder
     {
         private DistributedJmxProxyFactory myJmxProxyFactory;
         private long myRefreshIntervalInMs = DEFAULT_REFRESH_INTERVAL_IN_MS;
 
+        /**
+         * Sets the JMX proxy factory for retrieving node states.
+         *
+         * @param jmxProxyFactory the JMX proxy factory.
+         * @return this builder.
+         */
         public final Builder withJmxProxyFactory(final DistributedJmxProxyFactory jmxProxyFactory)
         {
             myJmxProxyFactory = jmxProxyFactory;
             return this;
         }
 
+        /**
+         * Sets the refresh interval in milliseconds for node status polling.
+         *
+         * @param refreshIntervalInMs the refresh interval in milliseconds.
+         * @return this builder.
+         */
         public final Builder withRefreshIntervalInMs(final long refreshIntervalInMs)
         {
             myRefreshIntervalInMs = refreshIntervalInMs;
             return this;
         }
 
+        /**
+         * Builds the {@link HostStatesImpl} instance.
+         *
+         * @return the constructed host states implementation.
+         * @throws IllegalArgumentException if the JMX proxy factory is null.
+         */
         public final HostStatesImpl build()
         {
             if (myJmxProxyFactory == null)

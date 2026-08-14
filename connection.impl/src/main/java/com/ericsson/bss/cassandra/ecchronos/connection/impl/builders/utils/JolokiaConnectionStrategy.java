@@ -34,22 +34,38 @@ import org.slf4j.LoggerFactory;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionStrategy;
 
+/**
+ * JMX connection strategy that uses Jolokia to connect to Cassandra nodes over HTTP/HTTPS.
+ */
 public final class JolokiaConnectionStrategy implements JmxConnectionStrategy
 {
     private static final Logger LOG = LoggerFactory.getLogger(JolokiaConnectionStrategy.class);
     private static final String JMX_JOLOKIA_FORMAT_URL = "service:jmx:%s://%s:%d/jolokia/";
+    /** System property key for the Jolokia CA certificate path. */
     public static final String JOLOKIA_CA_CERTIFICATE_PROPERTY = "jolokia.caCertificate";
+    /** System property key for the Jolokia client certificate path. */
     public static final String JOLOKIA_CLIENT_CERTIFICATE_PROPERTY = "jolokia.clientCertificate";
+    /** System property key for the Jolokia client private key path. */
     public static final String JOLOKIA_CLIENT_KEY_CERTIFICATE_PROPERTY = "jolokia.clientKey";
+    /** System property key for the Jolokia client key algorithm. */
     public static final String JOLOKIA_CLIENT_KEY_ALGORITHM_CERTIFICATE_PROPERTY = "jolokia.clientKeyAlgorithm";
+    /** System property key for disabling JDK hostname verification. */
     public static final String JDK_DISABLE_HOSTNAME_VERIFICATION_PROPERTY = "jdk.internal.httpclient.disableHostnameVerification";
+    /** System property key indicating whether Jolokia SSL is enabled. */
     public static final String ECCHRONOS_JOLOKIA_SSL_ENABLED_PROPERTY = "ecchronos.jolokia.ssl.enabled";
+    /** Protocol string for Jolokia HTTPS connections. */
     public static final String JOLOKIA_HTTPS_PROTOCOL = "jolokia+https";
+    /** Protocol string for Jolokia plain HTTP connections. */
     public static final String JOLOKIA_PROTOCOL = "jolokia";
     private final ConnectionUtils myConnectionUtils;
     private final int myPort;
     private static final int DEFAULT_JOLOKIA_PORT = 8778;
 
+    /**
+     * Constructs a JolokiaConnectionStrategy from the given builder.
+     *
+     * @param builder the builder containing configuration.
+     */
     public JolokiaConnectionStrategy(final Builder builder)
     {
         myConnectionUtils = builder.myConnectionUtils;
@@ -168,7 +184,7 @@ public final class JolokiaConnectionStrategy implements JmxConnectionStrategy
     }
 
     /**
-     * Builder for constructing JolokiaConnectionUtils.
+     * Builder for constructing JolokiaConnectionStrategy.
      */
     public static final class Builder
     {
@@ -187,6 +203,12 @@ public final class JolokiaConnectionStrategy implements JmxConnectionStrategy
             return this;
         }
 
+        /**
+         * Set the Jolokia port.
+         *
+         * @param port the Jolokia port number.
+         * @return Builder
+         */
         public Builder withPort(final int port)
         {
             myPort = port;
@@ -194,9 +216,9 @@ public final class JolokiaConnectionStrategy implements JmxConnectionStrategy
         }
 
         /**
-         * Build the JolokiaConnectionUtils instance.
+         * Build the JolokiaConnectionStrategy instance.
          *
-         * @return JolokiaConnectionUtils
+         * @return JolokiaConnectionStrategy
          */
         public JolokiaConnectionStrategy build()
         {

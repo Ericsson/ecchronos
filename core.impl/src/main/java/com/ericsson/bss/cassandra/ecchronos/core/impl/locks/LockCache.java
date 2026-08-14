@@ -30,6 +30,10 @@ import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+/**
+ * A cache for lock acquisition failures. Prevents repeated lock attempts for resources
+ * that recently failed, with a configurable expiration time.
+ */
 public final class LockCache
 {
     private static final Logger LOG = LoggerFactory.getLogger(LockCache.class);
@@ -38,6 +42,12 @@ public final class LockCache
     private final Cache<LockKey, LockException> myFailureCache;
     private final LockSupplier myLockSupplier;
 
+    /**
+     * Constructs a LockCache with the specified lock supplier and expiration time in seconds.
+     *
+     * @param lockSupplier the supplier used to acquire locks.
+     * @param expireTimeInSeconds the time in seconds after which cached failures expire.
+     */
     public LockCache(final LockSupplier lockSupplier, final long expireTimeInSeconds)
     {
         this(lockSupplier, expireTimeInSeconds, TimeUnit.SECONDS);
@@ -54,11 +64,29 @@ public final class LockCache
                 .build();
     }
 
+    /**
+     * Gets the cached lock failure for the specified data center and resource, if any.
+     *
+     * @param dataCenter the data center name.
+     * @param resource the resource name.
+     * @return an optional containing the cached lock exception, or empty if no failure is cached.
+     */
     public Optional<LockException> getCachedFailure(final String dataCenter, final String resource)
     {
         return getCachedFailure(new LockKey(dataCenter, resource));
     }
 
+    /**
+     * Attempts to acquire a distributed lock, checking the cache first for known failures.
+     * If a lock attempt fails, the failure is cached.
+     *
+     * @param dataCenter the data center name.
+     * @param resource the resource name.
+     * @param priority the lock priority.
+     * @param metadata metadata associated with the lock.
+     * @return the acquired distributed lock.
+     * @throws LockException if the lock cannot be acquired.
+     */
     public DistributedLock getLock(final String dataCenter,
                                    final String resource,
                                    final int priority,
@@ -96,9 +124,22 @@ public final class LockCache
         return Optional.ofNullable(myFailureCache.getIfPresent(lockKey));
     }
 
+    /**
+     * Functional interface for supplying distributed locks.
+     */
     @FunctionalInterface
     public interface LockSupplier
     {
+        /**
+         * Acquires a distributed lock for the given data center and resource.
+         *
+         * @param dataCenter the data center name.
+         * @param resource the resource name.
+         * @param priority the lock priority.
+         * @param metadata metadata associated with the lock.
+         * @return the acquired distributed lock.
+         * @throws LockException if the lock cannot be acquired.
+         */
         DistributedLock getLock(String dataCenter, String resource, int priority, Map<String, String> metadata)
             throws LockException;
     }

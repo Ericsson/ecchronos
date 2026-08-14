@@ -16,6 +16,11 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.multithread;
 
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 
+/**
+ * A repair event indicating that a table has been dropped.
+ *
+ * @param table the metadata of the table that was dropped.
+ */
 public record TableDroppedEvent(TableMetadata table) implements RepairEvent
 {
 }

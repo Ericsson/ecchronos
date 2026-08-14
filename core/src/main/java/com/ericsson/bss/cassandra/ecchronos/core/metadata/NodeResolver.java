@@ -31,5 +31,11 @@ public interface NodeResolver
      */
     Optional<DriverNode> fromIp(InetAddress inetAddress);
 
+    /**
+     * Retrieve a node based on its unique identifier.
+     *
+     * @param nodeId The unique identifier of the node.
+     * @return The node, if found.
+     */
     Optional<DriverNode> fromUUID(UUID nodeId);
 }

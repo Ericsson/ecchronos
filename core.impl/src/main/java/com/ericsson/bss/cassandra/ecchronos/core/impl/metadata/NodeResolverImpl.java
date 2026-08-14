@@ -27,6 +27,10 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.Node;
 
+/**
+ * Implementation of {@link NodeResolver} that resolves Cassandra nodes by IP address or UUID,
+ * using a cache to minimize repeated metadata lookups.
+ */
 public class NodeResolverImpl implements NodeResolver
 {
     private static final int MAX_CACHE_SIZE = 500;
@@ -43,6 +47,11 @@ public class NodeResolverImpl implements NodeResolver
 
     private final CqlSession session;
 
+    /**
+     * Constructs a NodeResolverImpl with the specified CQL session.
+     *
+     * @param aSession the CQL session used for metadata lookups.
+     */
     public NodeResolverImpl(final CqlSession aSession)
     {
         this.session = aSession;

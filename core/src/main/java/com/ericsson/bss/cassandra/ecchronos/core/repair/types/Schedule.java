@@ -36,34 +36,58 @@ import java.util.stream.Collectors;
 @SuppressWarnings("VisibilityModifier")
 public class Schedule
 {
+    /** The node ID. */
     @NotBlank
     public UUID nodeID;
+    /** The job ID. */
     @NotBlank
     public UUID jobID;
+    /** The keyspace. */
     @NotBlank
     public String keyspace;
+    /** The table. */
     @NotBlank
     public String table;
+    /** The status. */
     @NotBlank
     public ScheduledRepairJobView.Status status;
+    /** The repaired ratio. */
     @NotBlank
     @Min(0)
     @Max(1)
     public double repairedRatio;
+    /** The last repaired at in ms. */
     @NotBlank
     public long lastRepairedAtInMs;
+    /** The next repair in ms. */
     @NotBlank
     public long nextRepairInMs;
+    /** The config. */
     @NotBlank
     public ScheduleConfig config;
+    /** The repair type. */
     @NotBlank
     public RepairType repairType;
+    /** The virtual node states. */
     public List<VirtualNodeState> virtualNodeStates;
 
+    /** Constructs a new Schedule. */
     public Schedule()
     {
     }
-
+    /**
+     * Constructs a new Schedule.
+     * @param theNodeID the node ID
+     * @param theJobId the job ID
+     * @param theKeyspace the keyspace
+     * @param theTable the table
+     * @param theStatus the status
+     * @param theRepairedRatio the repaired ratio
+     * @param theLastRepairedAtInMs the last repaired at in ms
+     * @param theNextRepairInMs the next repair in ms
+     * @param theConfig the config
+     * @param theRepairType the repair type
+     */
     @VisibleForTesting
     public Schedule(
             final UUID theNodeID,
@@ -91,6 +115,10 @@ public class Schedule
         this.repairType = theRepairType;
     }
 
+    /**
+     * Constructs a new Schedule.
+     * @param repairJobView the repair job view
+     */
     public Schedule(final ScheduledRepairJobView repairJobView)
     {
         this.nodeID = repairJobView.getNodeId();
@@ -106,6 +134,11 @@ public class Schedule
         this.repairType = repairJobView.getRepairType();
     }
 
+    /**
+     * Constructs a new Schedule.
+     * @param repairJobView the repair job view
+     * @param full whether to include full details
+     */
     public Schedule(final ScheduledRepairJobView repairJobView, final boolean full)
     {
         this(repairJobView);

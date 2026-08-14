@@ -167,72 +167,143 @@ public final class ScheduledRepairJobFactory
         private RepairLockType myRepairLockType;
         private TimeBasedRunPolicy myTimeBasedRunPolicy;
 
+        /**
+         * Set the table repair metrics.
+         *
+         * @param tableRepairMetrics the table repair metrics.
+         * @return this builder.
+         */
         public Builder withTableRepairMetrics(final TableRepairMetrics tableRepairMetrics)
         {
             myTableRepairMetrics = tableRepairMetrics;
             return this;
         }
 
+        /**
+         * Set the repair history service.
+         *
+         * @param repairHistoryService the repair history service.
+         * @return this builder.
+         */
         public Builder withRepairHistoryService(final RepairHistoryService repairHistoryService)
         {
             myRepairHistoryService = repairHistoryService;
             return this;
         }
 
+        /**
+         * Set the fault reporter.
+         *
+         * @param faultReporter the fault reporter.
+         * @return this builder.
+         */
         public Builder withFaultReporter(final RepairFaultReporter faultReporter)
         {
             myFaultReporter = faultReporter;
             return this;
         }
 
+        /**
+         * Set the JMX proxy factory.
+         *
+         * @param jmxProxyFactory the JMX proxy factory.
+         * @return this builder.
+         */
         public Builder withJmxProxyFactory(final DistributedJmxProxyFactory jmxProxyFactory)
         {
             myJmxProxyFactory = jmxProxyFactory;
             return this;
         }
 
+        /**
+         * Set the repair state factory.
+         *
+         * @param repairStateFactory the repair state factory.
+         * @return this builder.
+         */
         public Builder withRepairStateFactory(final RepairStateFactory repairStateFactory)
         {
             myRepairStateFactory = repairStateFactory;
             return this;
         }
 
+        /**
+         * Set the replication state.
+         *
+         * @param replicationState the replication state.
+         * @return this builder.
+         */
         public Builder withReplicationState(final ReplicationState replicationState)
         {
             myReplicationState = replicationState;
             return this;
         }
 
+        /**
+         * Set the Cassandra metrics.
+         *
+         * @param cassandraMetrics the Cassandra metrics.
+         * @return this builder.
+         */
         public Builder withCassandraMetrics(final CassandraMetrics cassandraMetrics)
         {
             myCassandraMetrics = cassandraMetrics;
             return this;
         }
 
+        /**
+         * Set the repair policies.
+         *
+         * @param repairPolicies the collection of repair policies.
+         * @return this builder.
+         */
         public Builder withRepairPolicies(final Collection<TableRepairPolicy> repairPolicies)
         {
             myRepairPolicies.addAll(repairPolicies);
             return this;
         }
 
+        /**
+         * Set the table storage states.
+         *
+         * @param tableStorageStates the table storage states.
+         * @return this builder.
+         */
         public Builder withTableStorageStates(final TableStorageStates tableStorageStates)
         {
             myTableStorageStates = tableStorageStates;
             return this;
         }
 
+        /**
+         * Set the repair lock type.
+         *
+         * @param repairLockType the repair lock type.
+         * @return this builder.
+         */
         public Builder withRepairLockType(final RepairLockType repairLockType)
         {
             myRepairLockType = repairLockType;
             return this;
         }
 
+        /**
+         * Set the time-based run policy.
+         *
+         * @param timeBasedRunPolicy the time-based run policy.
+         * @return this builder.
+         */
         public Builder withTimeBasedRunPolicy(final TimeBasedRunPolicy timeBasedRunPolicy)
         {
             myTimeBasedRunPolicy = timeBasedRunPolicy;
             return this;
         }
 
+        /**
+         * Build the {@link ScheduledRepairJobFactory}.
+         *
+         * @return a new ScheduledRepairJobFactory instance.
+         */
         public ScheduledRepairJobFactory build()
         {
             return new ScheduledRepairJobFactory(this);

@@ -36,6 +36,7 @@ import java.util.Set;
  */
 public final class VnodeRepairGroupFactory implements ReplicaRepairGroupFactory
 {
+    /** Singleton instance of the VnodeRepairGroupFactory. */
     public static final VnodeRepairGroupFactory INSTANCE = new VnodeRepairGroupFactory();
 
     private VnodeRepairGroupFactory()

@@ -53,7 +53,9 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     private static final Logger LOG = LoggerFactory.getLogger(ScheduleManagerImpl.class);
 
     static final long DEFAULT_RUN_DELAY_IN_MS = TimeUnit.SECONDS.toMillis(30);
+    /** Default keep-alive time in seconds for the thread pool executor. */
     public static final int DEFAULT_KEEP_ALIVE_TIME = 60;
+    /** Default timeout in minutes for awaiting executor termination. */
     public static final int DEFAULT_TIMEOUT = 5;
 
     private final Map<UUID, ScheduledJobQueue> myQueue = new ConcurrentHashMap<>();
@@ -88,7 +90,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
     /**
      * Create a ScheduledFuture for each of the nodes in the nodeIDList.
-     * @param nodeIDList
+     * @param nodeIDList the collection of node identifiers to create schedule futures for.
      */
     @Override
     public void createScheduleFutureForNodeIDList(final Collection<UUID> nodeIDList)
@@ -102,7 +104,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
     /**
      * Create a ScheduledFuture for  the nodeID.
-     * @param nodeID
+     * @param nodeID the node identifier to create a schedule future for.
      */
     @Override
     public void createScheduleFutureForNode(final UUID nodeID)

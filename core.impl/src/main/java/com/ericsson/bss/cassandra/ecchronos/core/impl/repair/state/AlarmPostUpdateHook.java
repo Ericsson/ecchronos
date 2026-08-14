@@ -37,6 +37,13 @@ public class AlarmPostUpdateHook implements PostUpdateHook
     private final RepairConfiguration myRepairConfiguration;
     private final AtomicReference<Clock> myClock = new AtomicReference<>(Clock.systemDefaultZone());
 
+    /**
+     * Constructs an AlarmPostUpdateHook.
+     *
+     * @param tableReference the table reference for alarm identification.
+     * @param repairConfiguration the repair configuration with alarm thresholds.
+     * @param faultReporter the fault reporter used to raise and cease alarms.
+     */
     public AlarmPostUpdateHook(final TableReference tableReference,
             final RepairConfiguration repairConfiguration,
             final RepairFaultReporter faultReporter)
@@ -50,8 +57,8 @@ public class AlarmPostUpdateHook implements PostUpdateHook
     /**
      * Post update.
      *
-     * @param repairStateSnapshot The current repair state snapshot
-     * @param hostId
+     * @param repairStateSnapshot The current repair state snapshot.
+     * @param hostId The host identifier of the node being updated.
      */
     @Override
     public void postUpdate(final RepairStateSnapshot repairStateSnapshot, final UUID hostId)
@@ -95,7 +102,7 @@ public class AlarmPostUpdateHook implements PostUpdateHook
     /**
      * Set clock.
      *
-     * @param clock
+     * @param clock the clock to use for time calculations.
      */
     @VisibleForTesting
     void setClock(final Clock clock)

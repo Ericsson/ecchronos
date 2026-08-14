@@ -31,6 +31,9 @@ import com.ericsson.bss.cassandra.ecchronos.core.state.VnodeRepairStateFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 
+/**
+ * Factory implementation for creating {@link RepairState} instances.
+ */
 public final class RepairStateFactoryImpl implements RepairStateFactory
 {
     private final HostStates myHostStates;
@@ -81,11 +84,19 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
                 myTableRepairMetrics, replicaRepairGroupFactory, postUpdateHook);
     }
 
+    /**
+     * Create a new Builder instance.
+     *
+     * @return a new Builder.
+     */
     public static Builder builder()
     {
         return new Builder();
     }
 
+    /**
+     * Builder for constructing {@link RepairStateFactoryImpl}.
+     */
     public static class Builder
     {
         private ReplicationState myReplicationState;

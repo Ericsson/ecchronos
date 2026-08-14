@@ -22,12 +22,20 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Filter interface for selecting Cassandra nodes based on specific criteria
+ * such as datacenter, rack, or host address.
+ */
 public interface NodeFilter
 {
+    /** Logger for node filter operations. */
     Logger LOG = LoggerFactory.getLogger(NodeFilter.class);
 
     /**
      * Resolve the list of nodes matching this filter from the cluster metadata.
+     *
+     * @param session the CQL session to retrieve cluster metadata from.
+     * @return a list of nodes that pass this filter.
      */
     default List<Node> resolve(final CqlSession session)
     {
@@ -49,6 +57,9 @@ public interface NodeFilter
 
     /**
      * Check if a single node matches this filter.
+     *
+     * @param node the node to check.
+     * @return {@code true} if the node passes the filter, {@code false} otherwise.
      */
     boolean isValid(Node node);
 }

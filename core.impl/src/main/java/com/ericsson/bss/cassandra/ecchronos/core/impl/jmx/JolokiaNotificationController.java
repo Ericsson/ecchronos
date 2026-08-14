@@ -44,6 +44,10 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * Controller responsible for managing Jolokia-based JMX notification listeners.
+ * It handles registration, polling, and dispatching of notifications from remote Cassandra nodes via Jolokia HTTP.
+ */
 public class JolokiaNotificationController implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(JolokiaNotificationController.class);
@@ -68,6 +72,11 @@ public class JolokiaNotificationController implements Closeable
     private final JolokiaHttpClient myJolokiaHttpClient;
     private final long myRunDelay;
 
+    /**
+     * Constructs a JolokiaNotificationController from the provided builder.
+     *
+     * @param builder the builder containing configuration parameters.
+     */
     public JolokiaNotificationController(final Builder builder)
     {
         myRunDelay = builder.myRunDelay;
@@ -87,6 +96,14 @@ public class JolokiaNotificationController implements Closeable
         return myNodeLocks.computeIfAbsent(nodeID, id -> new ReentrantLock());
     }
 
+    /**
+     * Registers a notification listener for the specified node's storage service via Jolokia.
+     *
+     * @param nodeID the identifier of the node to listen to.
+     * @param listener the notification listener to register.
+     * @throws IOException if registration fails.
+     * @throws InterruptedException if the thread is interrupted during registration.
+     */
     public final void addStorageServiceListener(final UUID nodeID, final NotificationListener listener) throws IOException, InterruptedException
     {
         myJolokiaHttpClient.registerClientId(nodeID);
@@ -127,6 +144,13 @@ public class JolokiaNotificationController implements Closeable
         }
     }
 
+    /**
+     * Removes a previously registered notification listener for the specified node.
+     *
+     * @param nodeID the identifier of the node.
+     * @param listener the notification listener to remove.
+     * @throws UnknownHostException if the node's address cannot be resolved.
+     */
     public final void removeStorageServiceListener(
             final UUID nodeID,
             final NotificationListener listener) throws UnknownHostException
@@ -362,13 +386,22 @@ public class JolokiaNotificationController implements Closeable
         myJolokiaHttpClient.close();
     }
 
+    /**
+     * Creates a new builder for constructing {@link JolokiaNotificationController} instances.
+     *
+     * @return a new builder.
+     */
     public static Builder newBuilder()
     {
         return new Builder();
     }
 
+    /**
+     * Builder for constructing {@link JolokiaNotificationController} instances.
+     */
     public static class Builder
     {
+        /** Default delay in milliseconds between notification polling runs. */
         public static final int DEFAULT_RUN_DELAY = 500;
         private static final int DEFAULT_JOLOKIA_PORT = 8778;
 

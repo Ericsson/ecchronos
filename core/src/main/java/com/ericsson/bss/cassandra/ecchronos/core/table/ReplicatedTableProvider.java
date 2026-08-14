@@ -32,6 +32,7 @@ public interface ReplicatedTableProvider
     /**
      * Check if a keyspace should be repaired.
      *
+     * @param node The node to check the keyspace against.
      * @param keyspace The keyspace to check.
      * @return True if the provided keyspace should be repaired.
      */

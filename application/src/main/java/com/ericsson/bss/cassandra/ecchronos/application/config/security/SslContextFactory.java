@@ -28,6 +28,10 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 import java.util.Arrays;
 
+/**
+ * Factory class for creating Netty {@link SslContext} instances based on TLS configuration.
+ * Supports custom CRL validation, endpoint verification, cipher suite selection, and protocol configuration.
+ */
 public final class SslContextFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(SslContextFactory.class);
@@ -38,6 +42,12 @@ public final class SslContextFactory
 
     /**
      * Build a Netty SslContext from the given managers and TLS configuration.
+     *
+     * @param tlsConfig the TLS configuration containing protocol, cipher, CRL, and endpoint verification settings.
+     * @param kmf the key manager factory for client authentication.
+     * @param tmf the trust manager factory for server certificate validation.
+     * @return the configured SSL context.
+     * @throws SSLException if the SSL context cannot be built.
      */
     public static SslContext create(final TLSConfig tlsConfig,
                                     final KeyManagerFactory kmf,

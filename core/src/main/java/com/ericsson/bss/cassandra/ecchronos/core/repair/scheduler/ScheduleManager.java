@@ -17,11 +17,16 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler;
 import java.util.Collection;
 import java.util.UUID;
 
+/**
+ * Interface for managing the scheduling and lifecycle of repair jobs across nodes.
+ */
 public interface ScheduleManager
 {
     /**
      * Schedule the provided job for running.
      *
+     * @param nodeID
+     *            The unique identifier of the node to schedule the job for.
      * @param job
      *            The job to schedule.
      */
@@ -30,6 +35,8 @@ public interface ScheduleManager
     /**
      * Remove the provided job from the scheduling.
      *
+     * @param nodeID
+     *            The unique identifier of the node to deschedule the job for.
      * @param job
      *            The job to deschedule.
      */
@@ -46,13 +53,13 @@ public interface ScheduleManager
     String getCurrentJobStatus();
 
     /**
-     * Create a ScheduledFuture for  the nodeID.
-     * @param nodeID
+     * Create a ScheduledFuture for the nodeID.
+     * @param nodeID the unique identifier of the node to create a schedule for.
      */
     void createScheduleFutureForNode(UUID nodeID);
     /**
      * Create a ScheduledFuture for each of the nodes in the nodeIDList.
-     * @param nodeIDList
+     * @param nodeIDList the collection of node identifiers to create schedules for.
      */
     void createScheduleFutureForNodeIDList(Collection<UUID> nodeIDList);
 

@@ -39,6 +39,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Builder for constructing distributed JMX connections to Cassandra nodes.
+ * Establishes JMX connections in parallel and provides a {@link DistributedJmxConnectionProvider}.
+ */
 public class DistributedJmxBuilder
 {
     private static final Logger LOG = LoggerFactory.getLogger(DistributedJmxBuilder.class);
@@ -75,6 +79,12 @@ public class DistributedJmxBuilder
         return this;
     }
 
+    /**
+     * Set the JMX connection strategy to be used by the DistributedJmxBuilder.
+     *
+     * @param strategy the JMX connection strategy.
+     * @return the current instance of DistributedJmxBuilder for chaining.
+     */
     public final DistributedJmxBuilder withConnectionStrategy(final JmxConnectionStrategy strategy)
     {
         jmxConnectionStrategy = strategy;
@@ -138,6 +148,7 @@ public class DistributedJmxBuilder
     /***
      * Creates a JMX connection to the host.
      * @param node the node to connect with.
+     * @throws EcChronosException if the connection cannot be established.
      */
     public void reconnect(final Node node) throws EcChronosException
     {
@@ -169,11 +180,21 @@ public class DistributedJmxBuilder
         }
     }
 
+    /**
+     * Returns the native connection provider configured for this builder.
+     *
+     * @return the {@link DistributedNativeConnectionProvider}.
+     */
     public final DistributedNativeConnectionProvider getNativeConnectionProvider()
     {
         return myNativeConnectionProvider;
     }
 
+    /**
+     * Returns the map of established JMX connections keyed by node UUID.
+     *
+     * @return a {@link ConcurrentHashMap} of node UUIDs to JMX connectors.
+     */
     public final ConcurrentHashMap<UUID, JMXConnector> getJMXConnections()
     {
         return myJMXConnections;

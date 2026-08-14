@@ -57,6 +57,12 @@ public final class RepairNotificationHandler implements NotificationListener
     @FunctionalInterface
     public interface RangeFinishedCallback
     {
+        /**
+         * Called when a token range repair finishes.
+         *
+         * @param range the token range that finished.
+         * @param status the repair status of the range.
+         */
         void onRangeFinished(LongTokenRange range, RepairStatus status);
     }
 
@@ -66,9 +72,18 @@ public final class RepairNotificationHandler implements NotificationListener
     @FunctionalInterface
     public interface HangPreventionCallback
     {
+        /**
+         * Reschedule the hang prevention check.
+         */
         void rescheduleHangPrevention();
     }
 
+    /**
+     * Constructs a RepairNotificationHandler with the given callbacks.
+     *
+     * @param rangeCallback the callback invoked when a range finishes repair.
+     * @param hangPreventionCallback the callback to reschedule hang prevention.
+     */
     public RepairNotificationHandler(final RangeFinishedCallback rangeCallback,
             final HangPreventionCallback hangPreventionCallback)
     {

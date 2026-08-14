@@ -47,6 +47,13 @@ public final class RepairStateSnapshot
         canRepair = !myReplicaRepairGroup.isEmpty();
     }
 
+    /**
+     * Get the remaining repair time based on the current time and the configured repair interval.
+     *
+     * @param now The current time in milliseconds.
+     * @param repairIntervalMs The repair interval in milliseconds.
+     * @return The remaining repair time in milliseconds.
+     */
     public long getRemainingRepairTime(final long now, final long repairIntervalMs)
     {
         return VnodeRepairStateUtils.getRemainingRepairTime(myVnodeRepairStates.getVnodeRepairStates(),
@@ -82,6 +89,11 @@ public final class RepairStateSnapshot
         return myLastCompletedAt;
     }
 
+    /**
+     * Get the estimated total repair time for all vnodes.
+     *
+     * @return The estimated repair time in milliseconds.
+     */
     public long getEstimatedRepairTime()
     {
         return myEstimatedRepairTime;
@@ -97,6 +109,11 @@ public final class RepairStateSnapshot
         return myReplicaRepairGroup;
     }
 
+    /**
+     * Get the vnode repair states for the table.
+     *
+     * @return The vnode repair states.
+     */
     public VnodeRepairStates getVnodeRepairStates()
     {
         return myVnodeRepairStates;
@@ -113,11 +130,19 @@ public final class RepairStateSnapshot
                 + '}';
     }
 
+    /**
+     * Create a new builder for {@link RepairStateSnapshot}.
+     *
+     * @return A new builder instance.
+     */
     public static Builder newBuilder()
     {
         return new Builder();
     }
 
+    /**
+     * Builder for constructing {@link RepairStateSnapshot} instances.
+     */
     public static class Builder
     {
         private Long myLastCompletedAt;

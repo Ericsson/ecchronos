@@ -21,16 +21,32 @@ public class EcChronosException extends Exception
 {
     private static final long serialVersionUID = 1148561336907867613L;
 
+    /**
+     * Constructs a new EcChronosException with the specified detail message.
+     *
+     * @param message the detail message.
+     */
     public EcChronosException(final String message)
     {
         super(message);
     }
 
+    /**
+     * Constructs a new EcChronosException with the specified cause.
+     *
+     * @param t the cause of the exception.
+     */
     public EcChronosException(final Throwable t)
     {
         super(t);
     }
 
+    /**
+     * Constructs a new EcChronosException with the specified detail message and cause.
+     *
+     * @param message the detail message.
+     * @param t the cause of the exception.
+     */
     public EcChronosException(final String message, final Throwable t)
     {
         super(message, t);

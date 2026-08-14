@@ -18,6 +18,11 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.connection.RetryP
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Implements exponential backoff strategy for retry attempts.
+ * Provides methods to calculate delays, retrieve schedule configuration,
+ * and sleep between retry attempts.
+ */
 public final class RetryBackoffStrategy
 {
     private static final Logger LOG = LoggerFactory.getLogger(RetryBackoffStrategy.class);
@@ -27,6 +32,11 @@ public final class RetryBackoffStrategy
     private final RetryPolicyConfig.RetrySchedule myRetrySchedule;
     private final RetryPolicyConfig.RetryDelay myRetryDelay;
 
+    /**
+     * Constructs a new RetryBackoffStrategy using the given retry policy configuration.
+     *
+     * @param retryPolicyConfig the retry policy configuration providing delay and schedule settings
+     */
     public RetryBackoffStrategy(final RetryPolicyConfig retryPolicyConfig)
     {
         myRetryPolicyConfig = retryPolicyConfig;
@@ -34,21 +44,43 @@ public final class RetryBackoffStrategy
         myRetryDelay = retryPolicyConfig.getRetryDelay();
     }
 
+    /**
+     * Returns the initial delay in milliseconds before the first retry cycle begins.
+     *
+     * @return the initial delay in milliseconds
+     */
     public long getInitialDelay()
     {
         return myRetrySchedule.getInitialDelay();
     }
 
+    /**
+     * Returns the fixed delay in milliseconds between retry cycles.
+     *
+     * @return the fixed delay in milliseconds
+     */
     public long getFixedDelay()
     {
         return myRetrySchedule.getFixedDelay();
     }
 
+    /**
+     * Returns the maximum number of retry attempts allowed per node.
+     *
+     * @return the maximum number of retry attempts
+     */
     public int getMaxAttempts()
     {
         return myRetryPolicyConfig.getMaxAttempts();
     }
 
+    /**
+     * Calculates the delay in milliseconds for the given attempt number using linear backoff.
+     * The calculated delay is capped at the configured maximum delay.
+     *
+     * @param attempt the current attempt number (1-based)
+     * @return the delay in milliseconds before the next retry
+     */
     public long calculateDelay(final int attempt)
     {
         long baseDelay = myRetryDelay.getStartDelay();
@@ -57,6 +89,12 @@ public final class RetryBackoffStrategy
         return Math.min(calculatedDelay, myRetryDelay.getMaxDelay() * ONE_SECOND_IN_MS);
     }
 
+    /**
+     * Sleeps the current thread for the specified duration before the next retry attempt.
+     * If the thread is interrupted during sleep, the interrupt flag is restored.
+     *
+     * @param delayMillis the number of milliseconds to sleep
+     */
     public void sleepBeforeNextRetry(final long delayMillis)
     {
         try

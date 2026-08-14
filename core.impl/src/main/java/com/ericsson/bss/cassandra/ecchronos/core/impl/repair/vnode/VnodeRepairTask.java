@@ -45,6 +45,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
+/**
+ * A repair task that performs vnode-based repair on a set of token ranges for a specific table.
+ * It tracks repair sessions per token range and verifies that all ranges are repaired successfully.
+ */
 public class VnodeRepairTask extends RepairTask
 {
     private static final Logger LOG = LoggerFactory.getLogger(VnodeRepairTask.class);
@@ -54,6 +58,19 @@ public class VnodeRepairTask extends RepairTask
     private final Set<DriverNode> myReplicas;
     private volatile Set<LongTokenRange> myUnknownRanges;
 
+    /**
+     * Constructs a new VnodeRepairTask.
+     *
+     * @param currentNode the current Cassandra node.
+     * @param jmxProxyFactory the factory for creating JMX proxy connections.
+     * @param tableReference the reference to the table being repaired.
+     * @param repairConfiguration the repair configuration settings.
+     * @param tableRepairMetrics the metrics collector for table repairs.
+     * @param repairHistory the repair history tracker.
+     * @param tokenRanges the set of token ranges to repair.
+     * @param replicas the set of replica nodes participating in the repair.
+     * @param jobId the unique identifier of the repair job.
+     */
     public VnodeRepairTask(final Node currentNode, final DistributedJmxProxyFactory jmxProxyFactory,
             final TableReference tableReference,
             final RepairConfiguration repairConfiguration, final TableRepairMetrics tableRepairMetrics,
@@ -167,12 +184,22 @@ public class VnodeRepairTask extends RepairTask
         return myUnknownRanges;
     }
 
+    /**
+     * Returns the set of token ranges this task is responsible for repairing.
+     *
+     * @return a copy of the token ranges.
+     */
     @VisibleForTesting
     public final Set<LongTokenRange> getTokenRanges()
     {
         return Sets.newLinkedHashSet(myTokenRanges);
     }
 
+    /**
+     * Returns the set of replica nodes participating in this repair task.
+     *
+     * @return a copy of the replica nodes.
+     */
     @VisibleForTesting
     public final Set<DriverNode> getReplicas()
     {

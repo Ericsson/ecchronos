@@ -14,6 +14,9 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.multithread;
 
+/**
+ * Marker interface for events related to repair operations.
+ */
 public interface RepairEvent
 {
 }

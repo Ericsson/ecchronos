@@ -42,12 +42,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+/**
+ * Implementation of {@link RepairState} that tracks vnode repair state and determines
+ * when repairs are needed based on configured intervals.
+ */
 public class RepairStateImpl implements RepairState
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairStateImpl.class);
 
     private static final DateTimeFormatter MY_DATE_FORMAT = DateTimeFormatter.ofPattern(
             "yyyy-MM-dd HH:mm:ss", Locale.US);
+    /** Milliseconds per second, used for log formatting. */
     public static final int MILLISECONDS = 1000;
 
     private final AtomicReference<RepairStateSnapshot> myRepairStateSnapshot = new AtomicReference<>();
@@ -61,6 +66,18 @@ public class RepairStateImpl implements RepairState
     private final PostUpdateHook myPostUpdateHook;
     private final Node myNode;
 
+    /**
+     * Constructs a RepairStateImpl and performs an initial state update.
+     *
+     * @param node the Cassandra node.
+     * @param tableReference the table to track repair state for.
+     * @param repairConfiguration the repair configuration.
+     * @param vnodeRepairStateFactory the factory for creating vnode repair states.
+     * @param hostStates the host states used to check replica availability.
+     * @param tableRepairMetrics the metrics tracker for table repairs.
+     * @param replicaRepairGroupFactory the factory for generating replica repair groups.
+     * @param postUpdateHook the hook invoked after state updates.
+     */
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public RepairStateImpl(
             final Node node,

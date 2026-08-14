@@ -21,11 +21,20 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A {@link RepairFaultReporter} implementation that logs alarms to the application logger
+ * and tracks active alarms in memory.
+ */
 public class LoggingFaultReporter implements RepairFaultReporter
 {
     private static final Logger LOG = LoggerFactory.getLogger(LoggingFaultReporter.class);
     private final Map<Integer, FaultCode> alarms = new HashMap<>();
 
+    /**
+     * Returns the map of currently active alarms, keyed by data hash code.
+     *
+     * @return the map of active alarms.
+     */
     public final Map<Integer, FaultCode> getAlarms()
     {
         return alarms;

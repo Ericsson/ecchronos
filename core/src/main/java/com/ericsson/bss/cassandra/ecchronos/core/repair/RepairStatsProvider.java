@@ -18,7 +18,19 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.types.RepairStats;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import java.util.UUID;
 
+/**
+ * Provider interface for retrieving repair statistics.
+ */
 public interface RepairStatsProvider
 {
+    /**
+     * Gets repair statistics for a specific table on a node within a time range.
+     *
+     * @param nodeID the UUID of the node.
+     * @param tableReference the reference to the table.
+     * @param since the start of the time range in milliseconds since epoch.
+     * @param to the end of the time range in milliseconds since epoch.
+     * @return the repair statistics for the specified parameters.
+     */
     RepairStats getRepairStats(UUID nodeID, TableReference tableReference, long since, long to);
 }

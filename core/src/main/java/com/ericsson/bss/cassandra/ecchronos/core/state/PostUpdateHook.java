@@ -26,7 +26,7 @@ public interface PostUpdateHook
      * Runs each time the {@link RepairState} is updated.
      *
      * @param repairStateSnapshot The current repair state snapshot
-     * @param hostId
+     * @param hostId The unique identifier of the host that was updated.
      */
     void postUpdate(RepairStateSnapshot repairStateSnapshot, UUID hostId);
 }

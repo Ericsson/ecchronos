@@ -16,6 +16,11 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.multithread;
 
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 
+/**
+ * A repair event indicating that a keyspace has been closed or dropped.
+ *
+ * @param keyspace the keyspace metadata associated with the close event.
+ */
 public record CloseEvent(KeyspaceMetadata keyspace) implements RepairEvent
 {
 }

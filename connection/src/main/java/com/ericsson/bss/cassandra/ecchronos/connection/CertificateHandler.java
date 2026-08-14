@@ -31,7 +31,15 @@ public interface CertificateHandler extends SslEngineFactory
     @Override
     void close() throws Exception;
 
+    /**
+     * Sets the default SSL context for the JVM using this handler's SSL configuration.
+     */
     void setDefaultSSLContext();
 
+    /**
+     * Returns the SSL context managed by this handler.
+     *
+     * @return the {@link SSLContext} instance.
+     */
     SSLContext getSSLContext();
 }

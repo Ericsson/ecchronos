@@ -29,6 +29,9 @@ import org.slf4j.LoggerFactory;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionStrategy;
 
+/**
+ * JMX connection strategy that uses RMI to connect to Cassandra nodes.
+ */
 public final class RMIConnectionStrategy implements JmxConnectionStrategy
 {
     private static final Logger LOG = LoggerFactory.getLogger(RMIConnectionStrategy.class);
@@ -37,6 +40,11 @@ public final class RMIConnectionStrategy implements JmxConnectionStrategy
     private final ConnectionUtils myConnectionUtils;
     private final int myPort;
 
+    /**
+     * Constructs an RMIConnectionStrategy from the given builder.
+     *
+     * @param builder the builder containing configuration.
+     */
     public RMIConnectionStrategy(final Builder builder)
     {
         myConnectionUtils = builder.myConnectionUtils;
@@ -117,6 +125,12 @@ public final class RMIConnectionStrategy implements JmxConnectionStrategy
             return this;
         }
 
+        /**
+         * Set the RMI JMX port.
+         *
+         * @param port the JMX port number.
+         * @return Builder
+         */
         public Builder withPort(final int port)
         {
             myPort = port;

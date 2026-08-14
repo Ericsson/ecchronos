@@ -26,27 +26,40 @@ import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.Date;
 
+/** Validates X.509 certificates against Certificate Revocation Lists. */
 public final class CustomCRLValidator
 {
     private static final Logger LOG = LoggerFactory.getLogger(CustomCRLValidator.class);
 
     public enum CRLState
     {
-        INVALID,    // Dates etc failed verification
-        VALID,      // Everything is valid and fine, but there is no specific non-revoked CRL
-        REVOKED     // The certificate is specifically revoked by the CRL
+        /** Certificate is invalid; Dates etc failed verification. */
+        INVALID,
+        /** Certificate is valid; Everything is valid and fine, but there is no specific non-revoked CRL. */
+        VALID,
+        /** Certificate is revoked; The certificate is specifically revoked by the CRL. */
+        REVOKED
     }
 
+    /** The CRL file manager. */
     @VisibleForTesting
     protected CRLFileManager myCRLFileManager;
 
+    /**
+     * Constructs a new CustomCRLValidator.
+     * @param crlConfig the CRL config
+     */
     public CustomCRLValidator(final CRLConfig crlConfig)
     {
         // Create a new CRL File Manager to be used by this validator
         this.myCRLFileManager = new CRLFileManager(crlConfig);
     }
 
-
+    /**
+     * Validates a certificate against the current CRLs.
+     * @param cert the certificate to validate
+     * @return the CRL state indicating whether the certificate is valid, revoked, or invalid
+     */
     public CRLState isCertificateCRLValid(final X509Certificate cert)
     {
         if (cert == null)
@@ -72,6 +85,12 @@ public final class CustomCRLValidator
         return CRLState.INVALID;
     }
 
+    /**
+     * Validates a certificate against a single CRL entry.
+     * @param cert the certificate to validate
+     * @param crl the CRL to check against
+     * @return the CRL state, or null if the CRL is not applicable
+     */
     private CRLState validateAgainstCrl(final X509Certificate cert, final CRL crl)
     {
         if (!(crl instanceof X509CRL x509Crl))
@@ -103,26 +122,43 @@ public final class CustomCRLValidator
         this.myCRLFileManager.addRefreshListener(listener);
     }
 
+    /** Resets the attempt counter. */
     public void resetAttempts()
     {
         this.myCRLFileManager.resetAttempts();
     }
 
+    /**
+     * Increments the attempt counter.
+     * @return the new attempt count
+     */
     public int increaseAttempts()
     {
         return this.myCRLFileManager.increaseAttempts();
     }
 
+    /**
+     * Returns the maximum number of attempts.
+     * @return the maximum number of attempts
+     */
     public int maxAttempts()
     {
         return this.myCRLFileManager.maxAttempts();
     }
 
+    /**
+     * Returns whether it has more attempts.
+     * @return true if it has more attempts
+     */
     public boolean hasMoreAttempts()
     {
         return this.myCRLFileManager.hasMoreAttempts();
     }
 
+    /**
+     * Returns whether strict mode is enabled.
+     * @return true if in strict mode
+     */
     public boolean inStrictMode()
     {
         return this.myCRLFileManager.inStrictMode();

@@ -74,7 +74,7 @@ public class JolokiaConfig
     /**
      * Sets whether the PEM certificate is enabled.
      *
-     * @param enabled {@code true} to enable PEM certificate usage; {@code false} otherwise.
+     * @param usePem {@code true} to enable PEM certificate usage; {@code false} otherwise.
      */
     @JsonProperty("usePem")
     public void setUsePem(final boolean usePem)

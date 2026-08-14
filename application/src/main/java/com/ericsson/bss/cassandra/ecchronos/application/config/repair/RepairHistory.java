@@ -19,29 +19,51 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Locale;
 
+/** Configuration for the repair history provider. */
 public class RepairHistory
 {
     private RepairHistoryProvider myProvider = RepairHistoryProvider.ECC;
     private String myKeyspaceName = "ecchronos";
 
+    /** Default constructor. */
+    public RepairHistory()
+    {
+    }
+
+    /**
+     * Returns the provider.
+     * @return the provider
+     */
     @JsonProperty("provider")
     public final RepairHistoryProvider getProvider()
     {
         return myProvider;
     }
 
+    /**
+     * Sets the provider.
+     * @param provider the provider implementation
+     */
     @JsonProperty("provider")
     public final void setProvider(final String provider)
     {
         myProvider = RepairHistoryProvider.valueOf(provider.toUpperCase(Locale.US));
     }
 
+    /**
+     * Returns the keyspace name.
+     * @return the keyspace name
+     */
     @JsonProperty("keyspace")
     public final String getKeyspaceName()
     {
         return myKeyspaceName;
     }
 
+    /**
+     * Sets the keyspace name.
+     * @param keyspaceName the keyspace name
+     */
     @JsonProperty("keyspace")
     public final void setKeyspaceName(final String keyspaceName)
     {

@@ -131,6 +131,11 @@ public final class CASLockFactory implements LockFactory, Closeable
                 .build();
     }
 
+    /**
+     * Adds a lock cache entry for the specified node.
+     *
+     * @param nodeId the identifier of the node to add a lock cache for.
+     */
     public void addLockCache(final UUID nodeId)
     {
         LockCache.LockSupplier nodeSpecificSupplier = (dataCenter, resource, priority, metadata) ->
@@ -270,6 +275,11 @@ public final class CASLockFactory implements LockFactory, Closeable
         return myCasLockProperties.getSerialConsistencyLevel();
     }
 
+    /**
+     * Creates a new builder for constructing {@link CASLockFactory} instances.
+     *
+     * @return a new CASLockFactoryBuilder.
+     */
     public static CASLockFactoryBuilder builder()
     {
         return new CASLockFactoryBuilder();

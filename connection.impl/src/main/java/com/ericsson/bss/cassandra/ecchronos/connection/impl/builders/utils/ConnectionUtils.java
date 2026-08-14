@@ -64,6 +64,12 @@ public final class ConnectionUtils
         return myHostResolver.resolve(node);
     }
 
+    /**
+     * Checks whether the given JMX connector is currently connected.
+     *
+     * @param jmxConnector the JMX connector to check.
+     * @return {@code true} if connected, {@code false} otherwise.
+     */
     public static boolean isConnected(final JMXConnector jmxConnector)
     {
         try
@@ -78,6 +84,12 @@ public final class ConnectionUtils
         return true;
     }
 
+    /**
+     * Closes the given JMX connector without throwing exceptions.
+     * If the connector is {@code null} or closing fails, the error is logged at debug level.
+     *
+     * @param connector the JMX connector to close, may be {@code null}.
+     */
     public static void closeQuietly(final JMXConnector connector)
     {
         if (connector != null)

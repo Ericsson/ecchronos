@@ -30,11 +30,22 @@ import java.util.UUID;
 import com.datastax.oss.driver.api.core.data.UdtValue;
 import com.google.common.collect.ImmutableSet;
 
+/**
+ * Represents an ongoing on-demand repair job, tracking its progress across token ranges.
+ */
 public final class OngoingJob
 {
+    /**
+     * The possible statuses of an ongoing job.
+     */
     public enum Status
     {
-        started, finished, failed
+        /** The job has been started. */
+        started,
+        /** The job has finished successfully. */
+        finished,
+        /** The job has failed. */
+        failed
     }
 
     private final UUID myJobId;
@@ -71,36 +82,71 @@ public final class OngoingJob
         }
     }
 
+    /**
+     * Get the unique job identifier.
+     *
+     * @return the job UUID.
+     */
     public UUID getJobId()
     {
         return myJobId;
     }
 
+    /**
+     * Get the host identifier for this job.
+     *
+     * @return the host UUID.
+     */
     public UUID getHostId()
     {
         return myHostId;
     }
 
+    /**
+     * Get the current status of this job.
+     *
+     * @return the job status.
+     */
     public Status getStatus()
     {
         return myStatus;
     }
 
+    /**
+     * Get the time when this job was completed.
+     *
+     * @return the completion time in milliseconds since epoch, or -1 if not completed.
+     */
     public long getCompletedTime()
     {
         return myCompletedTime;
     }
 
+    /**
+     * Get the table reference for this job.
+     *
+     * @return the table reference.
+     */
     public TableReference getTableReference()
     {
         return myTableReference;
     }
 
+    /**
+     * Get the repair type for this job.
+     *
+     * @return the repair type.
+     */
     public RepairType getRepairType()
     {
         return myRepairType;
     }
 
+    /**
+     * Get the set of token ranges that have been repaired.
+     *
+     * @return set of repaired token ranges.
+     */
     public Set<LongTokenRange> getRepairedTokens()
     {
         Set<LongTokenRange> repairedLongTokenRanges = new HashSet<>();
@@ -109,17 +155,32 @@ public final class OngoingJob
         return repairedLongTokenRanges;
     }
 
+    /**
+     * Mark the given token ranges as repaired and persist the update.
+     *
+     * @param ranges the set of token ranges that have been repaired.
+     */
     public void finishRanges(final Set<LongTokenRange> ranges)
     {
         ranges.forEach(t -> myRepairedTokens.add(myOnDemandStatus.createUDTTokenRangeValue(t.start, t.end)));
         myOnDemandStatus.updateJob(myHostId, myJobId, myRepairedTokens);
     }
 
+    /**
+     * Get the token range to replica mapping for this job.
+     *
+     * @return map of token ranges to their replica nodes.
+     */
     public Map<LongTokenRange, ImmutableSet<DriverNode>> getTokens()
     {
         return myTokens;
     }
 
+    /**
+     * Check if the cluster topology has changed since this job was created.
+     *
+     * @return true if the topology has changed, false otherwise.
+     */
     public boolean hasTopologyChanged()
     {
         return !myTokens.equals(myReplicationState.getTokenRangeToReplicas(myTableReference, myCurrentNode))
@@ -128,6 +189,11 @@ public final class OngoingJob
                                 && myTokenHash != myTokens.hashCode()));
     }
 
+    /**
+     * Start a cluster-wide repair job by distributing token ranges across all nodes.
+     *
+     * @param repairType the type of repair to perform.
+     */
     public void startClusterWideJob(final RepairType repairType)
     {
         Map<LongTokenRange, ImmutableSet<DriverNode>> allTokenRanges =
@@ -226,16 +292,25 @@ public final class OngoingJob
         }
     }
 
+    /**
+     * Mark this job as finished.
+     */
     public void finishJob()
     {
         myOnDemandStatus.finishJob(myJobId, myHostId);
     }
 
+    /**
+     * Mark this job as failed.
+     */
     public void failJob()
     {
         myOnDemandStatus.failJob(myJobId, myHostId);
     }
 
+    /**
+     * Builder for constructing {@link OngoingJob} instances.
+     */
     public static class Builder
     {
         private UUID myJobId = null;
@@ -257,6 +332,7 @@ public final class OngoingJob
          * @param theRepairedTokens Repaired tokens.
          * @param theStatus Status.
          * @param theCompletedTime Completion time.
+         * @param repairType The repair type.
          * @return The builder
          */
         public Builder withOngoingJobInfo(final UUID theJobId,

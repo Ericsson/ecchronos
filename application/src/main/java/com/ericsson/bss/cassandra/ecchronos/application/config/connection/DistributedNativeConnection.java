@@ -33,6 +33,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+/**
+ * Configuration class for distributed native CQL connections.
+ * Extends {@link Connection} to provide native connection-specific settings
+ * including contact points, datacenter/rack/host awareness, timeouts, and retry policies.
+ */
 public class DistributedNativeConnection extends Connection<DistributedNativeConnectionProvider>
 {
     private Interval myConnectionDelay = new Interval();
@@ -47,6 +52,9 @@ public class DistributedNativeConnection extends Connection<DistributedNativeCon
     private String myInstanceName;
     private RetryPolicyConfig.RetrySchedule myRetrySchedule = new RetryPolicyConfig.RetrySchedule();
 
+    /**
+     * Default constructor. Sets the provider to {@link AgentNativeConnectionProvider}.
+     */
     public DistributedNativeConnection()
     {
         try
@@ -63,7 +71,7 @@ public class DistributedNativeConnection extends Connection<DistributedNativeCon
      * Sets the connectionDelay used to specify the time until the next connection.
      *
      * @param connectionDelay
-     *         the local datacenter to set.
+     *         the connection delay interval to set.
      */
     @JsonProperty("connectionDelay")
     public void setConnectionDelay(final Interval connectionDelay)
@@ -81,12 +89,23 @@ public class DistributedNativeConnection extends Connection<DistributedNativeCon
         return myConnectionDelay;
     }
 
+    /**
+     * Gets the connection timeout configuration.
+     *
+     * @return the timeout configuration.
+     */
     @JsonProperty("timeout")
     public final Timeout getTimeout()
     {
         return myTimeout;
     }
 
+    /**
+     * Sets the connection timeout configuration.
+     *
+     * @param timeout
+     *         the timeout configuration to set.
+     */
     @JsonProperty("timeout")
     public final void setTimeout(final Timeout timeout)
     {
@@ -116,6 +135,13 @@ public class DistributedNativeConnection extends Connection<DistributedNativeCon
         myCqlRetryPolicy = cqlRetryPolicyConfig;
     }
 
+    /**
+     * Sets remote routing. This method is deprecated and is a no-op.
+     *
+     * @param remoteRouting
+     *         the remote routing flag (ignored).
+     * @deprecated remote routing configuration is no longer supported.
+     */
     @Deprecated
     @JsonProperty("remoteRouting")
     public void setRemoteRouting(final boolean remoteRouting)
@@ -313,12 +339,23 @@ public class DistributedNativeConnection extends Connection<DistributedNativeCon
         return myHostAware;
     }
 
+    /**
+     * Sets the reload schedule configuration for retrying failed connections.
+     *
+     * @param retrySchedule
+     *         the retry schedule configuration to set.
+     */
     @JsonProperty("reloadSchedule")
     public final void setReloadSchedule(final RetryPolicyConfig.RetrySchedule retrySchedule)
     {
         myRetrySchedule = retrySchedule;
     }
 
+    /**
+     * Gets the reload schedule configuration for retrying failed connections.
+     *
+     * @return the retry schedule configuration.
+     */
     @JsonProperty("reloadSchedule")
     public final RetryPolicyConfig.RetrySchedule getReloadSchedule()
     {
@@ -660,22 +697,44 @@ public class DistributedNativeConnection extends Connection<DistributedNativeCon
         }
     }
 
+    /**
+     * Configuration for connection timeout settings.
+     */
     public static class Timeout
     {
         private long myTime = 0;
         private TimeUnit myTimeUnit = TimeUnit.MILLISECONDS;
 
+        /**
+         * Gets the connection timeout converted to the specified time unit.
+         *
+         * @param timeUnit
+         *         the time unit to convert the timeout to.
+         * @return the connection timeout in the specified time unit.
+         */
         public final long getConnectionTimeout(final TimeUnit timeUnit)
         {
             return timeUnit.convert(myTime, myTimeUnit);
         }
 
+        /**
+         * Sets the timeout duration value.
+         *
+         * @param time
+         *         the timeout duration.
+         */
         @JsonProperty("time")
         public final void setTime(final long time)
         {
             myTime = time;
         }
 
+        /**
+         * Sets the time unit for the timeout duration.
+         *
+         * @param timeUnit
+         *         the time unit as a string (e.g., "MILLISECONDS", "SECONDS").
+         */
         @JsonProperty("unit")
         public final void setTimeUnit(final String timeUnit)
         {
@@ -684,7 +743,7 @@ public class DistributedNativeConnection extends Connection<DistributedNativeCon
     }
 
     /**
-     * @return Class<?>[]
+     * {@inheritDoc}
      */
     @Override
     protected Class<?>[] expectedConstructor()

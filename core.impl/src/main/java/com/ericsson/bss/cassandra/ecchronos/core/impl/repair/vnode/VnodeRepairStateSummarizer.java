@@ -128,6 +128,12 @@ public final class VnodeRepairStateSummarizer
         return result;
     }
 
+    /**
+     * Performs the summarization of the sub-range repair states into merged vnode repair states.
+     * Overlapping ranges are split, and adjacent ranges that satisfy the merge strategy are merged.
+     *
+     * @return the summarized list of vnode repair states.
+     */
     public List<VnodeRepairState> summarize()
     {
         splitOverlapping();
@@ -227,6 +233,13 @@ public final class VnodeRepairStateSummarizer
      */
     public interface MergeStrategy
     {
+        /**
+         * Determines whether two adjacent normalized ranges should be merged into one.
+         *
+         * @param range1 the first normalized range.
+         * @param range2 the second normalized range.
+         * @return {@code true} if the two ranges should be merged, {@code false} otherwise.
+         */
         boolean shouldMerge(NormalizedRange range1, NormalizedRange range2);
     }
 }

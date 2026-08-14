@@ -20,6 +20,9 @@ import io.micrometer.core.instrument.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Utility class for logging node-level repair metrics retrieved from the meter registry.
+ */
 public final class StatusLogger
 {
     private static final Logger LOG = LoggerFactory.getLogger(StatusLogger.class);
@@ -33,6 +36,11 @@ public final class StatusLogger
         throw new AssertionError("Utility classes should not be instantiated");
     }
 
+    /**
+     * Logs repair-related metrics from the provided meter registry at debug level.
+     *
+     * @param myMeterRegistry the meter registry to retrieve metrics from.
+     */
     public static void log(final MeterRegistry myMeterRegistry)
     {
         Timer failedRepairSessions = myMeterRegistry.find(NODE_REPAIR_SESSIONS)

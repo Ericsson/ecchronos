@@ -22,6 +22,11 @@ import java.util.Map;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.DistributedNativeConnection;
 
+/**
+ * Helper class for resolving connection-related configurations into their runtime representations.
+ * Provides methods to convert configuration objects for contact points, datacenters, racks, and hosts
+ * into lists suitable for building distributed native connections.
+ */
 public class MountConnectionHelper
 {
     /**

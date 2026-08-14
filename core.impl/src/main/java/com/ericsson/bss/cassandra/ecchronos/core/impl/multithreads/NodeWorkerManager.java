@@ -38,6 +38,10 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+/**
+ * Manages a pool of {@link NodeWorker} instances, one per Cassandra node.
+ * Handles adding/removing nodes dynamically and broadcasting repair events to all workers.
+ */
 public class NodeWorkerManager
 {
     private static final Logger LOG = LoggerFactory.getLogger(NodeWorkerManager.class);
@@ -51,6 +55,11 @@ public class NodeWorkerManager
     private final Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
     private final Object myLock = new Object();
 
+    /**
+     * Constructs a NodeWorkerManager using the provided builder configuration.
+     *
+     * @param builder the builder containing configuration for the manager.
+     */
     protected NodeWorkerManager(final Builder builder)
     {
         myNativeConnectionProvider = builder.myNativeConnectionProvider;
@@ -71,7 +80,8 @@ public class NodeWorkerManager
 
     /**
      * Creates a NodeWorker and adds it to the ThreadPool.
-     * @param node
+     *
+     * @param node the Cassandra node to create a worker for.
      */
     protected void addNewNodeToThreadPool(final Node node)
     {
@@ -122,6 +132,11 @@ public class NodeWorkerManager
         return events;
     }
 
+    /**
+     * Adds a node to the worker pool if it is not already present.
+     *
+     * @param node the Cassandra node to add.
+     */
     public final synchronized void addNode(final Node node)
     {
         LOG.debug("addNode Node {}", node.getHostId());
@@ -139,6 +154,11 @@ public class NodeWorkerManager
         }
     }
 
+    /**
+     * Removes a node from the worker pool and deschedules all its jobs.
+     *
+     * @param node the Cassandra node to remove.
+     */
     public final synchronized void removeNode(final Node node)
     {
         synchronized (myLock)
@@ -156,18 +176,31 @@ public class NodeWorkerManager
         }
     }
 
+    /**
+     * Broadcasts a repair event to all active node workers.
+     *
+     * @param event the repair event to broadcast.
+     */
     public final void broadcastEvent(final RepairEvent event)
     {
         myWorkers.values().parallelStream()
                 .forEach(nodeWorker -> nodeWorker.submitEvent(event));
     }
 
+    /**
+     * Shuts down the worker manager and its thread pool.
+     */
     public final void shutdown()
     {
         myWorkers.clear();
         myThreadPool.shutdown();
     }
 
+    /**
+     * Gets the collection of active node workers. Visible for testing.
+     *
+     * @return the collection of node workers.
+     */
     @VisibleForTesting
     public final Collection<NodeWorker> getWorkers()
     {
@@ -183,41 +216,79 @@ public class NodeWorkerManager
         return new Builder();
     }
 
+    /**
+     * Gets the map of node workers keyed by node UUID.
+     *
+     * @return the workers map.
+     */
     public final Map<UUID, NodeWorker> getMyWorkers()
     {
         return myWorkers;
     }
 
+    /**
+     * Gets the thread pool task executor used by the manager.
+     *
+     * @return the thread pool task executor.
+     */
     public final ThreadPoolTaskExecutor getMyThreadPool()
     {
         return myThreadPool;
     }
 
+    /**
+     * Gets the distributed native connection provider.
+     *
+     * @return the native connection provider.
+     */
     public final DistributedNativeConnectionProvider getMyNativeConnectionProvider()
     {
         return myNativeConnectionProvider;
     }
 
+    /**
+     * Gets the replicated table provider.
+     *
+     * @return the replicated table provider.
+     */
     public final ReplicatedTableProvider getMyReplicatedTableProvider()
     {
         return myReplicatedTableProvider;
     }
 
+    /**
+     * Gets the repair scheduler.
+     *
+     * @return the repair scheduler.
+     */
     public final RepairScheduler getMyRepairScheduler()
     {
         return myRepairScheduler;
     }
 
+    /**
+     * Gets the table reference factory.
+     *
+     * @return the table reference factory.
+     */
     public final TableReferenceFactory getMyTableReferenceFactory()
     {
         return myTableReferenceFactory;
     }
 
+    /**
+     * Gets the repair configuration function.
+     *
+     * @return the repair configuration function.
+     */
     public final Function<TableReference, Set<RepairConfiguration>> getMyRepairConfigurationFunction()
     {
         return myRepairConfigurationFunction;
     }
 
+    /**
+     * Builder for constructing {@link NodeWorkerManager} instances.
+     */
     public static class Builder
     {
         private DistributedNativeConnectionProvider myNativeConnectionProvider;

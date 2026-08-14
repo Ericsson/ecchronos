@@ -28,41 +28,81 @@ public final class ClientRegisterResponse
     private int myStatus;
     private long myTimestamp;
 
+    /**
+     * Gets the request details of this response.
+     *
+     * @return the request object.
+     */
     public Request getRequest()
     {
         return myRequest;
     }
 
+    /**
+     * Sets the request details of this response.
+     *
+     * @param request the request object to set.
+     */
     public void setRequest(final Request request)
     {
         myRequest = request;
     }
 
+    /**
+     * Gets the value containing backend and registration details.
+     *
+     * @return the value object.
+     */
     public Value getValue()
     {
         return myValue;
     }
 
+    /**
+     * Sets the value containing backend and registration details.
+     *
+     * @param value the value object to set.
+     */
     public void setValue(final Value value)
     {
         myValue = value;
     }
 
+    /**
+     * Gets the HTTP status code of the response.
+     *
+     * @return the status code.
+     */
     public int getStatus()
     {
         return myStatus;
     }
 
+    /**
+     * Sets the HTTP status code of the response.
+     *
+     * @param status the status code to set.
+     */
     public void setStatus(final int status)
     {
         myStatus = status;
     }
 
+    /**
+     * Gets the timestamp of the response.
+     *
+     * @return the timestamp in epoch seconds.
+     */
     public long getTimestamp()
     {
         return myTimestamp;
     }
 
+    /**
+     * Sets the timestamp of the response.
+     *
+     * @param timestamp the timestamp to set in epoch seconds.
+     */
     public void setTimestamp(final long timestamp)
     {
         myTimestamp = timestamp;
@@ -76,26 +116,49 @@ public final class ClientRegisterResponse
                 + ", timestamp=" + myTimestamp + '}';
     }
 
+    /**
+     * Represents the request part of a Jolokia client register response.
+     */
     public static final class Request
     {
         private String myType;
         private String myCommand;
 
+        /**
+         * Gets the request type.
+         *
+         * @return the type string.
+         */
         public String getType()
         {
             return myType;
         }
 
+        /**
+         * Sets the request type.
+         *
+         * @param type the type string to set.
+         */
         public void setType(final String type)
         {
             myType = type;
         }
 
+        /**
+         * Gets the request command.
+         *
+         * @return the command string.
+         */
         public String getCommand()
         {
             return myCommand;
         }
 
+        /**
+         * Sets the request command.
+         *
+         * @param command the command string to set.
+         */
         public void setCommand(final String command)
         {
             myCommand = command;
@@ -108,26 +171,49 @@ public final class ClientRegisterResponse
         }
     }
 
+    /**
+     * Represents the value part of a Jolokia client register response, containing backend and ID information.
+     */
     public static final class Value
     {
         private Backend myBackend;
         private String myId;
 
+        /**
+         * Gets the backend configuration.
+         *
+         * @return the backend object.
+         */
         public Backend getBackend()
         {
             return myBackend;
         }
 
+        /**
+         * Sets the backend configuration.
+         *
+         * @param backend the backend object to set.
+         */
         public void setBackend(final Backend backend)
         {
             myBackend = backend;
         }
 
+        /**
+         * Gets the client registration ID.
+         *
+         * @return the registration ID string.
+         */
         public String getId()
         {
             return myId;
         }
 
+        /**
+         * Sets the client registration ID.
+         *
+         * @param id the registration ID string to set.
+         */
         public void setId(final String id)
         {
             myId = id;
@@ -141,6 +227,9 @@ public final class ClientRegisterResponse
         }
     }
 
+    /**
+     * Represents the backend configuration of a Jolokia notification registration.
+     */
     public static final class Backend
     {
         private Pull myPull;
@@ -148,21 +237,41 @@ public final class ClientRegisterResponse
         @JsonProperty("sse")
         private Map<String, String> mySse;
 
+        /**
+         * Gets the pull-based notification configuration.
+         *
+         * @return the pull configuration.
+         */
         public Pull getPull()
         {
             return myPull;
         }
 
+        /**
+         * Sets the pull-based notification configuration.
+         *
+         * @param pull the pull configuration to set.
+         */
         public void setPull(final Pull pull)
         {
             myPull = pull;
         }
 
+        /**
+         * Gets the SSE (Server-Sent Events) configuration map.
+         *
+         * @return the SSE configuration map.
+         */
         public Map<String, String> getSse()
         {
             return mySse;
         }
 
+        /**
+         * Sets the SSE (Server-Sent Events) configuration map.
+         *
+         * @param sse the SSE configuration map to set.
+         */
         public void setSse(final Map<String, String> sse)
         {
             mySse = sse;
@@ -175,26 +284,49 @@ public final class ClientRegisterResponse
         }
     }
 
+    /**
+     * Represents the pull-based notification backend configuration.
+     */
     public static final class Pull
     {
         private int myMaxEntries;
         private String myStore;
 
+        /**
+         * Gets the maximum number of notification entries that can be stored.
+         *
+         * @return the maximum entries count.
+         */
         public int getMaxEntries()
         {
             return myMaxEntries;
         }
 
+        /**
+         * Sets the maximum number of notification entries that can be stored.
+         *
+         * @param maxEntries the maximum entries count to set.
+         */
         public void setMaxEntries(final int maxEntries)
         {
             myMaxEntries = maxEntries;
         }
 
+        /**
+         * Gets the notification store type.
+         *
+         * @return the store type string.
+         */
         public String getStore()
         {
             return myStore;
         }
 
+        /**
+         * Sets the notification store type.
+         *
+         * @param store the store type string to set.
+         */
         public void setStore(final String store)
         {
             myStore = store;

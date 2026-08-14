@@ -21,13 +21,38 @@ import java.util.UUID;
  */
 public interface TableReference
 {
+    /**
+     * Gets the unique identifier of this table.
+     *
+     * @return the table UUID.
+     */
     UUID getId();
 
+    /**
+     * Gets the table name.
+     *
+     * @return the table name.
+     */
     String getTable();
 
+    /**
+     * Gets the keyspace name this table belongs to.
+     *
+     * @return the keyspace name.
+     */
     String getKeyspace();
 
+    /**
+     * Gets the gc_grace_seconds setting for this table.
+     *
+     * @return the gc_grace_seconds value.
+     */
     int getGcGraceSeconds();
 
+    /**
+     * Checks whether this table uses TimeWindowCompactionStrategy (TWCS).
+     *
+     * @return true if the table uses TWCS, false otherwise.
+     */
     boolean getTwcs();
 }

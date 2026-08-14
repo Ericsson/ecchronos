@@ -345,6 +345,9 @@ public class TableRepairJob extends ScheduledRepairJob
             myTimeBasedRunPolicy);
     }
 
+    /**
+     * Builder class for constructing {@link TableRepairJob} instances.
+     */
     @SuppressWarnings("VisibilityModifier")
     public static class Builder
     {

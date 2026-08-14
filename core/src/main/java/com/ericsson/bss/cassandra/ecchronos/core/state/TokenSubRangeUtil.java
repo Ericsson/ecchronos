@@ -34,6 +34,11 @@ public class TokenSubRangeUtil
     private final BigInteger tokenStart;
     private final BigInteger totalRangeSize;
 
+    /**
+     * Constructs a TokenSubRangeUtil for the given token range.
+     *
+     * @param aTokenRange the token range to be split into sub-ranges.
+     */
     public TokenSubRangeUtil(final LongTokenRange aTokenRange)
     {
         this.tokenRange = aTokenRange;

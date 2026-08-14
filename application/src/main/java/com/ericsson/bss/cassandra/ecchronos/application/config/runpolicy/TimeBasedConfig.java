@@ -16,16 +16,30 @@ package com.ericsson.bss.cassandra.ecchronos.application.config.runpolicy;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/** Configuration for time-based run policy settings. */
 public class TimeBasedConfig
 {
     private String myKeyspaceName = "ecchronos";
 
+    /** Default constructor. */
+    public TimeBasedConfig()
+    {
+    }
+
+    /**
+     * Returns the keyspace name.
+     * @return the keyspace name
+     */
     @JsonProperty("keyspace")
     public final String getKeyspaceName()
     {
         return myKeyspaceName;
     }
 
+    /**
+     * Sets the keyspace name.
+     * @param keyspaceName the keyspace name
+     */
     @JsonProperty("keyspace")
     public final void setKeyspaceName(final String keyspaceName)
     {

@@ -28,6 +28,10 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Implementation of {@link DistributedNativeConnectionProvider} that manages a CQL session
+ * and a filtered set of Cassandra nodes based on the configured connection type.
+ */
 public class DistributedNativeConnectionProviderImpl implements DistributedNativeConnectionProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(DistributedNativeConnectionProviderImpl.class);
@@ -44,6 +48,10 @@ public class DistributedNativeConnectionProviderImpl implements DistributedNativ
      *         the {@link CqlSession} used for communication with the Cassandra cluster.
      * @param nodesMap
      *         the map of {@link Node} instances representing the nodes in the cluster.
+     * @param distributedNativeBuilder
+     *         the builder used to validate nodes against the configured connection type.
+     * @param connectionType
+     *         the type of connection being used by this provider.
      */
     public DistributedNativeConnectionProviderImpl(
                                                    final CqlSession session,
