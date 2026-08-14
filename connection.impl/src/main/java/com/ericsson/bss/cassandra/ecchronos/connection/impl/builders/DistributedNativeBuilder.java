@@ -45,6 +45,14 @@ public class DistributedNativeBuilder
 {
     private static final Logger LOG = LoggerFactory.getLogger(DistributedNativeBuilder.class);
 
+    /**
+     * Default constructor.
+     */
+    public DistributedNativeBuilder()
+    {
+        // Default constructor
+    }
+
     private ConnectionType myType = ConnectionType.datacenterAware;
     private List<InetSocketAddress> myInitialContactPoints = new ArrayList<>();
     private String myLocalDatacenter = "datacenter1";

@@ -72,6 +72,14 @@ public interface RepairHistory
         private static final RepairSession NO_OP = new NoOpRepairSession();
 
         /**
+         * Default constructor.
+         */
+        NoOpRepairHistory()
+        {
+            // Default constructor
+        }
+
+        /**
          * New session.
          */
         @Override
@@ -91,6 +99,14 @@ public interface RepairHistory
      */
     class NoOpRepairSession implements RepairSession
     {
+        /**
+         * Default constructor.
+         */
+        NoOpRepairSession()
+        {
+            // Default constructor
+        }
+
         /**
          * Start.
          */

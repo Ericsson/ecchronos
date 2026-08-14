@@ -31,6 +31,14 @@ public class LoggingFaultReporter implements RepairFaultReporter
     private final Map<Integer, FaultCode> alarms = new HashMap<>();
 
     /**
+     * Default constructor.
+     */
+    public LoggingFaultReporter()
+    {
+        // Default constructor
+    }
+
+    /**
      * Returns the map of currently active alarms, keyed by data hash code.
      *
      * @return the map of active alarms.

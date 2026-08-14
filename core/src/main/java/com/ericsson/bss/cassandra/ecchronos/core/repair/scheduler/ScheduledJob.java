@@ -209,6 +209,8 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     }
 
     /**
+     * Gets the offset for the job.
+     *
      * @return The offset for the job.
      */
     public long getRunOffset()
@@ -217,6 +219,8 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     }
 
     /**
+     * Gets the unique identifier for this job.
+     *
      * @return unique identifier for Job
      */
     public final UUID getJobId()
@@ -225,6 +229,8 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     }
 
     /**
+     * Gets the unique identifier for the node running the job.
+     *
      * @return unique identifier for the node running the job.
      */
     public final UUID getNodeId()
@@ -364,6 +370,14 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
      */
     public static class ConfigurationBuilder
     {
+        /**
+         * Default constructor.
+         */
+        public ConfigurationBuilder()
+        {
+            // Default constructor
+        }
+
         private Priority priority = Priority.LOW;
         private long runIntervalInMs = TimeUnit.DAYS.toMillis(1);
         private long backoffInMs = TimeUnit.MINUTES.toMillis(DEFAULT_BACKOFF_IN_MINUTES);

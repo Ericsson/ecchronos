@@ -145,6 +145,14 @@ public final class RepairStateSnapshot
      */
     public static class Builder
     {
+        /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
         private Long myLastCompletedAt;
         private long myCreatedAt = System.currentTimeMillis();
         private ImmutableList<ReplicaRepairGroup> myReplicaRepairGroup;

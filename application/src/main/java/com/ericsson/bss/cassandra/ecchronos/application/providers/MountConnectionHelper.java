@@ -30,6 +30,14 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.connection.Distri
 public class MountConnectionHelper
 {
     /**
+     * Default constructor.
+     */
+    public MountConnectionHelper()
+    {
+        // Default constructor
+    }
+
+    /**
      * Resolves the initial contact points from the provided map of host configurations.
      *
      * @param contactPoints

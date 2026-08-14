@@ -29,6 +29,14 @@ public abstract class Connection<T>
     private Class<? extends CertificateHandler> myCertificateHandlerClass;
 
     /**
+     * Default constructor.
+     */
+    protected Connection()
+    {
+        // Default constructor
+    }
+
+    /**
      * Returns the provider class.
      * @return the provider class
      */

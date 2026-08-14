@@ -23,6 +23,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class JolokiaConfig
 {
     private static final int DEFAULT_JOLOKIA_PORT = 8778;
+
+    /**
+     * Default constructor.
+     */
+    public JolokiaConfig()
+    {
+        // Default constructor
+    }
+
     private boolean myEnabled = false;
     private int myPort = DEFAULT_JOLOKIA_PORT;
     private boolean myUsePem = false;

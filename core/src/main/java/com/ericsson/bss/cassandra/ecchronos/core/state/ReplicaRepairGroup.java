@@ -22,6 +22,10 @@ import java.util.stream.Collectors;
 
 /**
  * A group of replicas and ranges that should be repaired together.
+ *
+ * @param replicas the set of replica nodes in this group
+ * @param vnodes the list of token ranges to repair
+ * @param lastCompletedAt the timestamp of the last completed repair
  */
 public record ReplicaRepairGroup(Set<DriverNode> replicas, List<LongTokenRange> vnodes,
     long lastCompletedAt) implements Iterable<LongTokenRange>

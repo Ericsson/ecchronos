@@ -26,6 +26,14 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
  */
 public class JolokiaCondition implements Condition
 {
+    /**
+     * Default constructor.
+     */
+    public JolokiaCondition()
+    {
+        // Default constructor
+    }
+
     @Override
     public final boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata)
     {

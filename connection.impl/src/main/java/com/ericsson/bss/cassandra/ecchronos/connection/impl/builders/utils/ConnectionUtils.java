@@ -186,6 +186,14 @@ public final class ConnectionUtils
      */
     public static final class Builder
     {
+        /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
         private Supplier<String[]> myCredentialsSupplier;
         private Supplier<Map<String, String>> myTLSSupplier;
         private boolean myReverseDNSResolution = false;

@@ -368,6 +368,14 @@ public final class EccNodesSync
      */
     public static class Builder
     {
+        /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
         private CqlSession mySession;
         private DistributedNativeConnectionProvider myNativeConnection;
         private String myEcchronosID;

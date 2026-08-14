@@ -204,6 +204,14 @@ public final class RepairHistoryData
      */
     public static final class Builder
     {
+        /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
         private UUID myTableId;
         private UUID myNodeId;
         private UUID myRepairId;

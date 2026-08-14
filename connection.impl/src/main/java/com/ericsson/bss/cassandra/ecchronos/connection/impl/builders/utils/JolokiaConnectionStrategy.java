@@ -188,6 +188,14 @@ public final class JolokiaConnectionStrategy implements JmxConnectionStrategy
      */
     public static final class Builder
     {
+        /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
         private ConnectionUtils myConnectionUtils;
         private int myPort = DEFAULT_JOLOKIA_PORT;
 

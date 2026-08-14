@@ -48,6 +48,15 @@ public class DistributedJmxBuilder
     private static final Logger LOG = LoggerFactory.getLogger(DistributedJmxBuilder.class);
 
     private static final int MAX_PARALLEL_CONNECTIONS = 10;
+
+    /**
+     * Default constructor.
+     */
+    public DistributedJmxBuilder()
+    {
+        // Default constructor
+    }
+
     private DistributedNativeConnectionProvider myNativeConnectionProvider;
     private final ConcurrentHashMap<UUID, JMXConnector> myJMXConnections = new ConcurrentHashMap<>();
     private EccNodesSync myEccNodesSync;

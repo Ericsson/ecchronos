@@ -48,6 +48,14 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
 {
     private static final Logger LOG = LoggerFactory.getLogger(TomcatWebServerCustomizer.class);
 
+    /**
+     * Default constructor.
+     */
+    public TomcatWebServerCustomizer()
+    {
+        // Default constructor
+    }
+
     private Http11NioProtocol metricsServerHttp11NioProtocol;
     private SSLHostConfig metricsSSLHostConfig;
     private Ssl metricsSsl;

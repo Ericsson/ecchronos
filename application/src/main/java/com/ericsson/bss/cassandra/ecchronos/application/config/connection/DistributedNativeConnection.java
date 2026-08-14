@@ -706,6 +706,14 @@ public class DistributedNativeConnection extends Connection<DistributedNativeCon
         private TimeUnit myTimeUnit = TimeUnit.MILLISECONDS;
 
         /**
+         * Default constructor.
+         */
+        public Timeout()
+        {
+            // Default constructor
+        }
+
+        /**
          * Gets the connection timeout converted to the specified time unit.
          *
          * @param timeUnit
