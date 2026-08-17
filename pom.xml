@@ -142,8 +142,7 @@
         <mockito.core.version>5.23.0</mockito.core.version>
         <assertj.version>3.27.7</assertj.version>
         <junit.junit.version>4.13.2</junit.junit.version>
-        <junit.junit-vintage-engine.version>6.1.3</junit.junit-vintage-engine.version>
-        <junit.jupiter.junit-jupiter.version>6.1.3</junit.jupiter.junit-jupiter.version>
+        <junit.platform.version>6.1.3</junit.junit-vintage-engine.version>
         <org.apache.commons.io.version>2.22.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.28.0</org.apache.commons.commons-compress.version>
         <equalsverifier.version>4.5</equalsverifier.version>
@@ -559,14 +558,14 @@
             <dependency>
                 <groupId>org.junit.vintage</groupId>
                 <artifactId>junit-vintage-engine</artifactId>
-                <version>${junit.junit-vintage-engine.version}</version>
+                <version>${junit.platform.version}</version>
                 <scope>test</scope>
             </dependency>
 
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter</artifactId>
-                <version>${junit.jupiter.junit-jupiter.version}</version>
+                <version>${junit.platform.version}</version>
                 <scope>test</scope>
             </dependency>
 
