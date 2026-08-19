@@ -813,6 +813,7 @@ limitations under the License.
                             <exclude>**/*.old</exclude>
                             <exclude>**/docker/*.properties</exclude>
                             <exclude>**/docker/*.yml</exclude>
+			    <exclude>**/*.csv</exclude>
                             <exclude>**/.venv/**</exclude>
                         </excludes>
                     </configuration>
