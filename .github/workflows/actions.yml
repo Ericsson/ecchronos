@@ -39,35 +39,38 @@ jobs:
           - name: "Standalone integration 5.0"
             goals: 'verify -P standalone-integration-tests -Dit.cassandra.version=5.0 -DskipUTs'
             artifacts_dir: "standalone-integration/target"
+          - name: "Standalone integration 6.0"
+            goals: 'verify -P standalone-integration-tests -Dit.cassandra.version=6.0 -DskipUTs'
+            artifacts_dir: "standalone-integration/target"
           - name: "Python integration"
-            goals: 'verify -P python-integration-tests -Dit.cassandra.version=5.0 -DskipUTs'
+            goals: 'verify -P python-integration-tests -Dit.cassandra.version=6.0 -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Topology integration"
-            goals: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -DskipUTs'
+            goals: 'verify -P topology-integration-tests -Dit.cassandra.version=6.0 -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "DatacenterAware Multi-Agent integration tests"
-            goals: 'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=5.0 -DskipUTs'
+            goals: 'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=6.0 -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
-          - name: "Jolokia Standalone integration 5.0"
-            goals: 'verify -P standalone-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -DskipUTs'
+          - name: "Jolokia Standalone integration"
+            goals: 'verify -P standalone-integration-tests -Dit.cassandra.version=6.0 -Dit.jolokia.enabled=true -DskipUTs'
             artifacts_dir: "standalone-integration/target"
           - name: "Jolokia Python integration"
-            goals: 'verify -P python-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -DskipUTs'
+            goals: 'verify -P python-integration-tests -Dit.cassandra.version=6.0 -Dit.jolokia.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Jolokia Python integration - PEM"
-            goals: 'verify -P python-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
+            goals: 'verify -P python-integration-tests -Dit.cassandra.version=6.0 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Jolokia Topology integration"
-            goals: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -DskipUTs'
+            goals: 'verify -P topology-integration-tests -Dit.cassandra.version=6.0 -Dit.jolokia.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Jolokia Topology integration - PEM"
-            goals: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
+            goals: 'verify -P topology-integration-tests -Dit.cassandra.version=6.0 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Jolokia DatacenterAware Multi-Agent integration tests"
-            goals: 'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -DskipUTs'
+            goals: 'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=6.0 -Dit.jolokia.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Jolokia DatacenterAware Multi-Agent integration tests - PEM"
-            goals: 'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
+            goals: 'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=6.0 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
 
     steps:
