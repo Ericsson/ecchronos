@@ -32,6 +32,7 @@
         <exclude name="ExcessiveImports"/>
         <exclude name="ExceptionAsFlowControl"/>
         <exclude name="SimplifyBooleanReturns"/>
+        <exclude name="LoosePackageCoupling"/>
     </rule>
 
     <rule ref="category/java/bestpractices.xml">

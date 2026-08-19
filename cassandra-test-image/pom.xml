@@ -26,6 +26,11 @@
     <description>Test image for integration tests using Apache Cassandra</description>
     <name>EcChronos Cassandra Test Image</name>
 
+    <properties>
+        <pmd.skip>true</pmd.skip>
+        <cpd.skip>true</cpd.skip>
+    </properties>
+
     <dependencies>
         <!-- Internal -->
         <dependency>

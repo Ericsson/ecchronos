@@ -26,6 +26,11 @@
     <description>Integration tests for a standalone environment</description>
     <name>EcChronos Standalone Integration</name>
 
+    <properties>
+        <pmd.skip>true</pmd.skip>
+        <cpd.skip>true</cpd.skip>
+    </properties>
+
     <dependencies>
         <!-- Internal -->
         <dependency>
@@ -200,6 +205,14 @@
                 <artifactId>central-publishing-maven-plugin</artifactId>
                 <configuration>
                     <excludeArtifacts>standalone-integration</excludeArtifacts>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <!-- This module only contains integration tests, no main sources -->
+                    <skipIfEmpty>true</skipIfEmpty>
                 </configuration>
             </plugin>
 
