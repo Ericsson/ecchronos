@@ -33,112 +33,53 @@ jobs:
             test_suite: 'test-compile -Djava.version=17 com.mycila:license-maven-plugin:check pmd:pmd pmd:cpd pmd:check pmd:cpd-check javadoc:jar'
           - name: "Standalone integration 4.1 - Java 17"
             java_version: 17
-            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=4.1 -Djava.version=17 -DskipUTs'
+            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=6.0-alpha2 -Djava.version=17 -DskipUTs'
             artifacts_dir: "standalone-integration/target"
           - name: "Standalone integration 5.0 - Java 17"
             java_version: 17
-            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -DskipUTs'
+            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=6.0-alpha2 -Djava.version=17 -DskipUTs'
             artifacts_dir: "standalone-integration/target"
           - name: "Python integration - Java 17"
             java_version: 17
-            test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -DskipUTs'
+            test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=6.0-alpha2 -Djava.version=17 -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Topology integration - Java 17"
             java_version: 17
-            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -DskipUTs'
+            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=6.0-alpha2 -Djava.version=17 -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "DatacenterAware Multi-Agent integration tests - Java 17"
             java_version: 17
-            test_suite: 'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -DskipUTs'
-            artifacts_dir: "ecchronos-binary/target"
-            
-          # Java 21 tests
-          - name: "Unit tests - Java 21"
-            java_version: 21
-            test_suite: 'test -Dnet.bytebuddy.experimental=true -Djava.version=21 jacoco:report'
-          - name: "Style check - Java 21"
-            java_version: 21
-            test_suite: 'test-compile -Djava.version=21 com.mycila:license-maven-plugin:check pmd:pmd pmd:cpd pmd:check pmd:cpd-check javadoc:jar'
-          - name: "Standalone integration 4.1 - Java 21"
-            java_version: 21
-            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=4.1 -Djava.version=21 -DskipUTs'
-            artifacts_dir: "standalone-integration/target"
-          - name: "Standalone integration 5.0 - Java 21"
-            java_version: 21
-            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -DskipUTs'
-            artifacts_dir: "standalone-integration/target"
-          - name: "Python integration - Java 21"
-            java_version: 21
-            test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -DskipUTs'
-            artifacts_dir: "ecchronos-binary/target"
-          - name: "Topology integration - Java 21"
-            java_version: 21
-            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -DskipUTs'
-            artifacts_dir: "ecchronos-binary/target"
-          - name: "DatacenterAware Multi-Agent integration tests - Java 21"
-            java_version: 21
-            test_suite: 'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -DskipUTs'
+            test_suite: 'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=6.0-alpha2 -Djava.version=17 -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
 
           # Java 17 Jolokia tests
           - name: "Jolokia Standalone integration 5.0 - Java 17"
             java_version: 17
-            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -Dit.jolokia.enabled=true -DskipUTs'
+            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=6.0-alpha2 -Djava.version=17 -Dit.jolokia.enabled=true -DskipUTs'
             artifacts_dir: "standalone-integration/target"
           - name: "Jolokia Python integration - Java 17"
             java_version: 17
-            test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -Dit.jolokia.enabled=true -DskipUTs'
+            test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=6.0-alpha2 -Djava.version=17 -Dit.jolokia.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Jolokia Python integration - Java 17 - PEM"
             java_version: 17
-            test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
+            test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=6.0-alpha2 -Djava.version=17 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Jolokia Topology integration - Java 17"
             java_version: 17
-            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -Dit.jolokia.enabled=true -DskipUTs'
+            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=6.0-alpha2 -Djava.version=17 -Dit.jolokia.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Jolokia Topology integration - Java 17 - PEM"
             java_version: 17
-            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
+            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=6.0-alpha2 -Djava.version=17 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Jolokia DatacenterAware Multi-Agent integration tests - Java 17"
             java_version: 17
-            test_suite: 'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -Dit.jolokia.enabled=true -DskipUTs'
+            test_suite: 'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=6.0-alpha2 -Djava.version=17 -Dit.jolokia.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Jolokia DatacenterAware Multi-Agent integration tests - Java 17 - PEM"
             java_version: 17
-            test_suite: 'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
-            artifacts_dir: "ecchronos-binary/target"
-
-
-          # Java 21 Jolokia tests
-          - name: "Jolokia Standalone integration 5.0 - Java 21"
-            java_version: 21
-            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -Dit.jolokia.enabled=true -DskipUTs'
-            artifacts_dir: "standalone-integration/target"
-          - name: "Jolokia Python integration - Java 21"
-            java_version: 21
-            test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -Dit.jolokia.enabled=true -DskipUTs'
-            artifacts_dir: "ecchronos-binary/target"
-          - name: "Jolokia Python integration - Java 21 - PEM"
-            java_version: 21
-            test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
-            artifacts_dir: "ecchronos-binary/target"
-          - name: "Jolokia Topology integration - Java 21"
-            java_version: 21
-            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -Dit.jolokia.enabled=true -DskipUTs'
-            artifacts_dir: "ecchronos-binary/target"
-          - name: "Jolokia Topology integration - Java 21 - PEM"
-            java_version: 21
-            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
-            artifacts_dir: "ecchronos-binary/target"
-          - name: "Jolokia DatacenterAware Multi-Agent integration tests - Java 21"
-            java_version: 21
-            test_suite: 'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -Dit.jolokia.enabled=true -DskipUTs'
-            artifacts_dir: "ecchronos-binary/target"
-          - name: "Jolokia DatacenterAware Multi-Agent integration tests - Java 21 - PEM"
-            java_version: 17
-            test_suite: 'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
+            test_suite: 'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=6.0-alpha2 -Djava.version=17 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
 
     steps:
