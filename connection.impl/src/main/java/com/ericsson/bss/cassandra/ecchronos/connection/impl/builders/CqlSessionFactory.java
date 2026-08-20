@@ -44,7 +44,8 @@ public final class CqlSessionFactory
     private static final Logger LOG = LoggerFactory.getLogger(CqlSessionFactory.class);
 
     private static final List<String> SCHEMA_REFRESHED_KEYSPACES = ImmutableList.of("/.*/", "!system",
-            "!system_distributed", "!system_schema", "!system_traces", "!system_views", "!system_virtual_schema");
+            "!system_distributed", "!system_schema", "!system_traces", "!system_views", "!system_virtual_schema",
+            "!system_metrics");
 
     private static final List<String> SESSION_METRICS = Arrays.asList(DefaultSessionMetric.BYTES_RECEIVED.getPath(),
             DefaultSessionMetric.BYTES_SENT.getPath(), DefaultSessionMetric.CONNECTED_NODES.getPath(),
