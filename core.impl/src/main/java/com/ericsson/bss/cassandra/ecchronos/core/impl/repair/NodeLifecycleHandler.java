@@ -113,6 +113,10 @@ public class NodeLifecycleHandler
             NodeAddedAction callable = new NodeAddedAction(myEccNodesSync, myJmxConnectionProvider,
                     myAgentNativeConnectionProvider, node);
             myService.submit(callable);
+            if (myWorkerManager != null)
+            {
+                myWorkerManager.addNode(node);
+            }
             if (myScheduleManager != null)
             {
                 myScheduleManager.createScheduleFutureForNode(node.getHostId());
