@@ -150,6 +150,7 @@ public class NodeLifecycleHandler
             LOG.info("Node added {}", node.getHostId());
             LongTokenRange.clearCache();
             clearReplicaSetCache();
+            myAgentNativeConnectionProvider.addNode(node);
             NodeAddedAction callable = new NodeAddedAction(myEccNodesSync, myJmxConnectionProvider,
                     myAgentNativeConnectionProvider, node);
             myService.submit(callable);

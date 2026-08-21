@@ -79,7 +79,10 @@ public class NodeAddedAction implements Callable<Boolean>
             LOG.warn("Node {} JMX connection failed", myNode.getHostId());
             result = false;
         }
-        myDistributedNativeConnectionProvider.addNode(myNode);
+        if (!myDistributedNativeConnectionProvider.getNodes().containsKey(myNode.getHostId()))
+        {
+            myDistributedNativeConnectionProvider.addNode(myNode);
+        }
 
         return result;
     }

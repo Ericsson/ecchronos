@@ -127,7 +127,7 @@ public class TestNodeLifecycleHandler
 
         verify(mockExecutor).submit(any(Callable.class));
         verify(mockScheduleManager).createScheduleFutureForNode(nodeId);
-        verify(mockWorkerManager, never()).addNode(any());
+        verify(mockWorkerManager).addNode(mockNode);
     }
 
     @Test
