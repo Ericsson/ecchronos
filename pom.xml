@@ -128,7 +128,7 @@
         <caffeine.version>3.2.4</caffeine.version>
         <slf4j.version>2.0.18</slf4j.version>
         <logback.version>1.6.3</logback.version>
-        <com.fasterxml.jackson.version>2.22.1</com.fasterxml.jackson.version>
+        <com.fasterxml.jackson.version>2.22.2</com.fasterxml.jackson.version>
 
         <!-- Jackson -->
         <tools.jackson.core.version>3.2.2</tools.jackson.core.version>
