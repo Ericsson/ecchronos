@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.impl.jmx;
 
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.ClientRegisterResponse;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.NotificationListenerResponse;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.NotificationRegisterResponse;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
@@ -52,6 +53,8 @@ final class JolokiaHttpClient implements java.io.Closeable
     private static final int MAX_RETRIES = 3;
     private static final long INITIAL_RETRY_DELAY_IN_MS = 500;
     private static final int HTTP_EXECUTOR_POOL_SIZE = 8;
+    private static final int HTTP_OK = 200;
+    private static final int HTTP_MULTI_CHOICES = 300;
     private static final String CLIENT_ID_PROPERTY = "clientID";
     private static final String SS_OBJ_NAME = "org.apache.cassandra.db:type=StorageService";
     public static final String NO_BROADCAST_ADDRESS = "0.0.0.0"; //NOPMD AvoidUsingHardCodedIP
@@ -193,15 +196,16 @@ final class JolokiaHttpClient implements java.io.Closeable
         }
     }
 
-    public String checkForNotificationsWithRetry(final UUID nodeID, final String notificationID)
-            throws IOException, InterruptedException
+    public NotificationListenerResponse checkForNotificationsWithRetry(final UUID nodeID,
+            final String notificationID) throws IOException, InterruptedException
     {
         IOException lastException = null;
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++)
         {
             try
             {
-                return checkForNotifications(nodeID, notificationID);
+                String response = checkForNotifications(nodeID, notificationID);
+                return objectMapper.readValue(response, NotificationListenerResponse.class);
             }
             catch (IOException e)
             {
@@ -214,16 +218,35 @@ final class JolokiaHttpClient implements java.io.Closeable
                     Thread.sleep(delay);
                 }
             }
+            catch (JacksonException e)
+            {
+                lastException = new IOException("Failed to parse Jolokia notification response for node "
+                        + nodeID, e);
+                LOG.debug("Notification check attempt {}/{} failed to parse response for node {}",
+                        attempt, MAX_RETRIES, nodeID, e);
+                if (attempt < MAX_RETRIES)
+                {
+                    long delay = INITIAL_RETRY_DELAY_IN_MS * (1L << (attempt - 1));
+                    Thread.sleep(delay);
+                }
+            }
         }
         LOG.debug("All {} retries failed for node {}, attempting client re-registration", MAX_RETRIES, nodeID);
         try
         {
             registerClientId(nodeID);
-            return checkForNotifications(nodeID, notificationID);
+            String response = checkForNotifications(nodeID, notificationID);
+            return objectMapper.readValue(response, NotificationListenerResponse.class);
         }
         catch (IOException e)
         {
             LOG.warn("Re-registration attempt also failed for node {}", nodeID, e);
+        }
+        catch (JacksonException e)
+        {
+            LOG.warn("Re-registration succeeded but response parsing failed for node {}", nodeID, e);
+            lastException = new IOException("Failed to parse Jolokia notification response for node "
+                    + nodeID + " after re-registration", e);
         }
         throw lastException;
     }
@@ -248,7 +271,19 @@ final class JolokiaHttpClient implements java.io.Closeable
                 .build();
 
         HttpResponse<String> response = getHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-        return decodeHtmlEntities(response.body());
+        int statusCode = response.statusCode();
+        if (statusCode < HTTP_OK || statusCode >= HTTP_MULTI_CHOICES)
+        {
+            throw new IOException("Jolokia notification check for node " + nodeID
+                    + " returned HTTP status " + statusCode);
+        }
+        String body = response.body();
+        if (body == null || body.isBlank())
+        {
+            throw new IOException("Jolokia notification check for node " + nodeID
+                    + " returned empty response body (HTTP " + statusCode + ")");
+        }
+        return decodeHtmlEntities(body);
     }
 
     private String mountJolokiaBaseURL(final UUID nodeID) throws UnknownHostException

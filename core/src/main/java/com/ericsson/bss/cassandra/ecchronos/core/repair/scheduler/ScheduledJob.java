@@ -35,6 +35,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     protected volatile long myLastSuccessfulRun = -1L;
     private volatile long myNextRunTimeInMs = -1L;
     private volatile long myRunOffset = 0;
+    private transient volatile boolean myFailed = false;
     private final UUID myNodeID;
     private final UUID myJobID;
     private final TimeUnit myPriorityGranularity;
@@ -121,13 +122,24 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     }
 
     /**
+     * Mark this job as permanently failed.
+     * <p>
+     * Once marked, {@link #getState()} will return {@link State#FAILED}
+     * and the job will be descheduled by the queue on the next iteration.
+     */
+    public void markFailed()
+    {
+        myFailed = true;
+    }
+
+    /**
      * Check if this job is runnable now.
      *
      * @return True if able to run now.
      */
     public boolean runnable()
     {
-        return myNextRunTimeInMs <= System.currentTimeMillis() && getRealPriority() > -1;
+        return !myFailed && myNextRunTimeInMs <= System.currentTimeMillis() && getRealPriority() > -1;
     }
 
     /**
@@ -137,6 +149,10 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
      */
     public State getState()
     {
+        if (myFailed)
+        {
+            return State.FAILED;
+        }
         if (runnable())
         {
             return State.RUNNABLE;
