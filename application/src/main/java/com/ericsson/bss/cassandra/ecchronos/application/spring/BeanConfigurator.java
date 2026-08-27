@@ -33,6 +33,7 @@ import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ConfigurationException;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.sync.NodeStatus;
 import java.net.InetAddress;
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -329,7 +330,7 @@ public class BeanConfigurator
                     LOG.warn("Marking node {} as UNAVAILABLE after consecutive Jolokia notification failures",
                             nodeID);
                     eccNodesSync.updateNodeStatus(
-                            com.ericsson.bss.cassandra.ecchronos.utils.enums.sync.NodeStatus.UNAVAILABLE,
+                            NodeStatus.UNAVAILABLE,
                             node.getDatacenter(), nodeID);
                 }
             })

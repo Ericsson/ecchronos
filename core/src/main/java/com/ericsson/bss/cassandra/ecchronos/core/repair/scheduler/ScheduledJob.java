@@ -35,7 +35,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     protected volatile long myLastSuccessfulRun = -1L;
     private volatile long myNextRunTimeInMs = -1L;
     private volatile long myRunOffset = 0;
-    private transient volatile boolean myFailed = false;
+    private volatile boolean myFailed = false;
     private final UUID myNodeID;
     private final UUID myJobID;
     private final TimeUnit myPriorityGranularity;
