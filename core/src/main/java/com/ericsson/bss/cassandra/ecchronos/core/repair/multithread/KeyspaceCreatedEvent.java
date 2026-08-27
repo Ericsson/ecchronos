@@ -16,6 +16,11 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.multithread;
 
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 
+/**
+ * A repair event indicating that a new keyspace has been created.
+ *
+ * @param keyspace the keyspace metadata associated with the creation event.
+ */
 public record KeyspaceCreatedEvent(KeyspaceMetadata keyspace) implements RepairEvent
 {
 }

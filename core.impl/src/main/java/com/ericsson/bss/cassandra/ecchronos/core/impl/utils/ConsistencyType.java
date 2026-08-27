@@ -14,8 +14,13 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.impl.utils;
 
+/**
+ * Defines the type of serial consistency to use for Compare-And-Set (CAS) lock operations.
+ */
 public enum ConsistencyType
 {
+    /** Local serial consistency, using LOCAL_SERIAL for CAS operations. */
     LOCAL,
+    /** Full serial consistency, using SERIAL for CAS operations. */
     SERIAL
 }

@@ -34,18 +34,38 @@ public final class Metadata
         //Intentionally left empty
     }
 
+    /**
+     * Retrieves the metadata for a keyspace, quoting the name if needed.
+     *
+     * @param session the CQL session to retrieve metadata from.
+     * @param keyspace the keyspace name.
+     * @return an Optional containing the keyspace metadata, or empty if not found.
+     */
     public static Optional<KeyspaceMetadata> getKeyspace(final CqlSession session, final String keyspace)
     {
         String keyspaceName = quoteIfNeeded(keyspace);
         return session.getMetadata().getKeyspace(keyspaceName);
     }
 
+    /**
+     * Retrieves the metadata for a table from the given keyspace, quoting the name if needed.
+     *
+     * @param keyspaceMetadata the keyspace metadata to search within.
+     * @param table the table name.
+     * @return an Optional containing the table metadata, or empty if not found.
+     */
     public static Optional<TableMetadata> getTable(final KeyspaceMetadata keyspaceMetadata, final String table)
     {
         String tableName = quoteIfNeeded(table);
         return keyspaceMetadata.getTable(tableName);
     }
 
+    /**
+     * Quotes a keyspace or table name with double quotes if needed for CQL compatibility.
+     *
+     * @param keyspaceOrTable the keyspace or table name to conditionally quote.
+     * @return the quoted name if quoting is needed, or the original name otherwise.
+     */
     public static String quoteIfNeeded(final String keyspaceOrTable)
     {
         return Strings.needsDoubleQuotes(keyspaceOrTable) && !Strings.isDoubleQuoted(keyspaceOrTable)

@@ -28,6 +28,7 @@ public interface RepairHistoryProvider
      * Iterate the repair history for the provided table starting from the {@code from} and going backwards.
      * The predicate is used to decide which repair entries should be filtered out of the result.
      *
+     * @param node The node to retrieve repair history for.
      * @param tableReference The table for which the history should be iterated.
      * @param to The latest point in time to iterate to.
      * @param predicate The predicate used to filter out entries in the iterator results.
@@ -39,6 +40,7 @@ public interface RepairHistoryProvider
      * Iterate the repair history for the provided table starting from the {@code from} and going backwards until
      * {@code to}. The predicate is used to decide which repair entries should be filtered out of the result.
      *
+     * @param node The node to retrieve repair history for.
      * @param tableReference The table for which the history should be iterated.
      * @param to The last point in time to iterate to.
      * @param from The point in time to start iterating from.

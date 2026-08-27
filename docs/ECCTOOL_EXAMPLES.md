@@ -400,6 +400,28 @@ ecctool state nodes
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 ```
 
+With JSON output format selected:
+
+```cmd
+ecctool state -o json nodes
+```
+```json
+{
+    "timestamp": "2025-12-16 11:57:11",
+    "nodes": [
+        {
+            "ecchronos_id": "unique_identifier",
+            "datacenter_name": "datacenter1",
+            "node_id": "8a9d2a57-1388-42be-aab6-06a4e5f6fe84",
+            "last_connection": "2025-12-15T15:49:41.762Z",
+            "next_connection": "2025-12-15T16:19:41.762Z",
+            "node_endpoint": "/127.0.0.1:9042",
+            "node_status": "AVAILABLE"
+        }
+    ]
+}
+```
+
 ## status
 
 The *status* command display whether ecChronos is running or not.

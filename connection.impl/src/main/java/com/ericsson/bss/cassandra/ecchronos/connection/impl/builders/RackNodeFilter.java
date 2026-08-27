@@ -22,10 +22,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * A {@link NodeFilter} that accepts nodes belonging to specific datacenter/rack combinations.
+ */
 public final class RackNodeFilter implements NodeFilter
 {
     private final Set<Map<String, String>> myRackInfo;
 
+    /**
+     * Constructs a RackNodeFilter with the given rack information.
+     *
+     * @param rackInfo a list of maps each containing "datacenterName" and "rackName" entries.
+     */
     public RackNodeFilter(final List<Map<String, String>> rackInfo)
     {
         myRackInfo = new HashSet<>(rackInfo);

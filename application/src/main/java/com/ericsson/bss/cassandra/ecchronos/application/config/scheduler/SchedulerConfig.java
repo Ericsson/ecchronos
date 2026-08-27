@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.concurrent.TimeUnit;
 
+/** Configuration for the job scheduler. */
 public class SchedulerConfig
 {
     private static final int THIRTY_SECONDS = 30;
@@ -29,36 +30,69 @@ public class SchedulerConfig
     private Interval mySessionWindow = new Interval(DEFAULT_SESSION_WINDOW_SECONDS, TimeUnit.SECONDS);
     private Interval myCooldown = new Interval(DEFAULT_COOLDOWN_SECONDS, TimeUnit.SECONDS);
 
+    /** Default constructor. */
+    public SchedulerConfig()
+    {
+    }
+
+    /**
+     * Returns the frequency.
+     * @return the frequency
+     */
     @JsonProperty("frequency")
     public final Interval getFrequency()
     {
         return myFrequency;
     }
 
+    /**
+     * Sets the frequency.
+     * @param frequency the reporting frequency
+     */
     @JsonProperty("frequency")
     public final void setFrequency(final Interval frequency)
     {
         myFrequency = frequency;
     }
 
+    /**
+     * Returns the session window interval that limits how long a repair session can run.
+     *
+     * @return the session window interval
+     */
     @JsonProperty("session_window")
     public final Interval getSessionWindow()
     {
         return mySessionWindow;
     }
 
+    /**
+     * Sets the session window interval that limits how long a repair session can run.
+     *
+     * @param sessionWindow the session window interval
+     */
     @JsonProperty("session_window")
     public final void setSessionWindow(final Interval sessionWindow)
     {
         mySessionWindow = sessionWindow;
     }
 
+    /**
+     * Returns the cooldown interval between repair sessions.
+     *
+     * @return the cooldown interval
+     */
     @JsonProperty("cooldown")
     public final Interval getCooldown()
     {
         return myCooldown;
     }
 
+    /**
+     * Sets the cooldown interval between repair sessions.
+     *
+     * @param cooldown the cooldown interval
+     */
     @JsonProperty("cooldown")
     public final void setCooldown(final Interval cooldown)
     {

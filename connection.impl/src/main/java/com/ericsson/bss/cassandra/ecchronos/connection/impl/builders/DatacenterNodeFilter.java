@@ -20,10 +20,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * A {@link NodeFilter} that accepts nodes belonging to specific datacenters.
+ */
 public final class DatacenterNodeFilter implements NodeFilter
 {
     private final Set<String> myDatacenterNames;
 
+    /**
+     * Constructs a DatacenterNodeFilter with the given datacenter names.
+     *
+     * @param datacenterNames the list of datacenter names to accept.
+     */
     public DatacenterNodeFilter(final List<String> datacenterNames)
     {
         myDatacenterNames = new HashSet<>(datacenterNames);

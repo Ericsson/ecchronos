@@ -25,6 +25,14 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class RepairRangeTracker
 {
+    /**
+     * Default constructor.
+     */
+    public RepairRangeTracker()
+    {
+        // Default constructor
+    }
+
     private final Set<LongTokenRange> myFailedRanges = ConcurrentHashMap.newKeySet();
     private final Set<LongTokenRange> mySuccessfulRanges = ConcurrentHashMap.newKeySet();
 
@@ -47,6 +55,8 @@ public class RepairRangeTracker
     }
 
     /**
+     * Gets the set of failed token ranges.
+     *
      * @return the set of token ranges that failed during repair
      */
     public Set<LongTokenRange> getFailedRanges()
@@ -55,6 +65,8 @@ public class RepairRangeTracker
     }
 
     /**
+     * Gets the set of successful token ranges.
+     *
      * @return the set of token ranges that succeeded during repair
      */
     public Set<LongTokenRange> getSuccessfulRanges()
@@ -63,6 +75,8 @@ public class RepairRangeTracker
     }
 
     /**
+     * Checks if any ranges have failed.
+     *
      * @return true if any ranges have failed
      */
     public boolean hasFailedRanges()

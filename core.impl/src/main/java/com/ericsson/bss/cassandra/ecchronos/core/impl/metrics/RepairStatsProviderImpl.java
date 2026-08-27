@@ -27,11 +27,21 @@ import java.util.Collection;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Implementation of {@link RepairStatsProvider} that computes repair statistics
+ * based on vnode repair states.
+ */
 public class RepairStatsProviderImpl implements RepairStatsProvider
 {
     private final DistributedNativeConnectionProvider myNativeConnectionProvider;
     private final VnodeRepairStateFactory myVnodeRepairStateFactory;
 
+    /**
+     * Constructs a RepairStatsProviderImpl.
+     *
+     * @param nativeConnectionProvider the native connection provider for node lookup.
+     * @param vnodeRepairStateFactory the factory for calculating vnode repair states.
+     */
     public RepairStatsProviderImpl(
             final DistributedNativeConnectionProvider nativeConnectionProvider,
             final VnodeRepairStateFactory vnodeRepairStateFactory)

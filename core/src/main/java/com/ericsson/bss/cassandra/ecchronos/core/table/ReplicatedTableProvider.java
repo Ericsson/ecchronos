@@ -25,6 +25,8 @@ import java.util.Set;
 public interface ReplicatedTableProvider
 {
     /**
+     * Gets the full set of tables replicated on the local node which should be repaired.
+     *
      * @return The full set of tables replicated on the local node which should be repaired.
      */
     Set<TableReference> getAll();
@@ -32,6 +34,7 @@ public interface ReplicatedTableProvider
     /**
      * Check if a keyspace should be repaired.
      *
+     * @param node The node to check the keyspace against.
      * @param keyspace The keyspace to check.
      * @return True if the provided keyspace should be repaired.
      */

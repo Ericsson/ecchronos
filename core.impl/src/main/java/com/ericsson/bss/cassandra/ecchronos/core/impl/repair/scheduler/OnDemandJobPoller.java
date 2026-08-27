@@ -160,42 +160,91 @@ public final class OnDemandJobPoller implements Closeable
         private Function<OnDemandRepairJob, Boolean> myTryAddJob;
         private Runnable myRemoveFinishedJobs;
 
+        /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
+         * Set the on-demand status.
+         *
+         * @param onDemandStatus the on-demand status.
+         * @return this builder.
+         */
         public Builder withOnDemandStatus(final OnDemandStatus onDemandStatus)
         {
             myOnDemandStatus = onDemandStatus;
             return this;
         }
 
+        /**
+         * Set the replication state.
+         *
+         * @param replicationState the replication state.
+         * @return this builder.
+         */
         public Builder withReplicationState(final ReplicationState replicationState)
         {
             myReplicationState = replicationState;
             return this;
         }
 
+        /**
+         * Set the schedule manager.
+         *
+         * @param scheduleManager the schedule manager.
+         * @return this builder.
+         */
         public Builder withScheduleManager(final ScheduleManager scheduleManager)
         {
             myScheduleManager = scheduleManager;
             return this;
         }
 
+        /**
+         * Set the job factory.
+         *
+         * @param jobFactory the on-demand repair job factory.
+         * @return this builder.
+         */
         public Builder withJobFactory(final OnDemandRepairJobFactory jobFactory)
         {
             myJobFactory = jobFactory;
             return this;
         }
 
+        /**
+         * Set the function used to attempt adding a job.
+         *
+         * @param tryAddJob the function that returns true if the job was added.
+         * @return this builder.
+         */
         public Builder withTryAddJob(final Function<OnDemandRepairJob, Boolean> tryAddJob)
         {
             myTryAddJob = tryAddJob;
             return this;
         }
 
+        /**
+         * Set the callback to remove finished jobs.
+         *
+         * @param removeFinishedJobs the runnable that removes finished jobs.
+         * @return this builder.
+         */
         public Builder withRemoveFinishedJobs(final Runnable removeFinishedJobs)
         {
             myRemoveFinishedJobs = removeFinishedJobs;
             return this;
         }
 
+        /**
+         * Build the {@link OnDemandJobPoller}.
+         *
+         * @return a new OnDemandJobPoller instance.
+         */
         public OnDemandJobPoller build()
         {
             return new OnDemandJobPoller(this);

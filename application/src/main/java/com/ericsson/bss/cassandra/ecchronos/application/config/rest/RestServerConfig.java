@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.application.config.rest;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/** Configuration for the embedded REST server. */
 public class RestServerConfig
 {
     private static final String DEFAULT_HOST = "localhost";
@@ -24,24 +25,45 @@ public class RestServerConfig
     private String myHost = DEFAULT_HOST;
     private int myPort = DEFAULT_PORT;
 
+    /** Default constructor. */
+    public RestServerConfig()
+    {
+    }
+
+    /**
+     * Returns the host.
+     * @return the host
+     */
     @JsonProperty("host")
     public final String getHost()
     {
         return myHost;
     }
 
+    /**
+     * Sets the host.
+     * @param host the hostname
+     */
     @JsonProperty("host")
     public final void setHost(final String host)
     {
         myHost = host;
     }
 
+    /**
+     * Returns the port.
+     * @return the port
+     */
     @JsonProperty("port")
     public final int getPort()
     {
         return myPort;
     }
 
+    /**
+     * Sets the port.
+     * @param port the port number
+     */
     @JsonProperty("port")
     public final void setPort(final int port)
     {

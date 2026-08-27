@@ -32,6 +32,10 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.List;
 
+/**
+ * Factory class for creating {@link KeyManagerFactory} and {@link TrustManagerFactory} instances
+ * from either PEM certificate files or JKS/PKCS12 keystore files.
+ */
 public final class KeyStoreFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(KeyStoreFactory.class);
@@ -42,7 +46,16 @@ public final class KeyStoreFactory
     }
 
     /**
-     * Create a KeyManagerFactory from PEM certificate and private key files.
+     * Create a {@link KeyManagerFactory} from PEM certificate and private key files.
+     *
+     * @param tlsConfig the TLS configuration containing certificate and key file paths
+     * @param storeType the keystore type to use for the in-memory keystore (e.g., "JKS" or "PKCS12")
+     * @return a {@link KeyManagerFactory} initialized with the loaded certificate chain and private key
+     * @throws IOException if the certificate or key file cannot be read
+     * @throws CertificateException if the certificate cannot be parsed
+     * @throws KeyStoreException if the keystore cannot be created or initialized
+     * @throws NoSuchAlgorithmException if the key manager algorithm is not available
+     * @throws UnrecoverableKeyException if the private key cannot be recovered from the keystore
      */
     public static KeyManagerFactory createPemKeyManagerFactory(final TLSConfig tlsConfig, final String storeType)
             throws IOException, CertificateException, KeyStoreException, NoSuchAlgorithmException,
@@ -68,7 +81,15 @@ public final class KeyStoreFactory
     }
 
     /**
-     * Create a TrustManagerFactory from a PEM trust certificate file.
+     * Create a {@link TrustManagerFactory} from a PEM trust certificate file.
+     *
+     * @param tlsConfig the TLS configuration containing the trust certificate file path
+     * @param storeType the keystore type to use for the in-memory truststore (e.g., "JKS" or "PKCS12")
+     * @return a {@link TrustManagerFactory} initialized with the loaded trusted certificates
+     * @throws IOException if the trust certificate file cannot be read
+     * @throws CertificateException if the certificate cannot be parsed
+     * @throws KeyStoreException if the truststore cannot be created or initialized
+     * @throws NoSuchAlgorithmException if the trust manager algorithm is not available
      */
     public static TrustManagerFactory createPemTrustManagerFactory(final TLSConfig tlsConfig, final String storeType)
             throws IOException, CertificateException, KeyStoreException, NoSuchAlgorithmException
@@ -90,7 +111,15 @@ public final class KeyStoreFactory
     }
 
     /**
-     * Create a KeyManagerFactory from a keystore file (JKS/PKCS12).
+     * Create a {@link KeyManagerFactory} from a keystore file (JKS/PKCS12).
+     *
+     * @param tlsConfig the TLS configuration containing the keystore path, password, store type, and algorithm
+     * @return a {@link KeyManagerFactory} initialized with the loaded keystore
+     * @throws IOException if the keystore file cannot be read
+     * @throws NoSuchAlgorithmException if the key manager algorithm is not available
+     * @throws KeyStoreException if the keystore cannot be created or initialized
+     * @throws CertificateException if a certificate in the keystore cannot be loaded
+     * @throws UnrecoverableKeyException if the key cannot be recovered from the keystore
      */
     public static KeyManagerFactory createKeyManagerFactory(final TLSConfig tlsConfig)
             throws IOException, NoSuchAlgorithmException, KeyStoreException, CertificateException,
@@ -111,7 +140,14 @@ public final class KeyStoreFactory
     }
 
     /**
-     * Create a TrustManagerFactory from a truststore file (JKS/PKCS12).
+     * Create a {@link TrustManagerFactory} from a truststore file (JKS/PKCS12).
+     *
+     * @param tlsConfig the TLS configuration containing the truststore path, password, store type, and algorithm
+     * @return a {@link TrustManagerFactory} initialized with the loaded truststore
+     * @throws IOException if the truststore file cannot be read
+     * @throws NoSuchAlgorithmException if the trust manager algorithm is not available
+     * @throws KeyStoreException if the truststore cannot be created or initialized
+     * @throws CertificateException if a certificate in the truststore cannot be loaded
      */
     public static TrustManagerFactory createTrustManagerFactory(final TLSConfig tlsConfig)
             throws IOException, NoSuchAlgorithmException, KeyStoreException, CertificateException

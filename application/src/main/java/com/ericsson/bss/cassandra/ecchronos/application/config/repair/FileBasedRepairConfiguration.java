@@ -26,12 +26,19 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.ConfigurationHelp
 
 import com.google.common.annotations.VisibleForTesting;
 
+/** File-based repair configuration provider that reads schedules from a YAML file. */
 public class FileBasedRepairConfiguration extends AbstractRepairConfigurationProvider
 {
     private static final String CONFIGURATION_FILE = "schedule.yml";
 
     private final RepairSchedule repairSchedule;
 
+    /**
+     * Constructs a new FileBasedRepairConfiguration using the default configuration file.
+     *
+     * @param applicationContext the Spring application context
+     * @throws ConfigurationException if the configuration file cannot be read or parsed
+     */
     public FileBasedRepairConfiguration(final ApplicationContext applicationContext) throws ConfigurationException
     {
         this(applicationContext, ConfigurationHelper.DEFAULT_INSTANCE, CONFIGURATION_FILE);

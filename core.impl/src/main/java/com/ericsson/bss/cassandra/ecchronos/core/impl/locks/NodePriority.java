@@ -25,17 +25,33 @@ public final class NodePriority
     private final UUID myNode;
     private final int myPriority;
 
+    /**
+     * Constructs a NodePriority with the specified node UUID and priority.
+     *
+     * @param node the UUID of the node.
+     * @param priority the priority value for the node.
+     */
     public NodePriority(final UUID node, final int priority)
     {
         myNode = node;
         myPriority = priority;
     }
 
+    /**
+     * Gets the UUID of the node.
+     *
+     * @return the node UUID.
+     */
     public UUID getUuid()
     {
         return myNode;
     }
 
+    /**
+     * Gets the priority value of the node.
+     *
+     * @return the priority.
+     */
     public int getPriority()
     {
         return myPriority;

@@ -25,6 +25,14 @@ import java.util.stream.Collectors;
  */
 public class DataCenterRepairResourceFactory implements RepairResourceFactory
 {
+    /**
+     * Default constructor.
+     */
+    public DataCenterRepairResourceFactory()
+    {
+        // Default constructor
+    }
+
     @Override
     public final Set<RepairResource> getRepairResources(final ReplicaRepairGroup replicaRepairGroup)
     {

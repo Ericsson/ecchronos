@@ -326,7 +326,19 @@ def print_repair_stats(repair_stats, max_lines=-1, columns=None):
     table_formatter.format_table(repair_stats_table, columns)
 
 
-def print_nodes(nodes, columns=None):
+def print_nodes(nodes, columns=None, output="table"):
+    if output == "json":
+        _print_nodes_json_format(nodes)
+    else:
+        _print_nodes_table_format(nodes, columns)
+
+
+def _print_nodes_json_format(nodes):
+    nodes_dict = [node.to_dict() for node in nodes]
+    output_json({"nodes": nodes_dict})
+
+
+def _print_nodes_table_format(nodes, columns=None):
     node_table = [
         ["EcchronosID", "Datacenter", "NodeID", "Last Connection", "Next Connection", "Endpoint", "Node Status"]
     ]

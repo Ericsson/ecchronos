@@ -24,6 +24,10 @@ import java.io.IOException;
 import java.util.concurrent.Callable;
 import com.datastax.oss.driver.api.core.metadata.Node;
 
+/**
+ * Action that handles the addition of a Cassandra node by verifying node status,
+ * establishing JMX connections, and adding the node to the native connection provider.
+ */
 public class NodeAddedAction implements Callable<Boolean>
 {
     private static final Logger LOG = LoggerFactory.getLogger(NodeAddedAction.class);
@@ -33,6 +37,14 @@ public class NodeAddedAction implements Callable<Boolean>
     private final DistributedNativeConnectionProvider myDistributedNativeConnectionProvider;
     private final Node myNode;
 
+    /**
+     * Constructs a NodeAddedAction.
+     *
+     * @param eccNodesSync the node sync service.
+     * @param jmxConnectionProvider the JMX connection provider.
+     * @param distributedNativeConnectionProvider the native connection provider.
+     * @param node the node being added.
+     */
     public NodeAddedAction(final EccNodesSync eccNodesSync, final DistributedJmxConnectionProvider jmxConnectionProvider, final DistributedNativeConnectionProvider distributedNativeConnectionProvider, final Node node)
     {
         myEccNodesSync = eccNodesSync;
@@ -43,7 +55,8 @@ public class NodeAddedAction implements Callable<Boolean>
 
     /**
      * Adds the node.
-     * @return
+     *
+     * @return true if the addition was successful, false if JMX connection failed.
      */
     @Override
     public Boolean call()

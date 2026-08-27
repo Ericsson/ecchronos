@@ -21,10 +21,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * A {@link NodeFilter} that accepts nodes matching specific host addresses.
+ */
 public final class HostNodeFilter implements NodeFilter
 {
     private final Set<InetSocketAddress> myHosts;
 
+    /**
+     * Constructs a HostNodeFilter with the given list of host addresses.
+     *
+     * @param hosts the list of host socket addresses to accept.
+     */
     public HostNodeFilter(final List<InetSocketAddress> hosts)
     {
         myHosts = new HashSet<>(hosts);

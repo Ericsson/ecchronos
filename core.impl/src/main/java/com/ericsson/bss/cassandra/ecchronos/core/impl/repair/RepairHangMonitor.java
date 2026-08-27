@@ -65,6 +65,15 @@ public class RepairHangMonitor
 
     private volatile ScheduledFuture<?> myHangPreventFuture;
 
+    /**
+     * Constructs a RepairHangMonitor with default health check interval.
+     *
+     * @param jmxProxyFactory the factory for JMX proxy connections.
+     * @param nodeID the node identifier to monitor.
+     * @param tableReference the table being repaired.
+     * @param maxWaitTimeInMinutes the maximum time to wait before forcing termination.
+     * @param notificationHandler the notification handler to signal errors or completion.
+     */
     public RepairHangMonitor(final DistributedJmxProxyFactory jmxProxyFactory,
             final UUID nodeID,
             final TableReference tableReference,

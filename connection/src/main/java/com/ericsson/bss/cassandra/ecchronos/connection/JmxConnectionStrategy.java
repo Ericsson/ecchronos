@@ -21,10 +21,26 @@ import javax.management.remote.JMXServiceURL;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 
+/**
+ * Strategy interface for creating JMX connections to Cassandra nodes.
+ */
 public interface JmxConnectionStrategy
 {
+    /**
+     * Establishes a JMX connection to the given node.
+     *
+     * @param node the Cassandra node to connect to.
+     * @return a {@link ConnectionResult} containing the JMX connector and service URL.
+     * @throws IOException if an I/O error occurs during connection.
+     */
     ConnectionResult connect(Node node) throws IOException;
 
+    /**
+     * Result of a JMX connection attempt, containing the connector and the service URL used.
+     *
+     * @param connector the established JMX connector.
+     * @param serviceURL the JMX service URL that was connected to.
+     */
     public record ConnectionResult(JMXConnector connector, JMXServiceURL serviceURL)
     {
     }

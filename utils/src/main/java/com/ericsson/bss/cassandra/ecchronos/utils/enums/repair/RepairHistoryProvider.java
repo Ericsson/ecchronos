@@ -19,5 +19,10 @@ package com.ericsson.bss.cassandra.ecchronos.utils.enums.repair;
  */
 public enum RepairHistoryProvider
 {
-    CASSANDRA, UPGRADE, ECC
+    /** Uses the native Cassandra system_distributed.repair_history table. */
+    CASSANDRA,
+    /** Uses the upgrade repair history provider for migration scenarios. */
+    UPGRADE,
+    /** Uses ecChronos' own repair history table. */
+    ECC
 }

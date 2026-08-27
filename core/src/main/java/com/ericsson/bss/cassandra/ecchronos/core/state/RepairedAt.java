@@ -91,6 +91,12 @@ public final class RepairedAt
         return RepairedAt.generate(vnodeRepairStates.getVnodeRepairStates());
     }
 
+    /**
+     * Generate a repaired at from a collection of vnode repair states.
+     *
+     * @param vnodeRepairStates The collection of vnode repair states to evaluate.
+     * @return RepairedAt representing the min and max repaired timestamps.
+     */
     public static RepairedAt generate(final Collection<VnodeRepairState> vnodeRepairStates)
     {
         long minRepairedAt = Long.MAX_VALUE;

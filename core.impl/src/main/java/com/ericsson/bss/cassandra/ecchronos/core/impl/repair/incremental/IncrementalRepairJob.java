@@ -208,6 +208,14 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         private RepairLockType myRepairLockType;
 
         /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
          * Build with repair lock type.
          *
          * @param repairLockType

@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 
+/** Watches configuration files for changes and triggers reloads. */
 public class ConfigRefresher implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigRefresher.class);
@@ -48,6 +49,10 @@ public class ConfigRefresher implements Closeable
     private final ExecutorService executor = Executors.newSingleThreadScheduledExecutor(
             new ThreadFactoryBuilder().setNameFormat("ConfigRefresher-%d").build());
 
+    /**
+     * Constructs a new ConfigRefresher.
+     * @param theBaseDirectory the base directory
+     */
     public ConfigRefresher(final Path theBaseDirectory)
     {
         this.baseDirectory = theBaseDirectory.toAbsolutePath();
@@ -69,6 +74,11 @@ public class ConfigRefresher implements Closeable
         executor.submit(this::watchForEvents);
     }
 
+    /**
+     * Starts watching for file changes.
+     * @param filePath the file path
+     * @param onChange the on change
+     */
     public final void watch(final Path filePath, final Runnable onChange)
     {
         Path absoluteFilePath = filePath.toAbsolutePath();

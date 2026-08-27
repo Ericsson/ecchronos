@@ -66,7 +66,19 @@ public interface OnDemandRepairScheduler
      */
     List<OnDemandRepairJobView> getAllRepairJobs(UUID hostId);
 
+    /**
+     * Retrieves the repair configuration used by this scheduler.
+     *
+     * @return The repair configuration.
+     */
     RepairConfiguration getRepairConfiguration();
 
+    /**
+     * Checks whether a table is enabled for repair.
+     *
+     * @param tableReference The table to check.
+     * @param forceRepairDisabled Whether repair should be forcibly considered disabled.
+     * @return True if the table is enabled for repair.
+     */
     boolean checkTableEnabled(TableReference tableReference, boolean forceRepairDisabled);
 }

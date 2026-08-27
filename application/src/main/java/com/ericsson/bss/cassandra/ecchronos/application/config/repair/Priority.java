@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+/** Configuration for repair job priority granularity. */
 public class Priority
 {
 
@@ -33,22 +34,35 @@ public class Priority
 
     private TimeUnit myGranularityUnit = TimeUnit.HOURS;
 
+    /** Constructs a new Priority. */
     public Priority()
     {
         // Default constructor for jackson
     }
 
+    /**
+     * Constructs a new Priority.
+     * @param granularityUnit the granularity unit
+     */
     @JsonCreator
     public Priority(@JsonProperty("granularity_unit") final TimeUnit granularityUnit)
     {
         myGranularityUnit = granularityUnit;
     }
 
+    /**
+     * Returns the priority granularity unit.
+     * @return the priority granularity unit
+     */
     public final TimeUnit getPriorityGranularityUnit()
     {
         return myGranularityUnit;
     }
 
+    /**
+     * Sets the priority granularity unit.
+     * @param granularityUnit the granularity unit
+     */
     @JsonProperty ("granularity_unit")
     public final void setPriorityGranularityUnit(final TimeUnit granularityUnit)
     {

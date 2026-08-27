@@ -29,6 +29,10 @@ import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Implementation of {@link DistributedJmxConnectionProvider} that manages JMX connections
+ * to multiple Cassandra nodes with automatic reconnection support.
+ */
 public class DistributedJmxConnectionProviderImpl implements DistributedJmxConnectionProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(DistributedJmxConnectionProviderImpl.class);

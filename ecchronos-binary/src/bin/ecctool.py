@@ -552,13 +552,10 @@ def state(arguments):
 
 def _state_nodes(arguments):
     request = rest.StateManagementRequest(base_url=arguments.url)
-    result = request.get_nodes(arguments.output)
+    result = request.get_nodes()
 
     if result.is_successful():
-        if arguments.output == "json":
-            table_printer.output_json({"nodes": result.data})
-        else:
-            table_printer.print_nodes(result.data, columns=arguments.columns)
+        table_printer.print_nodes(result.data, columns=arguments.columns, output=arguments.output)
     else:
         print(result.format_exception())
 

@@ -22,22 +22,61 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Provides distributed native CQL connections to Cassandra nodes.
+ */
 public interface DistributedNativeConnectionProvider extends Closeable
 {
+    /**
+     * Returns the CQL session used for communication with the Cassandra cluster.
+     *
+     * @return the {@link CqlSession} instance.
+     */
     CqlSession getCqlSession();
 
+    /**
+     * Returns the map of managed Cassandra nodes keyed by their host UUID.
+     *
+     * @return a map of node UUIDs to {@link Node} instances.
+     */
     Map<UUID, Node> getNodes();
 
+    /**
+     * Closes this connection provider, releasing any resources.
+     *
+     * @throws IOException if an I/O error occurs.
+     */
     @Override
     default void close() throws IOException
     {
     }
 
+    /**
+     * Adds a node to the set of managed nodes.
+     *
+     * @param myNode the node to add.
+     */
     void addNode(Node myNode);
 
+    /**
+     * Removes a node from the set of managed nodes.
+     *
+     * @param myNode the node to remove.
+     */
     void removeNode(Node myNode);
 
+    /**
+     * Confirms whether the given node is valid according to the configured connection type filter.
+     *
+     * @param node the node to validate.
+     * @return {@code true} if the node is valid, {@code false} otherwise.
+     */
     Boolean confirmNodeValid(Node node);
 
+    /**
+     * Returns the type of connection being used by this provider.
+     *
+     * @return the {@link ConnectionType}.
+     */
     ConnectionType getConnectionType();
 }

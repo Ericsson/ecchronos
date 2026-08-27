@@ -36,12 +36,20 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+/**
+ * REST controller for exposing metrics in Prometheus text or OpenMetrics format.
+ */
 @Tag(name = "Metrics", description = "Retrieve metrics about ecChronos")
 @RestController
 public class MetricsRESTImpl implements MetricsREST
 {
     private final PrometheusMeterRegistry myPrometheusMeterRegistry;
 
+    /**
+     * Constructs the metrics REST controller.
+     *
+     * @param prometheusMeterRegistry the Prometheus meter registry for scraping metrics, may be {@code null}.
+     */
     public MetricsRESTImpl(@Autowired(required = false) final PrometheusMeterRegistry prometheusMeterRegistry)
     {
         myPrometheusMeterRegistry = prometheusMeterRegistry;

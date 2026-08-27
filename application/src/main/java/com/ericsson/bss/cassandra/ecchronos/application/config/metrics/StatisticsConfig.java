@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
+/** Configuration for metrics and statistics collection. */
 public class StatisticsConfig
 {
     private static final int DEFAULT_FAILURES_TIME_WINDOW_IN_MINUTES = 30;
@@ -36,89 +37,151 @@ public class StatisticsConfig
     private Interval myTriggerIntervalForMetricInspection = new
             Interval(DEFAULT_TRIGGER_INTERVAL_FOR_METRIC_INSPECTION_IN_SECONDS, TimeUnit.SECONDS);
 
+    /** Default constructor. */
+    public StatisticsConfig()
+    {
+    }
+
+    /**
+     * Returns whether enabled.
+     * @return true if enabled
+     */
     @JsonProperty("enabled")
     public final boolean isEnabled()
     {
        return myIsEnabled;
     }
 
+    /**
+     * Returns the output directory.
+     * @return the output directory
+     */
     @JsonProperty("directory")
     public final File getOutputDirectory()
     {
         return myOutputDirectory;
     }
 
+    /**
+     * Returns the reporting configs.
+     * @return the reporting configs
+     */
     @JsonProperty("reporting")
     public final ReportingConfigs getReportingConfigs()
     {
         return myReportingConfigs;
     }
 
+    /**
+     * Returns the metrics prefix.
+     * @return the metrics prefix
+     */
     @JsonProperty("prefix")
     public final String getMetricsPrefix()
     {
         return myMetricsPrefix;
     }
 
+    /**
+     * Returns the repair failures count.
+     * @return the repair failures count
+     */
     @JsonProperty("repair_failures_count")
     public final int getRepairFailuresCount()
     {
         return myRepairFailuresCount;
     }
 
+    /**
+     * Returns the repair failures time window.
+     * @return the repair failures time window
+     */
     @JsonProperty("repair_failures_time_window")
     public final Interval getRepairFailuresTimeWindow()
     {
         return myRepairFailuresTimeWindow;
     }
 
+    /**
+     * Returns the trigger interval for metric inspection.
+     * @return the trigger interval for metric inspection
+     */
     @JsonProperty("trigger_interval_for_metric_inspection")
     public final Interval getTriggerIntervalForMetricInspection()
     {
         return myTriggerIntervalForMetricInspection;
     }
 
+    /**
+     * Sets the enabled.
+     * @param enabled whether enabled
+     */
     @JsonProperty("enabled")
     public final void setEnabled(final boolean enabled)
     {
         myIsEnabled = enabled;
     }
 
+    /**
+     * Sets the output directory.
+     * @param outputDirectory the output directory
+     */
     @JsonProperty("directory")
     public final void setOutputDirectory(final String outputDirectory)
     {
         myOutputDirectory = new File(outputDirectory);
     }
 
+    /**
+     * Sets the reporting configs.
+     * @param reportingConfigs the reporting configs
+     */
     @JsonProperty("reporting")
     public final void setReportingConfigs(final ReportingConfigs reportingConfigs)
     {
         myReportingConfigs = reportingConfigs;
     }
 
+    /**
+     * Sets the metrics prefix.
+     * @param metricsPrefix the metrics prefix
+     */
     @JsonProperty("prefix")
     public final void setMetricsPrefix(final String metricsPrefix)
     {
         myMetricsPrefix = metricsPrefix;
     }
 
+    /**
+     * Sets the repair failures count.
+     * @param repairFailuresCount the repair failures count
+     */
     @JsonProperty("repair_failures_count")
     public final void setRepairFailuresCount(final int repairFailuresCount)
     {
         myRepairFailuresCount = repairFailuresCount;
     }
 
+    /**
+     * Sets the repair failures time window.
+     * @param repairFailuresTimeWindow the repair failures time window
+     */
     @JsonProperty("repair_failures_time_window")
     public final void setRepairFailuresTimeWindow(final Interval repairFailuresTimeWindow)
     {
         myRepairFailuresTimeWindow = repairFailuresTimeWindow;
     }
+    /**
+     * Sets the trigger interval for metric inspection.
+     * @param triggerIntervalForStatusLogger the trigger interval for status logger
+     */
     @JsonProperty("trigger_interval_for_metric_inspection")
     public final void setTriggerIntervalForMetricInspection(final Interval triggerIntervalForStatusLogger)
     {
         myTriggerIntervalForMetricInspection = triggerIntervalForStatusLogger;
      }
 
+     /** Validates the configuration. */
      public final void validate()
     {
         long repairTimeWindowInSeconds = getRepairFailuresTimeWindow().getInterval(TimeUnit.SECONDS);

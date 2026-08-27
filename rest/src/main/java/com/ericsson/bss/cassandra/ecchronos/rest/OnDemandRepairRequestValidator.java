@@ -35,6 +35,13 @@ public final class OnDemandRepairRequestValidator
     private final ReplicatedTableProvider myReplicatedTableProvider;
     private final DistributedNativeConnectionProvider myDistributedNativeConnectionProvider;
 
+    /**
+     * Constructs a new validator for on-demand repair requests.
+     *
+     * @param onDemandRepairScheduler the scheduler used for on-demand repairs.
+     * @param replicatedTableProvider the provider used to check table replication.
+     * @param distributedNativeConnectionProvider the provider for distributed native connections.
+     */
     public OnDemandRepairRequestValidator(
             final OnDemandRepairScheduler onDemandRepairScheduler,
             final ReplicatedTableProvider replicatedTableProvider,
@@ -45,6 +52,15 @@ public final class OnDemandRepairRequestValidator
         myDistributedNativeConnectionProvider = distributedNativeConnectionProvider;
     }
 
+    /**
+     * Validates parameters for a cluster-wide repair run. Throws a BAD_REQUEST exception
+     * if no node is specified and the "all" flag is not set, or if a table is provided without a keyspace.
+     *
+     * @param nodeID the target node identifier, may be {@code null}.
+     * @param all whether all nodes should be targeted.
+     * @param keyspace the keyspace name, may be {@code null}.
+     * @param table the table name, may be {@code null}.
+     */
     public void checkValidClusterRun(final String nodeID, final boolean all, final String keyspace, final String table)
     {
         if (nodeID == null && !all)
@@ -57,6 +73,12 @@ public final class OnDemandRepairRequestValidator
         }
     }
 
+    /**
+     * Validates that the specified node UUID exists in the cluster. Throws a BAD_REQUEST exception
+     * if the node is not found or not managed by the local instance.
+     *
+     * @param nodeUUID the UUID of the node to validate, may be {@code null}.
+     */
     public void validateNodeExists(final UUID nodeUUID)
     {
         if (nodeUUID != null && myDistributedNativeConnectionProvider.getNodes().get(nodeUUID) == null)
@@ -66,12 +88,29 @@ public final class OnDemandRepairRequestValidator
         }
     }
 
+    /**
+     * Determines whether a table should be rejected for repair because it uses TWCS
+     * (TimeWindowCompactionStrategy) and TWCS repair is not forced.
+     *
+     * @param tableReference the table reference to check.
+     * @param forceRepairTWCS whether repair of TWCS tables is forced.
+     * @return {@code true} if the table should be rejected, {@code false} otherwise.
+     */
     public boolean rejectForTWCS(final TableReference tableReference, final boolean forceRepairTWCS)
     {
         return !forceRepairTWCS && tableReference.getTwcs()
                 && myOnDemandRepairScheduler.getRepairConfiguration().getIgnoreTWCSTables();
     }
 
+    /**
+     * Checks whether a table is eligible for repair based on TWCS policy, replication, and enabled status.
+     *
+     * @param forceRepairTWCS whether repair of TWCS tables is forced.
+     * @param forceRepairDisabled whether repair of disabled tables is forced.
+     * @param tableReference the table reference to check.
+     * @param node the node to validate replication against.
+     * @return {@code true} if the table is eligible for repair, {@code false} otherwise.
+     */
     public boolean isRepairableTable(final boolean forceRepairTWCS, final boolean forceRepairDisabled,
             final TableReference tableReference, final Node node)
     {
@@ -80,6 +119,12 @@ public final class OnDemandRepairRequestValidator
                 && myOnDemandRepairScheduler.checkTableEnabled(tableReference, forceRepairDisabled);
     }
 
+    /**
+     * Returns the given repair type, or defaults to {@link RepairType#VNODE} if {@code null}.
+     *
+     * @param repairType the repair type to use, may be {@code null}.
+     * @return the provided repair type or VNODE as default.
+     */
     public RepairType getRepairTypeOrDefault(final RepairType repairType)
     {
         return repairType == null ? RepairType.VNODE : repairType;

@@ -38,6 +38,10 @@ import org.slf4j.LoggerFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 
+/**
+ * Implementation of {@link TableStorageStates} that periodically fetches table sizes
+ * from each node via JMX and makes them available for querying.
+ */
 public final class TableStorageStatesImpl implements TableStorageStates, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(TableStorageStatesImpl.class);
@@ -130,11 +134,19 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
         myTableSizes.set(null);
     }
 
+    /**
+     * Creates a new builder for constructing {@link TableStorageStatesImpl} instances.
+     *
+     * @return a new {@link Builder} instance.
+     */
     public static Builder builder()
     {
         return new Builder();
     }
 
+    /**
+     * Builder class for constructing {@link TableStorageStatesImpl} instances.
+     */
     public static class Builder
     {
         private ReplicatedTableProvider myReplicatedTableProvider;
@@ -144,36 +156,82 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
         private long myInitialDelayInMs = 0;
         private long myUpdateDelayInMs = DEFAULT_UPDATE_DELAY_IN_MS;
 
+        /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
+         * Sets the replicated table provider.
+         *
+         * @param replicatedTableProvider the provider for replicated tables.
+         * @return this builder instance.
+         */
         public final Builder withReplicatedTableProvider(final ReplicatedTableProvider replicatedTableProvider)
         {
             myReplicatedTableProvider = replicatedTableProvider;
             return this;
         }
 
+        /**
+         * Sets the JMX proxy factory.
+         *
+         * @param jmxProxyFactory the factory for creating JMX proxy connections.
+         * @return this builder instance.
+         */
         public final Builder withJmxProxyFactory(final DistributedJmxProxyFactory jmxProxyFactory)
         {
             myJmxProxyFactory = jmxProxyFactory;
             return this;
         }
 
+        /**
+         * Sets the native connection provider.
+         *
+         * @param nativeConnectionProvider the native connection provider for accessing Cassandra nodes.
+         * @return this builder instance.
+         */
         public final Builder withConnectionProvider(final DistributedNativeConnectionProvider nativeConnectionProvider)
         {
             myNativeConnectionProvider = nativeConnectionProvider;
             return this;
         }
 
+        /**
+         * Sets the initial delay before the first table state update.
+         *
+         * @param initialDelay the initial delay value.
+         * @param timeUnit the time unit of the delay.
+         * @return this builder instance.
+         */
         public final Builder withInitialDelay(final long initialDelay, final TimeUnit timeUnit)
         {
             myInitialDelayInMs = timeUnit.toMillis(initialDelay);
             return this;
         }
 
+        /**
+         * Sets the delay between consecutive table state updates.
+         *
+         * @param updateDelay the update delay value.
+         * @param timeUnit the time unit of the delay.
+         * @return this builder instance.
+         */
         public final Builder withUpdateDelay(final long updateDelay, final TimeUnit timeUnit)
         {
             myUpdateDelayInMs = timeUnit.toMillis(updateDelay);
             return this;
         }
 
+        /**
+         * Builds a new {@link TableStorageStatesImpl} instance using the configured parameters.
+         *
+         * @return a new TableStorageStatesImpl instance.
+         * @throws IllegalArgumentException if any required parameter is null.
+         */
         public final TableStorageStatesImpl build()
         {
             if (myReplicatedTableProvider == null)

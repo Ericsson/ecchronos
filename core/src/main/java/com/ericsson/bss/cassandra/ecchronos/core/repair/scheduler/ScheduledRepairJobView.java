@@ -21,11 +21,26 @@ import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * A view representation of a scheduled repair job, containing status, progress, and configuration information.
+ */
 public class ScheduledRepairJobView
 {
+    /**
+     * The possible statuses of a scheduled repair job.
+     */
     public enum Status
     {
-        COMPLETED, ON_TIME, LATE, OVERDUE, BLOCKED
+        /** Repair has completed successfully. */
+        COMPLETED,
+        /** Repair is running within the expected time window. */
+        ON_TIME,
+        /** Repair is running behind schedule. */
+        LATE,
+        /** Repair has exceeded the allowed time window. */
+        OVERDUE,
+        /** Repair is blocked and cannot proceed. */
+        BLOCKED
     }
 
     private final UUID myNodeID;
@@ -39,6 +54,19 @@ public class ScheduledRepairJobView
     private final long myCompletionTime;
     private final RepairType myRepairType;
 
+    /**
+     * Constructs a scheduled repair job view.
+     *
+     * @param nodeID the node identifier.
+     * @param jobID the job identifier.
+     * @param tableReference the table being repaired.
+     * @param repairConfiguration the repair configuration for this job.
+     * @param status the current status of the job.
+     * @param progress the repair progress as a ratio between 0.0 and 1.0.
+     * @param nextRepair the timestamp of the next scheduled repair in milliseconds since epoch.
+     * @param completionTime the timestamp of the last completed repair in milliseconds since epoch.
+     * @param repairType the type of repair being performed.
+     */
     public ScheduledRepairJobView(final UUID nodeID, final UUID jobID, final TableReference tableReference,
             final RepairConfiguration repairConfiguration, final Status status, final double progress,
             final long nextRepair, final long completionTime, final RepairType repairType)
@@ -54,6 +82,19 @@ public class ScheduledRepairJobView
         myRepairType = repairType;
     }
 
+    /**
+     * Constructs a scheduled repair job view with a repair state snapshot.
+     *
+     * @param nodeID the node identifier.
+     * @param jobID the job identifier.
+     * @param tableReference the table being repaired.
+     * @param repairConfiguration the repair configuration for this job.
+     * @param repairStateSnapshot the current repair state snapshot.
+     * @param status the current status of the job.
+     * @param progress the repair progress as a ratio between 0.0 and 1.0.
+     * @param nextRepair the timestamp of the next scheduled repair in milliseconds since epoch.
+     * @param repairType the type of repair being performed.
+     */
     public ScheduledRepairJobView(final UUID nodeID, final UUID jobID, final TableReference tableReference,
             final RepairConfiguration repairConfiguration, final RepairStateSnapshot repairStateSnapshot,
             final Status status, final double progress, final long nextRepair,

@@ -28,6 +28,10 @@ import java.util.Map;
 
 import static com.ericsson.bss.cassandra.ecchronos.rest.RestUtils.REPAIR_MANAGEMENT_ENDPOINT_PREFIX;
 
+/**
+ * REST controller for managing ecChronos scheduling configuration such as session window,
+ * cooldown, and locks per resource.
+ */
 @RestController
 public final class ConfigManagementRESTImpl
 {
@@ -38,18 +42,34 @@ public final class ConfigManagementRESTImpl
 
     private final ScheduleManager myScheduleManager;
 
+    /**
+     * Constructs the configuration management REST controller.
+     *
+     * @param scheduleManager the schedule manager providing configuration access.
+     */
     @Autowired
     public ConfigManagementRESTImpl(final ScheduleManager scheduleManager)
     {
         myScheduleManager = scheduleManager;
     }
 
+    /**
+     * Retrieves the current scheduling configuration.
+     *
+     * @return a response containing the configuration as a map of key-value pairs.
+     */
     @GetMapping(value = REPAIR_MANAGEMENT_ENDPOINT_PREFIX + "/v2/config", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> getConfig()
     {
         return ResponseEntity.ok(buildResponse());
     }
 
+    /**
+     * Partially updates the scheduling configuration with the provided values.
+     *
+     * @param body a map containing the configuration keys and new values to apply.
+     * @return a response containing the updated configuration, or a bad request on invalid input.
+     */
     @PatchMapping(value = REPAIR_MANAGEMENT_ENDPOINT_PREFIX + "/v2/config", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> patchConfig(@RequestBody final Map<String, Object> body)
     {

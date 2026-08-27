@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
+/** TLS configuration for JMX connections. */
 public class JmxTLSConfig implements TLSConfig
 {
     private final boolean myIsEnabled;
@@ -40,6 +41,19 @@ public class JmxTLSConfig implements TLSConfig
     // Since CRL is optional, make sure there always is a disabled default CRL config available.
     private CRLConfig myCRLConfig = new CRLConfig();
 
+    /**
+     * Constructs a new JmxTLSConfig.
+     *
+     * @param isEnabled whether TLS is enabled
+     * @param keyStorePath the key store path
+     * @param keyStorePassword the key store password
+     * @param trustStorePath the trust store path
+     * @param trustStorePassword the trust store password
+     * @param certificatePath the PEM certificate file path
+     * @param certificatePrivateKeyPath the PEM private key file path
+     * @param trustCertificatePath the PEM trust certificate file path
+     * @param algorithm the algorithm to use for key/trust manager factories
+     */
     @JsonCreator
     @SuppressWarnings("CPD-START")
     public JmxTLSConfig(@JsonProperty("enabled") final boolean isEnabled,
@@ -67,8 +81,16 @@ public class JmxTLSConfig implements TLSConfig
                     "Invalid TLS config, you must either configure KeyStore or PEM based certificates.");
         }
     }
+    /**
+     * Constructs a new JmxTLSConfig with keystore-based configuration only.
+     *
+     * @param isEnabled whether TLS is enabled
+     * @param keyStorePath the key store path
+     * @param keyStorePassword the key store password
+     * @param trustStorePath the trust store path
+     * @param trustStorePassword the trust store password
+     */
     @SuppressWarnings("CPD-END")
-
     public JmxTLSConfig(final boolean isEnabled,
                         final String keyStorePath,
                         final String keyStorePassword,
@@ -95,18 +117,30 @@ public class JmxTLSConfig implements TLSConfig
                 && myTrustStorePassword != null && !myTrustStorePassword.isEmpty();
     }
 
+    /**
+     * Returns whether enabled.
+     * @return true if enabled
+     */
     @Override
     public final boolean isEnabled()
     {
         return myIsEnabled;
     }
 
+    /**
+     * Returns the key store path.
+     * @return the key store path
+     */
     @Override
     public final String getKeyStorePath()
     {
         return myKeyStorePath;
     }
 
+    /**
+     * Returns the key store password.
+     * @return the key store password
+     */
     @Override
     @JsonProperty(value = "keystore_password", access = JsonProperty.Access.WRITE_ONLY)
     public final String getKeyStorePassword()
@@ -114,12 +148,20 @@ public class JmxTLSConfig implements TLSConfig
         return myKeyStorePassword;
     }
 
+    /**
+     * Returns the trust store path.
+     * @return the trust store path
+     */
     @Override
     public final String getTrustStorePath()
     {
         return myTrustStorePath;
     }
 
+    /**
+     * Returns the trust store password.
+     * @return the trust store password
+     */
     @Override
     @JsonProperty(value = "truststore_password", access = JsonProperty.Access.WRITE_ONLY)
     public final String getTrustStorePassword()
@@ -127,35 +169,62 @@ public class JmxTLSConfig implements TLSConfig
         return myTrustStorePassword;
     }
 
+    /**
+     * Returns the certificate path.
+     * @return the certificate path
+     */
     @Override
     public final Optional<String> getCertificatePath()
     {
         return Optional.ofNullable(myCertificatePath);
     }
 
+    /**
+     * Returns the certificate private key path.
+     *
+     * @return an {@link Optional} containing the certificate private key path, or empty if not configured
+     */
     @Override
     public final Optional<String> getCertificatePrivateKeyPath()
     {
         return Optional.ofNullable(myCertificatePrivateKeyPath);
     }
 
+    /**
+     * Returns the trust certificate path.
+     *
+     * @return an {@link Optional} containing the trust certificate path, or empty if not configured
+     */
     @Override
     public final Optional<String> getTrustCertificatePath()
     {
         return Optional.ofNullable(myTrustCertificatePath);
     }
 
+    /**
+     * Returns the TLS protocol version.
+     *
+     * @return the protocol string, or null if not set
+     */
     public final String getProtocol()
     {
         return myProtocol;
     }
 
+    /**
+     * Sets the protocol.
+     * @param protocol the TLS protocol version
+     */
     @JsonProperty("protocol")
     public final void setProtocol(final String protocol)
     {
         myProtocol = protocol;
     }
 
+    /**
+     * Returns the cipher suites.
+     * @return the cipher suites
+     */
     @Override
     public final Optional<String[]> getCipherSuites()
     {
@@ -167,11 +236,20 @@ public class JmxTLSConfig implements TLSConfig
         return Optional.of(Arrays.copyOf(myCipherSuitesAsList, myCipherSuitesAsList.length));
     }
 
+    /**
+     * Returns the cipher suites as a comma-separated string.
+     *
+     * @return the cipher suites string, or null if not set
+     */
     public final String getCipherSuitesAsString()
     {
         return myCipherSuites;
     }
 
+    /**
+     * Returns the protocols.
+     * @return the protocols as a string array
+     */
     @Override
     public final String[] getProtocols()
     {
@@ -182,6 +260,11 @@ public class JmxTLSConfig implements TLSConfig
         return myProtocol.split(",");
     }
 
+    /**
+     * Returns the CRL (Certificate Revocation List) configuration.
+     *
+     * @return the CRL configuration
+     */
     @JsonProperty("crl")
     @Override
     public final CRLConfig getCRLConfig()
@@ -189,6 +272,11 @@ public class JmxTLSConfig implements TLSConfig
         return myCRLConfig;
     }
 
+    /**
+     * Sets the cipher suites as a comma-separated string.
+     *
+     * @param cipherSuites the cipher suites to enable
+     */
     @JsonProperty("cipher_suites")
     public final void setCipherSuites(final String cipherSuites)
     {
@@ -201,30 +289,51 @@ public class JmxTLSConfig implements TLSConfig
         return cipherSuites == null ? null : cipherSuites.split(",");
     }
 
+    /**
+     * Sets whether endpoint verification is required during the TLS handshake.
+     *
+     * @param requireEndpointVerification true to require endpoint verification
+     */
     @JsonProperty("require_endpoint_verification")
     public final void setRequireEndpointVerification(final boolean requireEndpointVerification)
     {
         myRequireEndpointVerification = requireEndpointVerification;
     }
 
+    /**
+     * Sets the keystore/truststore type (e.g., "JKS", "PKCS12").
+     *
+     * @param storeType the store type
+     */
     @JsonProperty("store_type")
     public final void setStoreType(final String storeType)
     {
         myStoreType = storeType;
     }
 
+    /**
+     * Sets the algorithm for key/trust manager factories.
+     *
+     * @param algorithm the algorithm name
+     */
     @JsonProperty("algorithm")
     public final void setAlgorithm(final String algorithm)
     {
         myAlgorithm = algorithm;
     }
 
+    /**
+     * Sets the CRL (Certificate Revocation List) configuration.
+     *
+     * @param crlConfig the CRL configuration
+     */
     @JsonProperty("crl")
     public final void setCRLConfig(final CRLConfig crlConfig)
     {
         myCRLConfig = crlConfig;
     }
 
+    /** {@inheritDoc} */
     @Override
     public final boolean equals(final Object o)
     {
@@ -251,6 +360,7 @@ public class JmxTLSConfig implements TLSConfig
                 && Objects.equals(myProtocol, that.myProtocol) && Objects.equals(myCipherSuites, that.myCipherSuites);
     }
 
+    /** {@inheritDoc} */
     @Override
     public final int hashCode()
     {
@@ -260,6 +370,11 @@ public class JmxTLSConfig implements TLSConfig
                 myTrustStorePassword, myProtocol, myCipherSuites);
     }
 
+    /**
+     * Returns whether PEM-based certificate configuration is present.
+     *
+     * @return true if certificate path, private key path, and trust certificate path are all configured
+     */
     @Override
     public final boolean isCertificateConfigured()
     {
@@ -267,18 +382,33 @@ public class JmxTLSConfig implements TLSConfig
                 && getTrustCertificatePath().isPresent();
     }
 
+    /**
+     * Returns whether endpoint verification is required during the TLS handshake.
+     *
+     * @return true if endpoint verification is required
+     */
     @Override
     public final boolean requiresEndpointVerification()
     {
         return myRequireEndpointVerification;
     }
 
+    /**
+     * Returns the store type used for the keystore/truststore.
+     *
+     * @return an {@link Optional} containing the store type, or empty if not configured
+     */
     @Override
     public final Optional<String> getStoreType()
     {
         return Optional.ofNullable(myStoreType);
     }
 
+    /**
+     * Returns the algorithm used for key/trust manager factories.
+     *
+     * @return an {@link Optional} containing the algorithm, or empty if not configured
+     */
     @Override
     public final Optional<String> getAlgorithm()
     {

@@ -65,6 +65,12 @@ public class ReplicationStateImpl implements ReplicationState
     private final NodeResolver myNodeResolver;
     private final CqlSession mySession;
 
+    /**
+     * Constructs a ReplicationStateImpl.
+     *
+     * @param nodeResolver the node resolver for mapping IP addresses to driver nodes.
+     * @param session the CQL session used to access cluster metadata.
+     */
     public ReplicationStateImpl(final NodeResolver nodeResolver, final CqlSession session)
     {
         myNodeResolver = nodeResolver;

@@ -42,6 +42,7 @@ import java.util.List;
 import org.springframework.web.server.ResponseStatusException;
 
 
+/** REST controller for managing repair rejection configurations. */
 @Tag(name = "Reject-Configuration", description = "Management of reject repairs per keyspace, table and datacenter")
 @RestController
 public class RejectConfigREST
@@ -49,11 +50,21 @@ public class RejectConfigREST
     @Autowired
     private final TimeBasedRunPolicy myTimeBasedRunPolicy;
 
+    /**
+     * Constructs the reject configuration REST controller.
+     * @param timeBasedRunPolicy the time based run policy
+     */
     public RejectConfigREST(final TimeBasedRunPolicy timeBasedRunPolicy)
     {
         myTimeBasedRunPolicy = timeBasedRunPolicy;
     }
 
+    /**
+     * Returns all rejections, optionally filtered by keyspace and table.
+     * @param keyspace the keyspace name
+     * @param table the table reference
+     * @return the rejections
+     */
     @GetMapping(value = "/rejections")
     @Operation(operationId = "get-rejections",
             description = "Get rejection information, if keyspace and table are provided it will return the data"
@@ -71,6 +82,11 @@ public class RejectConfigREST
         return ResponseEntity.ok(getRejections(keyspace, table));
     }
 
+    /**
+     * Creates a new rejection configuration entry.
+     * @param bucket the time bucket
+     * @return the response
+     */
     @PostMapping(value = "/rejections", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(operationId = "create-rejection",
             description = "Create rejection information",
@@ -95,6 +111,11 @@ public class RejectConfigREST
     }
 
 
+    /**
+     * Adds a datacenter exclusion to an existing rejection entry.
+     * @param bucket the time bucket
+     * @return the response
+     */
     @PatchMapping(value = "/rejections", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(operationId = "update-rejection",
             description = "Update rejection information, it will add a new datacenter in "
@@ -120,6 +141,11 @@ public class RejectConfigREST
         }
     }
 
+    /**
+     * Deletes a rejection entry or removes datacenter exclusions.
+     * @param bucket the time bucket
+     * @return the response
+     */
     @DeleteMapping(value = "/rejections", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(operationId = "delete-rejection",
             description = "Delete rejection based on Primary Key data provided, "
@@ -151,6 +177,10 @@ public class RejectConfigREST
         }
     }
 
+    /**
+     * Deletes all rejection entries.
+     * @return the response
+     */
     @DeleteMapping(value = "/rejections/all", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(operationId = "delete-all-rejections",
             description = "Delete all the data related with rejections.",
@@ -175,6 +205,12 @@ public class RejectConfigREST
     }
 
 
+    /**
+     * Returns rejections filtered by keyspace and table, or all if not specified.
+     * @param keyspaceName the keyspace name
+     * @param tableName the table name
+     * @return the list of rejections
+     */
     public final List<TimeBasedRunPolicyBucket> getRejections(
             final String keyspaceName,
             final String tableName)
@@ -190,6 +226,11 @@ public class RejectConfigREST
         return toBucket(myTimeBasedRunPolicy.getAllRejections());
     }
 
+    /**
+     * Converts a ResultSet into a list of TimeBasedRunPolicyBucket objects.
+     * @param rs the result set
+     * @return the list of buckets
+     */
     public final List<TimeBasedRunPolicyBucket> toBucket(final ResultSet rs)
     {
         List<TimeBasedRunPolicyBucket> rejections = new ArrayList<>();

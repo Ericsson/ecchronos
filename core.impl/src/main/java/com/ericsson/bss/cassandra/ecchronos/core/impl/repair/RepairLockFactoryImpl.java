@@ -36,6 +36,10 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Implementation of {@link RepairLockFactory} that acquires distributed locks
+ * for repair resources with configurable concurrency per resource.
+ */
 public class RepairLockFactoryImpl implements RepairLockFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairLockFactoryImpl.class);
@@ -47,6 +51,14 @@ public class RepairLockFactoryImpl implements RepairLockFactory
     // Not bounded, but growth is negligible (~100 bytes per entry).
     private static final ConcurrentHashMap<String, Semaphore> LOCAL_GATES = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<RepairResource, Semaphore> RESOURCE_GATES = new ConcurrentHashMap<>();
+
+    /**
+     * Default constructor.
+     */
+    public RepairLockFactoryImpl()
+    {
+        // Default constructor
+    }
 
     /**
      * Reset local gates. Intended for testing only.

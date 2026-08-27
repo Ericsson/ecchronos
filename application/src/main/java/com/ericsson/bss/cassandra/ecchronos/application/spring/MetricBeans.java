@@ -44,6 +44,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.MeterFilterImpl;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.config.metrics.StatisticsConfig;
 
+/** Spring configuration for metrics-related beans. */
 @Configuration
 public class MetricBeans
 {
@@ -51,6 +52,10 @@ public class MetricBeans
     private final CompositeMeterRegistry myCompositeMeterRegistry;
     private PrometheusMeterRegistry myPrometheusMeterRegistry;
 
+    /**
+     * Constructs a new MetricBeans.
+     * @param config the configuration
+     */
     public MetricBeans(final Config config)
     {
         myCompositeMeterRegistry = new CompositeMeterRegistry(Clock.SYSTEM);
@@ -123,12 +128,20 @@ public class MetricBeans
         myCompositeMeterRegistry.add(simpleMeterRegistry);
     }
 
+    /**
+     * Returns the Prometheus meter registry.
+     * @return the prometheus meter registry
+     */
     @Bean
     public PrometheusMeterRegistry prometheusMeterRegistry()
     {
         return myPrometheusMeterRegistry;
     }
 
+    /**
+     * Returns the composite meter registry.
+     * @return the ECC composite meter registry
+     */
     @Bean
     @Primary
     public CompositeMeterRegistry eccCompositeMeterRegistry()
@@ -136,6 +149,10 @@ public class MetricBeans
         return myCompositeMeterRegistry;
     }
 
+    /**
+     * Returns the metrics server properties.
+     * @return the metrics server properties
+     */
     @Bean
     public MetricsServerProperties metricsServerProperties()
     {
@@ -147,6 +164,7 @@ public class MetricBeans
      *
      * @return the filter that disallows /metric on any other port than metricsServer.port
      * and disallows any endpoint besides /metric on metricsServer.port.
+     * @param metricsServerProperties the metrics server properties
      */
     @Bean
     public FilterRegistrationBean requestFilter(final MetricsServerProperties metricsServerProperties)

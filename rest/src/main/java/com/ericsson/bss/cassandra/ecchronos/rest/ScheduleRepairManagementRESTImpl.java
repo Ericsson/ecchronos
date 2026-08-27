@@ -51,11 +51,20 @@ public class ScheduleRepairManagementRESTImpl implements ScheduleRepairManagemen
     @Autowired
     private final RepairScheduler myRepairScheduler;
 
+    /**
+     * Constructs the schedule repair management REST controller.
+     * @param repairScheduler the repair scheduler
+     */
     public ScheduleRepairManagementRESTImpl(final RepairScheduler repairScheduler)
     {
         myRepairScheduler = repairScheduler;
     }
 
+    /**
+     * Retrieves the status of the currently running repair job.
+     *
+     * @return a response containing the current job status as a JSON string.
+     */
     @Override
     @GetMapping(value = REPAIR_MANAGEMENT_ENDPOINT_PREFIX + "/running-job", produces = MediaType.APPLICATION_JSON_VALUE)
     public final ResponseEntity<String> getCurrentJobStatus()
@@ -77,6 +86,13 @@ public class ScheduleRepairManagementRESTImpl implements ScheduleRepairManagemen
         return ResponseEntity.ok(getListOfSchedules(keyspace, table));
     }
 
+    /**
+     * Retrieves all repair schedules for a specific node.
+     *
+     * @param id the UUID of the node.
+     * @param full whether to return full schedule details.
+     * @return a list of schedules for the specified node.
+     */
     @GetMapping(value = REPAIR_MANAGEMENT_ENDPOINT_PREFIX + "/schedules/{id}",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(operationId = "get-schedules-by-id", description = "Get schedules matching the id.",
