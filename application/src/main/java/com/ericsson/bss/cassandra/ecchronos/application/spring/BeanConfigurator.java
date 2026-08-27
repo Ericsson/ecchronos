@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.application.ReflectionUtils;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.Interval;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.ReloadingCertificateHandler;
@@ -288,18 +289,21 @@ public class BeanConfigurator
     public JolokiaNotificationController jolokiaNotificationController(
         final Config config,
         final DistributedNativeConnectionProvider nativeConnectionProvider,
-        final IpTranslator ipTranslator
+        final IpTranslator ipTranslator,
+        final EccNodesSync eccNodesSync
     )
     {
         LOG.info("Creating JolokiaNotificationController");
-        return getJolokiaNotificationController(config, nativeConnectionProvider, jmxSecurity::get, ipTranslator);
+        return getJolokiaNotificationController(config, nativeConnectionProvider, jmxSecurity::get, ipTranslator,
+                eccNodesSync);
     }
 
     private JolokiaNotificationController getJolokiaNotificationController(
         final Config config,
         final DistributedNativeConnectionProvider nativeConnectionProvider,
         final Supplier<Security.JmxSecurity> securitySupplier,
-        final IpTranslator ipTranslator
+        final IpTranslator ipTranslator,
+        final EccNodesSync eccNodesSync
     )
     {
         Supplier<TLSConfig> jmxTlsSupplier = () -> securitySupplier.get().getJmxTlsConfig();
@@ -317,6 +321,18 @@ public class BeanConfigurator
             .withRunDelay(config.getConnectionConfig().getJmxConnection().getRunDelay())
             .withIpTranslator(ipTranslator)
             .withCertificateHandler(certificateHandler)
+            .withNodeUnavailableCallback(nodeID ->
+            {
+                Node node = nativeConnectionProvider.getNodes().get(nodeID);
+                if (node != null)
+                {
+                    LOG.warn("Marking node {} as UNAVAILABLE after consecutive Jolokia notification failures",
+                            nodeID);
+                    eccNodesSync.updateNodeStatus(
+                            com.ericsson.bss.cassandra.ecchronos.utils.enums.sync.NodeStatus.UNAVAILABLE,
+                            node.getDatacenter(), nodeID);
+                }
+            })
             .build();
     }
 

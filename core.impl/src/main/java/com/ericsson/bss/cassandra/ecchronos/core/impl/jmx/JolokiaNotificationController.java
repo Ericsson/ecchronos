@@ -42,6 +42,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 
 /**
  * Controller responsible for managing Jolokia-based JMX notification listeners.
@@ -70,6 +71,7 @@ public class JolokiaNotificationController implements Closeable
 
     private final JolokiaHttpClient myJolokiaHttpClient;
     private final long myRunDelay;
+    private final Consumer<UUID> myNodeUnavailableCallback;
 
     /**
      * Constructs a JolokiaNotificationController from the provided builder.
@@ -79,6 +81,7 @@ public class JolokiaNotificationController implements Closeable
     public JolokiaNotificationController(final Builder builder)
     {
         myRunDelay = builder.myRunDelay;
+        myNodeUnavailableCallback = builder.myNodeUnavailableCallback;
         myPollingSemaphore = new Semaphore(NOTIFICATION_THREAD_POOL_SIZE);
         myJolokiaHttpClient = new JolokiaHttpClient(
                 builder.myCertificateHandler,
@@ -336,6 +339,17 @@ public class JolokiaNotificationController implements Closeable
                     }
                 }
             }
+            if (myNodeUnavailableCallback != null)
+            {
+                try
+                {
+                    myNodeUnavailableCallback.accept(myNodeID);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Failed to mark node {} as unavailable", myNodeID, e);
+                }
+            }
         }
 
         private void createNotification(final NotificationListenerResponse.Notification notificationObj)
@@ -450,6 +464,7 @@ public class JolokiaNotificationController implements Closeable
         private long myRunDelay = DEFAULT_RUN_DELAY;
         private IpTranslator myIpTranslator;
         private CertificateHandler myCertificateHandler;
+        private Consumer<UUID> myNodeUnavailableCallback;
 
         /**
          * Default constructor.
@@ -547,6 +562,21 @@ public class JolokiaNotificationController implements Closeable
         public Builder withCertificateHandler(final CertificateHandler certificateHandler)
         {
             myCertificateHandler = certificateHandler;
+            return this;
+        }
+
+        /**
+         * Sets the callback invoked when a node is determined to be unavailable
+         * after consecutive notification polling failures. This allows the caller
+         * to mark the node for retry by the {@code RetrySchedulerService}.
+         *
+         * @param callback
+         *         consumer that accepts the node UUID to mark as unavailable
+         * @return Builder
+         */
+        public Builder withNodeUnavailableCallback(final Consumer<UUID> callback)
+        {
+            myNodeUnavailableCallback = callback;
             return this;
         }
 
