@@ -219,7 +219,7 @@ public class RepairLockFactoryImpl implements RepairLockFactory
         }
 
         String msg = String.format("Lock resources exhausted for %s", repairResource);
-        LOG.warn(msg);
+        LOG.debug(msg);
         throw new LockException(msg);
     }
 
