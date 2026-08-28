@@ -177,6 +177,34 @@
             </plugin>
 
 
+            <!-- Remove root-owned certificate directories created by Docker during integration tests -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>cleanup-certificates</id>
+                        <phase>pre-clean</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>docker</executable>
+                            <arguments>
+                                <argument>run</argument>
+                                <argument>--rm</argument>
+                                <argument>-v</argument>
+                                <argument>${project.build.directory}:/target-dir</argument>
+                                <argument>alpine</argument>
+                                <argument>rm</argument>
+                                <argument>-rf</argument>
+                                <argument>/target-dir/certificates</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 
@@ -304,6 +332,7 @@
                                     <redirectErrorStream>true</redirectErrorStream>
                                 </configuration>
                             </execution>
+
                         </executions>
                     </plugin>
 
@@ -402,6 +431,7 @@
                                     <redirectErrorStream>true</redirectErrorStream>
                                 </configuration>
                             </execution>
+
                         </executions>
                     </plugin>
                 </plugins>
@@ -494,6 +524,7 @@
                                     <redirectErrorStream>true</redirectErrorStream>
                                 </configuration>
                             </execution>
+
                         </executions>
                     </plugin>
                 </plugins>
@@ -586,6 +617,7 @@
                                     <redirectErrorStream>true</redirectErrorStream>
                                 </configuration>
                             </execution>
+
                         </executions>
                     </plugin>
                 </plugins>
@@ -714,6 +746,7 @@
                                     <redirectErrorStream>true</redirectErrorStream>
                                 </configuration>
                             </execution>
+
                         </executions>
                     </plugin>
 
@@ -848,6 +881,7 @@
                                     <redirectErrorStream>true</redirectErrorStream>
                                 </configuration>
                             </execution>
+
                         </executions>
                     </plugin>
 
