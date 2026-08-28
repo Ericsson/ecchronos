@@ -152,6 +152,11 @@
                     <!-- Integration tests -->
                     <plugin>
                         <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <project.build.directory>${project.build.directory}</project.build.directory>
+                            </systemPropertyVariables>
+                        </configuration>
                         <executions>
                             <execution>
                                 <goals>
@@ -161,6 +166,7 @@
                             </execution>
                         </executions>
                     </plugin>
+
                 </plugins>
             </build>
         </profile>
@@ -175,6 +181,11 @@
                 <plugins>
                     <plugin>
                         <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <project.build.directory>${project.build.directory}</project.build.directory>
+                            </systemPropertyVariables>
+                        </configuration>
                         <executions>
                             <execution>
                                 <goals>
@@ -221,6 +232,34 @@
                 <configuration>
                     <skip>true</skip>
                 </configuration>
+            </plugin>
+
+            <!-- Remove root-owned certificate directories created by Docker during integration tests -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>cleanup-certificates</id>
+                        <phase>pre-clean</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>docker</executable>
+                            <arguments>
+                                <argument>run</argument>
+                                <argument>--rm</argument>
+                                <argument>-v</argument>
+                                <argument>${project.build.directory}:/target-dir</argument>
+                                <argument>alpine</argument>
+                                <argument>rm</argument>
+                                <argument>-rf</argument>
+                                <argument>/target-dir/certificates</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
