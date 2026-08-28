@@ -26,9 +26,11 @@ from tenacity import retry, retry_if_result, stop_after_delay, wait_fixed
 
 from conftest import (
     assert_nodes_size_is_equal,
+    extract_ecchronos_ids,
     run_ecctool_repairs,
     run_ecctool_run_repair,
     run_ecctool_state_nodes,
+    run_ecctool_status,
 )
 
 logger = logging.getLogger(__name__)
@@ -111,6 +113,19 @@ def test_install_ecchronos_dc2(install_cassandra_cluster, test_environment):
     test_environment.wait_for_ecchronos_ready(fixed_ipv4_address="172.29.0.8", bind_port=8081)
     out, _ = run_ecctool_state_nodes(ECC_INSTANCE_NAME_DC2)
     assert_nodes_size_is_equal(out, 2)
+
+
+@pytest.mark.dependency(
+    name="test_ecctool_status_shows_multiple_instances",
+    depends=["test_install_ecchronos_dc1", "test_install_ecchronos_dc2"],
+)
+def test_ecctool_status_shows_multiple_instances():
+    out, exit_code = run_ecctool_status(ECC_INSTANCE_NAME_DC1)
+    assert exit_code == 0, out.decode("ascii")
+    ecchronos_ids = extract_ecchronos_ids(out)
+    assert ECC_INSTANCE_NAME_DC1 in ecchronos_ids
+    assert ECC_INSTANCE_NAME_DC2 in ecchronos_ids
+    assert len(ecchronos_ids) >= 2
 
 
 @pytest.mark.dependency(

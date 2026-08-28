@@ -104,6 +104,12 @@ ARG_JOB_ID = {
 }
 ARG_KEYSPACE = {"flags": ["-k", "--keyspace"], "type": str, "help": "keyspace"}
 ARG_LIMIT = {"flags": ["-l", "--limit"], "type": int, "help": "limit output rows (use -1 for no limit)", "default": -1}
+ARG_LOCAL = {
+    "flags": ["--local"],
+    "action": "store_true",
+    "help": "check whether the local ecChronos instance is running (legacy status check)",
+    "default": False,
+}
 ARG_NODE_ID = {
     "flags": ["-n", "--node"],
     "type": str,
@@ -426,9 +432,14 @@ def add_rejections_update_action(rejections_subparsers):
 
 
 def add_status_subcommand(sub_parsers):
-    parser_status = sub_parsers.add_parser("status", description="View status of the ecChronos instance.")
+    parser_status = sub_parsers.add_parser(
+        "status",
+        description="View cluster-wide status of nodes registered in nodes_sync across all ecChronos instances.",
+    )
+    add_common_arg(parser_status, ARG_COLUMNS)
+    add_common_arg(parser_status, ARG_LOCAL)
     add_common_arg(parser_status, ARG_URL)
-    add_common_arg(parser_status, ARG_OUTPUT_JSON)
+    add_common_arg(parser_status, ARG_OUTPUT_JSON_TABLE)
 
 
 def _create_rejections(arguments):
@@ -783,20 +794,35 @@ def stop(arguments):
             sys.exit(1)
 
 
-def status(arguments, print_running=False):
+def _verify_local_instance_running(arguments, print_running=False):
     request = rest.RepairSchedulerRequest(base_url=arguments.url)
     result = request.list_schedules()
     if result.is_successful():
         if print_running:
             if arguments.output == "json":
                 table_printer.output_json({"running": True})
-            elif print_running:
+            else:
                 print("ecChronos is running.")
     else:
         if arguments.output == "json":
             table_printer.output_json({"running": False})
         else:
             print("ecChronos is not running.")
+        sys.exit(1)
+
+
+def status(arguments):
+    if arguments.local:
+        _verify_local_instance_running(arguments, print_running=True)
+        return
+
+    request = rest.StateManagementRequest(base_url=arguments.url)
+    result = request.get_nodes(all_instances=True)
+
+    if result.is_successful():
+        table_printer.print_nodes(result.data, columns=arguments.columns, output=arguments.output)
+    else:
+        print(result.format_exception())
         sys.exit(1)
 
 
@@ -815,33 +841,33 @@ def running_job(arguments):
 
 def run_subcommand(arguments):
     if arguments.subcommand == "config":
-        status(arguments)
+        _verify_local_instance_running(arguments)
         config(arguments)
     elif arguments.subcommand == "rejections":
-        status(arguments)
+        _verify_local_instance_running(arguments)
         rejections(arguments)
     elif arguments.subcommand == "repair-info":
-        status(arguments)
+        _verify_local_instance_running(arguments)
         repair_info(arguments)
     elif arguments.subcommand == "repairs":
-        status(arguments)
+        _verify_local_instance_running(arguments)
         repairs(arguments)
     elif arguments.subcommand == "run-repair":
-        status(arguments)
+        _verify_local_instance_running(arguments)
         run_repair(arguments)
     elif arguments.subcommand == "running-job":
-        status(arguments)
+        _verify_local_instance_running(arguments)
         running_job(arguments)
     elif arguments.subcommand == "schedules":
-        status(arguments)
+        _verify_local_instance_running(arguments)
         schedules(arguments)
     elif arguments.subcommand == "start":
         start(arguments)
     elif arguments.subcommand == "state":
-        status(arguments)
+        _verify_local_instance_running(arguments)
         state(arguments)
     elif arguments.subcommand == "status":
-        status(arguments, print_running=True)
+        status(arguments)
     elif arguments.subcommand == "stop":
         stop(arguments)
 

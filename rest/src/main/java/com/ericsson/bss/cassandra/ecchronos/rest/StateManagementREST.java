@@ -27,10 +27,11 @@ import java.util.List;
 public interface StateManagementREST
 {
     /**
-     * Get a list of nodes managed by local instance. Will fetch all if no datacenter is specified.
+     * Get a list of nodes managed by ecChronos instances.
      *
-     * @param datacenter The datacenter name(optional)
+     * @param datacenter The datacenter name (optional). Only applies when all is false.
+     * @param all When true, return nodes from all ecChronos instances. When false, return nodes for the local instance.
      * @return A list of JSON representations of {@link NodeSyncState}
      */
-    ResponseEntity<List<NodeSyncState>> getNodes(String datacenter);
+    ResponseEntity<List<NodeSyncState>> getNodes(String datacenter, boolean all);
 }

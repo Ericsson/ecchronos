@@ -23,3 +23,11 @@ Feature: API to get state
     Then the response is successful
     And the response matches the json schema nodes
     And the number of nodes is 2
+
+  Scenario: Get nodes for all ecChronos instances
+    Given I have a json schema nodes
+    And I use the url localhost:8080/state/nodes?all=true
+    When I send a GET request
+    Then the response is successful
+    And the response matches the json schema nodes
+    And the number of nodes is 4

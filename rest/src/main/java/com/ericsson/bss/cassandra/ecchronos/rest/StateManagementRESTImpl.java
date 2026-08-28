@@ -54,21 +54,35 @@ public class StateManagementRESTImpl implements StateManagementREST
 
     @Override
     @GetMapping(value = INTERNAL_MANAGEMENT_ENDPOINT_PREFIX + "/nodes", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(operationId = "get-nodes", description = "Get nodes managed by local instance.",
-            summary = "Get nodes managed by local instance.")
+    @Operation(operationId = "get-nodes", description = "Get nodes managed by ecChronos instances.",
+            summary = "Get nodes managed by ecChronos instances.")
     public final ResponseEntity<List<NodeSyncState>> getNodes(
             @RequestParam(required = false)
             @Parameter(description = "Only return nodes managed by the local instance for the specified datacenter.")
-            final String datacenter
+            final String datacenter,
+            @RequestParam(required = false, defaultValue = "false")
+            @Parameter(description = "When true, return nodes from all ecChronos instances.")
+            final boolean all
     )
     {
-        return ResponseEntity.ok(getNodesAndFormat(datacenter));
+        return ResponseEntity.ok(getNodesAndFormat(datacenter, all));
     }
 
-    private List<NodeSyncState> getNodesAndFormat(final String datacenter)
+    private List<NodeSyncState> getNodesAndFormat(final String datacenter, final boolean all)
     {
-        ResultSet rs = datacenter == null
-                ? myEccNodesSync.getAllByLocalInstance() : myEccNodesSync.getAllByLocalAndDCInstance(datacenter);
+        final ResultSet rs;
+        if (all)
+        {
+            rs = myEccNodesSync.getAll();
+        }
+        else if (datacenter == null)
+        {
+            rs = myEccNodesSync.getAllByLocalInstance();
+        }
+        else
+        {
+            rs = myEccNodesSync.getAllByLocalAndDCInstance(datacenter);
+        }
 
         List<NodeSyncState> nodesList = new ArrayList<>();
 

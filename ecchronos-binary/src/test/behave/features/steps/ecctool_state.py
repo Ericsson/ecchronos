@@ -46,6 +46,24 @@ def step_list_state_nodes_with_json(context):
     handle_state_nodes_output(context)
 
 
+@when("we list status")
+def step_list_status(context):
+    run_ecctool(context, ["status"])
+    handle_state_nodes_output(context)
+
+
+@when("we list status with json output option")
+def step_list_status_with_json(context):
+    run_ecctool(context, ["status", "-o", "json"])
+    handle_state_nodes_output(context)
+
+
+@when("we list local status")
+def step_list_local_status(context):
+    run_ecctool(context, ["status", "--local"])
+    context.all = context.out.decode("ascii")
+
+
 @then("the output should contain a valid state nodes header")
 def step_validate_state_nodes_header(context):
     validate_header(context.header, STATE_NODES_HEADER)
@@ -57,3 +75,8 @@ def step_validate_state_nodes_json_content(context):
     assert "nodes" in data
     assert isinstance(data["nodes"], list)
     assert len(data["nodes"]) > 0
+
+
+@then("the output should contain local ecchronos running status")
+def step_validate_local_status(context):
+    assert "ecChronos is running." in context.all

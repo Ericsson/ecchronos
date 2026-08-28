@@ -1,21 +1,53 @@
 # ecctool
 
-ecctool is a command line utility used to perform operations toward an ecChronos instance. Run ‘ecctool &lt;subcommand&gt; –help’ to get more information about each subcommand.
+ecctool is a command line utility used to perform operations toward an ecChronos instance. Run ‘ecctool <subcommand> –help’ to get more information about each subcommand.
 
 ```console
-usage: ecctool [-h] {rejections,repair-info,repairs,run-repair,running-job,schedules,start,state,status,stop} ...
+usage: ecctool [-h]
+               {config,rejections,repair-info,repairs,run-repair,running-job,schedules,start,state,status,stop} ...
 ```
 
 
 ### -h, --help
 show this help message and exit
+
+## ecctool config
+
+Show or update ecChronos configuration.
+
+```console
+usage: ecctool config [-h] [--session-window SESSION_WINDOW]
+                      [--cooldown COOLDOWN]
+                      [--locks-per-resource LOCKS_PER_RESOURCE] [-u URL]
+```
+
+
+### -h, --help
+show this help message and exit
+
+
+### --session-window <session_window>
+session window duration (e.g. 5m, 30s, 300000)
+
+
+### --cooldown <cooldown>
+cooldown duration (e.g. 5m, 30s, 300000)
+
+
+### --locks-per-resource <locks_per_resource>
+locks per resource
+
+
+### -u <url>, --url <url>
+ecchronos host URL (format: [http:/](http:/)/<host>:<port>)
 
 ## ecctool rejections
 
-Manage ecchronos rejections. Use ‘ecctool rejections &lt;action&gt; –help’ for action information.
+Manage ecchronos rejections. Use ‘ecctool rejections <action> –help’ for action information.
 
 ```console
-usage: ecctool rejections [-h] [-u URL] [-c COLUMNS] [-o OUTPUT] {create,delete,get,update} ...
+usage: ecctool rejections [-h] [-u URL] [-c COLUMNS] [-o OUTPUT]
+                          {create,delete,get,update} ...
 ```
 
 
@@ -23,21 +55,24 @@ usage: ecctool rejections [-h] [-u URL] [-c COLUMNS] [-o OUTPUT] {create,delete,
 show this help message and exit
 
 
-### -u &lt;url&gt;, --url &lt;url&gt;
-ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+### -u <url>, --url <url>
+ecchronos host URL (format: [http:/](http:/)/<host>:<port>)
 
 
-### -c &lt;columns&gt;, --columns &lt;columns&gt;
+### -c <columns>, --columns <columns>
 table columns to display (format: 0,1,2,…,N)
 
 
-### -o &lt;output&gt;, --output &lt;output&gt;
+### -o <output>, --output <output>
 output formats: json, table (default)
 
 ## ecctool rejections create
 
 ```console
-usage: ecctool rejections create [-h] -k KEYSPACE -t TABLE -sh START_HOUR -sm START_MINUTE -eh END_HOUR -em END_MINUTE -dcs DC_EXCLUSIONS [DC_EXCLUSIONS ...] [-u URL]
+usage: ecctool rejections create [-h] -k KEYSPACE -t TABLE -sh START_HOUR
+                                 -sm START_MINUTE -eh END_HOUR -em END_MINUTE
+                                 -dcs DC_EXCLUSIONS [DC_EXCLUSIONS ...]
+                                 [-u URL]
 ```
 
 
@@ -45,41 +80,44 @@ usage: ecctool rejections create [-h] -k KEYSPACE -t TABLE -sh START_HOUR -sm ST
 show this help message and exit
 
 
-### -k &lt;keyspace&gt;, --keyspace &lt;keyspace&gt;
+### -k <keyspace>, --keyspace <keyspace>
 keyspace
 
 
-### -t &lt;table&gt;, --table &lt;table&gt;
+### -t <table>, --table <table>
 table
 
 
-### -sh &lt;start_hour&gt;, --start-hour &lt;start_hour&gt;
+### -sh <start_hour>, --start-hour <start_hour>
 start hour
 
 
-### -sm &lt;start_minute&gt;, --start-minute &lt;start_minute&gt;
+### -sm <start_minute>, --start-minute <start_minute>
 start minute
 
 
-### -eh &lt;end_hour&gt;, --end-hour &lt;end_hour&gt;
+### -eh <end_hour>, --end-hour <end_hour>
 end hour
 
 
-### -em &lt;end_minute&gt;, --end-minute &lt;end_minute&gt;
+### -em <end_minute>, --end-minute <end_minute>
 end minute
 
 
-### -dcs &lt;dc_exclusions&gt;, --dc-exclusions &lt;dc_exclusions&gt;
-datacenters to exclude (format: &lt;dc1&gt; &lt;dc2&gt; … &lt;dcN&gt;)
+### -dcs <dc_exclusions>, --dc-exclusions <dc_exclusions>
+datacenters to exclude (format: <dc1> <dc2> … <dcN>)
 
 
-### -u &lt;url&gt;, --url &lt;url&gt;
-ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+### -u <url>, --url <url>
+ecchronos host URL (format: [http:/](http:/)/<host>:<port>)
 
 ## ecctool rejections delete
 
 ```console
-usage: ecctool rejections delete [-h] [-a ALL] [-k KEYSPACE] [-t TABLE] [-sh START_HOUR] [-sm START_MINUTE] [-dcs DC_EXCLUSIONS [DC_EXCLUSIONS ...]] [-u URL]
+usage: ecctool rejections delete [-h] [-a ALL] [-k KEYSPACE] [-t TABLE]
+                                 [-sh START_HOUR] [-sm START_MINUTE]
+                                 [-dcs DC_EXCLUSIONS [DC_EXCLUSIONS ...]]
+                                 [-u URL]
 ```
 
 
@@ -87,32 +125,32 @@ usage: ecctool rejections delete [-h] [-a ALL] [-k KEYSPACE] [-t TABLE] [-sh STA
 show this help message and exit
 
 
-### -a &lt;all&gt;, --all &lt;all&gt;
+### -a <all>, --all <all>
 delete all
 
 
-### -k &lt;keyspace&gt;, --keyspace &lt;keyspace&gt;
+### -k <keyspace>, --keyspace <keyspace>
 keyspace
 
 
-### -t &lt;table&gt;, --table &lt;table&gt;
+### -t <table>, --table <table>
 table
 
 
-### -sh &lt;start_hour&gt;, --start-hour &lt;start_hour&gt;
+### -sh <start_hour>, --start-hour <start_hour>
 start hour
 
 
-### -sm &lt;start_minute&gt;, --start-minute &lt;start_minute&gt;
+### -sm <start_minute>, --start-minute <start_minute>
 start minute
 
 
-### -dcs &lt;dc_exclusions&gt;, --dc-exclusions &lt;dc_exclusions&gt;
-datacenters to exclude (format: &lt;dc1&gt; &lt;dc2&gt; … &lt;dcN&gt;)
+### -dcs <dc_exclusions>, --dc-exclusions <dc_exclusions>
+datacenters to exclude (format: <dc1> <dc2> … <dcN>)
 
 
-### -u &lt;url&gt;, --url &lt;url&gt;
-ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+### -u <url>, --url <url>
+ecchronos host URL (format: [http:/](http:/)/<host>:<port>)
 
 ## ecctool rejections get
 
@@ -125,21 +163,24 @@ usage: ecctool rejections get [-h] [-k KEYSPACE] [-t TABLE] [-u URL]
 show this help message and exit
 
 
-### -k &lt;keyspace&gt;, --keyspace &lt;keyspace&gt;
+### -k <keyspace>, --keyspace <keyspace>
 keyspace
 
 
-### -t &lt;table&gt;, --table &lt;table&gt;
+### -t <table>, --table <table>
 table
 
 
-### -u &lt;url&gt;, --url &lt;url&gt;
-ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+### -u <url>, --url <url>
+ecchronos host URL (format: [http:/](http:/)/<host>:<port>)
 
 ## ecctool rejections update
 
 ```console
-usage: ecctool rejections update [-h] -k KEYSPACE -t TABLE -sh START_HOUR -sm START_MINUTE [-dcs DC_EXCLUSIONS [DC_EXCLUSIONS ...]] [-u URL]
+usage: ecctool rejections update [-h] -k KEYSPACE -t TABLE -sh START_HOUR
+                                 -sm START_MINUTE
+                                 [-dcs DC_EXCLUSIONS [DC_EXCLUSIONS ...]]
+                                 [-u URL]
 ```
 
 
@@ -147,35 +188,37 @@ usage: ecctool rejections update [-h] -k KEYSPACE -t TABLE -sh START_HOUR -sm ST
 show this help message and exit
 
 
-### -k &lt;keyspace&gt;, --keyspace &lt;keyspace&gt;
+### -k <keyspace>, --keyspace <keyspace>
 keyspace
 
 
-### -t &lt;table&gt;, --table &lt;table&gt;
+### -t <table>, --table <table>
 table
 
 
-### -sh &lt;start_hour&gt;, --start-hour &lt;start_hour&gt;
+### -sh <start_hour>, --start-hour <start_hour>
 start hour
 
 
-### -sm &lt;start_minute&gt;, --start-minute &lt;start_minute&gt;
+### -sm <start_minute>, --start-minute <start_minute>
 start minute
 
 
-### -dcs &lt;dc_exclusions&gt;, --dc-exclusions &lt;dc_exclusions&gt;
-datacenters to exclude (format: &lt;dc1&gt; &lt;dc2&gt; … &lt;dcN&gt;)
+### -dcs <dc_exclusions>, --dc-exclusions <dc_exclusions>
+datacenters to exclude (format: <dc1> <dc2> … <dcN>)
 
 
-### -u &lt;url&gt;, --url &lt;url&gt;
-ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+### -u <url>, --url <url>
+ecchronos host URL (format: [http:/](http:/)/<host>:<port>)
 
 ## ecctool repair-info
 
 Get information about repairs for tables. The repair information is based on repair history, meaning both manual and scheduled repairs will be a part of the repair information. This subcommand requires the user to provide either –since or –duration if –keyspace and –table is not provided. If repair info is fetched for a specific table using –keyspace and –table, the duration will default to the table’s GC_GRACE_SECONDS.
 
 ```console
-usage: ecctool repair-info [-h] [-c COLUMNS] [-n NODE] [-k KEYSPACE] [-t TABLE] [-s SINCE] [-d DURATION] [-u URL] [-l LIMIT] [-o OUTPUT]
+usage: ecctool repair-info [-h] [-c COLUMNS] [-n NODE] [-k KEYSPACE]
+                           [-t TABLE] [-s SINCE] [-d DURATION] [-u URL]
+                           [-l LIMIT] [-o OUTPUT]
 ```
 
 
@@ -183,39 +226,39 @@ usage: ecctool repair-info [-h] [-c COLUMNS] [-n NODE] [-k KEYSPACE] [-t TABLE] 
 show this help message and exit
 
 
-### -c &lt;columns&gt;, --columns &lt;columns&gt;
+### -c <columns>, --columns <columns>
 table columns to display (format: 0,1,2,…,N)
 
 
-### -n &lt;node&gt;, --node &lt;node&gt;
+### -n <node>, --node <node>
 only matching node id
 
 
-### -k &lt;keyspace&gt;, --keyspace &lt;keyspace&gt;
+### -k <keyspace>, --keyspace <keyspace>
 keyspace
 
 
-### -t &lt;table&gt;, --table &lt;table&gt;
+### -t <table>, --table <table>
 table
 
 
-### -s &lt;since&gt;, --since &lt;since&gt;
+### -s <since>, --since <since>
 repair information from specified date (ISO8601 format) to now (required unless using –duration or –keyspace/–table)
 
 
-### -d &lt;duration&gt;, --duration &lt;duration&gt;
+### -d <duration>, --duration <duration>
 repair information for specified duration (ISO8601 or simple format: 5s, 5m, 5h, 5d) from now-duration to now (required unless using –since or –keyspace/–table)
 
 
-### -u &lt;url&gt;, --url &lt;url&gt;
-ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+### -u <url>, --url <url>
+ecchronos host URL (format: [http:/](http:/)/<host>:<port>)
 
 
-### -l &lt;limit&gt;, --limit &lt;limit&gt;
+### -l <limit>, --limit <limit>
 limit output rows (use -1 for no limit)
 
 
-### -o &lt;output&gt;, --output &lt;output&gt;
+### -o <output>, --output <output>
 output formats: json, table (default)
 
 ## ecctool repairs
@@ -223,7 +266,8 @@ output formats: json, table (default)
 Show the status of all manual repairs.
 
 ```console
-usage: ecctool repairs [-h] [-c COLUMNS] [-k KEYSPACE] [-t TABLE] [-u URL] [-n NODE] [-i ID] [-l LIMIT] [-o OUTPUT]
+usage: ecctool repairs [-h] [-c COLUMNS] [-k KEYSPACE] [-t TABLE] [-u URL]
+                       [-n NODE] [-i ID] [-l LIMIT] [-o OUTPUT]
 ```
 
 
@@ -231,35 +275,35 @@ usage: ecctool repairs [-h] [-c COLUMNS] [-k KEYSPACE] [-t TABLE] [-u URL] [-n N
 show this help message and exit
 
 
-### -c &lt;columns&gt;, --columns &lt;columns&gt;
+### -c <columns>, --columns <columns>
 table columns to display (format: 0,1,2,…,N)
 
 
-### -k &lt;keyspace&gt;, --keyspace &lt;keyspace&gt;
+### -k <keyspace>, --keyspace <keyspace>
 keyspace (mutually exclusive with -n/–node)
 
 
-### -t &lt;table&gt;, --table &lt;table&gt;
+### -t <table>, --table <table>
 table (requires -k/–keyspace and is mutually exclusive with -n/–node)
 
 
-### -u &lt;url&gt;, --url &lt;url&gt;
-ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+### -u <url>, --url <url>
+ecchronos host URL (format: [http:/](http:/)/<host>:<port>)
 
 
-### -n &lt;node&gt;, --node &lt;node&gt;
+### -n <node>, --node <node>
 only matching node id (mutually exclusive with -k/–keyspace and -t/–table)
 
 
-### -i &lt;id&gt;, --id &lt;id&gt;
+### -i <id>, --id <id>
 only matching job id (mutually exclusive with -k/–keyspace and -t/–table)
 
 
-### -l &lt;limit&gt;, --limit &lt;limit&gt;
+### -l <limit>, --limit <limit>
 limit output rows (use -1 for no limit)
 
 
-### -o &lt;output&gt;, --output &lt;output&gt;
+### -o <output>, --output <output>
 output formats: json, table (default)
 
 ## ecctool run-repair
@@ -267,7 +311,9 @@ output formats: json, table (default)
 Triggers a manual repair in ecChronos. This will be done through the Cassandra JMX interface.
 
 ```console
-usage: ecctool run-repair [-h] [-c COLUMNS] [-n NODE] [-u URL] [-o OUTPUT] [-r REPAIR_TYPE] [-f] [-e] [-a] [-k KEYSPACE] [-t TABLE]
+usage: ecctool run-repair [-h] [-c COLUMNS] [-n NODE] [-u URL] [-o OUTPUT]
+                          [-r REPAIR_TYPE] [-f] [-e] [-a] [-k KEYSPACE]
+                          [-t TABLE]
 ```
 
 
@@ -275,23 +321,23 @@ usage: ecctool run-repair [-h] [-c COLUMNS] [-n NODE] [-u URL] [-o OUTPUT] [-r R
 show this help message and exit
 
 
-### -c &lt;columns&gt;, --columns &lt;columns&gt;
+### -c <columns>, --columns <columns>
 table columns to display (format: 0,1,2,…,N)
 
 
-### -n &lt;node&gt;, --node &lt;node&gt;
+### -n <node>, --node <node>
 only matching node id (mutually exclusive with -k/–keyspace and -t/–table)
 
 
-### -u &lt;url&gt;, --url &lt;url&gt;
-ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+### -u <url>, --url <url>
+ecchronos host URL (format: [http:/](http:/)/<host>:<port>)
 
 
-### -o &lt;output&gt;, --output &lt;output&gt;
+### -o <output>, --output <output>
 output formats: json, table (default)
 
 
-### -r &lt;repair_type&gt;, --repair_type &lt;repair_type&gt;
+### -r <repair_type>, --repair_type <repair_type>
 type of repair (accepted values: vnode, parallel_vnode and incremental)
 
 
@@ -307,11 +353,11 @@ force repair of disabled tables
 run repair for all nodes
 
 
-### -k &lt;keyspace&gt;, --keyspace &lt;keyspace&gt;
+### -k <keyspace>, --keyspace <keyspace>
 keyspace (applies to all tables within the keyspace with a replication factor greater than 1)
 
 
-### -t &lt;table&gt;, --table &lt;table&gt;
+### -t <table>, --table <table>
 table (requires -k/–keyspace)
 
 ## ecctool running-job
@@ -327,19 +373,21 @@ usage: ecctool running-job [-h] [-o OUTPUT] [-u URL]
 show this help message and exit
 
 
-### -o &lt;output&gt;, --output &lt;output&gt;
+### -o <output>, --output <output>
 output formats: json (defaults to no format)
 
 
-### -u &lt;url&gt;, --url &lt;url&gt;
-ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+### -u <url>, --url <url>
+ecchronos host URL (format: [http:/](http:/)/<host>:<port>)
 
 ## ecctool schedules
 
 Show the status of schedules.
 
 ```console
-usage: ecctool schedules [-h] [-c COLUMNS] [-f] [-n NODE] [-i ID] [-k KEYSPACE] [-l LIMIT] [-o OUTPUT] [-t TABLE] [-u URL]
+usage: ecctool schedules [-h] [-c COLUMNS] [-f] [-n NODE] [-i ID]
+                         [-k KEYSPACE] [-l LIMIT] [-o OUTPUT] [-t TABLE]
+                         [-u URL]
 ```
 
 
@@ -347,7 +395,7 @@ usage: ecctool schedules [-h] [-c COLUMNS] [-f] [-n NODE] [-i ID] [-k KEYSPACE] 
 show this help message and exit
 
 
-### -c &lt;columns&gt;, --columns &lt;columns&gt;
+### -c <columns>, --columns <columns>
 table columns to display (format: 0,1,2,…,N)
 
 
@@ -355,32 +403,32 @@ table columns to display (format: 0,1,2,…,N)
 show full schedules with configuration and vnode state (requires -n/–node)
 
 
-### -n &lt;node&gt;, --node &lt;node&gt;
+### -n <node>, --node <node>
 only matching node id (mutually exclusive with -k/–keyspace and -t/–table)
 
 
-### -i &lt;id&gt;, --id &lt;id&gt;
+### -i <id>, --id <id>
 only matching job id (mutually exclusive with -k/–keyspace and -t/–table)
 
 
-### -k &lt;keyspace&gt;, --keyspace &lt;keyspace&gt;
+### -k <keyspace>, --keyspace <keyspace>
 keyspace (mutually exclusive with -n/–node)
 
 
-### -l &lt;limit&gt;, --limit &lt;limit&gt;
+### -l <limit>, --limit <limit>
 limit output rows (use -1 for no limit)
 
 
-### -o &lt;output&gt;, --output &lt;output&gt;
+### -o <output>, --output <output>
 output formats: json, table (default)
 
 
-### -t &lt;table&gt;, --table &lt;table&gt;
+### -t <table>, --table <table>
 table (requires -k/–keyspace and is mutually exclusive with -n/–node)
 
 
-### -u &lt;url&gt;, --url &lt;url&gt;
-ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+### -u <url>, --url <url>
+ecchronos host URL (format: [http:/](http:/)/<host>:<port>)
 
 ## ecctool start
 
@@ -399,11 +447,11 @@ show this help message and exit
 run in foreground (executes in current terminal and logs to stdout)
 
 
-### -o &lt;output&gt;, --output &lt;output&gt;
+### -o <output>, --output <output>
 output formats: json (defaults to no format)
 
 
-### -p &lt;pidfile&gt;, --pidfile &lt;pidfile&gt;
+### -p <pidfile>, --pidfile <pidfile>
 file for storing process id
 
 ## ecctool state
@@ -419,16 +467,16 @@ usage: ecctool state [-h] [-c COLUMNS] [-o OUTPUT] [-u URL] {nodes} ...
 show this help message and exit
 
 
-### -c &lt;columns&gt;, --columns &lt;columns&gt;
+### -c <columns>, --columns <columns>
 table columns to display (format: 0,1,2,…,N)
 
 
-### -o &lt;output&gt;, --output &lt;output&gt;
+### -o <output>, --output <output>
 output formats: json (defaults to no format)
 
 
-### -u &lt;url&gt;, --url &lt;url&gt;
-ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+### -u <url>, --url <url>
+ecchronos host URL (format: [http:/](http:/)/<host>:<port>)
 
 ## ecctool state nodes
 
@@ -441,15 +489,15 @@ usage: ecctool state nodes [-h] [-u URL]
 show this help message and exit
 
 
-### -u &lt;url&gt;, --url &lt;url&gt;
-ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+### -u <url>, --url <url>
+ecchronos host URL (format: [http:/](http:/)/<host>:<port>)
 
 ## ecctool status
 
-View status of the ecChronos instance.
+View cluster-wide status of nodes registered in nodes_sync across all ecChronos instances.
 
 ```console
-usage: ecctool status [-h] [-u URL] [-o OUTPUT]
+usage: ecctool status [-h] [-c COLUMNS] [--local] [-u URL] [-o OUTPUT]
 ```
 
 
@@ -457,12 +505,20 @@ usage: ecctool status [-h] [-u URL] [-o OUTPUT]
 show this help message and exit
 
 
-### -u &lt;url&gt;, --url &lt;url&gt;
-ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+### -c <columns>, --columns <columns>
+table columns to display (format: 0,1,2,…,N)
 
 
-### -o &lt;output&gt;, --output &lt;output&gt;
-output formats: json (defaults to no format)
+### --local
+check whether the local ecChronos instance is running (legacy status check)
+
+
+### -u <url>, --url <url>
+ecchronos host URL (format: [http:/](http:/)/<host>:<port>)
+
+
+### -o <output>, --output <output>
+output formats: json, table (default)
 
 ## ecctool stop
 
@@ -477,34 +533,12 @@ usage: ecctool stop [-h] [-o OUTPUT] [-p PIDFILE]
 show this help message and exit
 
 
-### -o &lt;output&gt;, --output &lt;output&gt;
+### -o <output>, --output <output>
 output formats: json (defaults to no format)
 
 
-### -p &lt;pidfile&gt;, --pidfile &lt;pidfile&gt;
+### -p <pidfile>, --pidfile <pidfile>
 file containing process id
-
-## ecctool config
-
-Show or update ecChronos runtime configuration. Changes are in-memory only — restarting ecChronos restores values from `ecc.yml`.
-
-```console
-usage: ecctool config [-h] [--session-window SESSION_WINDOW] [--cooldown COOLDOWN] [--locks-per-resource LOCKS_PER_RESOURCE] [-u URL]
-```
-
-When called without arguments, displays the current configuration. When called with one or more parameters, updates the specified values.
-
-### --session-window &lt;duration&gt;
-Time window for batched lock sessions. Accepts duration format: `5m`, `30s`, `2h`, `500ms`, or raw milliseconds.
-
-### --cooldown &lt;duration&gt;
-Cooldown period after a session completes. Accepts same duration format as `--session-window`.
-
-### --locks-per-resource &lt;int&gt;
-Number of concurrent locks per datacenter resource. Must be >= 1.
-
-### -u &lt;url&gt;, --url &lt;url&gt;
-ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
 
 # Examples
 

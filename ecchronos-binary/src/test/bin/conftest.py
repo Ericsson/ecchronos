@@ -257,6 +257,10 @@ def run_ecctool_schedules(container_name="ecchronos-agent-cluster-wide"):
     return run_ecctool(["schedules"], container_name)
 
 
+def run_ecctool_status(container_name="ecchronos-agent-cluster-wide"):
+    return run_ecctool(["status"], container_name)
+
+
 def run_ecctool(params, container_name="ecchronos-agent-cluster-wide"):
     cmd = [f"{global_vars.CONTAINER_BASE_DIR}/bin/ecctool"] + params
     try:
@@ -282,3 +286,14 @@ def assert_schedules_size_is_equal(out, expected_schedules):
     output_data = out.decode("ascii").lstrip().rstrip().split("\n")
     rows = output_data[3:-1]
     assert len(rows) == expected_schedules, f"Expected {expected_schedules} schedules, but found {len(rows)}"
+
+
+def extract_ecchronos_ids(out):
+    output_data = out.decode("ascii").lstrip().rstrip().split("\n")
+    rows = output_data[3:-1]
+    ecchronos_ids = set()
+    for row in rows:
+        columns = [column.strip() for column in row.split("|") if column.strip()]
+        if columns:
+            ecchronos_ids.add(columns[0])
+    return ecchronos_ids

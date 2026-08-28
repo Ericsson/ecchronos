@@ -180,4 +180,36 @@ public class TestEccNodesSync extends AbstractCassandraTest
         ResultSet resultSet = eccNodesSync.getResultSet();
         assertNotNull(resultSet);
     }
+
+    @Test
+    public void testGetAllReturnsNodesFromAllInstances() throws UnknownHostException
+    {
+        UUID nodeId1 = UUID.randomUUID();
+        UUID nodeId2 = UUID.randomUUID();
+        eccNodesSync.verifyInsertNodeInfo(
+                datacenterName,
+                "127.0.0.1",
+                NodeStatus.AVAILABLE.name(),
+                Instant.now(),
+                Instant.now().plus(30, ChronoUnit.MINUTES),
+                nodeId1);
+
+        EccNodesSync otherInstance = EccNodesSync.newBuilder()
+                .withSession(mySession)
+                .withNativeConnection(nativeConnectionProvider)
+                .withConnectionDelayValue(Long.valueOf(10))
+                .withConnectionDelayUnit(TimeUnit.MINUTES)
+                .withEcchronosID("ecchronos-other")
+                .build();
+        otherInstance.verifyInsertNodeInfo(
+                datacenterName,
+                "127.0.0.2",
+                NodeStatus.UNAVAILABLE.name(),
+                Instant.now(),
+                Instant.now().plus(30, ChronoUnit.MINUTES),
+                nodeId2);
+
+        ResultSet resultSet = eccNodesSync.getAll();
+        assertEquals(2, resultSet.all().size());
+    }
 }

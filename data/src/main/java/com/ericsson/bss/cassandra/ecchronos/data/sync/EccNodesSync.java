@@ -73,6 +73,7 @@ public final class EccNodesSync
 
     private final PreparedStatement myGetByEccInstanceStatement;
     private final PreparedStatement myGetByEccInstanceAndDCStatement;
+    private final PreparedStatement myGetAllStatement;
     private final Long connectionDelayValue;
     private final ChronoUnit connectionDelayUnit;
 
@@ -125,6 +126,10 @@ public final class EccNodesSync
                 .build()
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM));
 
+        myGetAllStatement = mySession.prepare(selectFrom(KEYSPACE_NAME, TABLE_NAME).all()
+                .build()
+                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM));
+
         ecChronosID = builder.myEcchronosID;
 
         connectionDelayValue = builder.myConnectionDelayValue;
@@ -164,6 +169,16 @@ public final class EccNodesSync
     {
         BoundStatement boundStatement = myGetByEccInstanceAndDCStatement.bind(ecChronosID, dcName);
         return mySession.execute(boundStatement);
+    }
+
+    /**
+     * Gets all records from the nodes_sync table across all ecChronos instances.
+     *
+     * @return the result set containing all node records.
+     */
+    public ResultSet getAll()
+    {
+        return mySession.execute(myGetAllStatement.bind());
     }
 
     /**

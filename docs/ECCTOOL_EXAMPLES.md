@@ -424,19 +424,51 @@ ecctool state -o json nodes
 
 ## status
 
-The *status* command display whether ecChronos is running or not.
+The *status* command displays a cluster-wide view of Cassandra nodes registered in `nodes_sync` across all ecChronos instances. Each row shows which ecChronos instance (`ecchronos_id`) manages a node and the recorded node connectivity status. This reflects persisted registry data and JMX connectivity status; it does not prove that an ecChronos instance is currently alive, and rows may remain after an instance stops.
 
 ```cmd
 ecctool status
 ```
 ```text
-ecChronos is running.
+| EcchronosID | Datacenter | NodeID | Last Connection | Next Connection | Endpoint | Node Status |
+| ecc-1       | datacenter1| ...    | ...             | ...             | ...      | AVAILABLE   |
 ```
 
 With JSON output format selected:
 
 ```cmd
 ecctool status --output json
+```
+```json
+{
+    "timestamp": "2025-12-16 11:57:11",
+    "nodes": [
+        {
+            "ecchronos_id": "ecc-1",
+            "datacenter_name": "datacenter1",
+            "node_id": "8a9d2a57-1388-42be-aab6-06a4e5f6fe84",
+            "last_connection": "2025-12-15T15:49:41.762Z",
+            "next_connection": "2025-12-15T16:19:41.762Z",
+            "node_endpoint": "/127.0.0.1:9042",
+            "node_status": "AVAILABLE"
+        }
+    ]
+}
+```
+
+To check whether the local ecChronos REST API is reachable (the previous default behavior), use `--local`:
+
+```cmd
+ecctool status --local
+```
+```text
+ecChronos is running.
+```
+
+With JSON output:
+
+```cmd
+ecctool status --local --output json
 ```
 ```json
 {
