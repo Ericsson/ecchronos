@@ -296,7 +296,8 @@ public class TestIncrementalRepairJob
     @Test
     public void testEqualsAndHashcode()
     {
-        EqualsVerifier.simple().forClass(IncrementalRepairJob.class).withRedefinedSuperclass().verify();
+        EqualsVerifier.simple().forClass(IncrementalRepairJob.class).withRedefinedSuperclass()
+                .withIgnoredFields("myFailed").verify();
     }
 
     private IncrementalRepairJob getIncrementalRepairJob()

@@ -36,6 +36,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
@@ -57,10 +58,13 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     public static final int DEFAULT_KEEP_ALIVE_TIME = 60;
     /** Default timeout in minutes for awaiting executor termination. */
     public static final int DEFAULT_TIMEOUT = 5;
+    /** Maximum consecutive task failures before a job is marked as FAILED. */
+    static final int MAX_CONSECUTIVE_TASK_FAILURES = 5;
 
     private final Map<UUID, ScheduledJobQueue> myQueue = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, ScheduledJob> currentExecutingJobs = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<ScheduledJob, Long> myContentionBackoff = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, AtomicInteger> myConsecutiveFailures = new ConcurrentHashMap<>();
     private final Set<RunPolicy> myRunPolicies = Sets.newConcurrentHashSet();
     private final Map<UUID, ScheduledFuture<?>> myRunFuture = new ConcurrentHashMap<>();
     private final Map<UUID, JobRunTask> myRunTasks = new ConcurrentHashMap<>();
@@ -248,6 +252,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             queue.remove(job);
         }
         myContentionBackoff.remove(job);
+        myConsecutiveFailures.remove(job.getJobId());
     }
 
     @Override
@@ -277,6 +282,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         myQueue.clear();
         currentExecutingJobs.clear();
         myContentionBackoff.clear();
+        myConsecutiveFailures.clear();
         myRunPolicies.clear();
     }
 
@@ -528,6 +534,8 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         {
             int tasksExecuted = 0;
             int index = 0;
+            AtomicInteger failureCounter = myConsecutiveFailures.computeIfAbsent(
+                    job.getJobId(), k -> new AtomicInteger(0));
             for (ScheduledTask task : job)
             {
                 if (!withinSessionWindow(sessionStart))
@@ -543,6 +551,18 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                     if (successful)
                     {
                         tasksExecuted++;
+                        failureCounter.set(0);
+                    }
+                    else
+                    {
+                        int failures = failureCounter.incrementAndGet();
+                        if (failures >= MAX_CONSECUTIVE_TASK_FAILURES)
+                        {
+                            LOG.error("Job {} on node {} has failed {} consecutive task executions, "
+                                    + "marking as FAILED", job, nodeID, failures);
+                            job.markFailed();
+                            break;
+                        }
                     }
                 }
                 catch (Exception e)

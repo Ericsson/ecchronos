@@ -18,8 +18,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.NotificationListe
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.json.JsonMapper;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +40,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 
 /**
  * Controller responsible for managing Jolokia-based JMX notification listeners.
@@ -64,13 +64,14 @@ public class JolokiaNotificationController implements Closeable
 
     private final Map<UUID, Map<String, NotificationListener>> myNodeListenersMap = new ConcurrentHashMap<>();
     private final Map<UUID, Map<String, ScheduledFuture<?>>> myNotificationMonitors = new ConcurrentHashMap<>();
+    private final Map<UUID, Map<String, NotificationRunTask>> myNotificationTasks = new ConcurrentHashMap<>();
 
-    private final ObjectMapper objectMapper = new JsonMapper();
     private final ConcurrentHashMap<UUID, ReentrantLock> myNodeLocks = new ConcurrentHashMap<>();
     private final Semaphore myPollingSemaphore;
 
     private final JolokiaHttpClient myJolokiaHttpClient;
     private final long myRunDelay;
+    private final Consumer<UUID> myNodeUnavailableCallback;
 
     /**
      * Constructs a JolokiaNotificationController from the provided builder.
@@ -80,6 +81,7 @@ public class JolokiaNotificationController implements Closeable
     public JolokiaNotificationController(final Builder builder)
     {
         myRunDelay = builder.myRunDelay;
+        myNodeUnavailableCallback = builder.myNodeUnavailableCallback;
         myPollingSemaphore = new Semaphore(NOTIFICATION_THREAD_POOL_SIZE);
         myJolokiaHttpClient = new JolokiaHttpClient(
                 builder.myCertificateHandler,
@@ -107,6 +109,7 @@ public class JolokiaNotificationController implements Closeable
     public final void addStorageServiceListener(final UUID nodeID, final NotificationListener listener) throws IOException, InterruptedException
     {
         myJolokiaHttpClient.registerClientId(nodeID);
+        resetNotificationFailures(nodeID);
 
         String jolokiaNotificationID = myJolokiaHttpClient.registerJolokiaNotification(nodeID);
 
@@ -145,6 +148,25 @@ public class JolokiaNotificationController implements Closeable
     }
 
     /**
+     * Resets the consecutive failure counters for all notification tasks on the specified node.
+     * This prevents failure counts from a previous repair execution from carrying over
+     * to the next one.
+     *
+     * @param nodeID the identifier of the node.
+     */
+    public void resetNotificationFailures(final UUID nodeID)
+    {
+        Map<String, NotificationRunTask> tasks = myNotificationTasks.get(nodeID);
+        if (tasks != null)
+        {
+            for (NotificationRunTask task : tasks.values())
+            {
+                task.resetConsecutiveFailures();
+            }
+        }
+    }
+
+    /**
      * Removes a previously registered notification listener for the specified node.
      *
      * @param nodeID the identifier of the node.
@@ -173,6 +195,11 @@ public class JolokiaNotificationController implements Closeable
                     future.cancel(true);
                 }
             }
+            Map<String, NotificationRunTask> tasks = myNotificationTasks.get(nodeID);
+            if (tasks != null)
+            {
+                tasks.remove(jolokiaNotificationID);
+            }
         }
         Map<String, NotificationListener> listeners = myNodeListenersMap.get(nodeID);
         if (listeners != null)
@@ -184,14 +211,18 @@ public class JolokiaNotificationController implements Closeable
 
     private void startNotificationMonitor(final UUID nodeID, final String notificationID)
     {
+        NotificationRunTask task = new NotificationRunTask(nodeID, notificationID);
         ScheduledFuture<?> future = myNotificationExecutor.scheduleWithFixedDelay(
-                new NotificationRunTask(nodeID, notificationID), 0, myRunDelay, TimeUnit.MILLISECONDS);
+                task, 0, myRunDelay, TimeUnit.MILLISECONDS);
 
         synchronized (myNotificationMonitors)
         {
             myNotificationMonitors
                     .computeIfAbsent(nodeID, k -> new ConcurrentHashMap<>())
                     .put(notificationID, future);
+            myNotificationTasks
+                    .computeIfAbsent(nodeID, k -> new ConcurrentHashMap<>())
+                    .put(notificationID, task);
         }
     }
 
@@ -214,12 +245,22 @@ public class JolokiaNotificationController implements Closeable
                 return super.add(e);
             }
         };
-        private int consecutiveFailures = 0;
+        private final AtomicInteger consecutiveFailures = new AtomicInteger(0);
 
         private NotificationRunTask(final UUID nodeID, final String notificationID)
         {
             myNodeID = nodeID;
             myNotificationID = notificationID;
+        }
+
+        /**
+         * Resets the consecutive failure counter.
+         * Called when a new repair execution begins to avoid carrying
+         * stale failure counts from a previous repair cycle.
+         */
+        void resetConsecutiveFailures()
+        {
+            consecutiveFailures.set(0);
         }
 
         @Override
@@ -237,9 +278,8 @@ public class JolokiaNotificationController implements Closeable
                 lock.lock();
                 try
                 {
-                    String response = myJolokiaHttpClient.checkForNotificationsWithRetry(myNodeID, myNotificationID);
-                    NotificationListenerResponse notificationListenerResponse = objectMapper.readValue(response,
-                            NotificationListenerResponse.class);
+                    NotificationListenerResponse notificationListenerResponse =
+                            myJolokiaHttpClient.checkForNotificationsWithRetry(myNodeID, myNotificationID);
 
                     if (notificationListenerResponse.getValue() != null)
                     {
@@ -251,7 +291,7 @@ public class JolokiaNotificationController implements Closeable
                             createNotification(notificationObj);
                         }
                     }
-                    consecutiveFailures = 0;
+                    consecutiveFailures.set(0);
                 }
                 finally
                 {
@@ -260,17 +300,17 @@ public class JolokiaNotificationController implements Closeable
             }
             catch (Exception e)
             {
-                consecutiveFailures++;
-                if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES)
+                int failures = consecutiveFailures.incrementAndGet();
+                if (failures >= MAX_CONSECUTIVE_FAILURES)
                 {
                     LOG.error("Notification check failed {} consecutive times for node {} and notificationID {}. "
-                            + "Signaling connection failure.", consecutiveFailures, myNodeID, myNotificationID);
+                            + "Signaling connection failure.", failures, myNodeID, myNotificationID);
                     signalConnectionFailure();
                 }
                 else
                 {
                     LOG.warn("Transient notification check failure ({}/{}) for node {} and notificationID {}",
-                            consecutiveFailures, MAX_CONSECUTIVE_FAILURES, myNodeID, myNotificationID, e);
+                            failures, MAX_CONSECUTIVE_FAILURES, myNodeID, myNotificationID, e);
                 }
             }
             finally
@@ -297,6 +337,17 @@ public class JolokiaNotificationController implements Closeable
                         );
                         listener.handleNotification(failNotification, null);
                     }
+                }
+            }
+            if (myNodeUnavailableCallback != null)
+            {
+                try
+                {
+                    myNodeUnavailableCallback.accept(myNodeID);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Failed to mark node {} as unavailable", myNodeID, e);
                 }
             }
         }
@@ -368,6 +419,7 @@ public class JolokiaNotificationController implements Closeable
 
         myNodeListenersMap.clear();
         myJolokiaRelationshipListeners.clear();
+        myNotificationTasks.clear();
         myNodeLocks.clear();
 
         // Shutdown executor
@@ -412,6 +464,7 @@ public class JolokiaNotificationController implements Closeable
         private long myRunDelay = DEFAULT_RUN_DELAY;
         private IpTranslator myIpTranslator;
         private CertificateHandler myCertificateHandler;
+        private Consumer<UUID> myNodeUnavailableCallback;
 
         /**
          * Default constructor.
@@ -509,6 +562,21 @@ public class JolokiaNotificationController implements Closeable
         public Builder withCertificateHandler(final CertificateHandler certificateHandler)
         {
             myCertificateHandler = certificateHandler;
+            return this;
+        }
+
+        /**
+         * Sets the callback invoked when a node is determined to be unavailable
+         * after consecutive notification polling failures. This allows the caller
+         * to mark the node for retry by the {@code RetrySchedulerService}.
+         *
+         * @param callback
+         *         consumer that accepts the node UUID to mark as unavailable
+         * @return Builder
+         */
+        public Builder withNodeUnavailableCallback(final Consumer<UUID> callback)
+        {
+            myNodeUnavailableCallback = callback;
             return this;
         }
 
