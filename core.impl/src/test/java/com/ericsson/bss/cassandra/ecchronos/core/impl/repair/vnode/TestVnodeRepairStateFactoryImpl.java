@@ -177,6 +177,61 @@ public class TestVnodeRepairStateFactoryImpl
     }
 
     @Test
+    public void testCalculateNewStateRecognizesRepairPerformedByAnotherReplica()
+            throws UnknownHostException
+    {
+        Node nodeA = mock(Node.class);
+        Node nodeB = mock(Node.class);
+
+        DriverNode driverNodeA = withNode("127.0.0.1");
+        DriverNode driverNodeB = withNode("127.0.0.2");
+
+        when(driverNodeA.getNode()).thenReturn(nodeA);
+        when(driverNodeB.getNode()).thenReturn(nodeB);
+
+        LongTokenRange tokenRange = range(1, 2);
+        ImmutableSet<DriverNode> replicas = ImmutableSet.of(driverNodeA, driverNodeB);
+
+        withRange(tokenRange, driverNodeA, driverNodeB);
+
+        when(mockReplicationState.getTokenRangeToReplicas(
+                eq(TABLE_REFERENCE), eq(nodeB))).thenReturn(tokenToNodeMap);
+
+        long startedAt = 1234L;
+        long finishedAt = 1235L;
+
+        RepairEntry successfulRepair =
+                new RepairEntry(tokenRange, startedAt, finishedAt, replicas, "SUCCESS");
+
+        Map<Node, List<RepairEntry>> historyByNode = new HashMap<>();
+        historyByNode.put(nodeA, Collections.singletonList(successfulRepair));
+        historyByNode.put(nodeB, Collections.emptyList());
+
+        RepairHistoryProvider nodeScopedHistory =
+                new NodeScopedRepairHistoryProvider(TABLE_REFERENCE, historyByNode);
+
+        VnodeRepairStateFactory factory =
+                new VnodeRepairStateFactoryImpl(
+                        mockReplicationState,
+                        nodeScopedHistory,
+                        false);
+
+        VnodeRepairStates states =
+                factory.calculateNewState(
+                        nodeB,
+                        TABLE_REFERENCE,
+                        null,
+                        finishedAt);
+
+        assertThat(states.getVnodeRepairStates())
+                .containsOnly(new VnodeRepairState(
+                        tokenRange,
+                        replicas,
+                        startedAt,
+                        finishedAt));
+    }
+
+    @Test
     public void testCalculateClusterWideStateWithHistoryIsRepaired() throws UnknownHostException
     {
         DriverNode node1 = withNode("127.0.0.1");
@@ -617,6 +672,7 @@ public class TestVnodeRepairStateFactoryImpl
         DriverNode node = mock(DriverNode.class);
         InetAddress nodeAddress = InetAddress.getByName(inetAddress);
         when(node.getPublicAddress()).thenReturn(nodeAddress);
+        when(node.getNode()).thenReturn(myMockNode);
         return node;
     }
 
@@ -729,6 +785,53 @@ public class TestVnodeRepairStateFactoryImpl
 
         Collection<VnodeRepairState> vnodeRepairStates = newStates.getVnodeRepairStates();
         assertThat(vnodeRepairStates).containsOnlyElementsOf(expectedStates);
+    }
+
+    private static class NodeScopedRepairHistoryProvider implements RepairHistoryProvider
+    {
+        private final TableReference myTableReference;
+        private final Map<Node, List<RepairEntry>> myHistoryByNode;
+
+        NodeScopedRepairHistoryProvider(
+                TableReference tableReference,
+                Map<Node, List<RepairEntry>> historyByNode)
+        {
+            myTableReference = tableReference;
+            myHistoryByNode = historyByNode;
+        }
+
+        @Override
+        public Iterator<RepairEntry> iterate(
+                Node node,
+                TableReference tableReference,
+                long to,
+                Predicate<RepairEntry> predicate)
+        {
+            assertThat(tableReference).isEqualTo(myTableReference);
+
+            return new MockedRepairEntryIterator(
+                    myHistoryByNode.getOrDefault(node, Collections.emptyList()).iterator(),
+                    predicate,
+                    to,
+                    -1L);
+        }
+
+        @Override
+        public Iterator<RepairEntry> iterate(
+                Node node,
+                TableReference tableReference,
+                long to,
+                long from,
+                Predicate<RepairEntry> predicate)
+        {
+            assertThat(tableReference).isEqualTo(myTableReference);
+
+            return new MockedRepairEntryIterator(
+                    myHistoryByNode.getOrDefault(node, Collections.emptyList()).iterator(),
+                    predicate,
+                    to,
+                    from);
+        }
     }
 
     private class MockedRepairHistoryProvider implements RepairHistoryProvider

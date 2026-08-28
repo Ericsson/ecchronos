@@ -109,23 +109,39 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
                 = myReplicationState.getTokenRangeToReplicas(tableReference, node);
         long lastRepairedAt = previousLastRepairedAt(previous, tokenRangeToReplicaMap);
 
-        Iterator<RepairEntry> repairEntryIterator;
+        Set<DriverNode> replicaNodes = new HashSet<>();
+        tokenRangeToReplicaMap.values().forEach(replicaNodes::addAll);
 
-        if (lastRepairedAt == VnodeRepairState.UNREPAIRED)
+        List<RepairEntry> repairEntries = new ArrayList<>();
+
+        for (DriverNode replicaNode : replicaNodes)
         {
-            LOG.debug("No last repaired at found for {}, iterating over all repair entries", tableReference);
-            repairEntryIterator = myRepairHistoryProvider.iterate(node, tableReference, iterateToTime,
-                    (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
-        }
-        else
-        {
-            LOG.debug("Table {} snapshot created at {}, iterating repair entries until that time", tableReference,
-                    previous.getCreatedAt());
-            repairEntryIterator = myRepairHistoryProvider.iterate(node, tableReference, iterateToTime,
-                    previous.getCreatedAt(), (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
+            Iterator<RepairEntry> repairEntryIterator;
+
+            if (lastRepairedAt == VnodeRepairState.UNREPAIRED)
+            {
+                LOG.debug("No last repaired at found for {}, iterating over all repair entries", tableReference);
+                repairEntryIterator = myRepairHistoryProvider.iterate(replicaNode.getNode(), tableReference,
+                        iterateToTime,
+                        (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
+            }
+            else
+            {
+                LOG.debug("Table {} snapshot created at {}, iterating repair entries until that time", tableReference,
+                        previous.getCreatedAt());
+                repairEntryIterator = myRepairHistoryProvider.iterate(replicaNode.getNode(), tableReference,
+                        iterateToTime, previous.getCreatedAt(),
+                        (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
+            }
+
+            while (repairEntryIterator.hasNext())
+            {
+                repairEntries.add(repairEntryIterator.next());
+            }
         }
 
-        return generateVnodeRepairStates(lastRepairedAt, previous, repairEntryIterator, tokenRangeToReplicaMap);
+        return generateVnodeRepairStates(lastRepairedAt, previous, repairEntries.iterator(),
+                tokenRangeToReplicaMap);
     }
 
     /**
