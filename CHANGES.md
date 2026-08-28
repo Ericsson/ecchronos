@@ -5,6 +5,7 @@
 * Upgrade ecChronos to Spring Boot 4 - Issue #1711
 * Add JSON output format for ecctool state - Issue #1739
 * Fix repair jobs stuck ON_TIME when Jolokia returns empty body due to transient network issues - Issue #1740
+* Fix Jolokia JMX connection health check always returning true for stale connections - Issue #1764
 
 ## Version 1.0.6
 
