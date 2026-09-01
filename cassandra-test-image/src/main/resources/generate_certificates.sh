@@ -42,6 +42,11 @@
 # cert/client.csr
 #
 
+# Remove any previously generated artifacts so re-runs start from a clean
+# state. Otherwise keytool prompts for keyboard input (e.g. "Existing entry
+# alias cert exists, overwrite? [no]:") and the non-interactive build hangs.
+rm -rf ca cert v3.ext
+
 mkdir -p ca
 mkdir -p cert
 mkdir -p cert/pem
@@ -114,7 +119,7 @@ openssl pkcs12 -export\
  -out "$USER_PKCS12" -passout pass:"ecctest"
 
 ## Import PKCS12 key to keystore
-keytool -importkeystore\
+keytool -importkeystore -noprompt\
  -srckeystore "$USER_PKCS12" -srcalias "1" -srcstorepass "ecctest"\
  -destkeystore "$KEYSTORE" -destalias "cert" -deststorepass "ecctest"
 
