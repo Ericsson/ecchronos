@@ -109,9 +109,6 @@ class CassandraCluster:
         )
 
         container_name = "cassandra-node-dc1-rack1-node3"
-        rackdc_file = os.path.join(
-            global_vars.CASSANDRA_DOCKER_COMPOSE_FILE_PATH, "cassandra-rackdc-dc1-rack1.properties"
-        )
         cert_dir = global_vars.CERTIFICATE_DIRECTORY
 
         cmd = [
@@ -154,8 +151,6 @@ class CassandraCluster:
             "-Dcassandra.write_survey=false",
             "-v",
             "cassandra-node3-data:/var/lib/cassandra",
-            "-v",
-            f"{rackdc_file}:/etc/cassandra/cassandra-rackdc.properties",
             "-v",
             f"{cert_dir}:/etc/certificates",
             "cassandra-node3:latest",
