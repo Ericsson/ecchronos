@@ -25,6 +25,7 @@ import java.nio.file.Paths;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.testcontainers.containers.DockerComposeContainer;
+import org.testcontainers.containers.DockerComposeContainer.RemoveImages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
@@ -63,6 +64,9 @@ public class AbstractCassandraCluster
                 .withEnv("JOLOKIA", jolokiaEnabled)
                 .withEnv("CASSANDRA_VERSION", cassandraVersion)
                 .withEnv("CERTIFICATE_DIRECTORY", certificateDirectory)
+                // Remove the locally-built compose images on teardown so each test run
+                // does not leave behind a new set of '<project>_cassandra-*' images.
+                .withRemoveImages(RemoveImages.LOCAL)
                 .withLogConsumer(CASSANDRA_SEED_NODE_NAME, new Slf4jLogConsumer(LOG));
 
         composeContainer.start();
@@ -98,7 +102,10 @@ public class AbstractCassandraCluster
         {
             mySession.close();
         }
-        composeContainer.stop();
+        if (composeContainer != null)
+        {
+            composeContainer.stop();
+        }
     }
 
     protected void decommissionNode ( String node) throws IOException, InterruptedException
