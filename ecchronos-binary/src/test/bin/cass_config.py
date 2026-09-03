@@ -327,19 +327,41 @@ class CassandraCluster:
         )
 
     def stop_cluster(self):
-        subprocess.run(
-            [
-                "docker",
-                "compose",
-                "-f",
-                f"{global_vars.CASSANDRA_DOCKER_COMPOSE_FILE_PATH}/docker-compose.yml",
-                "down",
-                "--volumes",
-                "--remove-orphans",
-                "--rmi",
-                "all",
-            ]
-        )
+        # Tear down using the same compose command prefix the wrapper used for 'up'
+        # (carries the correct -f/project so 'down' targets the images/volumes that
+        # were actually created). '--rmi local' removes the locally-built compose
+        # images so each run does not leave behind '<project>_cassandra-*' images.
+        # The pulled base image (cassandra:X.Y) is kept, since only locally-built
+        # images are removed.
+        #
+        # Note: this uses 'compose down --rmi local' rather than the name-based image
+        # removal done in the Java harness (SharedCassandraCluster). It works here
+        # because this is called from the pytest fixture teardown while the containers
+        # are still up, so compose can still associate the built images with the
+        # project. The Java shared-cluster path instead tears down at JVM exit, after
+        # the testcontainers Ryuk reaper has removed the containers, at which point
+        # 'compose down --rmi' is a no-op -- hence the different mechanism there.
+        if self.cassandra_compose is not None:
+            down_cmd = self.cassandra_compose.compose_command_property[:]
+            down_cmd += ["down", "--volumes", "--remove-orphans", "--rmi", "local"]
+            # Run in the compose context dir so the relative '-f docker-compose.yml'
+            # resolves and the default project name matches the one used at 'up'.
+            result = subprocess.run(
+                down_cmd,
+                capture_output=True,
+                text=True,
+                cwd=str(self.cassandra_compose.context),
+            )
+            if result.returncode != 0:
+                logger.warning(
+                    "compose down failed (rc=%s): %s. Falling back to wrapper stop().",
+                    result.returncode,
+                    result.stderr.strip(),
+                )
+                try:
+                    self.cassandra_compose.stop(down=True)
+                except Exception as e:
+                    logger.error(f"Fallback compose stop() also failed: {e}")
 
     def run_cql(self, query):
         command = ["docker", "exec", self.container_id, "cqlsh", "-e", query]
