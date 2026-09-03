@@ -523,7 +523,8 @@ $ ecctool config
 {
   "session_window_ms": 300000,
   "cooldown_ms": 0,
-  "locks_per_resource": 3
+  "locks_per_resource": 3,
+  "max_wait_time_minutes": 40
 }
 ```
 
@@ -534,21 +535,35 @@ $ ecctool config --session-window 10m
 {
   "session_window_ms": 600000,
   "cooldown_ms": 0,
-  "locks_per_resource": 3
+  "locks_per_resource": 3,
+  "max_wait_time_minutes": 40
+}
+```
+
+### Update the repair max wait time to 60 minutes
+
+```console
+$ ecctool config --max-wait-time 60
+{
+  "session_window_ms": 300000,
+  "cooldown_ms": 0,
+  "locks_per_resource": 3,
+  "max_wait_time_minutes": 60
 }
 ```
 
 ### Update multiple parameters
 
 ```console
-$ ecctool config --session-window 5m --cooldown 30s --locks-per-resource 5
+$ ecctool config --session-window 5m --cooldown 30s --locks-per-resource 5 --max-wait-time 60
 {
   "session_window_ms": 300000,
   "cooldown_ms": 30000,
-  "locks_per_resource": 5
+  "locks_per_resource": 5,
+  "max_wait_time_minutes": 60
 }
 ```
 
-Duration values accept: `5m` (minutes), `30s` (seconds), `2h` (hours), `500ms` (milliseconds), or raw milliseconds as integers.
+Duration values accept: `5m` (minutes), `30s` (seconds), `2h` (hours), `500ms` (milliseconds), or raw milliseconds as integers. The `--max-wait-time` value is in minutes and must be greater than 0.
 
 Changes are in-memory only. Restarting ecChronos restores values from `ecc.yml`.

@@ -54,6 +54,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import com.ericsson.bss.cassandra.ecchronos.application.utils.CertUtils;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.NodeResolver;
@@ -129,6 +130,9 @@ public abstract class TestTomcatWebServerCustomizer
 
     @MockitoBean
     private ScheduleManager scheduleManager;
+
+    @MockitoBean
+    private DistributedJmxProxyFactory jmxProxyFactory;
 
     @MockitoBean
     private DistributedNativeConnectionProvider nativeConnectionProvider;

@@ -389,7 +389,7 @@ class ConfigRequest(RestRequest):
     def get(self):
         return self.request(ConfigRequest.URL)
 
-    def patch(self, session_window_ms=None, cooldown_ms=None, locks_per_resource=None):
+    def patch(self, session_window_ms=None, cooldown_ms=None, locks_per_resource=None, max_wait_time_minutes=None):
         body = {}
         if session_window_ms is not None:
             body["session_window_ms"] = session_window_ms
@@ -397,6 +397,8 @@ class ConfigRequest(RestRequest):
             body["cooldown_ms"] = cooldown_ms
         if locks_per_resource is not None:
             body["locks_per_resource"] = locks_per_resource
+        if max_wait_time_minutes is not None:
+            body["max_wait_time_minutes"] = max_wait_time_minutes
         headers = {"Content-Type": "application/json"}
         return self.request(ConfigRequest.URL, "PATCH", body=body, headers=headers)
 
