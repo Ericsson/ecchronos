@@ -49,6 +49,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.RepairStateFa
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.VnodeRepairStateFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairStatsProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RepairScheduler;
@@ -260,6 +261,18 @@ public class ECChronos implements Closeable
     public ScheduleManager scheduleManager()
     {
         return myECChronosInternals.getScheduleManager();
+    }
+
+    /**
+     * Returns the distributed JMX proxy factory, exposed for runtime configuration
+     * of the repair max wait time.
+     *
+     * @return the {@link DistributedJmxProxyFactory} instance.
+     */
+    @Bean
+    public DistributedJmxProxyFactory jmxProxyFactory()
+    {
+        return myECChronosInternals.getJmxProxyFactory();
     }
 
     /**

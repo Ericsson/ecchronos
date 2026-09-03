@@ -20,9 +20,14 @@ import static org.mockito.Mockito.when;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.DistributedJmxProxyFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.CASLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.RepairLockFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.ScheduleManagerImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
+import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,6 +46,7 @@ public class ITConfigManagement
 {
     private ConfigManagementRESTImpl myController;
     private ScheduleManagerImpl myScheduleManager;
+    private DistributedJmxProxyFactory myJmxProxyFactory;
     private int originalLocksPerResource;
 
     @Before
@@ -58,7 +64,14 @@ public class ITConfigManagement
                 .withLockFactory(lockFactory)
                 .build();
 
-        myController = new ConfigManagementRESTImpl(myScheduleManager);
+        myJmxProxyFactory = DistributedJmxProxyFactoryImpl.builder()
+                .withJmxConnectionProvider(mock(DistributedJmxConnectionProvider.class))
+                .withNodesMap(Map.of(nodeId, mockNode))
+                .withIpTranslator(new IpTranslator())
+                .withEccNodesSync(mock(EccNodesSync.class))
+                .build();
+
+        myController = new ConfigManagementRESTImpl(myScheduleManager, myJmxProxyFactory);
         originalLocksPerResource = RepairLockFactoryImpl.getLocksPerResource();
     }
 
@@ -79,6 +92,19 @@ public class ITConfigManagement
         assertThat(((Number) body.get("session_window_ms")).longValue()).isEqualTo(300000L);
         assertThat(((Number) body.get("cooldown_ms")).longValue()).isEqualTo(0L);
         assertThat(((Number) body.get("locks_per_resource")).intValue()).isEqualTo(originalLocksPerResource);
+        assertThat(((Number) body.get("max_wait_time_minutes")).intValue()).isEqualTo(40);
+    }
+
+    @Test
+    public void testPatchMaxWaitTimeRoundTrip()
+    {
+        Map<String, Object> patch = new HashMap<>();
+        patch.put("max_wait_time_minutes", 75);
+
+        ResponseEntity<Map<String, Object>> response = myController.patchConfig(patch);
+
+        assertThat(((Number) response.getBody().get("max_wait_time_minutes")).intValue()).isEqualTo(75);
+        assertThat(myJmxProxyFactory.getMaxWaitTimeInMinutes()).isEqualTo(75);
     }
 
     @Test

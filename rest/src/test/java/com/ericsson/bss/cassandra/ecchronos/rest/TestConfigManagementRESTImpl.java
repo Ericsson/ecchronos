@@ -15,10 +15,13 @@
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
+import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,15 +38,19 @@ public class TestConfigManagementRESTImpl
     @Mock
     private ScheduleManager myScheduleManager;
 
+    @Mock
+    private DistributedJmxProxyFactory myJmxProxyFactory;
+
     private ConfigManagementRESTImpl controller;
 
     @Before
     public void setup()
     {
-        controller = new ConfigManagementRESTImpl(myScheduleManager);
+        controller = new ConfigManagementRESTImpl(myScheduleManager, myJmxProxyFactory);
         when(myScheduleManager.getSessionWindowInMs()).thenReturn(300000L);
         when(myScheduleManager.getCooldownInMs()).thenReturn(0L);
         when(myScheduleManager.getLocksPerResource()).thenReturn(3);
+        when(myJmxProxyFactory.getMaxWaitTimeInMinutes()).thenReturn(40);
     }
 
     @Test
@@ -56,6 +63,7 @@ public class TestConfigManagementRESTImpl
         assertThat(body.get("session_window_ms")).isEqualTo(300000L);
         assertThat(body.get("cooldown_ms")).isEqualTo(0L);
         assertThat(body.get("locks_per_resource")).isEqualTo(3);
+        assertThat(body.get("max_wait_time_minutes")).isEqualTo(40);
     }
 
     @Test
@@ -136,5 +144,29 @@ public class TestConfigManagementRESTImpl
 
         assertThat(response.getStatusCode().value()).isEqualTo(400);
         assertThat(response.getBody().get("error")).isEqualTo("locks_per_resource must be >= 1");
+    }
+
+    @Test
+    public void testPatchMaxWaitTime()
+    {
+        Map<String, Object> patch = new HashMap<>();
+        patch.put("max_wait_time_minutes", 60);
+
+        controller.patchConfig(patch);
+
+        verify(myJmxProxyFactory).setMaxWaitTimeInMinutes(60);
+    }
+
+    @Test
+    public void testPatchInvalidMaxWaitTimeReturns400()
+    {
+        Map<String, Object> patch = new HashMap<>();
+        patch.put("max_wait_time_minutes", 0);
+
+        ResponseEntity<Map<String, Object>> response = controller.patchConfig(patch);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody().get("error")).isEqualTo("max_wait_time_minutes must be > 0");
+        verify(myJmxProxyFactory, never()).setMaxWaitTimeInMinutes(anyInt());
     }
 }
