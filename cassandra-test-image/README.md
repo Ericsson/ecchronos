@@ -17,8 +17,7 @@ cassandra-test-image/
 │   │   ├── ecc-entrypoint.sh                # Cassandra startup + config script
 │   │   ├── setup_db.sh                      # Runs CQL initialisation scripts
 │   │   ├── create_keyspaces.cql             # ecChronos + test keyspace schemas
-│   │   ├── users.cql                        # eccuser role creation
-│   │   └── cassandra-rackdc-*.properties    # Rack/DC topology files
+│   │   └── users.cql                        # eccuser role creation
 │   └── resources/
 │       └── generate_certificates.sh         # TLS certificate generation
 └── src/test/java/cassandracluster/
