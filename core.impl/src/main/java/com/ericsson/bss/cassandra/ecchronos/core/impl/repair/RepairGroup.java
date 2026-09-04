@@ -62,7 +62,7 @@ public class RepairGroup extends ScheduledTask
     private static final String LOCK_METADATA_TABLE = "table";
 
     private final TableReference myTableReference;
-    private RepairHistory myRepairHistory;
+    private final RepairHistory myRepairHistory;
     private final RepairConfiguration myRepairConfiguration;
     private final ReplicaRepairGroup myReplicaRepairGroup;
     private final DistributedJmxProxyFactory myJmxProxyFactory;
@@ -102,22 +102,14 @@ public class RepairGroup extends ScheduledTask
         myRepairResourceFactory = Preconditions
                 .checkNotNull(builder.myRepairResourceFactory, "Repair resource factory must be set");
         myTimeBasedRunPolicy = builder.myTimeBasedRunPolicy;
-        if (!RepairType.INCREMENTAL.equals(myRepairConfiguration.getRepairType()))
-        {
-            myRepairHistory = Preconditions
+        myRepairHistory = Preconditions
                     .checkNotNull(builder.myRepairHistory, "Repair History must be set");
-        }
+        myNode = Preconditions
+                    .checkNotNull(builder.myNode, "Node must be set");
         if (RepairType.VNODE.equals(myRepairConfiguration.getRepairType()))
         {
-            myNode = Preconditions
-                    .checkNotNull(builder.myNode, "Node must be set");
             myTokensPerRepair = Preconditions
                     .checkNotNull(builder.myTokensPerRepair, "Tokens per repair must be set");
-        }
-        if (RepairType.PARALLEL_VNODE.equals(myRepairConfiguration.getRepairType()))
-        {
-            myNode = Preconditions
-                    .checkNotNull(builder.myNode, "Node must be set");
         }
         myJobId = Preconditions
                 .checkNotNull(builder.myJobId, "Job id must be set");
@@ -235,12 +227,18 @@ public class RepairGroup extends ScheduledTask
         Collection<RepairTask> tasks = new ArrayList<>();
         if (myRepairConfiguration.getRepairType().equals(RepairType.INCREMENTAL))
         {
+            Set<DriverNode> replicas = myReplicaRepairGroup.replicas() != null
+                    ? new HashSet<>(myReplicaRepairGroup.replicas()) : Set.of();
             tasks.add(new IncrementalRepairTask(
                     nodeID,
                     myJmxProxyFactory,
                     myTableReference,
                     myRepairConfiguration,
-                    myTableRepairMetrics));
+                    myTableRepairMetrics,
+                    myRepairHistory,
+                    myNode,
+                    myJobId,
+                    replicas));
         }
         else if (myRepairConfiguration.getRepairType().equals(RepairType.VNODE))
         {

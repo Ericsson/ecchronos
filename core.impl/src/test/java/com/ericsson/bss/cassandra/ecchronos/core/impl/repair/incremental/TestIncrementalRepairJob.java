@@ -27,12 +27,20 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfigurati
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.state.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.state.RepairEntry;
+import com.ericsson.bss.cassandra.ecchronos.core.state.RepairHistory;
+import com.ericsson.bss.cassandra.ecchronos.core.state.RepairHistoryProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairParallelism;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairStatus;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import com.google.common.collect.ImmutableSet;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Optional;
 import java.util.UUID;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.After;
@@ -48,6 +56,9 @@ import java.util.concurrent.TimeUnit;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.impl.table.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.ignoreStubs;
 import static org.mockito.Mockito.mock;
@@ -84,6 +95,12 @@ public class TestIncrementalRepairJob
 
     @Mock
     private LockFactory myLockFactory;
+
+    @Mock
+    private RepairHistoryProvider myRepairHistoryProvider;
+
+    @Mock
+    private RepairHistory myRepairHistory;
 
     private final TableReference myTableReference = tableReference(keyspaceName, tableName);
     private RepairConfiguration myRepairConfiguration;
@@ -298,6 +315,141 @@ public class TestIncrementalRepairJob
     {
         EqualsVerifier.simple().forClass(IncrementalRepairJob.class).withRedefinedSuperclass()
                 .withIgnoredFields("myFailed").verify();
+    }
+
+    @Test
+    public void testLastSuccessfulRunReadFromRepairHistory()
+    {
+        // A previous successful incremental repair exists in repair_history; the job must use it as the last run
+        // rather than the Cassandra metric.
+        long historyFinishedAt = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(2);
+        doReturn(successEntryIterator(historyFinishedAt))
+                .when(myRepairHistoryProvider).iterate(eq(mockNode), eq(myTableReference), anyLong(), anyLong(), any());
+
+        IncrementalRepairJob job = getIncrementalRepairJobWithHistory();
+
+        assertThat(job.getLastSuccessfulRun()).isEqualTo(historyFinishedAt);
+    }
+
+    @Test
+    public void testLastSuccessfulRunFallsBackToMetricWhenNoHistory()
+    {
+        // No repair history yet - fall back to the Cassandra maxRepairedAt metric (restart-safe / backward compatible).
+        long metricRepairedAt = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(5);
+        doReturn(Collections.emptyIterator())
+                .when(myRepairHistoryProvider).iterate(eq(mockNode), eq(myTableReference), anyLong(), anyLong(), any());
+        doReturn(metricRepairedAt).when(myCassandraMetrics).getMaxRepairedAt(mockNodeID, myTableReference);
+
+        IncrementalRepairJob job = getIncrementalRepairJobWithHistory();
+
+        assertThat(job.getLastSuccessfulRun()).isEqualTo(metricRepairedAt);
+    }
+
+    @Test
+    public void testRefreshStateRecognizesRepairCompletedByAnotherInstance()
+    {
+        // Simulate another ecChronos instance completing the repair after this job was created: initially no history,
+        // then a SUCCESS entry appears. refreshState must advance the last successful run and make the job not runnable.
+        long completedElsewhere = System.currentTimeMillis();
+        doReturn(Collections.emptyIterator())
+                .when(myRepairHistoryProvider).iterate(eq(mockNode), eq(myTableReference), anyLong(), anyLong(), any());
+        doReturn(0.0d).when(myCassandraMetrics).getPercentRepaired(mockNodeID, myTableReference);
+
+        IncrementalRepairJob job = getIncrementalRepairJobWithHistory();
+
+        // Now the peer completed the repair; the history iterator returns a fresh SUCCESS entry.
+        doReturn(successEntryIterator(completedElsewhere))
+                .when(myRepairHistoryProvider).iterate(eq(mockNode), eq(myTableReference), anyLong(), anyLong(), any());
+        job.refreshState();
+
+        assertThat(job.getLastSuccessfulRun()).isGreaterThanOrEqualTo(completedElsewhere);
+        assertThat(job.runnable()).isFalse();
+    }
+
+    @Test
+    public void testPostExecuteWritesRepairHistoryForResponsibleReplicas()
+    {
+        DriverNode replica1 = mockReplica(mockNodeID);
+        UUID otherNodeId = UUID.randomUUID();
+        DriverNode replica2 = mockReplica(otherNodeId);
+        ImmutableSet<DriverNode> replicas = ImmutableSet.of(replica1, replica2);
+        doReturn(replicas).when(myReplicationState).getReplicas(myTableReference, mockNode);
+        doReturn(Collections.emptyIterator())
+                .when(myRepairHistoryProvider).iterate(eq(mockNode), eq(myTableReference), anyLong(), anyLong(), any());
+
+        IncrementalRepairJob job = getIncrementalRepairJobWithHistory();
+        job.postExecute(true, mock(ScheduledTask.class));
+
+        // A completed repair must be recorded for the replicas this instance is responsible for.
+        verify(myRepairHistory).recordCompletedRepair(eq(myTableReference), eq(job.getJobId()),
+                eq(java.util.List.of(mockNodeID, otherNodeId)), any(), eq(RepairType.INCREMENTAL), anyLong(), anyLong(),
+                eq(RepairStatus.SUCCESS));
+    }
+
+    @Test
+    public void testFailedRunDoesNotWriteRepairHistory()
+    {
+        DriverNode replica = mockReplica(mockNodeID);
+        doReturn(ImmutableSet.of(replica)).when(myReplicationState).getReplicas(myTableReference, mockNode);
+        doReturn(Collections.emptyIterator())
+                .when(myRepairHistoryProvider).iterate(eq(mockNode), eq(myTableReference), anyLong(), anyLong(), any());
+
+        IncrementalRepairJob job = getIncrementalRepairJobWithHistory();
+        job.postExecute(false, mock(ScheduledTask.class));
+
+        verify(myRepairHistory, org.mockito.Mockito.never()).recordCompletedRepair(any(), any(), any(), any(), any(),
+                anyLong(), anyLong(), any());
+    }
+
+    @Test
+    public void testPeerCompletionWritesHistoryForResponsibleReplicasAndSkips()
+    {
+        long completedElsewhere = System.currentTimeMillis();
+        doReturn(0.0d).when(myCassandraMetrics).getPercentRepaired(mockNodeID, myTableReference);
+        doReturn(Collections.emptyIterator())
+                .when(myRepairHistoryProvider).iterate(eq(mockNode), eq(myTableReference), anyLong(), anyLong(), any());
+
+        IncrementalRepairJob job = getIncrementalRepairJobWithHistory();
+
+        // A peer completes the repair; the next refreshState observes it in history.
+        doReturn(successEntryIterator(completedElsewhere))
+                .when(myRepairHistoryProvider).iterate(eq(mockNode), eq(myTableReference), anyLong(), anyLong(), any());
+        job.refreshState();
+
+        // refreshState only advances the last successful run — history writing happens in postExecute.
+        assertThat(job.getLastSuccessfulRun()).isGreaterThanOrEqualTo(completedElsewhere);
+        assertThat(job.runnable()).isFalse();
+    }
+
+    private DriverNode mockReplica(final UUID nodeId)
+    {
+        DriverNode driverNode = mock(DriverNode.class);
+        doReturn(nodeId).when(driverNode).getId();
+        doReturn(mockNode).when(driverNode).getNode();
+        return driverNode;
+    }
+
+    private Iterator<RepairEntry> successEntryIterator(final long finishedAt)
+    {
+        RepairEntry entry = new RepairEntry(LongTokenRange.of(Long.MIN_VALUE, Long.MAX_VALUE),
+                finishedAt - 1000, finishedAt, Collections.emptySet(), RepairStatus.SUCCESS.name());
+        return Arrays.asList(entry).iterator();
+    }
+
+    private IncrementalRepairJob getIncrementalRepairJobWithHistory()
+    {
+        ScheduledJob.Configuration configuration = new ScheduledJob.ConfigurationBuilder().withPriority(
+                ScheduledJob.Priority.LOW).withRunInterval(RUN_INTERVAL_IN_DAYS, TimeUnit.DAYS).build();
+
+        return new IncrementalRepairJob.Builder().withConfiguration(configuration).withTableReference(myTableReference)
+                .withJmxProxyFactory(myJmxProxyFactory).withReplicationState(myReplicationState)
+                .withTableRepairMetrics(myTableRepairMetrics).withRepairConfiguration(myRepairConfiguration)
+                .withCassandraMetrics(myCassandraMetrics)
+                .withNode(mockNode)
+                .withRepairLockType(RepairLockType.VNODE)
+                .withRepairHistory(myRepairHistory)
+                .withRepairHistoryProvider(myRepairHistoryProvider)
+                .build();
     }
 
     private IncrementalRepairJob getIncrementalRepairJob()

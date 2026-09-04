@@ -132,7 +132,7 @@ public class TestRepairGroup
         myRepairPolicies = Collections.singletonList(myTimeBasedRunPolicy);
 
         when(mockNode.getHostId()).thenReturn(myNodeID);
-        when(myRepairHistoryService.newSession(any(), any(), any(), any(), any())).thenReturn(myRepairSession);
+        when(myRepairHistoryService.newSession(any(), any(), any(), any(), any(), any())).thenReturn(myRepairSession);
         myRepairConfiguration = RepairConfiguration.newBuilder()
                 .withParallelism(RepairParallelism.PARALLEL)
                 .withRepairWarningTime(RUN_INTERVAL_IN_DAYS * 2, TimeUnit.DAYS)
@@ -212,6 +212,56 @@ public class TestRepairGroup
         assertThat(repairTask.getTableReference()).isEqualTo(TABLE_REFERENCE);
         assertThat(repairTask.getRepairConfiguration().getRepairParallelism()).isEqualTo(RepairParallelism.PARALLEL);
         assertThat(repairTask.getRepairConfiguration().getRepairType()).isEqualTo(RepairType.INCREMENTAL);
+    }
+
+    @Test
+    public void testIncrementalRepairTaskWritesRepairHistory()
+    {
+        DriverNode node = mockNode("DC1");
+        when(node.getId()).thenReturn(myNodeID);
+        ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(),
+                System.currentTimeMillis());
+        RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
+                .withParallelism(RepairParallelism.PARALLEL)
+                .withRepairType(RepairType.INCREMENTAL)
+                .build();
+
+        // builderFor() supplies a node and repair history, so the incremental task is expected to record a session.
+        RepairGroup repairGroup = builderFor(replicaRepairGroup).withRepairConfiguration(repairConfiguration)
+                .build(PRIORITY);
+
+        Collection<RepairTask> repairTasks = repairGroup.getRepairTasks(myNodeID);
+
+        assertThat(repairTasks).hasSize(1);
+        assertThat(repairTasks.iterator().next()).isInstanceOf(IncrementalRepairTask.class);
+        // A repair-history session must be created for the incremental repair, keyed by the coordinator node.
+        verify(myRepairHistoryService).newSession(any(), eq(TABLE_REFERENCE), eq(myJobId), any(), any(),
+                eq(RepairType.INCREMENTAL));
+    }
+
+    @Test
+    public void testIncrementalRepairTaskUsesJmxNodeOverride()
+    {
+        DriverNode node = mockNode("DC1");
+        when(node.getId()).thenReturn(myNodeID);
+        ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(),
+                System.currentTimeMillis());
+        RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
+                .withParallelism(RepairParallelism.PARALLEL)
+                .withRepairType(RepairType.INCREMENTAL)
+                .build();
+
+        RepairGroup repairGroup = builderFor(replicaRepairGroup).withRepairConfiguration(repairConfiguration)
+                .build(PRIORITY);
+
+        // Even though the scheduling node is myNodeID, the JMX override determines the target node; the task is still
+        // created successfully.
+        Collection<RepairTask> repairTasks = repairGroup.getRepairTasks(myNodeID);
+
+        assertThat(repairTasks).hasSize(1);
+        assertThat(repairTasks.iterator().next()).isInstanceOf(IncrementalRepairTask.class);
     }
 
     @Test

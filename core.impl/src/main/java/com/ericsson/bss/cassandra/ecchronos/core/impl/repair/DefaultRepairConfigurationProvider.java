@@ -27,15 +27,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Node;
-import com.datastax.oss.driver.api.core.metadata.NodeStateListenerBase;
-import com.datastax.oss.driver.api.core.metadata.schema.AggregateMetadata;
-import com.datastax.oss.driver.api.core.metadata.schema.FunctionMetadata;
+import com.datastax.oss.driver.api.core.metadata.NodeStateListener;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
-import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
+import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListenerBase;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import com.datastax.oss.driver.api.core.metadata.schema.ViewMetadata;
 import com.datastax.oss.driver.api.core.session.Session;
-import com.datastax.oss.driver.api.core.type.UserDefinedType;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
@@ -46,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * A repair configuration provider that adds configuration to {@link NodeWorkerManager} based on whether the table
  * is replicated locally using the default repair configuration provided during construction of this object.
  */
-public class DefaultRepairConfigurationProvider extends NodeStateListenerBase implements SchemaChangeListener
+public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase implements NodeStateListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultRepairConfigurationProvider.class);
     private static final Integer NO_OF_THREADS = 1;
@@ -214,81 +210,9 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     }
 
     @Override
-    public void onUserDefinedTypeCreated(final UserDefinedType type)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onUserDefinedTypeDropped(final UserDefinedType type)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onUserDefinedTypeUpdated(final UserDefinedType current, final UserDefinedType previous)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onFunctionCreated(final FunctionMetadata function)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onFunctionDropped(final FunctionMetadata function)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onFunctionUpdated(final FunctionMetadata current, final FunctionMetadata previous)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onAggregateCreated(final AggregateMetadata aggregate)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onAggregateDropped(final AggregateMetadata aggregate)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onAggregateUpdated(final AggregateMetadata current, final AggregateMetadata previous)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onViewCreated(final ViewMetadata view)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onViewDropped(final ViewMetadata view)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onViewUpdated(final ViewMetadata current, final ViewMetadata previous)
-    {
-        // NOOP
-    }
-
-    @Override
     public final void onSessionReady(final Session session)
     {
-        SchemaChangeListener.super.onSessionReady(session);
+        super.onSessionReady(session);
     }
 
     @Override

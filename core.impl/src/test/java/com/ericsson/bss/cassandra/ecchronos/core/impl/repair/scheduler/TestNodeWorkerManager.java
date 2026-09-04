@@ -21,19 +21,14 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads.NodeWorker;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads.NodeWorkerManager;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.SchemaRefresher;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.KeyspaceCreatedEvent;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.TableCreatedEvent;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.TableDroppedEvent;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RepairScheduler;
-import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
-import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,7 +39,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
-import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.metadata.Metadata;
 
@@ -59,18 +53,9 @@ public class TestNodeWorkerManager
     private DistributedNativeConnectionProvider nativeConnectionProvider;
 
     @Mock
-    private ReplicatedTableProvider replicatedTableProvider;
-
-    @Mock
-    private RepairScheduler repairScheduler;
-
-    @Mock
-    private TableReferenceFactory tableReferenceFactory;
+    private SchemaRefresher schemaRefresher;
 
     private NoopThreadPoolTaskExecutor threadPool;
-
-    @Mock
-    private Function<TableReference, Set<RepairConfiguration>> repairConfigFunction;
 
     @Mock
     private Node node1;
@@ -119,10 +104,7 @@ public class TestNodeWorkerManager
 
         manager = NodeWorkerManager.newBuilder()
                 .withNativeConnection(nativeConnectionProvider)
-                .withReplicatedTableProvider(replicatedTableProvider)
-                .withRepairScheduler(repairScheduler)
-                .withTableReferenceFactory(tableReferenceFactory)
-                .withRepairConfiguration(repairConfigFunction)
+                .withSchemaRefresher(schemaRefresher)
                 .withThreadPool(threadPool)
                 .build();
     }
