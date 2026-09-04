@@ -175,7 +175,13 @@ public class ECChronos implements Closeable
 
         ThreadPoolTaskConfig threadPoolTaskConfig = configuration.getConnectionConfig().getThreadPoolTaskConfig();
 
-        SchemaRefresher schemaRefresher = new SchemaRefresher(myECChronosInternals.getReplicatedTableProvider(),  myRepairSchedulerImpl, myECChronosInternals.getTableReferenceFactory(), repairConfigurationProvider::get, session, nativeConnectionProvider);
+        SchemaRefresher schemaRefresher = new SchemaRefresher(
+            myECChronosInternals.getReplicatedTableProvider(),
+            myRepairSchedulerImpl,
+            myECChronosInternals.getTableReferenceFactory(),
+            repairConfigurationProvider::get,
+            session,
+            nativeConnectionProvider);
 
         LOG.debug("myNodeWorkerManager being created");
         myNodeWorkerManager = NodeWorkerManager.newBuilder()
