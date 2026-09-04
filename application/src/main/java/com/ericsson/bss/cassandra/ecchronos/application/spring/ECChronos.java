@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.ThreadPoolExecutor;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -39,10 +40,10 @@ import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnecti
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.JolokiaNotificationController;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.RepairStatsProviderImpl;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.lang.Nullable;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads.NodeWorkerManager;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandStatus;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.SchemaRefresher;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.OnDemandRepairSchedulerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.RepairSchedulerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.RepairStateFactoryImpl;
@@ -173,13 +174,12 @@ public class ECChronos implements Closeable
 
         ThreadPoolTaskConfig threadPoolTaskConfig = configuration.getConnectionConfig().getThreadPoolTaskConfig();
 
+        SchemaRefresher schemaRefresher = new SchemaRefresher(myECChronosInternals.getReplicatedTableProvider(),  myRepairSchedulerImpl, myECChronosInternals.getTableReferenceFactory(), repairConfigurationProvider::get, session, nativeConnectionProvider);
+
         LOG.debug("myNodeWorkerManager being created");
         myNodeWorkerManager = NodeWorkerManager.newBuilder()
-                .withRepairScheduler(myRepairSchedulerImpl)
-                .withRepairConfiguration(repairConfigurationProvider::get)
                 .withNativeConnection(nativeConnectionProvider)
-                .withReplicatedTableProvider(myECChronosInternals.getReplicatedTableProvider())
-                .withTableReferenceFactory(myECChronosInternals.getTableReferenceFactory())
+                .withSchemaRefresher(schemaRefresher)
                 .withThreadPool(setupThreadPool(threadPoolTaskConfig)).build();
 
         defaultRepairConfigurationProvider.fromBuilder(DefaultRepairConfigurationProvider.newBuilder()

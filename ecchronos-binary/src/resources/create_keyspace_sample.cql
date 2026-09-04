@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS ecchronos.repair_history(
     status text,
     started_at timestamp,
     finished_at timestamp,
+    repair_type text,
     PRIMARY KEY((table_id,node_id), repair_id))
     WITH compaction = {'class': 'TimeWindowCompactionStrategy'}
     AND default_time_to_live = 2592000

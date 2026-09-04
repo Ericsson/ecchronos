@@ -107,6 +107,11 @@ public class RepairGroup extends ScheduledTask
             myRepairHistory = Preconditions
                     .checkNotNull(builder.myRepairHistory, "Repair History must be set");
         }
+        else
+        {
+            myRepairHistory = builder.myRepairHistory;
+            myNode = builder.myNode;
+        }
         if (RepairType.VNODE.equals(myRepairConfiguration.getRepairType()))
         {
             myNode = Preconditions
@@ -235,12 +240,30 @@ public class RepairGroup extends ScheduledTask
         Collection<RepairTask> tasks = new ArrayList<>();
         if (myRepairConfiguration.getRepairType().equals(RepairType.INCREMENTAL))
         {
-            tasks.add(new IncrementalRepairTask(
-                    nodeID,
-                    myJmxProxyFactory,
-                    myTableReference,
-                    myRepairConfiguration,
-                    myTableRepairMetrics));
+            if (myRepairHistory != null)
+            {
+                Set<DriverNode> replicas = myReplicaRepairGroup.replicas() != null
+                        ? new HashSet<>(myReplicaRepairGroup.replicas()) : Set.of();
+                tasks.add(new IncrementalRepairTask(
+                        nodeID,
+                        myJmxProxyFactory,
+                        myTableReference,
+                        myRepairConfiguration,
+                        myTableRepairMetrics,
+                        myRepairHistory,
+                        myNode,
+                        myJobId,
+                        replicas));
+            }
+            else
+            {
+                tasks.add(new IncrementalRepairTask(
+                        nodeID,
+                        myJmxProxyFactory,
+                        myTableReference,
+                        myRepairConfiguration,
+                        myTableRepairMetrics));
+            }
         }
         else if (myRepairConfiguration.getRepairType().equals(RepairType.VNODE))
         {

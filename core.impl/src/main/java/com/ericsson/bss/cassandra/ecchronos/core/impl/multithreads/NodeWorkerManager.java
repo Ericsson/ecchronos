@@ -17,15 +17,10 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.SchemaRefresher;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.KeyspaceCreatedEvent;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.RepairEvent;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RepairScheduler;
-import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
-import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -36,7 +31,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 
 /**
  * Manages a pool of {@link NodeWorker} instances, one per Cassandra node.
@@ -47,12 +41,9 @@ public class NodeWorkerManager
     private static final Logger LOG = LoggerFactory.getLogger(NodeWorkerManager.class);
     private final Map<UUID, NodeWorker> myWorkers = new ConcurrentHashMap<>();
     private final ThreadPoolTaskExecutor myThreadPool;
+    private final SchemaRefresher mySchemaRefresher;
 
     private final DistributedNativeConnectionProvider myNativeConnectionProvider;
-    private final ReplicatedTableProvider myReplicatedTableProvider;
-    private final RepairScheduler myRepairScheduler;
-    private final TableReferenceFactory myTableReferenceFactory;
-    private final Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
     private final Object myLock = new Object();
 
     /**
@@ -63,11 +54,8 @@ public class NodeWorkerManager
     protected NodeWorkerManager(final Builder builder)
     {
         myNativeConnectionProvider = builder.myNativeConnectionProvider;
+        mySchemaRefresher = builder.mySchemaRefresher;
         Collection<Node> nodes = myNativeConnectionProvider.getNodes().values();
-        myReplicatedTableProvider = builder.myReplicatedTableProvider;
-        myRepairScheduler = builder.myRepairScheduler;
-        myTableReferenceFactory = builder.myTableReferenceFactory;
-        myRepairConfigurationFunction = builder.myRepairConfigurationFunction;
         myThreadPool = builder.myThreadPool;
         myThreadPool.initialize();
         setupInitialNodeWorkers(nodes);
@@ -85,14 +73,7 @@ public class NodeWorkerManager
      */
     protected void addNewNodeToThreadPool(final Node node)
     {
-        NodeWorker worker = new NodeWorker(
-                node,
-                myReplicatedTableProvider,
-                myRepairScheduler,
-                Preconditions.checkNotNull(myTableReferenceFactory,
-                        "Table reference factory must be set"),
-                myRepairConfigurationFunction,
-                myNativeConnectionProvider.getCqlSession());
+        NodeWorker worker = new NodeWorker(node, mySchemaRefresher);
         LOG.info("New worker created for Node {}", node.getHostId());
         myWorkers.put(node.getHostId(), worker);
         int requiredPoolSize = myWorkers.size();
@@ -166,7 +147,7 @@ public class NodeWorkerManager
             if (myWorkers.containsKey(node.getHostId()))
             {
                 LOG.info("Removing node {} and descheduling all its jobs", node.getHostId());
-                myRepairScheduler.removeAllConfigurationsForNode(node.getHostId());
+                mySchemaRefresher.removeAllConfigurationsForNode(node.getHostId());
                 NodeWorker nodeWorker = myWorkers.remove(node.getHostId());
                 myThreadPool.stop(nodeWorker);
                 int newSize = Math.max(1, myWorkers.size());
@@ -247,56 +228,13 @@ public class NodeWorkerManager
     }
 
     /**
-     * Gets the replicated table provider.
-     *
-     * @return the replicated table provider.
-     */
-    public final ReplicatedTableProvider getMyReplicatedTableProvider()
-    {
-        return myReplicatedTableProvider;
-    }
-
-    /**
-     * Gets the repair scheduler.
-     *
-     * @return the repair scheduler.
-     */
-    public final RepairScheduler getMyRepairScheduler()
-    {
-        return myRepairScheduler;
-    }
-
-    /**
-     * Gets the table reference factory.
-     *
-     * @return the table reference factory.
-     */
-    public final TableReferenceFactory getMyTableReferenceFactory()
-    {
-        return myTableReferenceFactory;
-    }
-
-    /**
-     * Gets the repair configuration function.
-     *
-     * @return the repair configuration function.
-     */
-    public final Function<TableReference, Set<RepairConfiguration>> getMyRepairConfigurationFunction()
-    {
-        return myRepairConfigurationFunction;
-    }
-
-    /**
      * Builder for constructing {@link NodeWorkerManager} instances.
      */
     public static class Builder
     {
         private DistributedNativeConnectionProvider myNativeConnectionProvider;
-        private ReplicatedTableProvider myReplicatedTableProvider;
-        private RepairScheduler myRepairScheduler;
-        private TableReferenceFactory myTableReferenceFactory;
-        private Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
         private ThreadPoolTaskExecutor myThreadPool;
+        private SchemaRefresher mySchemaRefresher;
 
         /**
          * Default constructor.
@@ -304,43 +242,6 @@ public class NodeWorkerManager
         public Builder()
         {
             // Default constructor
-        }
-
-        /**
-         * Build with repair configuration.
-         *
-         * @param defaultRepairConfiguration The default repair configuration
-         * @return Builder
-         */
-        public Builder withRepairConfiguration(final Function<TableReference, Set<RepairConfiguration>>
-                                                                                          defaultRepairConfiguration)
-        {
-            myRepairConfigurationFunction = defaultRepairConfiguration;
-            return this;
-        }
-
-        /**
-         * Build with replicated table provider.
-         *
-         * @param replicatedTableProvider The replicated table provider
-         * @return Builder
-         */
-        public Builder withReplicatedTableProvider(final ReplicatedTableProvider replicatedTableProvider)
-        {
-            myReplicatedTableProvider = replicatedTableProvider;
-            return this;
-        }
-
-        /**
-         * Build with table repair scheduler.
-         *
-         * @param repairScheduler The repair scheduler
-         * @return Builder
-         */
-        public Builder withRepairScheduler(final RepairScheduler repairScheduler)
-        {
-            myRepairScheduler = repairScheduler;
-            return this;
         }
 
         /**
@@ -356,18 +257,6 @@ public class NodeWorkerManager
         }
 
         /**
-         * Build with table reference factory.
-         *
-         * @param tableReferenceFactory The table reference factory
-         * @return Builder
-         */
-        public Builder withTableReferenceFactory(final TableReferenceFactory tableReferenceFactory)
-        {
-            myTableReferenceFactory = tableReferenceFactory;
-            return this;
-        }
-
-        /**
          * Build with thread pool task executor.
          *
          * @param threadPool The thread pool task executor.
@@ -376,6 +265,18 @@ public class NodeWorkerManager
         public Builder withThreadPool(final ThreadPoolTaskExecutor threadPool)
         {
             myThreadPool = threadPool;
+            return this;
+        }
+
+        /**
+         * Build with schema refresher.
+         *
+         * @param schemaRefresher the schema refresher.
+         * @return Builder
+         */
+        public final Builder withSchemaRefresher(final SchemaRefresher schemaRefresher)
+        {
+            mySchemaRefresher = schemaRefresher;
             return this;
         }
 

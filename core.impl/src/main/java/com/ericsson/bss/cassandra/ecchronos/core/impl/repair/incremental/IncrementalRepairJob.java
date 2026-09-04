@@ -19,18 +19,25 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.RepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.metadata.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.state.RepairEntry;
+import com.ericsson.bss.cassandra.ecchronos.core.state.RepairHistory;
+import com.ericsson.bss.cassandra.ecchronos.core.state.RepairHistoryProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicaRepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairPolicy;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairStatus;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -38,30 +45,46 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 
 /**
- * Class used to run Incremental Repairs in Cassandra.
+ * A scheduled job that keeps a single table repaired using Cassandra incremental repairs.
+ * <p>
+ * One job is created per managed node per table (same as vnode). Each job:
+ * <ul>
+ *     <li>Reads {@code ecchronos.repair_history} keyed by this node's ID to determine the last successful run,
+ *     falling back to the Cassandra {@code maxRepairedAt} metric when no history exists.</li>
+ *     <li>On completion, writes one history row per replica involved in the repair so that all nodes can observe
+ *     the result and avoid redundant work within the same interval.</li>
+ * </ul>
  */
 public class IncrementalRepairJob extends ScheduledRepairJob
 {
     private static final Logger LOG = LoggerFactory.getLogger(IncrementalRepairJob.class);
     private static final int DAYS_IN_A_WEEK = 7;
+
     private final Node myNode;
     private final ReplicationState myReplicationState;
     private final CassandraMetrics myCassandraMetrics;
+    private final RepairHistory myRepairHistory;
+    private final RepairHistoryProvider myRepairHistoryProvider;
+
 
     IncrementalRepairJob(final Builder builder)
     {
         super(builder.myConfiguration, builder.myNodeId, builder.myTableReference, builder.myJmxProxyFactory,
-                builder.myRepairConfiguration, builder.myRepairPolicies, builder.myTableRepairMetrics, builder.myRepairLockType);
+                builder.myRepairConfiguration, builder.myRepairPolicies, builder.myTableRepairMetrics,
+                builder.myRepairLockType);
         myNode = Preconditions.checkNotNull(builder.myNode, "Node must be set");
         myReplicationState = Preconditions.checkNotNull(builder.myReplicationState, "Replication state must be set");
         myCassandraMetrics = Preconditions.checkNotNull(builder.myCassandraMetrics, "Cassandra metrics must be set");
-        myLastSuccessfulRun = myCassandraMetrics.getMaxRepairedAt(myNode.getHostId(), builder.myTableReference);
+        myRepairHistory = builder.myRepairHistory;
+        myRepairHistoryProvider = builder.myRepairHistoryProvider;
+        myLastSuccessfulRun = determineLastSuccessfulRun();
         LOG.debug("{} - last successful run: {}", this, myLastSuccessfulRun);
     }
 
@@ -120,8 +143,9 @@ public class IncrementalRepairJob extends ScheduledRepairJob
     @Override
     public Iterator<ScheduledTask> iterator()
     {
+        ImmutableSet<DriverNode> replicas = myReplicationState.getReplicas(getTableReference(), myNode);
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(
-                myReplicationState.getReplicas(getTableReference(), myNode),
+                replicas,
                 ImmutableList.of(), myLastSuccessfulRun);
         RepairGroup.Builder builder = RepairGroup.newBuilder()
                 .withTableReference(getTableReference())
@@ -132,13 +156,32 @@ public class IncrementalRepairJob extends ScheduledRepairJob
                 .withRepairLockFactory(REPAIR_LOCK_FACTORY)
                 .withRepairResourceFactory(getRepairLockType().getLockFactory())
                 .withRepairPolicies(getRepairPolicies()).withJobId(getJobId());
+
         List<ScheduledTask> taskList = new ArrayList<>();
         taskList.add(builder.build(getRealPriority()));
         return taskList.iterator();
     }
 
     /**
-     * Check if there's anything to repair, if not then just move the last run.
+     * After a successful repair, write one history row per replica involved so that every node can read its own
+     * row and skip redundant work within the same interval.
+     *
+     * @param successful whether the task ran successfully.
+     * @param task the task that was executed.
+     */
+    @Override
+    public void postExecute(final boolean successful, final ScheduledTask task)
+    {
+        super.postExecute(successful, task);
+        if (successful)
+        {
+            recordRepairHistory(RepairStatus.SUCCESS, myLastSuccessfulRun, myLastSuccessfulRun);
+        }
+    }
+
+    /**
+     * Refresh the scheduling state by reading repair history keyed by this node. If a recent SUCCESS row exists
+     * within the repair interval, advance the last successful run so the job does not execute again.
      */
     @Override
     public void refreshState()
@@ -147,8 +190,102 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         if (nothingToRepair)
         {
             myLastSuccessfulRun = System.currentTimeMillis();
+            return;
+        }
+        long historyLastRun = lastSuccessfulRunFromHistory();
+        if (historyLastRun > myLastSuccessfulRun)
+        {
+            LOG.info("{} - incremental repair for {} already completed at {}, skipping.",
+                    this, getTableReference(), historyLastRun);
+            myLastSuccessfulRun = historyLastRun;
         }
     }
+
+    /**
+     * Write one history row per replica involved in the repair.
+     *
+     * @param status repair status.
+     * @param startedAt epoch millis when the repair started.
+     * @param finishedAt epoch millis when the repair finished.
+     */
+    private void recordRepairHistory(final RepairStatus status, final long startedAt, final long finishedAt)
+    {
+        if (myRepairHistory == null)
+        {
+            LOG.warn("{} - repair history not configured, skipping history write", this);
+            return;
+        }
+        try
+        {
+            ImmutableSet<DriverNode> replicas = myReplicationState.getReplicas(getTableReference(), myNode);
+            List<UUID> allReplicaIds = replicas.stream()
+                    .map(DriverNode::getId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+            if (allReplicaIds.isEmpty())
+            {
+                return;
+            }
+            myRepairHistory.recordCompletedRepair(getTableReference(), getJobId(), allReplicaIds, replicas,
+                    getRepairConfiguration().getRepairType(), startedAt, finishedAt, status);
+            LOG.debug("{} - recorded {} incremental repair history rows for {}", this,
+                    allReplicaIds.size(), getTableReference());
+        }
+        catch (Exception e)
+        {
+            LOG.warn("{} - unable to record incremental repair history", this, e);
+        }
+    }
+
+    private long determineLastSuccessfulRun()
+    {
+        long historyLastRun = lastSuccessfulRunFromHistory();
+        if (historyLastRun > 0)
+        {
+            return historyLastRun;
+        }
+        // No repair history yet (e.g. first run, or history disabled). Fall back to the Cassandra metric so that a
+        // freshly started instance still recognizes work that Cassandra already considers repaired.
+        return myCassandraMetrics.getMaxRepairedAt(myNode.getHostId(), getTableReference());
+    }
+
+    /**
+     * Determine the most recent successful incremental repair from {@code ecchronos.repair_history}. Reads are keyed
+     * by the coordinator node so that repairs performed by any ecChronos instance are visible.
+     *
+     * @return the timestamp of the last successful repair, or {@code 0} if none is found or history is unavailable.
+     */
+    private long lastSuccessfulRunFromHistory()
+    {
+        if (myRepairHistoryProvider == null)
+        {
+            return 0L;
+        }
+        try
+        {
+            long now = System.currentTimeMillis();
+            long from = now - Math.max(getRepairConfiguration().getRepairIntervalInMs(),
+                    getRepairConfiguration().getRepairErrorTimeInMs());
+            Iterator<RepairEntry> iterator = myRepairHistoryProvider.iterate(myNode, getTableReference(), now,
+                    from, Predicates.alwaysTrue());
+            long latest = 0L;
+            while (iterator.hasNext())
+            {
+                RepairEntry entry = iterator.next();
+                if (RepairStatus.SUCCESS.equals(entry.getStatus()) && entry.getFinishedAt() > latest)
+                {
+                    latest = entry.getFinishedAt();
+                }
+            }
+            return latest;
+        }
+        catch (Exception e)
+        {
+            LOG.warn("{} - unable to read repair history, falling back to metrics", this, e);
+            return 0L;
+        }
+    }
+
 
     /**
      * String representation.
@@ -158,7 +295,8 @@ public class IncrementalRepairJob extends ScheduledRepairJob
     @Override
     public String toString()
     {
-        return String.format("Incremental repair job of %s in node %s", getTableReference(), myNode.getHostId());
+        return String.format("Incremental repair job of %s (coordinator node %s)", getTableReference(),
+                myNode.getHostId());
     }
 
     @Override
@@ -178,13 +316,16 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         }
         IncrementalRepairJob that = (IncrementalRepairJob) o;
         return Objects.equals(myReplicationState, that.myReplicationState) && Objects.equals(
-                myCassandraMetrics, that.myCassandraMetrics) && Objects.equals(myNode, that.myNode);
+                myCassandraMetrics, that.myCassandraMetrics) && Objects.equals(myNode, that.myNode)
+                && Objects.equals(myRepairHistory, that.myRepairHistory)
+                && Objects.equals(myRepairHistoryProvider, that.myRepairHistoryProvider);
     }
 
     @Override
     public final int hashCode()
     {
-        return Objects.hash(super.hashCode(), myReplicationState, myCassandraMetrics, myNode);
+        return Objects.hash(super.hashCode(), myReplicationState, myCassandraMetrics, myNode, myRepairHistory,
+                myRepairHistoryProvider);
     }
 
     /**
@@ -206,6 +347,8 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         private final List<TableRepairPolicy> myRepairPolicies = new ArrayList<>();
         private CassandraMetrics myCassandraMetrics;
         private RepairLockType myRepairLockType;
+        private RepairHistory myRepairHistory;
+        private RepairHistoryProvider myRepairHistoryProvider;
 
         /**
          * Default constructor.
@@ -242,7 +385,8 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         }
 
         /**
-         * Build with configuration.
+         * Build with the coordinator node. This node is used both for scheduling and as the {@code node_id} for
+         * repair history.
          *
          * @param node
          *         Node.
@@ -346,6 +490,31 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         }
 
         /**
+         * Build with repair history used to record executions in {@code ecchronos.repair_history}.
+         *
+         * @param repairHistory The repair history.
+         * @return Builder
+         */
+        public Builder withRepairHistory(final RepairHistory repairHistory)
+        {
+            myRepairHistory = repairHistory;
+            return this;
+        }
+
+        /**
+         * Build with repair history provider used to read the last successful run from
+         * {@code ecchronos.repair_history}.
+         *
+         * @param repairHistoryProvider The repair history provider.
+         * @return Builder
+         */
+        public Builder withRepairHistoryProvider(final RepairHistoryProvider repairHistoryProvider)
+        {
+            myRepairHistoryProvider = repairHistoryProvider;
+            return this;
+        }
+
+        /**
          * Build table repair job.
          *
          * @return TableRepairJob
@@ -358,4 +527,3 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         }
     }
 }
-
