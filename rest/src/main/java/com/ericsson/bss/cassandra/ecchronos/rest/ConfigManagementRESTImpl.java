@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
+import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -38,19 +39,25 @@ public final class ConfigManagementRESTImpl
     private static final String KEY_SESSION_WINDOW = "session_window_ms";
     private static final String KEY_COOLDOWN = "cooldown_ms";
     private static final String KEY_LOCKS_PER_RESOURCE = "locks_per_resource";
+    private static final String KEY_MAX_WAIT_TIME = "max_wait_time_minutes";
     private static final int MIN_LOCKS_PER_RESOURCE = 1;
+    private static final int MIN_MAX_WAIT_TIME = 1;
 
     private final ScheduleManager myScheduleManager;
+    private final DistributedJmxProxyFactory myJmxProxyFactory;
 
     /**
      * Constructs the configuration management REST controller.
      *
      * @param scheduleManager the schedule manager providing configuration access.
+     * @param jmxProxyFactory the JMX proxy factory providing the repair max wait time.
      */
     @Autowired
-    public ConfigManagementRESTImpl(final ScheduleManager scheduleManager)
+    public ConfigManagementRESTImpl(final ScheduleManager scheduleManager,
+            final DistributedJmxProxyFactory jmxProxyFactory)
     {
         myScheduleManager = scheduleManager;
+        myJmxProxyFactory = jmxProxyFactory;
     }
 
     /**
@@ -92,6 +99,7 @@ public final class ConfigManagementRESTImpl
         validateMin(body, KEY_SESSION_WINDOW, 1, "session_window must be > 0");
         validateMin(body, KEY_COOLDOWN, 0, "cooldown must be >= 0");
         validateMin(body, KEY_LOCKS_PER_RESOURCE, MIN_LOCKS_PER_RESOURCE, "locks_per_resource must be >= 1");
+        validateMin(body, KEY_MAX_WAIT_TIME, MIN_MAX_WAIT_TIME, "max_wait_time_minutes must be > 0");
     }
 
     private void validateMin(final Map<String, Object> body, final String key, final long min, final String message)
@@ -116,6 +124,10 @@ public final class ConfigManagementRESTImpl
         {
             myScheduleManager.setLocksPerResource(((Number) body.get(KEY_LOCKS_PER_RESOURCE)).intValue());
         }
+        if (body.containsKey(KEY_MAX_WAIT_TIME))
+        {
+            myJmxProxyFactory.setMaxWaitTimeInMinutes(((Number) body.get(KEY_MAX_WAIT_TIME)).intValue());
+        }
     }
 
     private Map<String, Object> buildResponse()
@@ -124,6 +136,7 @@ public final class ConfigManagementRESTImpl
         config.put(KEY_SESSION_WINDOW, myScheduleManager.getSessionWindowInMs());
         config.put(KEY_COOLDOWN, myScheduleManager.getCooldownInMs());
         config.put(KEY_LOCKS_PER_RESOURCE, myScheduleManager.getLocksPerResource());
+        config.put(KEY_MAX_WAIT_TIME, myJmxProxyFactory.getMaxWaitTimeInMinutes());
         return config;
     }
 }

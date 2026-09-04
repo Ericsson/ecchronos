@@ -37,5 +37,15 @@ public interface DistributedJmxProxyFactory
      * @return The maximum wait time in minutes.
      */
     Integer getMaxWaitTimeInMinutes();
+
+    /**
+     * Set the maximum wait time in minutes for repair tasks at runtime.
+     * <p>
+     * New repair tasks pick up the new value on creation; in-flight repairs keep
+     * the value captured when they started.
+     *
+     * @param maxWaitTimeInMinutes The maximum wait time in minutes. Must be greater than 0.
+     */
+    void setMaxWaitTimeInMinutes(int maxWaitTimeInMinutes);
 }
 
