@@ -232,6 +232,7 @@ public class IncrementalRepairJob extends ScheduledRepairJob
             {
                 return;
             }
+
             myRepairHistory.recordCompletedRepair(getTableReference(), getJobId(), allReplicaIds, replicas,
                     getRepairConfiguration().getRepairType(), startedAt, finishedAt, status);
             LOG.debug("{} - recorded {} incremental repair history rows for {}", this,
@@ -255,8 +256,9 @@ public class IncrementalRepairJob extends ScheduledRepairJob
     }
 
     /**
-     * Determine the most recent successful incremental repair from {@code ecchronos.repair_history}. Reads are keyed
-     * by the coordinator node so that repairs performed by any ecChronos instance are visible.
+     * Determine the most recent successful incremental repair from {@code ecchronos.repair_history}.
+     * Reads are keyed by {@code myNode} (the managed node); entries are visible because
+     * {@link #recordRepairHistory} writes one row per replica, so each node's row can be found here.
      *
      * @return the timestamp of the last successful repair, or {@code 0} if none is found or history is unavailable.
      */

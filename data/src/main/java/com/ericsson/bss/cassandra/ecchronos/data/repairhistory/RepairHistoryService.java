@@ -75,7 +75,7 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
 
     private static final Logger LOG = LoggerFactory.getLogger(RepairHistoryService.class);
     private static final String UNIVERSAL_TIMEZONE = "UTC";
-    private static final String UNKNOW_REPAIR_TYPE = "UNKNOWN";
+    private static final String UNKNOWN_REPAIR_TYPE = "UNKNOWN";
 
     private static final String KEYSPACE_NAME = "ecchronos";
     private static final String TABLE_NAME = "repair_history";
@@ -712,7 +712,7 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
                     repairStatus.toString(),
                     myStartedAt.get(),
                     finishedAt,
-                    myRepairType != null ? myRepairType.name() : UNKNOW_REPAIR_TYPE);
+                    myRepairType != null ? myRepairType.name() : UNKNOWN_REPAIR_TYPE);
 
             return myCqlSession.executeAsync(statement);
         }

@@ -19,6 +19,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.metadata.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairStatus;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
+import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
 
@@ -71,7 +72,7 @@ public interface RepairHistory
     default void recordCompletedRepair(
             final TableReference tableReference,
             final UUID jobId,
-            final java.util.Collection<UUID> replicaNodeIds,
+            final Collection<UUID> replicaNodeIds,
             final Set<DriverNode> participants,
             final RepairType repairType,
             final long startedAt,
