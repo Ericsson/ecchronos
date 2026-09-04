@@ -110,7 +110,7 @@
         <!-- Spring boot -->
         <org.springframework.boot.spring-boot.version>4.1.1</org.springframework.boot.spring-boot.version>
         <org.apache.tomcat.embed.version>11.0.25</org.apache.tomcat.embed.version>
-        <org.springframework.spring.version>7.0.8</org.springframework.spring.version>
+        <org.springframework.spring.version>7.0.9</org.springframework.spring.version>
         <org.springdoc.openapi-starter-webmvc-api.version>3.1.0</org.springdoc.openapi-starter-webmvc-api.version>
         <jakarta.servlet-api.version>6.1.0</jakarta.servlet-api.version>
         <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>
@@ -157,7 +157,7 @@
         <org.apache.maven.plugin.maven-jxr-plugin.version>3.6.0</org.apache.maven.plugin.maven-jxr-plugin.version>
         <org.apache.maven.plugins.maven-assembly-plugin.version>3.8.0</org.apache.maven.plugins.maven-assembly-plugin.version>
         <org.apache.maven.plugins-maven-checkstyle-plugin.version>3.6.0</org.apache.maven.plugins-maven-checkstyle-plugin.version>
-        <org.apache.maven.plugins.maven-compiler-plugin.version>3.15.0</org.apache.maven.plugins.maven-compiler-plugin.version>
+        <org.apache.maven.plugins.maven-compiler-plugin.version>3.16.0</org.apache.maven.plugins.maven-compiler-plugin.version>
         <org.apache.maven.plugins-maven-dependency-plugin.version>3.11.0</org.apache.maven.plugins-maven-dependency-plugin.version>
         <org.apache.maven.plugins.maven-deploy-plugin.version>3.1.4</org.apache.maven.plugins.maven-deploy-plugin.version>
         <org.apache.maven.plugins.maven-failsafe-plugin.version>3.5.6</org.apache.maven.plugins.maven-failsafe-plugin.version>

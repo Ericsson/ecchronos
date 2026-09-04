@@ -37,7 +37,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
     private final Map<UUID, Node> nodesMap;
     private final EccNodesSync eccNodesSync;
     private final boolean isJolokiaEnabled;
-    private final Integer myMaxWaitTimeInMinutes;
+    private volatile Integer myMaxWaitTimeInMinutes;
     private final JolokiaNotificationController myJolokiaNotificationController;
 
     private DistributedJmxProxyFactoryImpl(final Builder builder)
@@ -86,6 +86,19 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
     public Integer getMaxWaitTimeInMinutes()
     {
         return myMaxWaitTimeInMinutes;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setMaxWaitTimeInMinutes(final int maxWaitTimeInMinutes)
+    {
+        if (maxWaitTimeInMinutes <= 0)
+        {
+            throw new IllegalArgumentException("maxWaitTimeInMinutes must be > 0");
+        }
+        myMaxWaitTimeInMinutes = maxWaitTimeInMinutes;
     }
 
     /**

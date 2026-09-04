@@ -240,4 +240,59 @@ public class TestDistributedJmxProxyFactoryImpl
 
         assertTrue(distributedJmxProxy.isRepairActive(nodeId, 42));
     }
+
+    @Test
+    public void testDefaultMaxWaitTimeInMinutes()
+    {
+        DistributedJmxProxyFactoryImpl factory = DistributedJmxProxyFactoryImpl.builder()
+                .withJmxConnectionProvider(mockConnectionProvider)
+                .withNodesMap(mockNodesMap)
+                .withIpTranslator(new IpTranslator())
+                .withEccNodesSync(mockEccNodesSync)
+                .build();
+
+        assertEquals(Integer.valueOf(DistributedJmxProxyFactoryImpl.Builder.DEFAULT_MAX_WAIT_TIME_IN_MINUTES),
+                factory.getMaxWaitTimeInMinutes());
+    }
+
+    @Test
+    public void testSetMaxWaitTimeInMinutesUpdatesValue()
+    {
+        DistributedJmxProxyFactoryImpl factory = DistributedJmxProxyFactoryImpl.builder()
+                .withJmxConnectionProvider(mockConnectionProvider)
+                .withNodesMap(mockNodesMap)
+                .withIpTranslator(new IpTranslator())
+                .withEccNodesSync(mockEccNodesSync)
+                .build();
+
+        factory.setMaxWaitTimeInMinutes(60);
+
+        assertEquals(Integer.valueOf(60), factory.getMaxWaitTimeInMinutes());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testSetMaxWaitTimeInMinutesRejectsZero()
+    {
+        DistributedJmxProxyFactoryImpl factory = DistributedJmxProxyFactoryImpl.builder()
+                .withJmxConnectionProvider(mockConnectionProvider)
+                .withNodesMap(mockNodesMap)
+                .withIpTranslator(new IpTranslator())
+                .withEccNodesSync(mockEccNodesSync)
+                .build();
+
+        factory.setMaxWaitTimeInMinutes(0);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testSetMaxWaitTimeInMinutesRejectsNegative()
+    {
+        DistributedJmxProxyFactoryImpl factory = DistributedJmxProxyFactoryImpl.builder()
+                .withJmxConnectionProvider(mockConnectionProvider)
+                .withNodesMap(mockNodesMap)
+                .withIpTranslator(new IpTranslator())
+                .withEccNodesSync(mockEccNodesSync)
+                .build();
+
+        factory.setMaxWaitTimeInMinutes(-5);
+    }
 }
