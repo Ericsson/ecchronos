@@ -25,7 +25,6 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.CloseEvent;
@@ -59,7 +58,6 @@ public class SchemaRefresher
     private final TableReferenceFactory myTableReferenceFactory;
     private final Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
     private final CqlSession mySession;
-    private final DistributedNativeConnectionProvider myNativeConnectionProvider;
 
     /**
      * Constructs a SchemaRefresher.
@@ -69,23 +67,19 @@ public class SchemaRefresher
      * @param tableReferenceFactory the factory for creating table references.
      * @param repairConfigurationFunction the function providing repair configurations for a table.
      * @param session the CQL session for metadata access.
-     * @param nativeConnectionProvider the provider used to pick a managed node for the global incremental track. May
-     *         be {@code null}, in which case the incremental track is disabled.
      */
     public SchemaRefresher(
             final ReplicatedTableProvider replicatedTableProvider,
             final RepairScheduler repairScheduler,
             final TableReferenceFactory tableReferenceFactory,
             final Function<TableReference, Set<RepairConfiguration>> repairConfigurationFunction,
-            final CqlSession session,
-            final DistributedNativeConnectionProvider nativeConnectionProvider)
+            final CqlSession session)
     {
         myReplicatedTableProvider = replicatedTableProvider;
         myRepairScheduler = repairScheduler;
         myTableReferenceFactory = tableReferenceFactory;
         myRepairConfigurationFunction = repairConfigurationFunction;
         mySession = session;
-        myNativeConnectionProvider = nativeConnectionProvider;
     }
 
 

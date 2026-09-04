@@ -62,7 +62,7 @@ public class RepairGroup extends ScheduledTask
     private static final String LOCK_METADATA_TABLE = "table";
 
     private final TableReference myTableReference;
-    private RepairHistory myRepairHistory;
+    private final RepairHistory myRepairHistory;
     private final RepairConfiguration myRepairConfiguration;
     private final ReplicaRepairGroup myReplicaRepairGroup;
     private final DistributedJmxProxyFactory myJmxProxyFactory;

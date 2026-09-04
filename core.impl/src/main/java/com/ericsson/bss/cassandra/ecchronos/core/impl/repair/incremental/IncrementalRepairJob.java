@@ -84,7 +84,10 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         myCassandraMetrics = Preconditions.checkNotNull(builder.myCassandraMetrics, "Cassandra metrics must be set");
         myRepairHistory = builder.myRepairHistory;
         myRepairHistoryProvider = builder.myRepairHistoryProvider;
-        myLastSuccessfulRun = determineLastSuccessfulRun();
+        myLastSuccessfulRun = determineLastSuccessfulRun(
+                builder.myRepairConfiguration.getRepairIntervalInMs(),
+                builder.myRepairConfiguration.getRepairErrorTimeInMs(),
+                builder.myTableReference);
         LOG.debug("{} - last successful run: {}", this, myLastSuccessfulRun);
     }
 
@@ -192,7 +195,10 @@ public class IncrementalRepairJob extends ScheduledRepairJob
             myLastSuccessfulRun = System.currentTimeMillis();
             return;
         }
-        long historyLastRun = lastSuccessfulRunFromHistory();
+        long historyLastRun = lastSuccessfulRunFromHistory(
+                getRepairConfiguration().getRepairIntervalInMs(),
+                getRepairConfiguration().getRepairErrorTimeInMs(),
+                getTableReference());
         if (historyLastRun > myLastSuccessfulRun)
         {
             LOG.info("{} - incremental repair for {} already completed at {}, skipping.",
@@ -237,16 +243,15 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         }
     }
 
-    private long determineLastSuccessfulRun()
+    private long determineLastSuccessfulRun(final long repairIntervalInMs, final long repairErrorTimeInMs,
+            final TableReference tableReference)
     {
-        long historyLastRun = lastSuccessfulRunFromHistory();
+        long historyLastRun = lastSuccessfulRunFromHistory(repairIntervalInMs, repairErrorTimeInMs, tableReference);
         if (historyLastRun > 0)
         {
             return historyLastRun;
         }
-        // No repair history yet (e.g. first run, or history disabled). Fall back to the Cassandra metric so that a
-        // freshly started instance still recognizes work that Cassandra already considers repaired.
-        return myCassandraMetrics.getMaxRepairedAt(myNode.getHostId(), getTableReference());
+        return myCassandraMetrics.getMaxRepairedAt(myNode.getHostId(), tableReference);
     }
 
     /**
@@ -255,7 +260,8 @@ public class IncrementalRepairJob extends ScheduledRepairJob
      *
      * @return the timestamp of the last successful repair, or {@code 0} if none is found or history is unavailable.
      */
-    private long lastSuccessfulRunFromHistory()
+    private long lastSuccessfulRunFromHistory(final long repairIntervalInMs, final long repairErrorTimeInMs,
+            final TableReference tableReference)
     {
         if (myRepairHistoryProvider == null)
         {
@@ -264,9 +270,8 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         try
         {
             long now = System.currentTimeMillis();
-            long from = now - Math.max(getRepairConfiguration().getRepairIntervalInMs(),
-                    getRepairConfiguration().getRepairErrorTimeInMs());
-            Iterator<RepairEntry> iterator = myRepairHistoryProvider.iterate(myNode, getTableReference(), now,
+            long from = now - Math.max(repairIntervalInMs, repairErrorTimeInMs);
+            Iterator<RepairEntry> iterator = myRepairHistoryProvider.iterate(myNode, tableReference, now,
                     from, Predicates.alwaysTrue());
             long latest = 0L;
             while (iterator.hasNext())

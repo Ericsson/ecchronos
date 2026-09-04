@@ -180,8 +180,7 @@ public class ECChronos implements Closeable
             myRepairSchedulerImpl,
             myECChronosInternals.getTableReferenceFactory(),
             repairConfigurationProvider::get,
-            session,
-            nativeConnectionProvider);
+            session);
 
         LOG.debug("myNodeWorkerManager being created");
         myNodeWorkerManager = NodeWorkerManager.newBuilder()

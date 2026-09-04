@@ -18,7 +18,6 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
@@ -63,9 +62,6 @@ public class TestSchemaRefresher
     private CqlSession mySession;
 
     @Mock
-    private DistributedNativeConnectionProvider myNativeConnectionProvider;
-
-    @Mock
     private Node myNode;
 
     @Mock
@@ -89,14 +85,13 @@ public class TestSchemaRefresher
         Map<UUID, Node> nodes = new HashMap<>();
         nodes.put(myNodeId, myNode);
         when(myNode.getHostId()).thenReturn(myNodeId);
-        when(myNativeConnectionProvider.getNodes()).thenReturn(nodes);
         when(myTableMetadata.getKeyspace()).thenReturn(CqlIdentifier.fromInternal(KEYSPACE));
         when(myTableMetadata.getName()).thenReturn(CqlIdentifier.fromInternal(TABLE));
         when(myTableMetadata.getOptions()).thenReturn(Map.of());
         when(myTableReferenceFactory.forTable(KEYSPACE, TABLE)).thenReturn(myTableReference);
 
         mySchemaRefresher = new SchemaRefresher(myReplicatedTableProvider, myRepairScheduler,
-                myTableReferenceFactory, myRepairConfigurationFunction, mySession, myNativeConnectionProvider);
+                myTableReferenceFactory, myRepairConfigurationFunction, mySession);
     }
 
     @Test
