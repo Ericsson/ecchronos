@@ -283,6 +283,8 @@ public class BeanConfigurator
      *         the provider for Cassandra native connections.
      * @param ipTranslator
      *         the {@link IpTranslator} used for IP address translation.
+     * @param eccNodesSync
+     *         the {@link EccNodesSync} used to track and synchronize node state.
      * @return a {@link JolokiaNotificationController} instance.
      */
     @Bean
