@@ -17,6 +17,8 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.config;
 /**
  * The repair options available for the repair.
  */
+// Intentional data holder: this class only exposes repair option key constants and has no behaviour to move
+// elsewhere, so redesigning away the DataClass shape would add indirection without value.
 @SuppressWarnings("PMD.DataClass")
 public final class RepairOptions
 {

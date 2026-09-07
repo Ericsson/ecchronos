@@ -22,7 +22,7 @@ import java.util.Map;
  */
 public final class ClientRegisterResponse
 {
-    // CPD-OFF
+    // CPD-OFF: generated-style DTO for Jolokia JSON with many near-identical getter/setter pairs across nested types; duplication is inherent to the data shape, not a refactoring target
     /**
      * Default constructor.
      */
