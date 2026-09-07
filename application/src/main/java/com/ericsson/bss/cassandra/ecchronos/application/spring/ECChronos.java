@@ -104,7 +104,7 @@ public class ECChronos implements Closeable
      * @throws ConfigurationException
      *         if the configuration is invalid.
      */
-    public ECChronos(//NOPMD long parameter list
+    public ECChronos(//NOPMD ExcessiveParameterList - top-level wiring constructor; dependencies are injected explicitly rather than hidden behind a container
             final Config configuration,
             final ApplicationContext applicationContext,
             final DistributedNativeConnectionProvider nativeConnectionProvider,

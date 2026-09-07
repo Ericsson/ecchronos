@@ -73,6 +73,9 @@ public final class CertificateLoader
      * @return the parsed private key.
      * @throws IOException if the file cannot be read or the key format is unsupported.
      */
+    // PreserveStackTrace suppressed intentionally: the EC/RSA InvalidKeySpecException are expected control flow
+    // (we try one key type then the other) and are deliberately not chained, to surface a clean
+    // "Unsupported private key format" IOException without leaking the internal spec-parsing failures.
     @SuppressWarnings("PMD.PreserveStackTrace")
     public static PrivateKey loadPrivateKey(final File file) throws IOException
     {
