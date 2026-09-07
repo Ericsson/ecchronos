@@ -21,6 +21,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
@@ -66,6 +67,9 @@ public class TestIncrementalOnDemandRepairJob
 
     @Mock
     private Node myNode;
+
+    @Mock
+    private RepairHistory myRepairHistory;
 
     private final TableReference myTableReference = tableReference(keyspaceName, tableName);
     private final UUID myHostId = UUID.randomUUID();
@@ -234,6 +238,7 @@ public class TestIncrementalOnDemandRepairJob
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withRepairLockType(RepairLockType.VNODE)
                 .withReplicationState(myReplicationState)
+                .withRepairHistory(myRepairHistory)
                 .withOngoingJob(myOngoingJob)
                 .withOnFinished(myHook)
                 .withNode(myNode)

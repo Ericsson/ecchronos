@@ -158,7 +158,9 @@ public class IncrementalRepairJob extends ScheduledRepairJob
                 .withReplicaRepairGroup(replicaRepairGroup)
                 .withRepairLockFactory(REPAIR_LOCK_FACTORY)
                 .withRepairResourceFactory(getRepairLockType().getLockFactory())
-                .withRepairPolicies(getRepairPolicies()).withJobId(getJobId());
+                .withRepairPolicies(getRepairPolicies()).withJobId(getJobId())
+                .withRepairHistory(myRepairHistory)
+                .withNode(myNode);
 
         List<ScheduledTask> taskList = new ArrayList<>();
         taskList.add(builder.build(getRealPriority()));

@@ -70,7 +70,7 @@ public class RepairGroup extends ScheduledTask
     private final List<TableRepairPolicy> myRepairPolicies;
     private BigInteger myTokensPerRepair;
     private final UUID myJobId;
-    private Node myNode;
+    private final Node myNode;
     private final RepairLockFactory myRepairLockFactory;
     private final RepairResourceFactory myRepairResourceFactory;
     private final TimeBasedRunPolicy myTimeBasedRunPolicy;
