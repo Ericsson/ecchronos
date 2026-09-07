@@ -31,6 +31,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.HostStatesImp
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.ReplicationStateImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TableReferenceFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.utils.ConsistencyType;
+import com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHistoryService;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
@@ -122,11 +123,15 @@ public class ITIncrementalSchedules extends TestBase
 
         myCassandraMetrics = new CassandraMetrics(getJmxProxyFactory(),
                 Duration.ofSeconds(CASSANDRA_METRICS_UPDATE_IN_SECONDS), Duration.ofMinutes(30));
-        
+
         // Debug JMX connection
         LOG.info("Java version: {}", System.getProperty("java.version"));
         LOG.info("JMX Proxy Factory: {}", getJmxProxyFactory());
         LOG.info("Node Host ID: {}", myLocalHost.getHostId());
+
+        ReplicationStateImpl replicationState = new ReplicationStateImpl(new NodeResolverImpl(getSession()), getSession());
+        RepairHistoryService repairHistoryService = new RepairHistoryService(getSession(), replicationState,
+                new NodeResolverImpl(getSession()), TimeUnit.DAYS.toMillis(30));
 
         myRepairSchedulerImpl = RepairSchedulerImpl.builder()
                 .withJmxProxyFactory(getJmxProxyFactory())
@@ -135,7 +140,8 @@ public class ITIncrementalSchedules extends TestBase
                 .withScheduleManager(myScheduleManagerImpl)
                 .withRepairLockType(RepairLockType.VNODE)
                 .withCassandraMetrics(myCassandraMetrics)
-                .withReplicationState(new ReplicationStateImpl(new NodeResolverImpl(getSession()), getSession()))
+                .withReplicationState(replicationState)
+                .withRepairHistory(repairHistoryService)
                 .build();
 
         myRepairConfiguration = RepairConfiguration.newBuilder()
