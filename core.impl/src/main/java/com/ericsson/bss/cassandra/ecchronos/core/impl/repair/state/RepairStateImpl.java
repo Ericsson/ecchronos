@@ -78,6 +78,9 @@ public class RepairStateImpl implements RepairState
      * @param replicaRepairGroupFactory the factory for generating replica repair groups.
      * @param postUpdateHook the hook invoked after state updates.
      */
+    // ConstructorCallsOverridableMethod suppressed intentionally: update() is final (cannot be overridden),
+    // so the constructor priming the initial repair state is safe; kept as a constructor call by design so an
+    // instance is never observable without an initial state.
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public RepairStateImpl(
             final Node node,

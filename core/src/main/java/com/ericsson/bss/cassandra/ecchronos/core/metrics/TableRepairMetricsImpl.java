@@ -55,7 +55,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
     }
 
     @VisibleForTesting
-    static Clock clock = () -> System.currentTimeMillis(); // NOPMD
+    static Clock clock = () -> System.currentTimeMillis(); // NOPMD MutableStaticState - test seam, overridden by tests to control time
 
     private final Map<TableReference, TableGauges> myTableGauges = new ConcurrentHashMap<>();
     private final Set<TableReference> myRegisteredTables = ConcurrentHashMap.newKeySet();

@@ -28,7 +28,7 @@ import java.util.Objects;
  * Implementation of {@link VnodeRepairStates} that handles sub-range (partial) repair states.
  * Sub-ranges are summarized back into full vnodes when possible to reduce memory overhead.
  */
-public final class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
+public final class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF: builder/immutable-list boilerplate is intentionally near-identical to VnodeRepairStatesImpl; kept as separate types for clarity rather than merged
 {
     private final ImmutableList<VnodeRepairState> myVnodeRepairStatuses;
     private static final float DEFAULT_LOAD_FACTOR = 0.75f;

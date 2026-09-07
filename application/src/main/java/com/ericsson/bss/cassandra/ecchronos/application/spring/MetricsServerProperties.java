@@ -21,6 +21,8 @@ import org.springframework.boot.web.server.Ssl;
 
 /** Properties for the metrics server endpoint. */
 @ConfigurationProperties (prefix = "metrics-server")
+// Intentional data holder: Spring @ConfigurationProperties binding requires a plain getter/setter bean,
+// so the DataClass shape is mandated by the framework rather than a design choice to refactor.
 @SuppressWarnings("PMD.DataClass")
 public class MetricsServerProperties
 {
