@@ -14,34 +14,19 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Node;
-import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import com.ericsson.bss.cassandra.ecchronos.core.metadata.Metadata;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.SchemaRefresher;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.CloseEvent;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.KeyspaceCreatedEvent;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.RepairEvent;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.SetupEvent;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.TableCreatedEvent;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.TableDroppedEvent;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RepairScheduler;
-import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
-import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
 import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
 
 /**
  * A worker that processes repair events for a specific Cassandra node.
@@ -52,38 +37,19 @@ public class NodeWorker implements Runnable
 {
     private static final Logger LOG = LoggerFactory.getLogger(NodeWorker.class);
     private final Node myNode;
+    private final SchemaRefresher mySchemaRefresher;
     private final BlockingQueue<RepairEvent> myEventQueue = new LinkedBlockingQueue<>();
-    private final ReplicatedTableProvider myReplicatedTableProvider;
-    private final RepairScheduler myRepairScheduler;
-    private final TableReferenceFactory myTableReferenceFactory;
-    private final Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
-    private final CqlSession mySession;
 
 
     /**
      * Constructs a NodeWorker for the specified node.
      *
      * @param node the Cassandra node this worker handles.
-     * @param replicatedTableProvider the provider for replicated table information.
-     * @param repairScheduler the scheduler for managing repair configurations.
-     * @param tableReferenceFactory the factory for creating table references.
-     * @param repairConfigurationFunction the function providing repair configurations for a table.
-     * @param session the CQL session for metadata access.
      */
-    public NodeWorker(
-            final Node node,
-            final ReplicatedTableProvider replicatedTableProvider,
-            final RepairScheduler repairScheduler,
-            final TableReferenceFactory tableReferenceFactory,
-            final Function<TableReference, Set<RepairConfiguration>> repairConfigurationFunction,
-            final CqlSession session)
+    public NodeWorker(final Node node, final SchemaRefresher schemaRefresher)
     {
         myNode = node;
-        myReplicatedTableProvider = replicatedTableProvider;
-        myRepairScheduler = repairScheduler;
-        myTableReferenceFactory = tableReferenceFactory;
-        myRepairConfigurationFunction = repairConfigurationFunction;
-        mySession = session;
+        mySchemaRefresher = schemaRefresher;
     }
 
     /**
@@ -123,131 +89,24 @@ public class NodeWorker implements Runnable
     {
         if (event instanceof KeyspaceCreatedEvent keyspaceEvent)
         {
-            onKeyspaceCreated(keyspaceEvent);
+            mySchemaRefresher.onKeyspaceCreated(myNode, keyspaceEvent);
         }
         else if (event instanceof TableCreatedEvent tableEvent)
         {
-            onTableCreated(tableEvent);
+            mySchemaRefresher.onTableCreated(myNode, tableEvent);
         }
         else if (event instanceof TableDroppedEvent tableEvent)
         {
-            removeConfiguration(tableEvent.table());
+            mySchemaRefresher.removeConfiguration(myNode, tableEvent.table());
         }
         else if (event instanceof SetupEvent setupEvent)
         {
-            setupConfiguration(setupEvent);
+            mySchemaRefresher.setupConfiguration(myNode, setupEvent);
         }
         else if (event instanceof CloseEvent closeEvent)
         {
-            close(closeEvent);
+            mySchemaRefresher.close(myNode, closeEvent);
         }
-    }
-
-    private void close(final CloseEvent closeEvent)
-    {
-        allTableOperation(closeEvent.keyspace().getName().asInternal(), (tableReference, tableMetadata) -> myRepairScheduler.removeConfiguration(myNode, tableReference));
-    }
-
-    private void setupConfiguration(final SetupEvent setupEvent)
-    {
-        String keyspaceName = setupEvent.keyspace().getName().asInternal();
-        if (myReplicatedTableProvider.accept(myNode, keyspaceName))
-        {
-            allTableOperation(keyspaceName, (tableReference, tableMetadata) -> updateConfiguration(myNode, tableReference, tableMetadata));
-        }
-    }
-
-    /**
-     * Deal with keyspace creation.
-     *
-     * @param keyspaceEvent the keyspace creation event to handle.
-     */
-
-    protected void onKeyspaceCreated(final KeyspaceCreatedEvent keyspaceEvent)
-    {
-        String keyspaceName = keyspaceEvent.keyspace().getName().asInternal();
-        if (myReplicatedTableProvider.accept(myNode, keyspaceName))
-        {
-            allTableOperation(keyspaceName, (tableReference, tableMetadata) -> updateConfiguration(myNode, tableReference, tableMetadata));
-        }
-        else
-        {
-            allTableOperation(keyspaceName, (tableReference, tableMetadata) -> myRepairScheduler.removeConfiguration(myNode, tableReference));
-        }
-    }
-
-    /**
-     * Deal with table creation.
-     *
-     * @param tableEvent the table creation event to handle.
-     */
-    protected void onTableCreated(final TableCreatedEvent tableEvent)
-    {
-        if (myReplicatedTableProvider.accept(myNode, tableEvent.table().getKeyspace().asInternal()))
-        {
-            TableReference tableReference = myTableReferenceFactory.forTable(tableEvent.table().getKeyspace().asInternal(),
-                    tableEvent.table().getName().asInternal());
-            updateConfiguration(myNode, tableReference, tableEvent.table());
-        }
-    }
-
-    private void updateConfiguration(
-            final Node node,
-            final TableReference tableReference,
-            final TableMetadata table)
-    {
-        Set<RepairConfiguration> repairConfigurations = myRepairConfigurationFunction.apply(tableReference);
-        Set<RepairConfiguration> enabledRepairConfigurations = new HashSet<>();
-        for (RepairConfiguration repairConfiguration: repairConfigurations)
-        {
-            if (!RepairConfiguration.DISABLED.equals(repairConfiguration)
-                    && !isTableIgnored(table, repairConfiguration.getIgnoreTWCSTables()))
-            {
-                enabledRepairConfigurations.add(repairConfiguration);
-            }
-        }
-        myRepairScheduler.putConfigurations(node, tableReference, enabledRepairConfigurations);
-    }
-
-    private boolean isTableIgnored(final TableMetadata table, final boolean ignore)
-    {
-        Map<CqlIdentifier, Object> tableOptions = table.getOptions();
-        if (tableOptions == null)
-        {
-            return false;
-        }
-        Map<String, String> compaction
-                = (Map<String, String>) tableOptions.get(CqlIdentifier.fromInternal("compaction"));
-        if (compaction == null)
-        {
-            return false;
-        }
-        return ignore
-                && "org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy".equals(compaction.get("class"));
-    }
-
-    private void allTableOperation(
-            final String keyspaceName,
-            final BiConsumer<TableReference, TableMetadata> consumer)
-    {
-        for (TableMetadata tableMetadata : Metadata.getKeyspace(mySession, keyspaceName).get().getTables().values())
-        {
-            String tableName = tableMetadata.getName().asInternal();
-            TableReference tableReference = myTableReferenceFactory.forTable(keyspaceName, tableName);
-
-            consumer.accept(tableReference, tableMetadata);
-        }
-    }
-
-    /**
-     * Deal with Table removal.
-     *
-     * @param table the table metadata for the table to remove configuration for.
-     */
-    protected void removeConfiguration(final TableMetadata table)
-    {
-        TableReference tableReference = myTableReferenceFactory.forTable(table);
-        myRepairScheduler.removeConfiguration(myNode, tableReference);
     }
 
     /**

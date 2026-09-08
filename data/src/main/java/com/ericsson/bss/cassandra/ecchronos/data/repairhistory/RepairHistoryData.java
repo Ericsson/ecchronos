@@ -38,6 +38,7 @@ public final class RepairHistoryData
     private final RepairStatus myStatus;
     private final Instant myStartedAt;
     private final Instant myFinishedAt;
+    private final String myRepairType;
     private final long myLookBackTimeInMs;
 
     private RepairHistoryData(final Builder builder)
@@ -53,6 +54,7 @@ public final class RepairHistoryData
         this.myStatus = builder.myStatus;
         this.myStartedAt = builder.myStartedAt;
         this.myFinishedAt = builder.myFinishedAt;
+        this.myRepairType = builder.myRepairType;
         this.myLookBackTimeInMs = builder.myLookBackTimeInMs;
     }
 
@@ -167,6 +169,16 @@ public final class RepairHistoryData
     }
 
     /**
+     * Gets the type of repair that was executed.
+     *
+     * @return the repair type name (e.g. VNODE, PARALLEL_VNODE, INCREMENTAL), or {@code null} if unknown.
+     */
+    public String getRepairType()
+    {
+        return myRepairType;
+    }
+
+    /**
      * Gets the look-back time in milliseconds used for querying repair history.
      *
      * @return the look-back time in milliseconds.
@@ -196,6 +208,7 @@ public final class RepairHistoryData
                 .withStatus(repairHistoryData.myStatus)
                 .withStartedAt(repairHistoryData.myStartedAt)
                 .withFinishedAt(repairHistoryData.myFinishedAt)
+                .withRepairType(repairHistoryData.myRepairType)
                 .withLookBackTimeInMilliseconds(repairHistoryData.myLookBackTimeInMs);
     }
 
@@ -223,6 +236,7 @@ public final class RepairHistoryData
         private RepairStatus myStatus;
         private Instant myStartedAt;
         private Instant myFinishedAt;
+        private String myRepairType;
         private long myLookBackTimeInMs;
 
         /**
@@ -354,6 +368,18 @@ public final class RepairHistoryData
         public Builder withFinishedAt(final Instant finishedAt)
         {
             this.myFinishedAt = finishedAt;
+            return this;
+        }
+
+        /**
+         * Sets the type of repair that was executed.
+         *
+         * @param repairType the repair type name (e.g. VNODE, PARALLEL_VNODE, INCREMENTAL).
+         * @return this builder.
+         */
+        public Builder withRepairType(final String repairType)
+        {
+            this.myRepairType = repairType;
             return this;
         }
 

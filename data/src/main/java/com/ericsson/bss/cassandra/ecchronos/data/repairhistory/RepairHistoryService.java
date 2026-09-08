@@ -36,6 +36,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.history.SessionState;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairStatus;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
@@ -45,6 +46,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.HashMap;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +75,7 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
 
     private static final Logger LOG = LoggerFactory.getLogger(RepairHistoryService.class);
     private static final String UNIVERSAL_TIMEZONE = "UTC";
+    private static final String UNKNOWN_REPAIR_TYPE = "UNKNOWN";
 
     private static final String KEYSPACE_NAME = "ecchronos";
     private static final String TABLE_NAME = "repair_history";
@@ -87,6 +90,11 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
     private static final String COLUMN_STATUS = "status";
     private static final String COLUMN_STARTED_AT = "started_at";
     private static final String COLUMN_FINISHED_AT = "finished_at";
+    private static final String COLUMN_REPAIR_TYPE = "repair_type";
+
+    /** Token range boundaries used when recording a whole-token-space (incremental) repair. */
+    private static final long FULL_RANGE_BEGIN = Long.MIN_VALUE;
+    private static final long FULL_RANGE_END = Long.MAX_VALUE;
 
     private final PreparedStatement myCreateStatement;
     private final PreparedStatement myUpdateStatement;
@@ -130,6 +138,7 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
                         .value(COLUMN_STATUS, bindMarker())
                         .value(COLUMN_STARTED_AT, bindMarker())
                         .value(COLUMN_FINISHED_AT, bindMarker())
+                        .value(COLUMN_REPAIR_TYPE, bindMarker())
                         .build()
                         .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM));
 
@@ -143,6 +152,7 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
                         .setColumn(COLUMN_STATUS, bindMarker())
                         .setColumn(COLUMN_STARTED_AT, bindMarker())
                         .setColumn(COLUMN_FINISHED_AT, bindMarker())
+                        .setColumn(COLUMN_REPAIR_TYPE, bindMarker())
                         .whereColumn(COLUMN_TABLE_ID)
                         .isEqualTo(bindMarker())
                         .whereColumn(COLUMN_NODE_ID)
@@ -155,7 +165,7 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
                 .prepare(selectFrom(KEYSPACE_NAME, TABLE_NAME)
                         .columns(COLUMN_NODE_ID, COLUMN_TABLE_ID, COLUMN_REPAIR_ID, COLUMN_JOB_ID, COLUMN_COORDINATOR_ID,
                                 COLUMN_RANGE_BEGIN, COLUMN_RANGE_END, COLUMN_PARTICIPANTS, COLUMN_STATUS, COLUMN_STARTED_AT,
-                                COLUMN_FINISHED_AT)
+                                COLUMN_FINISHED_AT, COLUMN_REPAIR_TYPE)
                         .whereColumn(COLUMN_TABLE_ID)
                         .isEqualTo(bindMarker())
                         .whereColumn(COLUMN_NODE_ID)
@@ -172,7 +182,7 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
         mySelectByTimeRangeStatement = myCqlSession.prepare(selectFrom(KEYSPACE_NAME, TABLE_NAME)
                 .columns(COLUMN_NODE_ID, COLUMN_TABLE_ID, COLUMN_REPAIR_ID, COLUMN_JOB_ID, COLUMN_COORDINATOR_ID,
                         COLUMN_RANGE_BEGIN, COLUMN_RANGE_END, COLUMN_PARTICIPANTS, COLUMN_STATUS, COLUMN_STARTED_AT,
-                        COLUMN_FINISHED_AT)
+                        COLUMN_FINISHED_AT, COLUMN_REPAIR_TYPE)
                 .whereColumn(COLUMN_TABLE_ID).isEqualTo(bindMarker())
                 .whereColumn(COLUMN_NODE_ID).isEqualTo(bindMarker())
                 .whereColumn(COLUMN_REPAIR_ID).isGreaterThanOrEqualTo(bindMarker())
@@ -322,7 +332,8 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
                 repairHistoryData.getParticipants(),
                 repairHistoryData.getStatus().name(),
                 repairHistoryData.getStartedAt(),
-                repairHistoryData.getFinishedAt());
+                repairHistoryData.getFinishedAt(),
+                repairHistoryData.getRepairType());
         ResultSet tmpResultSet = myCqlSession.execute(repairHistoryInfo);
         if (tmpResultSet.wasApplied())
         {
@@ -372,13 +383,73 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
             final TableReference tableReference,
             final UUID jobId,
             final LongTokenRange range,
-            final Set<DriverNode> participants)
+            final Set<DriverNode> participants,
+            final RepairType repairType)
     {
         DriverNode driverNode = myNodeResolver.fromUUID(node.getHostId()).orElseThrow(IllegalStateException::new);
         Preconditions.checkArgument(participants.contains(driverNode),
                 "Current node must be part of repair");
 
-        return new RepairSessionImpl(tableReference.getId(), driverNode.getId(), jobId, range, participants);
+        return new RepairSessionImpl(tableReference.getId(), driverNode.getId(), jobId, range, participants, repairType);
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Writes one row per replica node id into {@code ecchronos.repair_history}, keyed by that replica's
+     * {@code node_id} and the full token range. This lets a later read keyed by any of those replicas observe that the
+     * logical repair completed.
+     */
+    @Override
+    public void recordCompletedRepair(
+            final TableReference tableReference,
+            final UUID jobId,
+            final Collection<UUID> replicaNodeIds,
+            final Set<DriverNode> participants,
+            final RepairType repairType,
+            final long startedAt,
+            final long finishedAt,
+            final RepairStatus repairStatus)
+    {
+        if (replicaNodeIds == null || replicaNodeIds.isEmpty())
+        {
+            return;
+        }
+        Set<UUID> participantIds = participants == null
+                ? Set.of()
+                : participants.stream().map(DriverNode::getId).collect(Collectors.toSet());
+        UUID repairId = Uuids.timeBased();
+        String rangeBegin = Long.toString(FULL_RANGE_BEGIN);
+        String rangeEnd = Long.toString(FULL_RANGE_END);
+        for (UUID replicaNodeId : replicaNodeIds)
+        {
+            if (replicaNodeId == null)
+            {
+                continue;
+            }
+            BoundStatement statement = myCreateStatement.bind(
+                    tableReference.getId(),
+                    replicaNodeId,
+                    repairId,
+                    jobId,
+                    replicaNodeId,
+                    rangeBegin,
+                    rangeEnd,
+                    participantIds,
+                    repairStatus.toString(),
+                    Instant.ofEpochMilli(startedAt),
+                    Instant.ofEpochMilli(finishedAt),
+                    repairType != null ? repairType.name() : null);
+            try
+            {
+                myCqlSession.execute(statement);
+            }
+            catch (RuntimeException e)
+            {
+                LOG.warn("Unable to record completed repair history for table {} replica {}",
+                        tableReference, replicaNodeId, e);
+            }
+        }
     }
 
     /**
@@ -397,6 +468,7 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
                 repairHistoryData.getStatus().name(),
                 repairHistoryData.getStartedAt(),
                 repairHistoryData.getFinishedAt(),
+                repairHistoryData.getRepairType(),
                 repairHistoryData.getTableId(),
                 repairHistoryData.getNodeId(),
                 repairHistoryData.getRepairId());
@@ -427,6 +499,7 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
         String status = row.get(COLUMN_STATUS, String.class);
         Instant startedAt = row.get(COLUMN_STARTED_AT, Instant.class);
         Instant finishedAt = row.get(COLUMN_FINISHED_AT, Instant.class);
+        String repairType = row.get(COLUMN_REPAIR_TYPE, String.class);
         RepairStatus repairStatus = RepairStatus.getFromStatus(status);
 
         return new RepairHistoryData.Builder()
@@ -441,6 +514,7 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
                 .withStatus(repairStatus)
                 .withStartedAt(startedAt)
                 .withFinishedAt(finishedAt)
+                .withRepairType(repairType)
                 .withLookBackTimeInMilliseconds(lookBackTimeInMs)
                 .build();
     }
@@ -528,6 +602,7 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
         private final UUID myJobID;
         private final LongTokenRange myRange;
         private final Set<UUID> myParticipants;
+        private final RepairType myRepairType;
         private final AtomicReference<SessionState> mySessionState = new AtomicReference<>(SessionState.NO_STATE);
         private final AtomicReference<UUID> myRepairID = new AtomicReference<>(null);
         private final AtomicReference<Instant> myStartedAt = new AtomicReference<>(null);
@@ -536,12 +611,14 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
                 final UUID nodeID,
                 final UUID jobID,
                 final LongTokenRange range,
-                final Set<DriverNode> participants)
+                final Set<DriverNode> participants,
+                final RepairType repairType)
         {
             myTableID = tableID;
             myNodeID = nodeID;
             myJobID = jobID;
             myRange = range;
+            myRepairType = repairType;
             myParticipants = participants.stream()
                     .map(DriverNode::getId)
                     .collect(Collectors.toSet());
@@ -634,7 +711,8 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
                     null,
                     repairStatus.toString(),
                     myStartedAt.get(),
-                    finishedAt);
+                    finishedAt,
+                    myRepairType != null ? myRepairType.name() : UNKNOWN_REPAIR_TYPE);
 
             return myCqlSession.executeAsync(statement);
         }

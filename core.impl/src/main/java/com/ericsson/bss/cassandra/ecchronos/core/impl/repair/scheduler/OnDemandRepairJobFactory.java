@@ -80,6 +80,7 @@ public final class OnDemandRepairJobFactory
                     .withOnFinished(id -> myOnFinishedHook.accept(id, ongoingJob.getHostId()))
                     .withRepairConfiguration(repairConfiguration)
                     .withReplicationState(myReplicationState)
+                    .withRepairHistory(myRepairHistory)
                     .withOngoingJob(ongoingJob)
                     .withNode(node)
                     .build();
