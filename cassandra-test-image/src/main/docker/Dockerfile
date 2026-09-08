@@ -1,7 +1,7 @@
 ARG CASSANDRA_VERSION
 FROM cassandra:${CASSANDRA_VERSION}
 
-ARG JOLOKIA_VERSION=2.5.1
+ARG JOLOKIA_VERSION=2.6.2
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl nginx openssl \
