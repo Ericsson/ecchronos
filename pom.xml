@@ -178,7 +178,7 @@
         <org.sonatype.central-central-publishing-maven-plugin>0.11.0</org.sonatype.central-central-publishing-maven-plugin>
         <io.fabric8.docker-maven-plugin.version>0.49.0</io.fabric8.docker-maven-plugin.version>
 
-        <jolokia.adapter.version>2.6.1</jolokia.adapter.version>
+        <jolokia.adapter.version>2.6.2</jolokia.adapter.version>
 
         <!-- Test defaults -->
         <skipTests>false</skipTests>
