@@ -176,6 +176,7 @@
         <org.codehaus.mojo.license-maven-plugin.version>2.7.1</org.codehaus.mojo.license-maven-plugin.version>
         <org.jacoco.jacoco-maven-plugin.version>0.8.15</org.jacoco.jacoco-maven-plugin.version>
         <org.sonatype.central-central-publishing-maven-plugin>0.11.0</org.sonatype.central-central-publishing-maven-plugin>
+        <io.fabric8.docker-maven-plugin.version>0.49.0</io.fabric8.docker-maven-plugin.version>
 
         <jolokia.adapter.version>2.6.2</jolokia.adapter.version>
 
@@ -877,6 +878,12 @@ limitations under the License.
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
                     <version>${org.apache.maven.plugins-maven-jar-plugin.version}</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>docker-maven-plugin</artifactId>
+                    <version>${io.fabric8.docker-maven-plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
