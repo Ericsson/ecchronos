@@ -45,6 +45,7 @@ public class NodeWorker implements Runnable
      * Constructs a NodeWorker for the specified node.
      *
      * @param node the Cassandra node this worker handles.
+     * @param schemaRefresher the schema refresher used to apply schema changes for the node.
      */
     public NodeWorker(final Node node, final SchemaRefresher schemaRefresher)
     {

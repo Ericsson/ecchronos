@@ -144,6 +144,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
      *
      * @param tableReference
      *            The table to schedule a job on.
+     * @param repairType The repair type for the on demand repair.
      * @return Repair job view list
      */
     @Override
@@ -163,6 +164,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
      * @param tableReference
      *            The table to schedule a job on.
      * @param repairType The repair type for the on demand repair.
+     * @param nodeId The node to schedule the job on.
      * @return RepairJobView
      */
     @Override
