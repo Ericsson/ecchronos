@@ -115,8 +115,12 @@ They are running simple tests that sometimes utilize a single embedded Cassandra
 The current test setup employs Testcontainers to create a simplified Cassandra instance for unit testing and a full Cassandra cluster for integration and manual tests. To conduct manual tests, you can utilize the template provided in the [cassandra-test-image](../cassandra-test-image/src/main/docker/docker-compose.yml). To set up the cluster, navigate to the directory containing the docker-compose.yml file and execute the following command:
 
 ```bash
-docker-compose -f docker-compose.yml up --build
+CASSANDRA_VERSION=5.0 JOLOKIA_VERSION=2.6.1 docker-compose -f docker-compose.yml up --build
 ```
+
+`JOLOKIA_VERSION` is required and has no default; it must match the `jolokia.adapter.version`
+property in the root `pom.xml` so the Jolokia agent attached to Cassandra stays in lockstep with
+the `jolokia-client-jmx-adapter` used by ecChronos. If it is unset, the build fails fast.
 
 For integration tests, the system uses the [AbstractCassandraCluster](../cassandra-test-image/src/test/java/cassandracluster/AbstractCassandraCluster.java) class. This class can be imported into other modules by including the cassandra-test-image test package in the `pom.xml`, as follows:
 

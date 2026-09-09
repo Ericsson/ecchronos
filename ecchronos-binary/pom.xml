@@ -295,6 +295,7 @@
                                         <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
+                                        <JOLOKIA_VERSION>${jolokia.adapter.version}</JOLOKIA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
                                         <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
                                         <JAVA_VERSION>${java.version}</JAVA_VERSION>
@@ -320,6 +321,7 @@
                                         <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
+                                        <JOLOKIA_VERSION>${jolokia.adapter.version}</JOLOKIA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
                                         <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
                                         <JAVA_VERSION>${java.version}</JAVA_VERSION>
@@ -394,6 +396,7 @@
                                         <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
+                                        <JOLOKIA_VERSION>${jolokia.adapter.version}</JOLOKIA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
                                         <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
                                         <JAVA_VERSION>${java.version}</JAVA_VERSION>
@@ -419,6 +422,7 @@
                                         <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
+                                        <JOLOKIA_VERSION>${jolokia.adapter.version}</JOLOKIA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
                                         <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
                                         <JAVA_VERSION>${java.version}</JAVA_VERSION>
@@ -487,6 +491,7 @@
                                         <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
+                                        <JOLOKIA_VERSION>${jolokia.adapter.version}</JOLOKIA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
                                         <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
                                         <JAVA_VERSION>${java.version}</JAVA_VERSION>
@@ -512,6 +517,7 @@
                                         <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
+                                        <JOLOKIA_VERSION>${jolokia.adapter.version}</JOLOKIA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
                                         <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
                                         <JAVA_VERSION>${java.version}</JAVA_VERSION>
@@ -580,6 +586,7 @@
                                         <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
+                                        <JOLOKIA_VERSION>${jolokia.adapter.version}</JOLOKIA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
                                         <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
                                         <JAVA_VERSION>${java.version}</JAVA_VERSION>
@@ -605,6 +612,7 @@
                                         <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
+                                        <JOLOKIA_VERSION>${jolokia.adapter.version}</JOLOKIA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
                                         <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
                                         <JAVA_VERSION>${java.version}</JAVA_VERSION>
@@ -705,6 +713,7 @@
                                         <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
+                                        <JOLOKIA_VERSION>${jolokia.adapter.version}</JOLOKIA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
                                         <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
                                         <JAVA_VERSION>${java.version}</JAVA_VERSION>
@@ -734,6 +743,7 @@
                                         <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
+                                        <JOLOKIA_VERSION>${jolokia.adapter.version}</JOLOKIA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
                                         <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
                                         <JAVA_VERSION>${java.version}</JAVA_VERSION>
@@ -840,6 +850,7 @@
                                         <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
+                                        <JOLOKIA_VERSION>${jolokia.adapter.version}</JOLOKIA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
                                         <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
                                         <JAVA_VERSION>${java.version}</JAVA_VERSION>
@@ -869,6 +880,7 @@
                                         <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
+                                        <JOLOKIA_VERSION>${jolokia.adapter.version}</JOLOKIA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
                                         <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
                                         <JAVA_VERSION>${java.version}</JAVA_VERSION>
