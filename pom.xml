@@ -667,6 +667,9 @@
                     <version>${org.apache.maven.plugins.maven-surefire-plugin.version}</version>
                     <configuration>
                         <skipTests>${skipUTs}</skipTests>
+                        <systemPropertyVariables>
+                            <jolokia.version>${jolokia.adapter.version}</jolokia.version>
+                        </systemPropertyVariables>
                         <argLine>
                             @{argLine}
                             -Djdk.attach.allowAttachSelf=true
@@ -699,6 +702,11 @@
                 <plugin>
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>${org.apache.maven.plugins.maven-failsafe-plugin.version}</version>
+                    <configuration>
+                        <systemPropertyVariables>
+                            <jolokia.version>${jolokia.adapter.version}</jolokia.version>
+                        </systemPropertyVariables>
+                    </configuration>
                 </plugin>
 
                 <plugin>

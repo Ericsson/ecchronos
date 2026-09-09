@@ -26,6 +26,7 @@ def get():
         SECURITY_YAML_FILE_PATH, APPLICATION_YAML_FILE_PATH, SCHEDULE_YAML_FILE_PATH, \
         LOGBACK_FILE_PATH, JVM_OPTIONS_FILE_PATH, LOCAL, CASSANDRA_DOCKER_COMPOSE_FILE_PATH, \
         ROOT_DIR, BASE_URL, CASSANDRA_CERT_PATH, CASSANDRA_VERSION, BASE_URL_TLS, JOLOKIA_ENABLED, \
+        JOLOKIA_VERSION, \
         PEM_ENABLED, CONTAINER_BASE_DIR , CONTAINER_CONF_PATH, CONTAINER_ECC_YAML_PATH, \
         CONTAINER_APPLICATION_YAML_PATH, CONTAINER_SECURITY_YAML_PATH, CONTAINER_SCHEDULE_YAML_PATH, \
         CONTAINER_LOGBACK_FILE_PATH, CONTAINER_JVM_OPTION_PATH, CONTAINER_CERTIFICATE_PATH, CONTAINER_LOGS_PATH, \
@@ -54,6 +55,15 @@ def get():
     CASSANDRA_VERSION = os.environ.get("CASSANDRA_VERSION")
     JAVA_VERSION = os.environ.get("JAVA_VERSION")
     JOLOKIA_ENABLED = os.environ.get("JOLOKIA_ENABLED")
+    # Must match the pom's jolokia.adapter.version, forwarded via the JOLOKIA_VERSION env var.
+    # No default: a missing value means the pom/env wiring is broken, so fail fast rather than
+    # silently building the Cassandra image with a mismatched Jolokia agent.
+    JOLOKIA_VERSION = os.environ.get("JOLOKIA_VERSION")
+    if not JOLOKIA_VERSION:
+        raise RuntimeError(
+            "JOLOKIA_VERSION environment variable is not set. It must be injected from the pom "
+            "property jolokia.adapter.version."
+        )
     LOCAL = os.environ.get("LOCAL")
     PEM_ENABLED = os.environ.get("PEM_ENABLED")
     ECC_CONTAINER_IP = "172.29.0.7"

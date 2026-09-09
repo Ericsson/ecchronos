@@ -155,6 +155,7 @@
                         <configuration>
                             <systemPropertyVariables>
                                 <project.build.directory>${project.build.directory}</project.build.directory>
+                                <jolokia.version>${jolokia.adapter.version}</jolokia.version>
                             </systemPropertyVariables>
                         </configuration>
                         <executions>
@@ -184,6 +185,7 @@
                         <configuration>
                             <systemPropertyVariables>
                                 <project.build.directory>${project.build.directory}</project.build.directory>
+                                <jolokia.version>${jolokia.adapter.version}</jolokia.version>
                             </systemPropertyVariables>
                         </configuration>
                         <executions>

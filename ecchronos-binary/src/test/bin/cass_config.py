@@ -49,6 +49,8 @@ class CassandraCluster:
         os.environ["CERTIFICATE_DIRECTORY"] = global_vars.CERTIFICATE_DIRECTORY
         os.environ["CASSANDRA_VERSION"] = global_vars.CASSANDRA_VERSION
         os.environ["JOLOKIA"] = global_vars.JOLOKIA_ENABLED
+        os.environ["JOLOKIA_VERSION"] = global_vars.JOLOKIA_VERSION
+        print(f"Using Jolokia agent version {global_vars.JOLOKIA_VERSION} (from pom property jolokia.adapter.version).")
         os.environ["PEM_ENABLED"] = global_vars.PEM_ENABLED
         os.environ["DOCKER_BUILDKIT"] = "1"
         self.cassandra_compose = DockerCompose(
@@ -105,7 +107,10 @@ class CassandraCluster:
             path=global_vars.CASSANDRA_DOCKER_COMPOSE_FILE_PATH,
             dockerfile=f"{global_vars.CASSANDRA_DOCKER_COMPOSE_FILE_PATH}/Dockerfile",
             tag="cassandra-node3:latest",
-            buildargs={"CASSANDRA_VERSION": global_vars.CASSANDRA_VERSION},
+            buildargs={
+                "CASSANDRA_VERSION": global_vars.CASSANDRA_VERSION,
+                "JOLOKIA_VERSION": global_vars.JOLOKIA_VERSION,
+            },
         )
 
         container_name = "cassandra-node-dc1-rack1-node3"
