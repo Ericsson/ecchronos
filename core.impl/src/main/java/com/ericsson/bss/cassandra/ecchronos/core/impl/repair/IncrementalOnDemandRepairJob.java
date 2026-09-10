@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.IncrementalRepairResourceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairJobView;
@@ -87,7 +88,7 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
                 .withReplicaRepairGroup(replicaRepairGroup)
                 .withJmxProxyFactory(getJmxProxyFactory())
                 .withTableRepairMetrics(getTableRepairMetrics())
-                .withRepairResourceFactory(getRepairLockType().getLockFactory())
+                .withRepairResourceFactory(new IncrementalRepairResourceFactory(getTableReference()))
                 .withRepairLockFactory(REPAIR_LOCK_FACTORY)
                 .withRepairHistory(myRepairHistory)
                 .withJobId(getJobId())

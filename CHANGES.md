@@ -8,6 +8,7 @@
 * Fix Jolokia JMX connection health check always returning true for stale connections - Issue #1764
 * Support runtime configuration of maxWaitTimeInMinutes via ecctool config - Issue #1783
 * Incremental Repair does not works properly - Issue #1777
+* Fix incremental repair lock granularity allowing concurrent repairs of the same table - Issue #1805
 * Jolokia MbeanServer check makes ecctool gets stuck - Issue #1799
 
 ## Version 1.0.6
