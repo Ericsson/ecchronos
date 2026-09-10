@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableSet;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
@@ -37,6 +38,7 @@ import java.util.concurrent.ExecutorService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -80,6 +82,19 @@ public class TestNodeLifecycleHandler
         verify(mockExecutor).submit(any(Callable.class));
         verify(mockWorkerManager).addNode(mockNode);
         verify(mockScheduleManager).createScheduleFutureForNode(nodeId);
+    }
+
+    @Test
+    public void testOnAddRegistersWorkerBeforeCreatingSchedule()
+    {
+        when(mockNativeProvider.confirmNodeValid(mockNode)).thenReturn(true);
+
+        handler.onAdd(mockNode);
+
+        InOrder inOrder = inOrder(mockWorkerManager, mockScheduleManager);
+
+        inOrder.verify(mockWorkerManager).addNode(mockNode);
+        inOrder.verify(mockScheduleManager).createScheduleFutureForNode(nodeId);
     }
 
     @Test
