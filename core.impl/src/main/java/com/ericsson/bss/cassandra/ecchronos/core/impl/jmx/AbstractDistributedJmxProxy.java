@@ -347,6 +347,8 @@ abstract class AbstractDistributedJmxProxy implements DistributedJmxProxy
     /**
      * Get the live disk space used.
      *
+     * @param nodeID
+     *         The node to get the live disk space for.
      * @param tableReference
      *         The table to get the live disk space for.
      * @return long

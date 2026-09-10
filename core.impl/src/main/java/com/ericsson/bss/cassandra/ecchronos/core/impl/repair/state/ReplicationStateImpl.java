@@ -149,6 +149,7 @@ public class ReplicationStateImpl implements ReplicationState
      *
      * @param tableReference
      *            The table used to calculate the proper replication.
+     * @param currentNode The node to calculate the replication for.
      * @return Nodes and their ranges
      */
     @Override
@@ -174,6 +175,7 @@ public class ReplicationStateImpl implements ReplicationState
      * Get token ranges.
      *
      * @param tableReference Table reference.
+     * @param currentNode The node to calculate the replication for.
      * @return Nodes and their ranges
      */
     @Override
