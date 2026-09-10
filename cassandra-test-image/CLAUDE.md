@@ -92,7 +92,7 @@ waitForNodesToBeUp("cassandra-seed-dc1-rack1-node1", 3, 60000);
 
 | Property | Default | Purpose |
 |---|---|---|
-| `it.cassandra.version` | `4.0` | Cassandra Docker image version |
+| `it.cassandra.version` | `4.1` | Cassandra Docker image version |
 | `it.jolokia.enabled` | `false` | Download and enable Jolokia agent |
 | `project.build.directory` | `target` | Used to locate certificate directory |
 
