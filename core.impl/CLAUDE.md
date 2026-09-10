@@ -131,7 +131,7 @@ Tests use JUnit 5 + Mockito. Some tests spin up a real Cassandra node via Testco
 ### Running Tests with a Local CCM Cluster
 
 ```bash
-ccm create test -n 4 -v 4.0 --vnodes
+ccm create test -n 4 -v 4.1 --vnodes
 ccm updateconf "num_tokens: 16"
 ccm start
 ccm node1 cqlsh -f cassandra-test-image/src/main/docker/create_keyspaces.cql

@@ -50,7 +50,7 @@ public class AbstractCassandraCluster
         {
             return;
         }
-        String cassandraVersion = System.getProperty("it.cassandra.version", "4.0");
+        String cassandraVersion = System.getProperty("it.cassandra.version", "4.1");
         String jolokiaEnabled = System.getProperty("it.jolokia.enabled", "false");
         // The Jolokia agent version must match the jolokia-client-jmx-adapter version from the pom
         // (property jolokia.adapter.version, forwarded here as the 'jolokia.version' system property).
