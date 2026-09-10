@@ -233,13 +233,24 @@ class CassandraCluster:
     def _setup_db(self):
         command = ["docker", "exec", self.container_id, "bash", "/etc/cassandra/setup_db.sh"]
 
-        subprocess.run(
+        result = subprocess.run(
             command,
             timeout=DEFAULT_WAIT_TIME_IN_SECS * 3,
             encoding="utf-8",
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
+
+        # Surface setup_db.sh failures directly instead of letting them be masked
+        # by the downstream keyspace-verification timeout, which makes the real
+        # root cause (e.g. cqlsh auth errors) hard to diagnose.
+        if result.returncode != 0:
+            logger.warning(
+                "setup_db.sh exited with return code %s. stdout: %s. stderr: %s",
+                result.returncode,
+                result.stdout.strip(),
+                result.stderr.strip(),
+            )
 
         # Verify ecchronos keyspace exists before proceeding
         self._verify_keyspace_exists("ecchronos")

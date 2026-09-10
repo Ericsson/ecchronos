@@ -27,10 +27,25 @@ sed -i "s/auto_snapshot: .*/auto_snapshot: false/g" "$CASSANDRA_CONF"/cassandra.
 
 mkdir -p ~/.cassandra
 
-cat <<EOF > ~/.cassandra/cqlshrc
-[authentication]
+# Newer cqlsh (Apache Cassandra CASSANDRA-19498) ignores the deprecated
+# [authentication] username/password block in cqlshrc and requires the
+# credentials to be supplied via a separate, user-owned credentials file
+# referenced from an [auth_provider] section. Configure that here so the
+# cqlsh calls in setup_db.sh and the test harness keep authenticating.
+cat <<EOF > ~/.cassandra/credentials
+[PlainTextAuthProvider]
 username = cassandra
 password = cassandra
+EOF
+chmod 600 ~/.cassandra/credentials
+
+cat <<EOF > ~/.cassandra/cqlshrc
+[auth_provider]
+module = cassandra.auth
+classname = PlainTextAuthProvider
+
+[authentication]
+credentials = ~/.cassandra/credentials
 
 EOF
 
