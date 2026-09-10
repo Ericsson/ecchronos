@@ -123,11 +123,11 @@ public class RepairLockFactoryImpl implements RepairLockFactory
     private void validateNoCachedFailures(final UUID nodeId, final LockFactory lockFactory, final Set<RepairResource> repairResources)
                                                                                                                     throws LockException
     {
-        int locksPerResource = getLocksPerResource();
         for (RepairResource repairResource : repairResources)
         {
+            int slots = effectiveMaxSlots(repairResource);
             Optional<LockException> cachedException = lockFactory.getCachedFailure(nodeId, repairResource.getDataCenter(),
-                    repairResource.getResourceName(locksPerResource));
+                    repairResource.getResourceName(slots));
             if (cachedException.isPresent())
             {
                 LockException e = cachedException.get();
@@ -135,6 +135,23 @@ public class RepairLockFactoryImpl implements RepairLockFactory
                 throw e;
             }
         }
+    }
+
+    /**
+     * Resolve the effective number of lock slots for a resource: the resource's own value if set,
+     * otherwise the globally configured value.
+     *
+     * @param repairResource the resource.
+     * @return the number of slots to use.
+     */
+    private static int effectiveMaxSlots(final RepairResource repairResource)
+    {
+        int maxSlots = repairResource.getMaxSlots();
+        if (maxSlots == RepairResource.USE_GLOBAL_SLOTS)
+        {
+            return getLocksPerResource();
+        }
+        return maxSlots;
     }
 
     private Collection<LockFactory.DistributedLock> getRepairResourceLocks(
@@ -197,7 +214,7 @@ public class RepairLockFactoryImpl implements RepairLockFactory
     {
         LockFactory.DistributedLock myLock;
         String dataCenter = repairResource.getDataCenter();
-        int locksPerResource = getLocksPerResource();
+        int locksPerResource = effectiveMaxSlots(repairResource);
 
         int startLock = LOCK_COUNTER.getAndIncrement();
         for (int i = 0; i < locksPerResource; i++)
