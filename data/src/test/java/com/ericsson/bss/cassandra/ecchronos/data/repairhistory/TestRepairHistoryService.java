@@ -20,8 +20,10 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
+import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.data.utils.AbstractCassandraTest;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairStatus;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Collections;
@@ -37,6 +39,8 @@ import static com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHist
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class TestRepairHistoryService extends AbstractCassandraTest
 {
@@ -46,6 +50,7 @@ public class TestRepairHistoryService extends AbstractCassandraTest
     private static final String COLUMN_REPAIR_ID = "repair_id";
     private static final String COLUMN_COORDINATOR_ID = "coordinator_id";
     private static final String COLUMN_STATUS = "status";
+    private static final String COLUMN_REPAIR_TYPE = "repair_type";
 
     private RepairHistoryService myRepairHistoryService;
 
@@ -74,6 +79,7 @@ public class TestRepairHistoryService extends AbstractCassandraTest
                         "status text, " +
                         "started_at timestamp, " +
                         "finished_at timestamp, " +
+                        "repair_type text, " +
                         "PRIMARY KEY((table_id,node_id), repair_id)) " +
                         "WITH CLUSTERING ORDER BY (repair_id DESC);",
                 ECCHRONOS_KEYSPACE);
@@ -145,6 +151,37 @@ public class TestRepairHistoryService extends AbstractCassandraTest
         String expectedStatus = updatedRow.get(COLUMN_STATUS, String.class);
         assertEquals(expectedCoordinatorId, coordinatorId);
         assertEquals(expectedStatus, RepairStatus.SUCCESS.name());
+    }
+
+    @Test
+    public void testRecordCompletedRepairWritesRowPerReplica()
+    {
+        UUID tableId = UUID.randomUUID();
+        UUID replica1 = UUID.randomUUID();
+        UUID replica2 = UUID.randomUUID();
+        UUID jobId = UUID.randomUUID();
+        TableReference tableReference = mock(TableReference.class);
+        when(tableReference.getId()).thenReturn(tableId);
+
+        long startedAt = System.currentTimeMillis() - 1000;
+        long finishedAt = System.currentTimeMillis();
+
+        myRepairHistoryService.recordCompletedRepair(tableReference, jobId, List.of(replica1, replica2),
+                Collections.emptySet(), RepairType.INCREMENTAL, startedAt, finishedAt, RepairStatus.SUCCESS);
+
+        // A row keyed by each replica's node_id must exist with the incremental repair type and SUCCESS status.
+        for (UUID replica : List.of(replica1, replica2))
+        {
+            ResultSet result = AbstractCassandraTest.mySession.execute(SimpleStatement.newInstance(
+                    String.format("SELECT * FROM %s.repair_history WHERE table_id = %s AND node_id = %s",
+                            ECCHRONOS_KEYSPACE, tableId, replica)));
+            Row row = result.one();
+            assertNotNull(row);
+            assertEquals(tableId, row.get(COLUMN_TABLE_ID, UUID.class));
+            assertEquals(replica, row.get(COLUMN_NODE_ID, UUID.class));
+            assertEquals(RepairStatus.SUCCESS.name(), row.get(COLUMN_STATUS, String.class));
+            assertEquals(RepairType.INCREMENTAL.name(), row.get(COLUMN_REPAIR_TYPE, String.class));
+        }
     }
 
     @Test

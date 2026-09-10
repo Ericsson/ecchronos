@@ -206,6 +206,83 @@ public class TestRepairLockFactoryImpl
     }
 
     @Test
+    public void testSingleSlotResourceOnlyTriesSlotOne() throws LockException
+    {
+        // A resource with maxSlots=1 (e.g. the incremental table resource) must only ever try slot 1,
+        // regardless of the global locks_per_resource value.
+        RepairResource tableResource = new RepairResource("DC1", "ks.tbl", 1);
+        Map<String, String> metadata = Collections.singletonMap("key", "value");
+        int priority = 1;
+
+        when(mockLockFactory.tryLock(eq("DC1"), eq(tableResource.getResourceName(1)), eq(priority), eq(metadata), any()))
+                .thenReturn(mockLock);
+
+        repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(tableResource), metadata, priority, UUID.randomUUID());
+
+        verify(mockLockFactory).tryLock(eq("DC1"), eq(tableResource.getResourceName(1)), eq(priority), eq(metadata), any());
+        verify(mockLockFactory, never()).tryLock(eq("DC1"), eq(tableResource.getResourceName(2)), anyInt(), anyMap(), any());
+        verify(mockLockFactory, never()).tryLock(eq("DC1"), eq(tableResource.getResourceName(3)), anyInt(), anyMap(), any());
+    }
+
+    @Test
+    public void testSingleSlotResourceSerializesSecondAcquisition() throws LockException
+    {
+        // Simulates the incremental "same table across replicas" scenario: the single-slot table
+        // resource allows one holder; a second attempt must be blocked (no free slot).
+        RepairResource tableResource = new RepairResource("DC1", "ks.tbl", 1);
+        Map<String, String> metadata = Collections.singletonMap("key", "value");
+        int priority = 1;
+
+        when(mockLockFactory.tryLock(eq("DC1"), eq(tableResource.getResourceName(1)), eq(priority), eq(metadata), any()))
+                .thenReturn(mockLock);
+
+        LockFactory.DistributedLock first = repairLockFactory.getLock(
+                mockLockFactory, Sets.newHashSet(tableResource), metadata, priority, UUID.randomUUID());
+        assertThat(first).isNotNull();
+
+        // Second acquisition on the single-slot resource must fail while the first is held.
+        assertThatExceptionOfType(LockException.class)
+                .isThrownBy(() -> repairLockFactory.getLock(
+                        mockLockFactory, Sets.newHashSet(tableResource), metadata, priority, UUID.randomUUID()));
+
+        // Releasing the first frees the single slot.
+        first.close();
+        LockFactory.DistributedLock second = repairLockFactory.getLock(
+                mockLockFactory, Sets.newHashSet(tableResource), metadata, priority, UUID.randomUUID());
+        assertThat(second).isNotNull();
+        second.close();
+    }
+
+    @Test
+    public void testPerNodeResourceStillUsesGlobalSlots() throws LockException
+    {
+        // A default (global-slot) resource — the incremental per-node load lock — keeps N slots.
+        RepairResource nodeResource = new RepairResource("DC1", "node-a");
+        Map<String, String> metadata = Collections.singletonMap("key", "value");
+        int priority = 1;
+
+        for (int slot = 1; slot <= LOCKS_PER_RESOURCE; slot++)
+        {
+            when(mockLockFactory.tryLock(eq("DC1"), eq(nodeResource.getResourceName(slot)), eq(priority), eq(metadata), any()))
+                    .thenReturn(mockLock);
+        }
+
+        // All N slots can be acquired concurrently...
+        LockFactory.DistributedLock l1 = repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(nodeResource), metadata, priority, UUID.randomUUID());
+        LockFactory.DistributedLock l2 = repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(nodeResource), metadata, priority, UUID.randomUUID());
+        LockFactory.DistributedLock l3 = repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(nodeResource), metadata, priority, UUID.randomUUID());
+
+        // ...the (N+1)th blocks.
+        assertThatExceptionOfType(LockException.class)
+                .isThrownBy(() -> repairLockFactory.getLock(
+                        mockLockFactory, Sets.newHashSet(nodeResource), metadata, priority, UUID.randomUUID()));
+
+        l1.close();
+        l2.close();
+        l3.close();
+    }
+
+    @Test
     public void testRuntimeReconfiguration()
     {
         try

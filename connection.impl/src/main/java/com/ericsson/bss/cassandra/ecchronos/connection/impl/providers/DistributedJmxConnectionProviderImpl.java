@@ -71,15 +71,7 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
         try
         {
             jmxConnector.getConnectionId();
-            javax.management.MBeanServerConnection mbs = jmxConnector.getMBeanServerConnection();
-            if (mbs == null)
-            {
-                return false;
-            }
-            // Active liveness probe: getMBeanCount() triggers an actual network call
-            // for both Jolokia (HTTP) and RMI, verifying the endpoint is reachable.
-            mbs.getMBeanCount();
-            return true;
+            return jmxConnector.getMBeanServerConnection() != null;
         }
         catch (IOException | NullPointerException e)
         {

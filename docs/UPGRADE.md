@@ -1,13 +1,23 @@
-# Upgrade Guide
+# Upgrade to 1.1.x
 
-## Upgrading from ecChronos Sidecar to ecChronos Agent (1.x.x)
+## Incremental Repairs
+
+During the fix of [Incremental Repair does not works properly](https://github.com/Ericsson/ecchronos/issues/1777) table ecchronos.repair_history has gotten a new column `repair_type`.
+The `ecchronos.repair_history` table must be updated before performing the upgrade to version 1.X.
+
+The command to add the column is shown below:
+```
+ALTER TABLE ecchronos.repair_history ADD repair_type text;
+```
+
+# Upgrading from ecChronos Sidecar to ecChronos Agent (1.x.x)
 
 > ⚠️ **This is a major upgrade. Test thoroughly in a non-production environment before rolling out to production.**
 
 ecChronos 1.x.x introduces an agent-based connection model replacing the previous sidecar architecture.
 The agent runs as a JVM agent attached to the Cassandra process itself, rather than as a standalone sidecar process.
 
-### What Changed
+## What Changed
 
 - Connection model changed from sidecar (standalone process with JMX) to agent (one ecchronos managing multiple nodes).
 - A new `nodes_sync` table is required for distributed coordination.

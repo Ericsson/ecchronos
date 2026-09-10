@@ -23,19 +23,37 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class RepairResource
 {
+    /** Sentinel indicating the resource should use the globally configured locks-per-resource value. */
+    public static final int USE_GLOBAL_SLOTS = -1;
+
     private final String myDataCenter;
     private final String myResourceName;
+    private final int myMaxSlots;
 
     /**
-     * Constructor.
+     * Constructor. The resource uses the globally configured locks-per-resource value.
      *
      * @param dataCenter The data center.
      * @param resourceName Resource name.
      */
     public RepairResource(final String dataCenter, final String resourceName)
     {
+        this(dataCenter, resourceName, USE_GLOBAL_SLOTS);
+    }
+
+    /**
+     * Constructor with an explicit maximum number of lock slots for this resource.
+     *
+     * @param dataCenter The data center.
+     * @param resourceName Resource name.
+     * @param maxSlots The maximum number of concurrent lock slots for this resource, or
+     *                 {@link #USE_GLOBAL_SLOTS} to use the globally configured value.
+     */
+    public RepairResource(final String dataCenter, final String resourceName, final int maxSlots)
+    {
         myDataCenter = dataCenter;
         myResourceName = checkNotNull(resourceName);
+        myMaxSlots = maxSlots;
     }
 
     /**
@@ -46,6 +64,16 @@ public class RepairResource
     public String getDataCenter()
     {
         return myDataCenter;
+    }
+
+    /**
+     * Get the maximum number of concurrent lock slots for this resource.
+     *
+     * @return the configured slot count, or {@link #USE_GLOBAL_SLOTS} if the global value should be used.
+     */
+    public int getMaxSlots()
+    {
+        return myMaxSlots;
     }
 
     /**

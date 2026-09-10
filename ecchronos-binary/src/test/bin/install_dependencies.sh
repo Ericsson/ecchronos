@@ -28,6 +28,16 @@ if [ -z "${CI}" ] && [ -z "${VIRTUAL_ENV}" ]; then
   source "$VENV_DIR"/bin/activate
 fi
 
+# Safety guard: in non-CI environments, refuse to install into global/user
+# site-packages. Installing ecchronoslib globally leaves a stale copy on
+# sys.path that shadows src/pylib and breaks pylint (and other tooling).
+if [ -z "${CI}" ] && [ -z "${VIRTUAL_ENV}" ]; then
+  echo "ERROR: no virtualenv is active and venv setup did not run." >&2
+  echo "Refusing to install dependencies into global/user site-packages." >&2
+  echo "Activate a virtualenv (or set CI=true for CI runs) and retry." >&2
+  exit 1
+fi
+
 echo "Installing Python dependencies from requirements.txt"
 pip install -r requirements.txt
 

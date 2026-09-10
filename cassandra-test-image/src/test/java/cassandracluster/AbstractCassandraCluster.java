@@ -50,8 +50,21 @@ public class AbstractCassandraCluster
         {
             return;
         }
-        String cassandraVersion = System.getProperty("it.cassandra.version", "4.0");
+        String cassandraVersion = System.getProperty("it.cassandra.version", "4.1");
         String jolokiaEnabled = System.getProperty("it.jolokia.enabled", "false");
+        // The Jolokia agent version must match the jolokia-client-jmx-adapter version from the pom
+        // (property jolokia.adapter.version, forwarded here as the 'jolokia.version' system property).
+        // There is intentionally no default: a missing value means the pom wiring is broken, and a
+        // version mismatch between agent and client is a real problem, so fail fast instead.
+        String jolokiaVersion = System.getProperty("jolokia.version");
+        if (jolokiaVersion == null || jolokiaVersion.trim().isEmpty())
+        {
+            throw new IllegalStateException(
+                    "System property 'jolokia.version' is not set. It must be forwarded from the pom "
+                            + "property 'jolokia.adapter.version' via the failsafe/surefire "
+                            + "systemPropertyVariables configuration.");
+        }
+        LOG.info("Using Jolokia agent version {} (from pom property jolokia.adapter.version).", jolokiaVersion);
         String certificateDirectory = Paths.get(System.getProperty("project.build.directory", "target"))
                 .resolve("certificates/cert")
                 .toAbsolutePath()
@@ -63,6 +76,7 @@ public class AbstractCassandraCluster
         composeContainer = new DockerComposeContainer<>(dockerComposePath.toFile())
                 .withEnv("JOLOKIA", jolokiaEnabled)
                 .withEnv("CASSANDRA_VERSION", cassandraVersion)
+                .withEnv("JOLOKIA_VERSION", jolokiaVersion)
                 .withEnv("CERTIFICATE_DIRECTORY", certificateDirectory)
                 // Remove the locally-built compose images on teardown so each test run
                 // does not leave behind a new set of '<project>_cassandra-*' images.

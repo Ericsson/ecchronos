@@ -17,10 +17,12 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.IncrementalRepairResourceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicaRepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
@@ -44,6 +46,7 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
 {
     private static final Logger LOG = LoggerFactory.getLogger(IncrementalOnDemandRepairJob.class);
     private final ReplicationState myReplicationState;
+    private final RepairHistory myRepairHistory;
     private final List<ScheduledTask> myTasks;
     private final int myTotalTasks;
 
@@ -59,6 +62,8 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
                 builder.myCurrentNode);
         myReplicationState = Preconditions.checkNotNull(builder.myReplicationState,
                 "Replication state must be set");
+        myRepairHistory = Preconditions.checkNotNull(builder.myRepairHistory,
+                "Repair History must be set");
         myTasks = initializeTasks();
         myTotalTasks = myTasks.size();
     }
@@ -83,9 +88,11 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
                 .withReplicaRepairGroup(replicaRepairGroup)
                 .withJmxProxyFactory(getJmxProxyFactory())
                 .withTableRepairMetrics(getTableRepairMetrics())
-                .withRepairResourceFactory(getRepairLockType().getLockFactory())
+                .withRepairResourceFactory(new IncrementalRepairResourceFactory(getTableReference()))
                 .withRepairLockFactory(REPAIR_LOCK_FACTORY)
-                .withJobId(getJobId());
+                .withRepairHistory(myRepairHistory)
+                .withJobId(getJobId())
+                .withNode(getCurrentNode());
     }
 
     /**
@@ -202,6 +209,7 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
         private Node myCurrentNode;
         private OngoingJob myOngoingJob;
         private ReplicationState myReplicationState;
+        private RepairHistory myRepairHistory;
 
         /**
          * Default constructor.
@@ -304,6 +312,18 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
         public final Builder withReplicationState(final ReplicationState replicationState)
         {
             this.myReplicationState = replicationState;
+            return this;
+        }
+
+        /**
+         * Sets the repair history.
+         *
+         * @param repairHistory the repair history.
+         * @return this builder.
+         */
+        public final Builder withRepairHistory(final RepairHistory repairHistory)
+        {
+            this.myRepairHistory = repairHistory;
             return this;
         }
 

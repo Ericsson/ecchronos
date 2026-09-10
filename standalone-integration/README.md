@@ -116,7 +116,7 @@ mvn test -Dtest=ITSchedules
 mvn test -Dtest=ITSchedules#repairSingleTable
 
 # Against a local CCM cluster
-ccm create test -n 4 -v 4.0 --vnodes && ccm start
+ccm create test -n 4 -v 4.1 --vnodes && ccm start
 mvn clean install -Dlocalprecommit.tests
 ```
 
@@ -124,7 +124,7 @@ mvn clean install -Dlocalprecommit.tests
 
 | Property | Default | Purpose |
 |---|---|---|
-| `it.cassandra.version` | `4.0` | Cassandra version for Docker cluster |
+| `it.cassandra.version` | `4.1` | Cassandra version for Docker cluster |
 | `it.jolokia.enabled` | `false` | Enable Jolokia JMX bridge |
 
 ---

@@ -28,7 +28,7 @@ import java.util.Objects;
  * Implementation of {@link VnodeRepairStates} that maintains vnode repair state information.
  * Each vnode repair state tracks the last repaired timestamp for a specific token range.
  */
-public final class VnodeRepairStatesImpl implements VnodeRepairStates // CPD-OFF
+public final class VnodeRepairStatesImpl implements VnodeRepairStates // CPD-OFF: builder/immutable-list boilerplate is intentionally near-identical to SubRangeRepairStates; kept as separate types for clarity rather than merged
 {
     private final ImmutableList<VnodeRepairState> myVnodeRepairStatuses;
     private static final float DEFAULT_LOAD_FACTOR = 0.75f;

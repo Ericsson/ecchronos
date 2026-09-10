@@ -111,6 +111,8 @@ public final class ScheduledRepairJobFactory
                     .withReplicationState(myReplicationState)
                     .withRepairPolices(myRepairPolicies)
                     .withRepairLockType(myRepairLockType)
+                    .withRepairHistory(myRepairHistoryService)
+                    .withRepairHistoryProvider(myRepairHistoryService)
                     .build();
         }
         else

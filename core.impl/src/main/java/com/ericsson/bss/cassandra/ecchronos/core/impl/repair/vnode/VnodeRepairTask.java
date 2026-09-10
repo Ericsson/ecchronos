@@ -83,7 +83,7 @@ public class VnodeRepairTask extends RepairTask
         for (LongTokenRange range : myTokenRanges)
         {
             myRepairSessions.put(range, repairHistory.newSession(currentNode, tableReference, jobId, range,
-                    myReplicas));
+                    myReplicas, repairConfiguration.getRepairType()));
         }
     }
 

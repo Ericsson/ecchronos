@@ -30,6 +30,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.HostStatesImp
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.ReplicationStateImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TableReferenceFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.utils.ConsistencyType;
+import com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHistoryService;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
@@ -111,14 +112,19 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
         myCassandraMetrics = new CassandraMetrics(getJmxProxyFactory(),
                 Duration.ofSeconds(5), Duration.ofMinutes(30));
 
+        ReplicationStateImpl replicationState = new ReplicationStateImpl(new NodeResolverImpl(getSession()), getSession());
+        RepairHistoryService repairHistoryService = new RepairHistoryService(getSession(), replicationState,
+                new NodeResolverImpl(getSession()), TimeUnit.DAYS.toMillis(30));
+
         myOnDemandRepairSchedulerImpl = OnDemandRepairSchedulerImpl.builder()
                 .withJmxProxyFactory(getJmxProxyFactory())
                 .withTableRepairMetrics(mockTableRepairMetrics)
                 .withScheduleManager(myScheduleManagerImpl)
                 .withRepairLockType(RepairLockType.VNODE)
-                .withReplicationState(new ReplicationStateImpl(new NodeResolverImpl(getSession()), getSession()))
+                .withReplicationState(replicationState)
                 .withSession(getSession())
                 .withRepairConfigurationFunction(RepairConfiguration.DEFAULT)
+                .withRepairHistory(repairHistoryService)
                 .withOnDemandStatus(new OnDemandStatus(getNativeConnectionProvider()))
                 .build();
         myAdminSession = getAdminNativeConnectionProvider().getCqlSession();
