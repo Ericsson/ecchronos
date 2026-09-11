@@ -217,8 +217,16 @@
                 <groupId>org.sonatype.central</groupId>
                 <artifactId>central-publishing-maven-plugin</artifactId>
                 <configuration>
-                    <excludeArtifacts>standalone-integration-agent</excludeArtifacts>
+                    <!-- This module only contains integration tests and produces no artifact to publish -->
+                    <skipPublishing>true</skipPublishing>
                 </configuration>
+                <executions>
+                    <!-- Unbind the inherited publish goal; this module has no artifact to publish -->
+                    <execution>
+                        <id>default-deploy</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
