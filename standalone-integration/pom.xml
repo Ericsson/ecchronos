@@ -236,6 +236,14 @@
                 </configuration>
             </plugin>
 
+            <!-- This module produces no publishable artifact, so there is nothing to sign -->
+            <plugin>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+
             <!-- Remove root-owned certificate directories created by Docker during integration tests -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
