@@ -217,7 +217,7 @@
                 <groupId>org.sonatype.central</groupId>
                 <artifactId>central-publishing-maven-plugin</artifactId>
                 <configuration>
-                    <excludeArtifacts>standalone-integration</excludeArtifacts>
+                    <excludeArtifacts>standalone-integration-agent</excludeArtifacts>
                 </configuration>
             </plugin>
 
