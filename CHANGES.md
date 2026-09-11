@@ -1,5 +1,7 @@
 # Changes
 
+## Version 1.1.1
+
 ## Version 1.1.0
 
 * Upgrade ecChronos to Spring Boot 4 - Issue #1711
