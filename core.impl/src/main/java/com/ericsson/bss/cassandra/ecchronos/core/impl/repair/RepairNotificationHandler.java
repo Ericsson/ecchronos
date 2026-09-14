@@ -226,31 +226,69 @@ public final class RepairNotificationHandler implements NotificationListener
     {
         if (type == RepairTask.ProgressEventType.PROGRESS || type == RepairTask.ProgressEventType.ERROR)
         {
-            if (message.contains("finished") || message.contains("failed"))
+            boolean parsedRange = parseRangeResult(message);
+
+            // A terminal ERROR event that does not carry a parseable per-range result is a session-level
+            // failure (e.g. an incremental prepare-phase abort where the SSTables could not be acquired).
+            // Without this, the outcome would be inferred purely from message substrings and the task would
+            // default to SUCCESS even though no data was repaired.
+            if (type == RepairTask.ProgressEventType.ERROR && !parsedRange)
             {
-                LOG.debug("Progress message received: {}", message);
-                RepairStatus repairStatus = RepairStatus.SUCCESS;
-                if (message.contains("failed"))
-                {
-                    repairStatus = RepairStatus.FAILED;
-                }
-                Matcher rangeMatcher = RANGE_PATTERN.matcher(message);
-                while (rangeMatcher.find())
-                {
-                    long start = Long.parseLong(rangeMatcher.group(1));
-                    long end = Long.parseLong(rangeMatcher.group(2));
-                    myRangeCallback.onRangeFinished(LongTokenRange.of(start, end), repairStatus);
-                }
-            }
-            else
-            {
-                LOG.warn("Unknown progress message received: {}", message);
+                recordFailure(message);
             }
         }
+        else if (type == RepairTask.ProgressEventType.ABORT)
+        {
+            // An aborted repair never repaired the owned ranges; treat it as a failure regardless of message text.
+            recordFailure(message);
+        }
+
         if (type == RepairTask.ProgressEventType.COMPLETE)
         {
             LOG.debug("Progress message set to complete, latch counted down: {}", message);
             myLatch.countDown();
+        }
+    }
+
+    /**
+     * Parse per-range results from a progress message and forward them to the range callback.
+     *
+     * @param message the progress notification message.
+     * @return true if the message contained a recognized per-range result (finished/failed with a token range).
+     */
+    private boolean parseRangeResult(final String message)
+    {
+        if (!message.contains("finished") && !message.contains("failed"))
+        {
+            LOG.warn("Unknown progress message received: {}", message);
+            return false;
+        }
+        LOG.debug("Progress message received: {}", message);
+        RepairStatus repairStatus = message.contains("failed") ? RepairStatus.FAILED : RepairStatus.SUCCESS;
+        boolean matchedRange = false;
+        Matcher rangeMatcher = RANGE_PATTERN.matcher(message);
+        while (rangeMatcher.find())
+        {
+            long start = Long.parseLong(rangeMatcher.group(1));
+            long end = Long.parseLong(rangeMatcher.group(2));
+            myRangeCallback.onRangeFinished(LongTokenRange.of(start, end), repairStatus);
+            matchedRange = true;
+        }
+        return matchedRange;
+    }
+
+    /**
+     * Record a session-level repair failure so that the awaiting task fails instead of defaulting to success.
+     *
+     * @param message the message describing the failure.
+     */
+    private void recordFailure(final String message)
+    {
+        String errorMessage = String.format("Repair failed: %s", message);
+        LOG.warn(errorMessage);
+        if (myLastError == null)
+        {
+            myLastError = new ScheduledJobException(errorMessage);
         }
     }
 }
