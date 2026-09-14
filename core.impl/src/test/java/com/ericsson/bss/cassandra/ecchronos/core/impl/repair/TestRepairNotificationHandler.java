@@ -16,7 +16,6 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.ericsson.bss.cassandra.ecchronos.core.state.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairStatus;
@@ -187,6 +186,71 @@ public class TestRepairNotificationHandler
         handler.handleNotification(notification, null);
 
         assertThat(myRangeResults).isEmpty();
+    }
+
+    @Test
+    public void testTerminalErrorWithoutRangeSetsError()
+    {
+        // Prepare-phase abort: an ERROR event whose message carries no parseable per-range result.
+        Notification notification = createProgressNotification(
+                "repair:" + COMMAND,
+                "Repair command 42 finished with error: unable to acquire exclusive access to the necessary sstables",
+                RepairTask.ProgressEventType.ERROR.ordinal());
+
+        handler.handleNotification(notification, null);
+
+        assertThat(handler.getLastError()).isNotNull();
+        assertThat(myRangeResults).isEmpty();
+    }
+
+    @Test
+    public void testAbortEventSetsError()
+    {
+        Notification notification = createProgressNotification(
+                "repair:" + COMMAND,
+                "Repair session aborted",
+                RepairTask.ProgressEventType.ABORT.ordinal());
+
+        handler.handleNotification(notification, null);
+
+        assertThat(handler.getLastError()).isNotNull();
+    }
+
+    @Test
+    public void testPerRangeErrorWithFailedRangeDoesNotSetSessionError()
+    {
+        // A per-range failure still populates the failed-range tracker (handled by verifyRepair), and must not
+        // additionally be recorded as a session-level error here.
+        Notification notification = createProgressNotification(
+                "repair:" + COMMAND,
+                "Repair session 1 on range (1,100] for keyspace failed",
+                RepairTask.ProgressEventType.ERROR.ordinal());
+
+        handler.handleNotification(notification, null);
+
+        assertThat(myRangeResults).hasSize(1);
+        assertThat(myRangeResults.get(0).status).isEqualTo(RepairStatus.FAILED);
+        assertThat(handler.getLastError()).isNull();
+    }
+
+    @Test
+    public void testSuccessfulProgressDoesNotSetError()
+    {
+        Notification progress = createProgressNotification(
+                "repair:" + COMMAND,
+                "Repair session 1 on range (1,100] for keyspace finished",
+                RepairTask.ProgressEventType.PROGRESS.ordinal());
+        Notification complete = createProgressNotification(
+                "repair:" + COMMAND,
+                "Repair completed successfully",
+                RepairTask.ProgressEventType.COMPLETE.ordinal());
+
+        handler.handleNotification(progress, null);
+        handler.handleNotification(complete, null);
+
+        assertThat(handler.getLastError()).isNull();
+        assertThat(myRangeResults).hasSize(1);
+        assertThat(myRangeResults.get(0).status).isEqualTo(RepairStatus.SUCCESS);
     }
 
     private Notification createProgressNotification(String source, String message, int type)

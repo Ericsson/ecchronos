@@ -2,6 +2,8 @@
 
 ## Version 1.1.1
 
+* Fix incremental repair falsely reported COMPLETED when the Cassandra session aborts without repairing data - Issue #1811
+
 ## Version 1.1.0
 
 * Upgrade ecChronos to Spring Boot 4 - Issue #1711

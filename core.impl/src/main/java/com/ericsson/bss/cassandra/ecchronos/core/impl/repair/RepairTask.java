@@ -146,6 +146,16 @@ public abstract class RepairTask
                 myNotificationHandler.setCommand(command);
                 awaitAndVerifyRepair(proxy, command);
             }
+            else
+            {
+                // A non-positive command means Cassandra did not start a repair session (for example an
+                // incremental repair aborting in the prepare phase because another session holds the SSTables).
+                // Nothing was repaired, so this must not be reported as a successful repair.
+                String msg = String.format("Repair of %s did not start (command=%d), no data was repaired",
+                        myTableReference, command);
+                LOG.warn(msg);
+                throw new ScheduledJobException(msg);
+            }
         }
         finally
         {
