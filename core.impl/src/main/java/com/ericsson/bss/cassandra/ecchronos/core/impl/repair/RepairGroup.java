@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairTask;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.VnodeRepairTask;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
@@ -74,6 +75,7 @@ public class RepairGroup extends ScheduledTask
     private final RepairLockFactory myRepairLockFactory;
     private final RepairResourceFactory myRepairResourceFactory;
     private final TimeBasedRunPolicy myTimeBasedRunPolicy;
+    private final CassandraMetrics myCassandraMetrics;
 
     /**
      * Constructs an IncrementalRepairTask for a specific node and table.
@@ -102,6 +104,7 @@ public class RepairGroup extends ScheduledTask
         myRepairResourceFactory = Preconditions
                 .checkNotNull(builder.myRepairResourceFactory, "Repair resource factory must be set");
         myTimeBasedRunPolicy = builder.myTimeBasedRunPolicy;
+        myCassandraMetrics = builder.myCassandraMetrics;
         myRepairHistory = Preconditions
                     .checkNotNull(builder.myRepairHistory, "Repair History must be set");
         myNode = Preconditions
@@ -238,7 +241,8 @@ public class RepairGroup extends ScheduledTask
                     myRepairHistory,
                     myNode,
                     myJobId,
-                    replicas));
+                    replicas,
+                    myCassandraMetrics));
         }
         else if (myRepairConfiguration.getRepairType().equals(RepairType.VNODE))
         {
@@ -320,6 +324,7 @@ public class RepairGroup extends ScheduledTask
         private RepairLockFactory myRepairLockFactory;
         private RepairResourceFactory myRepairResourceFactory;
         private TimeBasedRunPolicy myTimeBasedRunPolicy;
+        private CassandraMetrics myCassandraMetrics;
 
         /**
          * Default constructor.
@@ -482,6 +487,19 @@ public class RepairGroup extends ScheduledTask
         public Builder withTimeBasedRunPolicy(final TimeBasedRunPolicy timeBasedRunPolicy)
         {
             myTimeBasedRunPolicy = timeBasedRunPolicy;
+            return this;
+        }
+
+        /**
+         * Build with Cassandra metrics used to confirm an incremental repair advanced the repaired state
+         * (issue #1812). Optional; when not set the confirmation is skipped.
+         *
+         * @param cassandraMetrics the Cassandra metrics.
+         * @return Builder
+         */
+        public Builder withCassandraMetrics(final CassandraMetrics cassandraMetrics)
+        {
+            myCassandraMetrics = cassandraMetrics;
             return this;
         }
 

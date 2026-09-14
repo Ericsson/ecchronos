@@ -161,6 +161,7 @@ public class IncrementalRepairJob extends ScheduledRepairJob
                 .withRepairResourceFactory(new IncrementalRepairResourceFactory(getTableReference()))
                 .withRepairPolicies(getRepairPolicies()).withJobId(getJobId())
                 .withRepairHistory(myRepairHistory)
+                .withCassandraMetrics(myCassandraMetrics)
                 .withNode(myNode);
 
         List<ScheduledTask> taskList = new ArrayList<>();
