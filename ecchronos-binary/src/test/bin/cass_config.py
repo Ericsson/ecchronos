@@ -414,6 +414,24 @@ class CassandraCluster:
                 subprocess.run(
                     ["docker", "volume", "rm", "cassandra-node3-data"], capture_output=True, text=True, check=True
                 )
+                # Remove the locally-built extra-node image so a topology test run does not
+                # leave behind 'cassandra-node3:latest'. This image is built directly in
+                # add_node() and is not part of the compose project, so stop_cluster()'s
+                # 'compose down --rmi local' does not remove it. Do not use check=True: if
+                # the image is still referenced it must not fail teardown (warn only), and
+                # the pulled base image (cassandra:X.Y) is untouched since only this tag is
+                # removed.
+                image_result = subprocess.run(
+                    ["docker", "image", "rm", "-f", "cassandra-node3:latest"],
+                    capture_output=True,
+                    text=True,
+                )
+                if image_result.returncode != 0:
+                    logger.warning(
+                        "Failed to remove extra-node image cassandra-node3:latest (rc=%s): %s",
+                        image_result.returncode,
+                        image_result.stderr.strip(),
+                    )
                 self._extra_node = None
         except Exception as e:
             print(f"Error removing extra node: {e}")
