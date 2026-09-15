@@ -116,4 +116,29 @@ public class TestOnDemandRepairJobFactory
         assertThat(job).isInstanceOf(IncrementalOnDemandRepairJob.class);
         assertThat(job.getOngoingJob()).isEqualTo(myOngoingJob);
     }
+
+    @Test
+    public void testCreateIncrementalJobWithCassandraMetrics()
+    {
+        // Issue #1814: the factory forwards CassandraMetrics so Layer A confirmation is active on the on-demand path.
+        when(myOngoingJob.getRepairType()).thenReturn(RepairType.INCREMENTAL);
+        when(myReplicationState.getReplicas(TABLE_REFERENCE, myNode)).thenReturn(ImmutableSet.of(mock(DriverNode.class)));
+
+        OnDemandRepairJobFactory factoryWithMetrics = OnDemandRepairJobFactory.builder()
+                .withJmxProxyFactory(myJmxProxyFactory)
+                .withTableRepairMetrics(myTableRepairMetrics)
+                .withReplicationState(myReplicationState)
+                .withRepairLockType(RepairLockType.VNODE)
+                .withRepairHistory(myRepairHistory)
+                .withRepairConfiguration(RepairConfiguration.DEFAULT)
+                .withOnDemandStatus(myOnDemandStatus)
+                .withOnFinishedHook(myOnFinishedHook)
+                .withCassandraMetrics(mock(com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics.class))
+                .build();
+
+        OnDemandRepairJob job = factoryWithMetrics.createFromOngoingJob(myOngoingJob);
+
+        assertThat(job).isInstanceOf(IncrementalOnDemandRepairJob.class);
+        assertThat(job.getOngoingJob()).isEqualTo(myOngoingJob);
+    }
 }

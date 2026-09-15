@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandStatus;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
@@ -79,6 +80,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
                 .withRepairHistory(builder.repairHistory)
                 .withRepairConfiguration(builder.repairConfiguration)
                 .withOnDemandStatus(builder.onDemandStatus)
+                .withCassandraMetrics(builder.myCassandraMetrics)
                 .withOnFinishedHook(this::removeScheduledJob)
                 .build();
 
@@ -318,6 +320,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         private RepairHistory repairHistory;
         private OnDemandStatus onDemandStatus;
         private Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
+        private CassandraMetrics myCassandraMetrics;
 
         /**
          * Default constructor.
@@ -348,6 +351,19 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         public Builder withTableRepairMetrics(final TableRepairMetrics theTableRepairMetrics)
         {
             myTableRepairMetrics = theTableRepairMetrics;
+            return this;
+        }
+
+        /**
+         * Build on demand repair scheduler with Cassandra metrics used to confirm on-demand incremental repair
+         * advanced repaired state (issue #1814). Optional; when not set the confirmation is skipped.
+         *
+         * @param cassandraMetrics Cassandra metrics.
+         * @return Builder
+         */
+        public Builder withCassandraMetrics(final CassandraMetrics cassandraMetrics)
+        {
+            myCassandraMetrics = cassandraMetrics;
             return this;
         }
 

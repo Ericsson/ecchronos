@@ -171,6 +171,7 @@ public class ECChronos implements Closeable
                 .withRepairHistory(repairHistoryService)
                 .withRepairConfigurationFunction(repairConfigurationProvider::get)
                 .withOnDemandStatus(new OnDemandStatus(nativeConnectionProvider))
+                .withCassandraMetrics(myECChronosInternals.getCassandraMetrics())
                 .build();
 
         ThreadPoolTaskConfig threadPoolTaskConfig = configuration.getConnectionConfig().getThreadPoolTaskConfig();

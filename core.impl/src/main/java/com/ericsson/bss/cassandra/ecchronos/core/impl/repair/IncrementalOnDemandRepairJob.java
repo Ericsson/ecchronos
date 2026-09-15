@@ -18,6 +18,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.IncrementalRepairResourceFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairJobView;
@@ -49,6 +50,7 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
     private final RepairHistory myRepairHistory;
     private final List<ScheduledTask> myTasks;
     private final int myTotalTasks;
+    private final CassandraMetrics myCassandraMetrics;
 
     /**
      * Constructs an incremental on-demand repair job from the provided builder.
@@ -64,6 +66,7 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
                 "Replication state must be set");
         myRepairHistory = Preconditions.checkNotNull(builder.myRepairHistory,
                 "Repair History must be set");
+        myCassandraMetrics = builder.myCassandraMetrics;
         myTasks = initializeTasks();
         myTotalTasks = myTasks.size();
     }
@@ -91,6 +94,7 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
                 .withRepairResourceFactory(new IncrementalRepairResourceFactory(getTableReference()))
                 .withRepairLockFactory(REPAIR_LOCK_FACTORY)
                 .withRepairHistory(myRepairHistory)
+                .withCassandraMetrics(myCassandraMetrics)
                 .withJobId(getJobId())
                 .withNode(getCurrentNode());
     }
@@ -210,6 +214,7 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
         private OngoingJob myOngoingJob;
         private ReplicationState myReplicationState;
         private RepairHistory myRepairHistory;
+        private CassandraMetrics myCassandraMetrics;
 
         /**
          * Default constructor.
@@ -324,6 +329,19 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
         public final Builder withRepairHistory(final RepairHistory repairHistory)
         {
             this.myRepairHistory = repairHistory;
+            return this;
+        }
+
+        /**
+         * Sets the Cassandra metrics used to confirm the incremental repair advanced repaired state
+         * (issue #1814/#1812). Optional; when not set the confirmation is skipped.
+         *
+         * @param cassandraMetrics the Cassandra metrics.
+         * @return this builder.
+         */
+        public final Builder withCassandraMetrics(final CassandraMetrics cassandraMetrics)
+        {
+            this.myCassandraMetrics = cassandraMetrics;
             return this;
         }
 
