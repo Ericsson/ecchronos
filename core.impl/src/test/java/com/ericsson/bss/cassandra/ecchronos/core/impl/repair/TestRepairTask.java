@@ -95,6 +95,22 @@ public class TestRepairTask
         assertThat(task.finishStatus).isEqualTo(RepairStatus.FAILED);
     }
 
+    @Test
+    public void testFailedRangesFailTaskWithoutClusterWideTerminate() throws Exception
+    {
+        TestableRepairTask task = new TestableRepairTask();
+        task.markRangeFailed(com.ericsson.bss.cassandra.ecchronos.core.state.LongTokenRange.of(1, 100));
+
+        assertThatExceptionOfType(ScheduledJobException.class)
+                .isThrownBy(() -> task.invokeVerifyRepair(myJmxProxy))
+                .withMessageContaining("failed ranges");
+
+        // The failed-range path must not abort repairs cluster-wide (issue #1815).
+        org.mockito.Mockito.verify(myJmxProxy, org.mockito.Mockito.never()).forceTerminateAllRepairSessions();
+        org.mockito.Mockito.verify(myJmxProxy, org.mockito.Mockito.never())
+                .forceTerminateAllRepairSessionsInSpecificNode(any(UUID.class));
+    }
+
     private final class TestableRepairTask extends RepairTask
     {
         private volatile RepairStatus finishStatus;
@@ -102,6 +118,16 @@ public class TestRepairTask
         private TestableRepairTask()
         {
             super(myNodeId, myJmxProxyFactory, myTableReference, myRepairConfiguration, myTableRepairMetrics, 40);
+        }
+
+        void markRangeFailed(final com.ericsson.bss.cassandra.ecchronos.core.state.LongTokenRange range)
+        {
+            onRangeFinished(range, RepairStatus.FAILED);
+        }
+
+        void invokeVerifyRepair(final DistributedJmxProxy proxy) throws ScheduledJobException
+        {
+            verifyRepair(proxy);
         }
 
         @Override

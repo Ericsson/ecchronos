@@ -120,7 +120,10 @@ public class VnodeRepairTask extends RepairTask
             LOG.debug("Unknown ranges: {}", unknownRanges);
             LOG.debug("Completed ranges: {}", completedRanges);
             myUnknownRanges = Collections.unmodifiableSet(unknownRanges);
-            proxy.forceTerminateAllRepairSessions();
+            // A lost/absent per-range notification means a session for one of this repair's ranges might still be
+            // lingering. Terminate on the node that ran this repair only, rather than cluster-wide across every
+            // managed node, to bound the blast radius on unrelated concurrent repairs.
+            proxy.forceTerminateAllRepairSessionsInSpecificNode(getNodeID());
             throw new ScheduledJobException(String.format("Unknown status of some ranges for %s", this));
         }
         super.verifyRepair(proxy);

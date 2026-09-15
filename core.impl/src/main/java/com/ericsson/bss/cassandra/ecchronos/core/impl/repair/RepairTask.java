@@ -217,7 +217,10 @@ public abstract class RepairTask
     {
         if (myRangeTracker.hasFailedRanges())
         {
-            proxy.forceTerminateAllRepairSessions();
+            // Do not force-terminate here: the command is terminal (the latch is counted down on COMPLETE) so the
+            // failed session has already ended on Cassandra's side. forceTerminateAllRepairSessions() is
+            // cluster-wide across every managed node and would abort unrelated in-flight repairs; failing the task
+            // is sufficient.
             throw new ScheduledJobException("Repair has failed ranges '" + myRangeTracker.getFailedRanges() + "'");
         }
     }
@@ -341,6 +344,16 @@ public abstract class RepairTask
     public TableReference getTableReference()
     {
         return myTableReference;
+    }
+
+    /**
+     * Get the identifier of the node this repair task runs on.
+     *
+     * @return the node UUID.
+     */
+    protected final UUID getNodeID()
+    {
+        return nodeID;
     }
 
     /**

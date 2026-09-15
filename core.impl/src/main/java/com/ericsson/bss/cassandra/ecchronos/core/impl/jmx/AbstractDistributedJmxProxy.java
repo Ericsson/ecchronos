@@ -294,7 +294,10 @@ abstract class AbstractDistributedJmxProxy implements DistributedJmxProxy
 
     /**
      * Force terminate all repair sessions in all nodes.
+     *
+     * @deprecated Use {@link #forceTerminateAllRepairSessionsInSpecificNode(UUID)} instead.
      */
+    @Deprecated
     @Override
     public void forceTerminateAllRepairSessions()
     {
