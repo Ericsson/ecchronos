@@ -34,6 +34,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairPolicy;
+import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairStatus;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
@@ -73,6 +74,7 @@ public class IncrementalRepairJob extends ScheduledRepairJob
     private final CassandraMetrics myCassandraMetrics;
     private final RepairHistory myRepairHistory;
     private final RepairHistoryProvider myRepairHistoryProvider;
+    private final IncrementalRepairStallGuard myStallGuard;
 
 
     IncrementalRepairJob(final Builder builder)
@@ -85,6 +87,10 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         myCassandraMetrics = Preconditions.checkNotNull(builder.myCassandraMetrics, "Cassandra metrics must be set");
         myRepairHistory = builder.myRepairHistory;
         myRepairHistoryProvider = builder.myRepairHistoryProvider;
+        // Layer B cross-cycle stall guard (issue #1812). The guard itself no-ops when no fault reporter is
+        // configured, so it can always be constructed.
+        myStallGuard = new IncrementalRepairStallGuard(builder.myFaultReporter, myCassandraMetrics,
+                builder.myTableReference, builder.myNodeId);
         myLastSuccessfulRun = determineLastSuccessfulRun(
                 builder.myRepairConfiguration.getRepairIntervalInMs(),
                 builder.myRepairConfiguration.getRepairErrorTimeInMs(),
@@ -183,6 +189,7 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         if (successful)
         {
             recordRepairHistory(RepairStatus.SUCCESS, myLastSuccessfulRun, myLastSuccessfulRun);
+            myStallGuard.onRepairCycleCompleted();
         }
     }
 
@@ -360,6 +367,7 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         private RepairLockType myRepairLockType;
         private RepairHistory myRepairHistory;
         private RepairHistoryProvider myRepairHistoryProvider;
+        private RepairFaultReporter myFaultReporter;
 
         /**
          * Default constructor.
@@ -522,6 +530,20 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         public Builder withRepairHistoryProvider(final RepairHistoryProvider repairHistoryProvider)
         {
             myRepairHistoryProvider = repairHistoryProvider;
+            return this;
+        }
+
+        /**
+         * Build with the repair fault reporter used by the cross-cycle stall guard (issue #1812) to raise a
+         * warning when incremental repairs repeatedly report success without advancing repaired state. Optional;
+         * when not set the stall guard is disabled.
+         *
+         * @param faultReporter The repair fault reporter.
+         * @return Builder
+         */
+        public Builder withFaultReporter(final RepairFaultReporter faultReporter)
+        {
+            myFaultReporter = faultReporter;
             return this;
         }
 
