@@ -28,6 +28,12 @@ public interface RepairFaultReporter
     String FAULT_TABLE = "TABLE";
     /** Key for the node ID in fault data maps. */
     String FAULT_NODE_ID = "NODE_ID";
+    /**
+     * Key identifying the subsystem that produced the fault. Included so that independent fault sources for the
+     * same table (which otherwise share identical keyspace/table/node data) are tracked separately by reporters
+     * that key active alarms on the data map.
+     */
+    String FAULT_SOURCE = "SOURCE";
 
     /**
      * Fault codes indicating the severity of a repair fault.

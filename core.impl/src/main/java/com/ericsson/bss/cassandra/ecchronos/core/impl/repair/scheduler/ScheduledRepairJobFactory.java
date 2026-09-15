@@ -113,6 +113,7 @@ public final class ScheduledRepairJobFactory
                     .withRepairLockType(myRepairLockType)
                     .withRepairHistory(myRepairHistoryService)
                     .withRepairHistoryProvider(myRepairHistoryService)
+                    .withFaultReporter(myFaultReporter)
                     .build();
         }
         else

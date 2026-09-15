@@ -93,6 +93,22 @@ public class CassandraMetrics implements Closeable
         }
     }
 
+    /**
+     * Force a synchronous refresh of the cached metrics for the given node and table.
+     * <p>
+     * The backing cache uses {@code refreshAfterWrite}, so a plain read may return a value up to the refresh
+     * interval old. Callers that need an up-to-date reading (for example to confirm that a just-completed
+     * incremental repair actually advanced the repaired state) should call this first. The cache is configured
+     * with a synchronous executor, so the refresh completes before this method returns.
+     *
+     * @param nodeID the node ID.
+     * @param tableReference the table.
+     */
+    public void forceRefresh(final UUID nodeID, final TableReference tableReference)
+    {
+        refreshCache(nodeID, tableReference);
+    }
+
     @VisibleForTesting
     final void refreshCache(final UUID nodeID, final TableReference tableReference)
     {
