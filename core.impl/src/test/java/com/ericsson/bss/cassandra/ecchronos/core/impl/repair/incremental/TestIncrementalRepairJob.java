@@ -316,7 +316,7 @@ public class TestIncrementalRepairJob
     public void testEqualsAndHashcode()
     {
         EqualsVerifier.simple().forClass(IncrementalRepairJob.class).withRedefinedSuperclass()
-                .withIgnoredFields("myFailed").verify();
+                .withIgnoredFields("myFailed", "myStallGuard").verify();
     }
 
     @Test
