@@ -5,6 +5,7 @@
 * Fix incremental repair falsely reported COMPLETED when the Cassandra session aborts without repairing data - Issue #1811
 * Confirm incremental repair advanced repaired state before reporting success - Issue #1812
 * Warn when incremental repairs repeatedly report success without advancing repaired state - Issue #1812
+* Scope repair session termination to the affected node instead of aborting repairs across all managed nodes - Issue #1815
 
 ## Version 1.1.0
 

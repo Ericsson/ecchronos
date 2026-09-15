@@ -73,9 +73,16 @@ public interface DistributedJmxProxy extends Closeable
     int repairAsync(UUID nodeID, String keyspace, Map<String, String> options);
 
     /**
-     * Force the termination of all repairs session on all the nodes.
-     * This will not terminate repairs on other nodes but will affect other nodes running repair.
+     * Force the termination of all repair sessions on every managed node.
+     * <p>
+     * This aborts <em>all</em> repair sessions on <em>all</em> nodes this instance manages, including sessions
+     * belonging to unrelated jobs and tables. In the agent model (one instance managing many nodes, with
+     * intra-node repair parallelism) this has a cluster-wide blast radius and can cascade failures.
+     *
+     * @deprecated Use {@link #forceTerminateAllRepairSessionsInSpecificNode(UUID)} to bound termination to the node
+     *             that ran the affected repair.
      */
+    @Deprecated
     void forceTerminateAllRepairSessions();
 
     /**
