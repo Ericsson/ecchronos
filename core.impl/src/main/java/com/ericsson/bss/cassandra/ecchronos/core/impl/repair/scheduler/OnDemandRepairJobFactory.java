@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.IncrementalOnDemandRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandStatus;
@@ -46,6 +47,7 @@ public final class OnDemandRepairJobFactory
     private final RepairConfiguration myRepairConfiguration;
     private final OnDemandStatus myOnDemandStatus;
     private final BiConsumer<UUID, UUID> myOnFinishedHook;
+    private final CassandraMetrics myCassandraMetrics;
 
     private OnDemandRepairJobFactory(final Builder builder)
     {
@@ -57,6 +59,7 @@ public final class OnDemandRepairJobFactory
         myRepairConfiguration = builder.myRepairConfiguration;
         myOnDemandStatus = builder.myOnDemandStatus;
         myOnFinishedHook = builder.myOnFinishedHook;
+        myCassandraMetrics = builder.myCassandraMetrics;
     }
 
     /**
@@ -81,6 +84,7 @@ public final class OnDemandRepairJobFactory
                     .withRepairConfiguration(repairConfiguration)
                     .withReplicationState(myReplicationState)
                     .withRepairHistory(myRepairHistory)
+                    .withCassandraMetrics(myCassandraMetrics)
                     .withOngoingJob(ongoingJob)
                     .withNode(node)
                     .build();
@@ -158,6 +162,7 @@ public final class OnDemandRepairJobFactory
         private RepairConfiguration myRepairConfiguration;
         private OnDemandStatus myOnDemandStatus;
         private BiConsumer<UUID, UUID> myOnFinishedHook;
+        private CassandraMetrics myCassandraMetrics;
 
         /**
          * Default constructor.
@@ -260,6 +265,19 @@ public final class OnDemandRepairJobFactory
         public Builder withOnFinishedHook(final BiConsumer<UUID, UUID> onFinishedHook)
         {
             myOnFinishedHook = onFinishedHook;
+            return this;
+        }
+
+        /**
+         * Set the Cassandra metrics used to confirm on-demand incremental repair advanced repaired state
+         * (issue #1814). Optional; when not set the confirmation is skipped.
+         *
+         * @param cassandraMetrics the Cassandra metrics.
+         * @return this builder.
+         */
+        public Builder withCassandraMetrics(final CassandraMetrics cassandraMetrics)
+        {
+            myCassandraMetrics = cassandraMetrics;
             return this;
         }
 
