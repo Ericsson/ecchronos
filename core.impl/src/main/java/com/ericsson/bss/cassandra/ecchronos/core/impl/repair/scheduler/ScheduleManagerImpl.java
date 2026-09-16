@@ -553,16 +553,9 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                         tasksExecuted++;
                         failureCounter.set(0);
                     }
-                    else
+                    else if (handleUnsuccessfulTask(job, failureCounter))
                     {
-                        int failures = failureCounter.incrementAndGet();
-                        if (failures >= MAX_CONSECUTIVE_TASK_FAILURES)
-                        {
-                            LOG.error("Job {} on node {} has failed {} consecutive task executions, "
-                                    + "marking as FAILED", job, nodeID, failures);
-                            job.markFailed();
-                            break;
-                        }
+                        break;
                     }
                 }
                 catch (Exception e)
@@ -575,6 +568,40 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 job.refreshState();
             }
             return tasksExecuted;
+        }
+
+        /**
+         * Handle a task that did not complete successfully.
+         * <p>
+         * Distinguishes a run-policy stop from a genuine failure: if a run policy currently rejects the job's table
+         * (for example {@code reject_configuration} disabling repairs), the job is parked only until the rejection
+         * window ends and the failure counter is reset, so it resumes automatically when the policy clears instead
+         * of staying BLOCKED until restart. Otherwise the consecutive-failure counter is advanced and the job is
+         * marked FAILED once the threshold is reached.
+         *
+         * @param job the job whose task did not succeed.
+         * @param failureCounter the per-job consecutive-failure counter.
+         * @return true if the session for this job should stop (policy stop or marked FAILED).
+         */
+        private boolean handleUnsuccessfulTask(final ScheduledJob job, final AtomicInteger failureCounter)
+        {
+            long rejectDelay = validateJob(job, myNode);
+            if (rejectDelay != -1L)
+            {
+                job.setRunnableIn(rejectDelay);
+                failureCounter.set(0);
+                LOG.debug("Job {} on node {} stopped by run policy, parking for {} ms", job, nodeID, rejectDelay);
+                return true;
+            }
+            int failures = failureCounter.incrementAndGet();
+            if (failures >= MAX_CONSECUTIVE_TASK_FAILURES)
+            {
+                LOG.error("Job {} on node {} has failed {} consecutive task executions, marking as FAILED",
+                        job, nodeID, failures);
+                job.markFailed();
+                return true;
+            }
+            return false;
         }
 
         private void applyCooldown(final int tasksExecuted)

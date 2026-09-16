@@ -7,6 +7,7 @@
 * Warn when incremental repairs repeatedly report success without advancing repaired state - Issue #1812
 * Scope repair session termination to the affected node instead of aborting repairs across all managed nodes - Issue #1815
 * Extend repaired-state confirmation to on-demand incremental repair - Issue #1814
+* Resume scheduled repairs automatically after a run policy is cleared instead of leaving them BLOCKED until restart - Issue #1821
 
 ## Version 1.1.0
 

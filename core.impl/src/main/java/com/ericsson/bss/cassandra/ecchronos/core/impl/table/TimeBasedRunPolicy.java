@@ -22,6 +22,7 @@ import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
@@ -317,7 +318,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     @Override
     public final long validate(final ScheduledJob job, final Node node)
     {
-        if (job instanceof TableRepairJob repairJob)
+        if (job instanceof ScheduledRepairJob repairJob)
             {
                 return getRejectionsForTable(repairJob.getTableReference(), node);
             }
