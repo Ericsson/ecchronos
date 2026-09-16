@@ -122,27 +122,7 @@ public class TableRepairJob extends ScheduledRepairJob
 
     private ScheduledRepairJobView.Status getStatus(final long timestamp)
     {
-        if (getRealPriority() != -1 && !super.runnable())
-        {
-            return ScheduledRepairJobView.Status.BLOCKED;
-        }
-        long repairedAt = myRepairState.getSnapshot().lastCompletedAt();
-        long msSinceLastRepair = timestamp - repairedAt;
-        RepairConfiguration config = getRepairConfiguration();
-
-        if (msSinceLastRepair >= config.getRepairErrorTimeInMs())
-        {
-            return ScheduledRepairJobView.Status.OVERDUE;
-        }
-        if (msSinceLastRepair >= config.getRepairWarningTimeInMs())
-        {
-            return ScheduledRepairJobView.Status.LATE;
-        }
-        if (msSinceLastRepair >= (config.getRepairIntervalInMs() - getRunOffset()))
-        {
-            return ScheduledRepairJobView.Status.ON_TIME;
-        }
-        return ScheduledRepairJobView.Status.COMPLETED;
+        return classifyStatus(timestamp, myRepairState.getSnapshot().lastCompletedAt());
     }
 
     /**

@@ -144,6 +144,45 @@ public abstract class ScheduledRepairJob extends ScheduledJob
     public abstract ScheduledRepairJobView getView();
 
     /**
+     * Classify the scheduling status of this job from the time elapsed since its last completed repair.
+     * <p>
+     * The time-based lag ({@link ScheduledRepairJobView.Status#OVERDUE} / {@link ScheduledRepairJobView.Status#LATE})
+     * takes precedence over {@link ScheduledRepairJobView.Status#BLOCKED} so an overdue/late table is not masked as
+     * merely blocked; the lag is the more actionable signal for operators and alarms (issue #1822). A blocked job
+     * that is not yet late still reports {@code BLOCKED}.
+     * <p>
+     * The BLOCKED determination uses the base {@link ScheduledJob#runnable()} check (via {@code super.runnable()})
+     * rather than a subclass override (such as the vnode job's {@code canRepair()} gate), matching the behavior
+     * that existed before this classification was hoisted into the base class.
+     *
+     * @param timestamp the current time in epoch milliseconds.
+     * @param lastCompletedAt the timestamp of the last completed repair in epoch milliseconds.
+     * @return the classified status.
+     */
+    protected final ScheduledRepairJobView.Status classifyStatus(final long timestamp, final long lastCompletedAt)
+    {
+        long msSinceLastRepair = timestamp - lastCompletedAt;
+        RepairConfiguration config = getRepairConfiguration();
+        if (msSinceLastRepair >= config.getRepairErrorTimeInMs())
+        {
+            return ScheduledRepairJobView.Status.OVERDUE;
+        }
+        if (msSinceLastRepair >= config.getRepairWarningTimeInMs())
+        {
+            return ScheduledRepairJobView.Status.LATE;
+        }
+        if (getRealPriority() != -1 && !super.runnable())
+        {
+            return ScheduledRepairJobView.Status.BLOCKED;
+        }
+        if (msSinceLastRepair >= (config.getRepairIntervalInMs() - getRunOffset()))
+        {
+            return ScheduledRepairJobView.Status.ON_TIME;
+        }
+        return ScheduledRepairJobView.Status.COMPLETED;
+    }
+
+    /**
      * Get the repair configuration for this job.
      * @return Repair configuration
      */
