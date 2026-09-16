@@ -114,24 +114,7 @@ public class IncrementalRepairJob extends ScheduledRepairJob
 
     private ScheduledRepairJobView.Status getStatus(final long timestamp)
     {
-        if (getRealPriority() != -1 && !super.runnable())
-        {
-            return ScheduledRepairJobView.Status.BLOCKED;
-        }
-        long msSinceLastRepair = timestamp - myLastSuccessfulRun;
-        if (msSinceLastRepair >= getRepairConfiguration().getRepairErrorTimeInMs())
-        {
-            return ScheduledRepairJobView.Status.OVERDUE;
-        }
-        if (msSinceLastRepair >= getRepairConfiguration().getRepairWarningTimeInMs())
-        {
-            return ScheduledRepairJobView.Status.LATE;
-        }
-        if (msSinceLastRepair >= (getRepairConfiguration().getRepairIntervalInMs() - getRunOffset()))
-        {
-            return ScheduledRepairJobView.Status.ON_TIME;
-        }
-        return ScheduledRepairJobView.Status.COMPLETED;
+        return classifyStatus(timestamp, myLastSuccessfulRun);
     }
 
     private long getNextRunInMs()

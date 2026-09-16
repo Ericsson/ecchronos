@@ -244,6 +244,33 @@ public class TestIncrementalRepairJob
     }
 
     @Test
+    public void testGetViewOverdueTakesPrecedenceOverBlocked()
+    {
+        // A job that is both overdue and blocked must report OVERDUE, not BLOCKED, so the repair lag is not
+        // masked (issue #1822).
+        doReturn(0.0d).when(myCassandraMetrics).getPercentRepaired(mockNodeID, myTableReference);
+        long lastRepairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(ERROR_IN_DAYS);
+        doReturn(lastRepairedAt).when(myCassandraMetrics).getMaxRepairedAt(mockNodeID, myTableReference);
+        IncrementalRepairJob job = getIncrementalRepairJob();
+        job.setRunnableIn(TimeUnit.HOURS.toMillis(1)); // also blocked/parked
+
+        assertThat(job.getView().getStatus()).isEqualTo(ScheduledRepairJobView.Status.OVERDUE);
+    }
+
+    @Test
+    public void testGetViewLateTakesPrecedenceOverBlocked()
+    {
+        // A job that is both late and blocked must report LATE, not BLOCKED (issue #1822).
+        doReturn(0.0d).when(myCassandraMetrics).getPercentRepaired(mockNodeID, myTableReference);
+        long lastRepairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(WARNING_IN_DAYS);
+        doReturn(lastRepairedAt).when(myCassandraMetrics).getMaxRepairedAt(mockNodeID, myTableReference);
+        IncrementalRepairJob job = getIncrementalRepairJob();
+        job.setRunnableIn(TimeUnit.HOURS.toMillis(1)); // also blocked/parked
+
+        assertThat(job.getView().getStatus()).isEqualTo(ScheduledRepairJobView.Status.LATE);
+    }
+
+    @Test
     public void testRunnableNothingRepaired()
     {
         doReturn(0.0d).when(myCassandraMetrics).getPercentRepaired(mockNodeID, myTableReference);
