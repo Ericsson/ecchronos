@@ -261,9 +261,7 @@ def config(arguments):
             if arguments.hung_repair_bypass_coordinator is not None
             else None
         )
-        hung_repair_force = (
-            arguments.hung_repair_force == "on" if arguments.hung_repair_force is not None else None
-        )
+        hung_repair_force = arguments.hung_repair_force == "on" if arguments.hung_repair_force is not None else None
         result = request.patch(
             session_window_ms=session_window_ms,
             cooldown_ms=cooldown_ms,
