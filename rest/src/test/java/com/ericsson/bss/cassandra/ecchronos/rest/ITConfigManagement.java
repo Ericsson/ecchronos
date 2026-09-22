@@ -26,6 +26,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.CASLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.RepairLockFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.ScheduleManagerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.HungRepairSessionRecovery;
 import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import org.junit.After;
@@ -71,7 +72,10 @@ public class ITConfigManagement
                 .withEccNodesSync(mock(EccNodesSync.class))
                 .build();
 
-        myController = new ConfigManagementRESTImpl(myScheduleManager, myJmxProxyFactory);
+        HungRepairSessionRecovery hungRepairSessionRecovery =
+                new HungRepairSessionRecovery(myJmxProxyFactory, ncp);
+        myController = new ConfigManagementRESTImpl(
+                myScheduleManager, myJmxProxyFactory, hungRepairSessionRecovery);
         originalLocksPerResource = RepairLockFactoryImpl.getLocksPerResource();
     }
 

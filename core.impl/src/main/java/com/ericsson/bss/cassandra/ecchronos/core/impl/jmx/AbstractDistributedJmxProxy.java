@@ -61,6 +61,8 @@ abstract class AbstractDistributedJmxProxy implements DistributedJmxProxy
     static final String FORCE_TERMINATE_ALL_REPAIR_SESSIONS_METHOD = "forceTerminateAllRepairSessions";
     static final String REPAIR_ASYNC_METHOD = "repairAsync";
     static final String REPAIR_STATS_METHOD = "getRepairStats";
+    static final String GET_SESSIONS_METHOD = "getSessions";
+    static final String FAIL_SESSION_METHOD = "failSession";
 
     private final DistributedJmxConnectionProvider myDistributedJmxConnectionProvider;
     private final Map<UUID, Node> myNodesMap;
@@ -344,6 +346,86 @@ abstract class AbstractDistributedJmxProxy implements DistributedJmxProxy
         {
             LOG.error("Unable to terminate repair sessions for node {} because the connection is unavailable", nodeID);
             markNodeAsUnavailable(nodeID);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public List<Map<String, String>> getRepairSessions(final UUID nodeID)
+    {
+        JMXConnector nodeConnection = myDistributedJmxConnectionProvider.getJmxConnector(nodeID);
+        if (!validateJmxConnection(nodeConnection))
+        {
+            LOG.warn("Unable to list repair sessions for node {} because the connection is unavailable", nodeID);
+            markNodeAsUnavailable(nodeID);
+            return Collections.emptyList();
+        }
+        try
+        {
+            ReentrantLock lock = getNodeLock(nodeID);
+            lock.lock();
+            try
+            {
+                Object result = nodeConnection.getMBeanServerConnection().invoke(
+                        myRepairServiceObject, GET_SESSIONS_METHOD,
+                        new Object[]{true, null},
+                        new String[]{boolean.class.getName(), String.class.getName()});
+                if (result instanceof List)
+                {
+                    return (List<Map<String, String>>) result;
+                }
+                return Collections.emptyList();
+            }
+            finally
+            {
+                lock.unlock();
+            }
+        }
+        catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException | UncheckedJmxAdapterException e)
+        {
+            rethrowIfOutOfMemory(e);
+            invalidateIfConnectionStale(nodeID, e);
+            LOG.warn("Unable to list repair sessions for node {}", nodeID, e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    public void failRepairSession(final UUID nodeID, final String sessionId, final boolean force)
+    {
+        JMXConnector nodeConnection = myDistributedJmxConnectionProvider.getJmxConnector(nodeID);
+        if (!validateJmxConnection(nodeConnection))
+        {
+            LOG.error("Unable to fail repair session {} for node {} because the connection is unavailable",
+                    sessionId, nodeID);
+            markNodeAsUnavailable(nodeID);
+            return;
+        }
+        try
+        {
+            ReentrantLock lock = getNodeLock(nodeID);
+            lock.lock();
+            try
+            {
+                // With force=false the session is only cancelled on the coordinator this call targets, so callers
+                // should target the session's own coordinator. With force=true it is force-failed on the targeted
+                // node regardless of coordinator status.
+                nodeConnection.getMBeanServerConnection().invoke(
+                        myRepairServiceObject, FAIL_SESSION_METHOD,
+                        new Object[]{sessionId, force},
+                        new String[]{String.class.getName(), boolean.class.getName()});
+                LOG.info("Failed hung repair session {} on node {} (force={})", sessionId, nodeID, force);
+            }
+            finally
+            {
+                lock.unlock();
+            }
+        }
+        catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException | UncheckedJmxAdapterException e)
+        {
+            rethrowIfOutOfMemory(e);
+            invalidateIfConnectionStale(nodeID, e);
+            LOG.error("Unable to fail repair session {} for node {}", sessionId, nodeID, e);
         }
     }
 

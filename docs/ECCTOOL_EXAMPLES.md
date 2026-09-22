@@ -524,7 +524,11 @@ $ ecctool config
   "session_window_ms": 300000,
   "cooldown_ms": 0,
   "locks_per_resource": 3,
-  "max_wait_time_minutes": 40
+  "max_wait_time_minutes": 40,
+  "hung_repair_recovery_enabled": false,
+  "hung_repair_stall_threshold_ms": 1800000,
+  "hung_repair_bypass_coordinator_check": false,
+  "hung_repair_force": false
 }
 ```
 
@@ -536,7 +540,11 @@ $ ecctool config --session-window 10m
   "session_window_ms": 600000,
   "cooldown_ms": 0,
   "locks_per_resource": 3,
-  "max_wait_time_minutes": 40
+  "max_wait_time_minutes": 40,
+  "hung_repair_recovery_enabled": false,
+  "hung_repair_stall_threshold_ms": 1800000,
+  "hung_repair_bypass_coordinator_check": false,
+  "hung_repair_force": false
 }
 ```
 
@@ -548,7 +556,75 @@ $ ecctool config --max-wait-time 60
   "session_window_ms": 300000,
   "cooldown_ms": 0,
   "locks_per_resource": 3,
-  "max_wait_time_minutes": 60
+  "max_wait_time_minutes": 60,
+  "hung_repair_recovery_enabled": false,
+  "hung_repair_stall_threshold_ms": 1800000,
+  "hung_repair_bypass_coordinator_check": false,
+  "hung_repair_force": false
+}
+```
+
+### Enable hung repair session recovery
+
+```console
+$ ecctool config --hung-repair-recovery on --hung-repair-threshold 45m
+{
+  "session_window_ms": 300000,
+  "cooldown_ms": 0,
+  "locks_per_resource": 3,
+  "max_wait_time_minutes": 40,
+  "hung_repair_recovery_enabled": true,
+  "hung_repair_stall_threshold_ms": 2700000,
+  "hung_repair_bypass_coordinator_check": false,
+  "hung_repair_force": false
+}
+```
+
+### Disable hung repair session recovery
+
+```console
+$ ecctool config --hung-repair-recovery off
+{
+  "session_window_ms": 300000,
+  "cooldown_ms": 0,
+  "locks_per_resource": 3,
+  "max_wait_time_minutes": 40,
+  "hung_repair_recovery_enabled": false,
+  "hung_repair_stall_threshold_ms": 2700000,
+  "hung_repair_bypass_coordinator_check": false,
+  "hung_repair_force": false
+}
+```
+
+### Send hung repair cancellation to all nodes (bypass coordinator check)
+
+```console
+$ ecctool config --hung-repair-recovery on --hung-repair-bypass-coordinator on
+{
+  "session_window_ms": 300000,
+  "cooldown_ms": 0,
+  "locks_per_resource": 3,
+  "max_wait_time_minutes": 40,
+  "hung_repair_recovery_enabled": true,
+  "hung_repair_stall_threshold_ms": 1800000,
+  "hung_repair_bypass_coordinator_check": true,
+  "hung_repair_force": false
+}
+```
+
+### Force-fail hung sessions on the targeted node
+
+```console
+$ ecctool config --hung-repair-recovery on --hung-repair-force on
+{
+  "session_window_ms": 300000,
+  "cooldown_ms": 0,
+  "locks_per_resource": 3,
+  "max_wait_time_minutes": 40,
+  "hung_repair_recovery_enabled": true,
+  "hung_repair_stall_threshold_ms": 1800000,
+  "hung_repair_bypass_coordinator_check": false,
+  "hung_repair_force": true
 }
 ```
 
@@ -560,10 +636,14 @@ $ ecctool config --session-window 5m --cooldown 30s --locks-per-resource 5 --max
   "session_window_ms": 300000,
   "cooldown_ms": 30000,
   "locks_per_resource": 5,
-  "max_wait_time_minutes": 60
+  "max_wait_time_minutes": 60,
+  "hung_repair_recovery_enabled": false,
+  "hung_repair_stall_threshold_ms": 1800000,
+  "hung_repair_bypass_coordinator_check": false,
+  "hung_repair_force": false
 }
 ```
 
-Duration values accept: `5m` (minutes), `30s` (seconds), `2h` (hours), `500ms` (milliseconds), or raw milliseconds as integers. The `--max-wait-time` value is in minutes and must be greater than 0.
+Duration values accept: `5m` (minutes), `30s` (seconds), `2h` (hours), `500ms` (milliseconds), or raw milliseconds as integers. The `--max-wait-time` value is in minutes and must be greater than 0. Hung repair session recovery is disabled by default; enable it with `--hung-repair-recovery on` and tune the stall threshold with `--hung-repair-threshold`. By default a hung session is only cancelled on its own coordinator; use `--hung-repair-bypass-coordinator on` to send the cancellation to every managed node instead. `--hung-repair-force` controls the `force` flag passed to Cassandra's `failSession` and is applied to every request.
 
 Changes are in-memory only. Restarting ecChronos restores values from `ecc.yml`.

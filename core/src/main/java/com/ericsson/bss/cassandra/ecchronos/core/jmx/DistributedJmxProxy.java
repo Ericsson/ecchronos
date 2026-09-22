@@ -93,6 +93,36 @@ public interface DistributedJmxProxy extends Closeable
      *            The nodeID to get the JMXConnector.
      */
     void forceTerminateAllRepairSessionsInSpecificNode(UUID nodeID);
+
+    /**
+     * List the repair sessions currently known to the specified node's coordinator.
+     * <p>
+     * This maps to the Cassandra {@code RepairService} MBean {@code getSessions} operation (the JMX surface behind
+     * {@code nodetool repair_admin list}). Each returned map describes one session using the keys defined by
+     * Cassandra's {@code LocalSessionInfo}: {@code SESSION_ID}, {@code STATE}, {@code STARTED}, {@code LAST_UPDATE},
+     * {@code COORDINATOR}, {@code PARTICIPANTS}, {@code PARTICIPANTS_WP} and {@code TABLES}. {@code LAST_UPDATE} is an
+     * absolute epoch timestamp in seconds, not an elapsed duration.
+     *
+     * @param nodeID the node whose sessions to list.
+     * @return the list of repair sessions, or an empty list if none or the query failed.
+     */
+    List<Map<String, String>> getRepairSessions(UUID nodeID);
+
+    /**
+     * Fail (cancel) a single repair session on the specified node.
+     * <p>
+     * This maps to the Cassandra {@code RepairService} MBean {@code failSession} operation (the JMX surface behind
+     * {@code nodetool repair_admin cancel}). When {@code force} is {@code false} the session is cancelled only on the
+     * coordinator this call targets (so the caller should target the session's own coordinator); when {@code force}
+     * is {@code true} the session is force-failed on the targeted node regardless of whether it is the coordinator.
+     * The operation is idempotent — failing an already-failed session is a no-op.
+     *
+     * @param nodeID the node on which to fail the session.
+     * @param sessionId the identifier of the session to fail.
+     * @param force whether to force-fail the session on the targeted node.
+     */
+    void failRepairSession(UUID nodeID, String sessionId, boolean force);
+
     /**
      * Remove a listener from the storage service interface.
      * @param nodeID

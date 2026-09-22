@@ -389,16 +389,19 @@ class ConfigRequest(RestRequest):
     def get(self):
         return self.request(ConfigRequest.URL)
 
-    def patch(self, session_window_ms=None, cooldown_ms=None, locks_per_resource=None, max_wait_time_minutes=None):
-        body = {}
-        if session_window_ms is not None:
-            body["session_window_ms"] = session_window_ms
-        if cooldown_ms is not None:
-            body["cooldown_ms"] = cooldown_ms
-        if locks_per_resource is not None:
-            body["locks_per_resource"] = locks_per_resource
-        if max_wait_time_minutes is not None:
-            body["max_wait_time_minutes"] = max_wait_time_minutes
+    ALLOWED_KEYS = (
+        "session_window_ms",
+        "cooldown_ms",
+        "locks_per_resource",
+        "max_wait_time_minutes",
+        "hung_repair_recovery_enabled",
+        "hung_repair_stall_threshold_ms",
+        "hung_repair_bypass_coordinator_check",
+        "hung_repair_force",
+    )
+
+    def patch(self, **kwargs):
+        body = {key: value for key, value in kwargs.items() if key in ConfigRequest.ALLOWED_KEYS and value is not None}
         headers = {"Content-Type": "application/json"}
         return self.request(ConfigRequest.URL, "PATCH", body=body, headers=headers)
 

@@ -489,7 +489,7 @@ file containing process id
 Show or update ecChronos runtime configuration. Changes are in-memory only — restarting ecChronos restores values from `ecc.yml`.
 
 ```console
-usage: ecctool config [-h] [--session-window SESSION_WINDOW] [--cooldown COOLDOWN] [--locks-per-resource LOCKS_PER_RESOURCE] [--max-wait-time MAX_WAIT_TIME] [-u URL]
+usage: ecctool config [-h] [--session-window SESSION_WINDOW] [--cooldown COOLDOWN] [--locks-per-resource LOCKS_PER_RESOURCE] [--max-wait-time MAX_WAIT_TIME] [--hung-repair-recovery {on,off}] [--hung-repair-threshold HUNG_REPAIR_THRESHOLD] [--hung-repair-bypass-coordinator {on,off}] [--hung-repair-force {on,off}] [-u URL]
 ```
 
 When called without arguments, displays the current configuration. When called with one or more parameters, updates the specified values.
@@ -505,6 +505,18 @@ Number of concurrent locks per datacenter resource. Must be >= 1.
 
 ### --max-wait-time &lt;int&gt;
 Maximum time in minutes ecChronos waits for a repair to complete before terminating and rescheduling it. Must be > 0. New repairs pick up the value immediately; in-flight repairs keep their original timeout.
+
+### --hung-repair-recovery &lt;on|off&gt;
+Enable or disable automatic recovery of hung incremental repair sessions. When enabled, ecChronos periodically scans each managed node's own repair sessions and cancels (coordinator-only) any session that has been stalled longer than `--hung-repair-threshold`. Disabled by default.
+
+### --hung-repair-threshold &lt;duration&gt;
+Stall threshold before a hung repair session is cancelled. A `REPAIRING` session with no activity for at least this duration is considered hung. Accepts the same duration format as `--session-window`. Must be > 0.
+
+### --hung-repair-bypass-coordinator &lt;on|off&gt;
+Bypass the coordinator check. By default a hung session is only cancelled on its own coordinator (session-scoped). When set to `on`, the coordinator check is skipped and the `failSession` command is sent to every managed node. Expected faults from nodes that do not own the session are caught and logged at debug level. Off by default.
+
+### --hung-repair-force &lt;on|off&gt;
+Value of the `force` flag passed to the Cassandra `failSession` operation. The same value is used for every request, regardless of whether it targets the session coordinator. When `off` (default), a session is only cancelled on its coordinator; when `on`, it is force-failed on the targeted node.
 
 ### -u &lt;url&gt;, --url &lt;url&gt;
 ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)

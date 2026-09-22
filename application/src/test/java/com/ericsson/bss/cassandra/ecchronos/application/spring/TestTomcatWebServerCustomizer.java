@@ -62,6 +62,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairStatsProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.HungRepairSessionRecovery;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
@@ -133,6 +134,9 @@ public abstract class TestTomcatWebServerCustomizer
 
     @MockitoBean
     private DistributedJmxProxyFactory jmxProxyFactory;
+
+    @MockitoBean
+    private HungRepairSessionRecovery hungRepairSessionRecovery;
 
     @MockitoBean
     private DistributedNativeConnectionProvider nativeConnectionProvider;

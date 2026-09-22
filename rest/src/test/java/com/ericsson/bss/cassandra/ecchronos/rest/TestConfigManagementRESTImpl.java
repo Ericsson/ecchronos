@@ -16,12 +16,15 @@ package com.ericsson.bss.cassandra.ecchronos.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.HungRepairSessionRecovery;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,16 +44,24 @@ public class TestConfigManagementRESTImpl
     @Mock
     private DistributedJmxProxyFactory myJmxProxyFactory;
 
+    @Mock
+    private HungRepairSessionRecovery myHungRepairSessionRecovery;
+
     private ConfigManagementRESTImpl controller;
 
     @Before
     public void setup()
     {
-        controller = new ConfigManagementRESTImpl(myScheduleManager, myJmxProxyFactory);
+        controller = new ConfigManagementRESTImpl(
+                myScheduleManager, myJmxProxyFactory, myHungRepairSessionRecovery);
         when(myScheduleManager.getSessionWindowInMs()).thenReturn(300000L);
         when(myScheduleManager.getCooldownInMs()).thenReturn(0L);
         when(myScheduleManager.getLocksPerResource()).thenReturn(3);
         when(myJmxProxyFactory.getMaxWaitTimeInMinutes()).thenReturn(40);
+        when(myHungRepairSessionRecovery.isEnabled()).thenReturn(false);
+        when(myHungRepairSessionRecovery.getStallThresholdMs()).thenReturn(1800000L);
+        when(myHungRepairSessionRecovery.isBypassCoordinatorCheck()).thenReturn(false);
+        when(myHungRepairSessionRecovery.isForce()).thenReturn(false);
     }
 
     @Test
@@ -64,6 +75,10 @@ public class TestConfigManagementRESTImpl
         assertThat(body.get("cooldown_ms")).isEqualTo(0L);
         assertThat(body.get("locks_per_resource")).isEqualTo(3);
         assertThat(body.get("max_wait_time_minutes")).isEqualTo(40);
+        assertThat(body.get("hung_repair_recovery_enabled")).isEqualTo(false);
+        assertThat(body.get("hung_repair_stall_threshold_ms")).isEqualTo(1800000L);
+        assertThat(body.get("hung_repair_bypass_coordinator_check")).isEqualTo(false);
+        assertThat(body.get("hung_repair_force")).isEqualTo(false);
     }
 
     @Test
@@ -168,5 +183,102 @@ public class TestConfigManagementRESTImpl
         assertThat(response.getStatusCode().value()).isEqualTo(400);
         assertThat(response.getBody().get("error")).isEqualTo("max_wait_time_minutes must be > 0");
         verify(myJmxProxyFactory, never()).setMaxWaitTimeInMinutes(anyInt());
+    }
+
+    @Test
+    public void testPatchHungRepairRecoveryEnabled()
+    {
+        Map<String, Object> patch = new HashMap<>();
+        patch.put("hung_repair_recovery_enabled", true);
+
+        controller.patchConfig(patch);
+
+        verify(myHungRepairSessionRecovery).setEnabled(true);
+    }
+
+    @Test
+    public void testPatchHungRepairStallThreshold()
+    {
+        Map<String, Object> patch = new HashMap<>();
+        patch.put("hung_repair_stall_threshold_ms", 900000L);
+
+        controller.patchConfig(patch);
+
+        verify(myHungRepairSessionRecovery).setStallThresholdMs(900000L);
+    }
+
+    @Test
+    public void testPatchInvalidHungRepairThresholdReturns400()
+    {
+        Map<String, Object> patch = new HashMap<>();
+        patch.put("hung_repair_stall_threshold_ms", 0L);
+
+        ResponseEntity<Map<String, Object>> response = controller.patchConfig(patch);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody().get("error")).isEqualTo("hung_repair_stall_threshold_ms must be > 0");
+        verify(myHungRepairSessionRecovery, never()).setStallThresholdMs(anyLong());
+    }
+
+    @Test
+    public void testPatchInvalidHungRepairEnabledReturns400()
+    {
+        Map<String, Object> patch = new HashMap<>();
+        patch.put("hung_repair_recovery_enabled", "yes");
+
+        ResponseEntity<Map<String, Object>> response = controller.patchConfig(patch);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody().get("error")).isEqualTo("hung_repair_recovery_enabled must be a boolean");
+        verify(myHungRepairSessionRecovery, never()).setEnabled(anyBoolean());
+    }
+
+    @Test
+    public void testPatchHungRepairBypassCoordinatorCheck()
+    {
+        Map<String, Object> patch = new HashMap<>();
+        patch.put("hung_repair_bypass_coordinator_check", true);
+
+        controller.patchConfig(patch);
+
+        verify(myHungRepairSessionRecovery).setBypassCoordinatorCheck(true);
+    }
+
+    @Test
+    public void testPatchInvalidHungRepairBypassReturns400()
+    {
+        Map<String, Object> patch = new HashMap<>();
+        patch.put("hung_repair_bypass_coordinator_check", "nope");
+
+        ResponseEntity<Map<String, Object>> response = controller.patchConfig(patch);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody().get("error"))
+                .isEqualTo("hung_repair_bypass_coordinator_check must be a boolean");
+        verify(myHungRepairSessionRecovery, never()).setBypassCoordinatorCheck(anyBoolean());
+    }
+
+    @Test
+    public void testPatchHungRepairForce()
+    {
+        Map<String, Object> patch = new HashMap<>();
+        patch.put("hung_repair_force", true);
+
+        controller.patchConfig(patch);
+
+        verify(myHungRepairSessionRecovery).setForce(true);
+    }
+
+    @Test
+    public void testPatchInvalidHungRepairForceReturns400()
+    {
+        Map<String, Object> patch = new HashMap<>();
+        patch.put("hung_repair_force", "nope");
+
+        ResponseEntity<Map<String, Object>> response = controller.patchConfig(patch);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody().get("error")).isEqualTo("hung_repair_force must be a boolean");
+        verify(myHungRepairSessionRecovery, never()).setForce(anyBoolean());
     }
 }

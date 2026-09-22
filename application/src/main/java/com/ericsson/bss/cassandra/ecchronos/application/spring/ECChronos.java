@@ -35,6 +35,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.ThreadPoolTaskConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.FileBasedRepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.application.config.repair.HungRepairRecoveryConfig;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.JolokiaNotificationController;
@@ -42,6 +43,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.RepairStatsProvide
 import org.springframework.beans.factory.annotation.Autowired;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads.NodeWorkerManager;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfigurationProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.HungRepairSessionRecovery;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandStatus;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.SchemaRefresher;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.OnDemandRepairSchedulerImpl;
@@ -73,6 +75,7 @@ public class ECChronos implements Closeable
     private final OnDemandRepairSchedulerImpl myOnDemandRepairSchedulerImpl;
     private final RepairStatsProvider myRepairStatsProvider;
     private final NodeWorkerManager myNodeWorkerManager;
+    private final HungRepairSessionRecovery myHungRepairSessionRecovery;
 
     /**
      * Constructs a new ecChronos instance, initializing the internal components, repair schedulers,
@@ -206,6 +209,17 @@ public class ECChronos implements Closeable
         Collection<UUID> nodeIDList = nativeConnectionProvider.getNodes().keySet();
         LOG.debug("Total nodes found: {}", nodeIDList.size());
         myECChronosInternals.getScheduleManager().createScheduleFutureForNodeIDList(nodeIDList);
+
+        HungRepairRecoveryConfig hungRepairRecoveryConfig = configuration.getRepairConfig().getHungRepairRecovery();
+        myHungRepairSessionRecovery = new HungRepairSessionRecovery(
+                myECChronosInternals.getJmxProxyFactory(),
+                nativeConnectionProvider,
+                hungRepairRecoveryConfig.isEnabled(),
+                hungRepairRecoveryConfig.getStallThresholdInMs(),
+                hungRepairRecoveryConfig.getScanIntervalInMs(),
+                hungRepairRecoveryConfig.isBypassCoordinatorCheck(),
+                hungRepairRecoveryConfig.isForce());
+        myHungRepairSessionRecovery.start();
     }
 
     /**
@@ -302,6 +316,16 @@ public class ECChronos implements Closeable
         return myNodeWorkerManager;
     }
 
+    /**
+     * Returns the hung repair session recovery component.
+     * @return the hung repair session recovery component
+     */
+    @Bean
+    public HungRepairSessionRecovery hungRepairSessionRecovery()
+    {
+        return myHungRepairSessionRecovery;
+    }
+
     @Override
     public final void close()
     {
@@ -311,6 +335,7 @@ public class ECChronos implements Closeable
         myECChronosInternals.close();
         myOnDemandRepairSchedulerImpl.close();
         myNodeWorkerManager.shutdown();
+        myHungRepairSessionRecovery.close();
     }
 
     private ThreadPoolTaskExecutor setupThreadPool(final ThreadPoolTaskConfig threadPoolTaskConfig)

@@ -48,6 +48,8 @@ public class RepairConfig
 
     private Interval myInitialDelay = new Interval(DAYS_INITIAL_DELAY, TimeUnit.DAYS);
 
+    private HungRepairRecoveryConfig myHungRepairRecovery = new HungRepairRecoveryConfig();
+
     /** Default constructor. */
     public RepairConfig()
     {
@@ -110,6 +112,26 @@ public class RepairConfig
     public final void setAlarm(final Alarm alarm)
     {
         myAlarm = alarm;
+    }
+
+    /**
+     * Returns the hung repair session recovery configuration.
+     * @return the hung repair recovery configuration
+     */
+    @JsonProperty("hung_repair_recovery")
+    public final HungRepairRecoveryConfig getHungRepairRecovery()
+    {
+        return myHungRepairRecovery;
+    }
+
+    /**
+     * Sets the hung repair session recovery configuration.
+     * @param hungRepairRecovery the hung repair recovery configuration
+     */
+    @JsonProperty("hung_repair_recovery")
+    public final void setHungRepairRecovery(final HungRepairRecoveryConfig hungRepairRecovery)
+    {
+        myHungRepairRecovery = hungRepairRecovery;
     }
 
     /**
