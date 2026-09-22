@@ -209,6 +209,29 @@ def add_config_subcommand(sub_parsers):
     parser_config.add_argument("--cooldown", type=str, help="cooldown duration (e.g. 5m, 30s, 300000)")
     parser_config.add_argument("--locks-per-resource", type=int, help="locks per resource")
     parser_config.add_argument("--max-wait-time", type=int, help="max wait time in minutes for a repair (> 0)")
+    parser_config.add_argument(
+        "--hung-repair-recovery",
+        type=str,
+        choices=["on", "off"],
+        help="enable or disable automatic recovery of hung incremental repair sessions",
+    )
+    parser_config.add_argument(
+        "--hung-repair-threshold",
+        type=str,
+        help="stall threshold before a hung repair session is cancelled (e.g. 30m, 1800s, 1800000)",
+    )
+    parser_config.add_argument(
+        "--hung-repair-bypass-coordinator",
+        type=str,
+        choices=["on", "off"],
+        help="bypass the coordinator check and send the fail command to all managed nodes",
+    )
+    parser_config.add_argument(
+        "--hung-repair-force",
+        type=str,
+        choices=["on", "off"],
+        help="value of the force flag passed to failSession, used for all requests",
+    )
     add_common_arg(parser_config, ARG_URL)
 
 
@@ -219,15 +242,35 @@ def config(arguments):
         or arguments.cooldown is not None
         or arguments.locks_per_resource is not None
         or arguments.max_wait_time is not None
+        or arguments.hung_repair_recovery is not None
+        or arguments.hung_repair_threshold is not None
+        or arguments.hung_repair_bypass_coordinator is not None
+        or arguments.hung_repair_force is not None
     )
     if has_updates:
         session_window_ms = parse_duration_ms(arguments.session_window) if arguments.session_window else None
         cooldown_ms = parse_duration_ms(arguments.cooldown) if arguments.cooldown else None
+        hung_repair_recovery_enabled = (
+            arguments.hung_repair_recovery == "on" if arguments.hung_repair_recovery is not None else None
+        )
+        hung_repair_stall_threshold_ms = (
+            parse_duration_ms(arguments.hung_repair_threshold) if arguments.hung_repair_threshold else None
+        )
+        hung_repair_bypass_coordinator_check = (
+            arguments.hung_repair_bypass_coordinator == "on"
+            if arguments.hung_repair_bypass_coordinator is not None
+            else None
+        )
+        hung_repair_force = arguments.hung_repair_force == "on" if arguments.hung_repair_force is not None else None
         result = request.patch(
             session_window_ms=session_window_ms,
             cooldown_ms=cooldown_ms,
             locks_per_resource=arguments.locks_per_resource,
             max_wait_time_minutes=arguments.max_wait_time,
+            hung_repair_recovery_enabled=hung_repair_recovery_enabled,
+            hung_repair_stall_threshold_ms=hung_repair_stall_threshold_ms,
+            hung_repair_bypass_coordinator_check=hung_repair_bypass_coordinator_check,
+            hung_repair_force=hung_repair_force,
         )
     else:
         result = request.get()

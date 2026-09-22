@@ -377,6 +377,43 @@ repair:
   ## incremental = repair vnodes incrementally (incremental repair)
   ##
   repair_type: vnode
+  ##
+  ## Automatic recovery of hung incremental repair sessions.
+  ##
+  ## When an incremental repair session hangs it stays in the REPAIRING state, holding SSTables and blocking
+  ## subsequent incremental repairs of the same table. When enabled, ecChronos periodically scans each managed
+  ## node's own repair sessions and cancels (coordinator-only, via failSession) any session that has been stalled
+  ## for longer than 'stall_threshold'.
+  ##
+  ## This feature is disabled by default. Both 'enabled' and 'stall_threshold' can also be changed at runtime via
+  ## the REST API / ecctool (see 'ecctool config').
+  ##
+  hung_repair_recovery:
+    enabled: false
+    ##
+    ## A REPAIRING session with no activity for at least this duration is considered hung and will be cancelled.
+    ##
+    stall_threshold:
+      time: 30
+      unit: MINUTES
+    ##
+    ## How often to scan for hung repair sessions.
+    ##
+    scan_interval:
+      time: 5
+      unit: MINUTES
+    ##
+    ## By default a hung session is only cancelled on its own coordinator (session-scoped). When this is set to true
+    ## the coordinator check is skipped and the failSession command is sent to every managed node. Expected faults
+    ## from nodes that do not own the session are caught and logged at debug level.
+    ##
+    bypass_coordinator_check: false
+    ##
+    ## The value of the 'force' flag passed to the Cassandra failSession operation. This same value is used for every
+    ## request, regardless of whether it targets the session coordinator. When false, a session is only cancelled on
+    ## its coordinator; when true, it is force-failed on the targeted node.
+    ##
+    force: false
 
 statistics:
   enabled: true

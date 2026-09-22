@@ -21,6 +21,7 @@ import static org.junit.Assert.*;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxy;
 import java.util.*;
 import javax.management.*;
+import java.io.IOException;
 import javax.management.openmbean.CompositeData;
 import javax.management.remote.JMXConnector;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
@@ -126,6 +127,67 @@ public class TestDistributedJmxProxyFactoryImpl
 
         verify(mockMBeanServerConnection).invoke(any(ObjectName.class), eq("forceTerminateAllRepairSessions"),
                 isNull(), isNull());
+    }
+
+    @Test
+    public void testGetRepairSessions() throws Exception
+    {
+        Map<String, String> session = new HashMap<>();
+        session.put("id", "session-1");
+        session.put("state", "REPAIRING");
+        session.put("coordinator", "/127.0.0.1");
+        List<Map<String, String>> expected = Arrays.asList(session);
+
+        when(mockMBeanServerConnection.invoke(any(ObjectName.class), eq("getSessions"),
+                any(Object[].class), any(String[].class))).thenReturn(expected);
+
+        List<Map<String, String>> sessions = distributedJmxProxy.getRepairSessions(nodeId);
+
+        assertEquals(expected, sessions);
+        verify(mockMBeanServerConnection).invoke(any(ObjectName.class), eq("getSessions"),
+                eq(new Object[]{true, null}), eq(new String[]{boolean.class.getName(), String.class.getName()}));
+    }
+
+    @Test
+    public void testGetRepairSessionsReturnsEmptyOnNonListResult() throws Exception
+    {
+        when(mockMBeanServerConnection.invoke(any(ObjectName.class), eq("getSessions"),
+                any(Object[].class), any(String[].class))).thenReturn(null);
+
+        List<Map<String, String>> sessions = distributedJmxProxy.getRepairSessions(nodeId);
+
+        assertTrue(sessions.isEmpty());
+    }
+
+    @Test
+    public void testGetRepairSessionsReturnsEmptyOnException() throws Exception
+    {
+        when(mockMBeanServerConnection.invoke(any(ObjectName.class), eq("getSessions"),
+                any(Object[].class), any(String[].class))).thenThrow(new IOException("boom"));
+
+        List<Map<String, String>> sessions = distributedJmxProxy.getRepairSessions(nodeId);
+
+        assertTrue(sessions.isEmpty());
+    }
+
+    @Test
+    public void testFailRepairSessionUsesForceFalse() throws Exception
+    {
+        distributedJmxProxy.failRepairSession(nodeId, "session-1", false);
+
+        verify(mockMBeanServerConnection).invoke(any(ObjectName.class), eq("failSession"),
+                eq(new Object[]{"session-1", false}),
+                eq(new String[]{String.class.getName(), boolean.class.getName()}));
+    }
+
+    @Test
+    public void testFailRepairSessionUsesForceTrue() throws Exception
+    {
+        distributedJmxProxy.failRepairSession(nodeId, "session-1", true);
+
+        verify(mockMBeanServerConnection).invoke(any(ObjectName.class), eq("failSession"),
+                eq(new Object[]{"session-1", true}),
+                eq(new String[]{String.class.getName(), boolean.class.getName()}));
     }
 
     @Test
