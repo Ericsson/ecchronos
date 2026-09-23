@@ -23,7 +23,7 @@ except ImportError:
 import json
 import os
 import ssl
-from ecchronoslib.types import FullSchedule, Repair, Schedule, RepairInfo, NodeSyncState, Rejection
+from ecchronoslib.types import FullSchedule, Repair, Schedule, RepairInfo, NodeSyncState, Rejection, RepairSession
 
 
 class RequestResult(object):
@@ -415,3 +415,35 @@ def _create_response(request):
         context.load_cert_chain(cert_file, key_file)
         return urlopen(request, context=context)
     return urlopen(request)
+
+
+class RepairSessionsRequest(RestRequest):
+    ROOT = "repair-management/repairSessions"
+
+    def __init__(self, base_url=None):
+        RestRequest.__init__(self, base_url)
+
+    def list_sessions(self, node_id=None):
+        request_url = RepairSessionsRequest.ROOT
+        if node_id:
+            request_url = "{0}?nodeID={1}".format(request_url, node_id)
+
+        result = self.request(request_url)
+
+        if result.is_successful():
+            result = result.transform_with_data(new_data=[RepairSession(x) for x in result.data])
+
+        return result
+
+    def fail_session(self, session_id, force=False, node_id=None):
+        request_url = "{0}/{1}/fail?force={2}".format(
+            RepairSessionsRequest.ROOT, quote(str(session_id)), str(force).lower())
+        if node_id:
+            request_url = "{0}&nodeID={1}".format(request_url, node_id)
+
+        result = self.request(request_url, "POST")
+
+        if result.is_successful():
+            result = result.transform_with_data(new_data=[RepairSession(x) for x in result.data])
+
+        return result

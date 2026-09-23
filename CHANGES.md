@@ -2,6 +2,7 @@
 
 ## Version 1.1.1
 
+* Add manual ecctool and REST commands to list and fail hung incremental repair sessions across managed nodes - Issue #1833
 * Automatically recover from hung incremental repair sessions by cancelling stalled sessions on their coordinator (opt-in, runtime-tunable, disabled by default) - Issue #1825
 * Fix incremental repair falsely reported COMPLETED when the Cassandra session aborts without repairing data - Issue #1811
 * Confirm incremental repair advanced repaired state before reporting success - Issue #1812

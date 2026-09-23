@@ -26,6 +26,45 @@ def print_rejections(rejections, columns=None, output="table"):
         _print_rejections_table_format(rejections, columns)
 
 
+def print_repair_sessions(sessions, columns=None, output="table"):
+    if output == "json":
+        _print_repair_sessions_json_format(sessions)
+    else:
+        _print_repair_sessions_table_format(sessions, columns)
+
+
+def _print_repair_sessions_json_format(sessions):
+    sessions_dict = [s.to_dict() for s in sessions]
+    output_json({"repairSessions": sessions_dict})
+
+
+def _print_repair_sessions_table_format(sessions, columns=None):
+    sessions_table = [
+        [
+            "Node",
+            "Session Id",
+            "State",
+            "Coordinator",
+            "Last Update",
+            "Participants",
+            "Tables",
+        ]
+    ]
+    for session in sessions:
+        sessions_table.append(
+            [
+                session.node_id,
+                session.session_id,
+                session.state,
+                session.coordinator,
+                session.get_last_update_age(),
+                session.participants,
+                session.tables,
+            ]
+        )
+    table_formatter.format_table(sessions_table, columns)
+
+
 def _print_rejections_json_format(rejections):
     rejections_dict = [s.to_dict() for s in rejections]
     output_json({"rejections": rejections_dict})

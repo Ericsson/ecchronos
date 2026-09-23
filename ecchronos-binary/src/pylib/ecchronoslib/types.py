@@ -212,3 +212,27 @@ class Rejection(object):
 
     def to_dict(self):
         return self.__dict__
+
+
+class RepairSession(object):
+    # pylint: disable=too-few-public-methods,too-many-instance-attributes
+    def __init__(self, data):
+        self.node_id = data["nodeID"] if "nodeID" in data else "<UNKNOWN>"
+        self.session_id = data["sessionId"] if "sessionId" in data else "<UNKNOWN>"
+        self.state = data["state"] if "state" in data else "<UNKNOWN>"
+        self.coordinator = data["coordinator"] if "coordinator" in data else "<UNKNOWN>"
+        self.started = int(data["started"] if "started" in data else -1)
+        self.last_update = int(data["lastUpdate"] if "lastUpdate" in data else -1)
+        self.participants = data["participants"] if "participants" in data else ""
+        self.tables = data["tables"] if "tables" in data else ""
+
+    def get_last_update_age(self):
+        # LAST_UPDATE is an absolute epoch-seconds timestamp; render it as an age.
+        if self.last_update < 0:
+            return "<UNKNOWN>"
+        age_seconds = int(datetime.datetime.now().timestamp()) - self.last_update
+        age_seconds = max(age_seconds, 0)
+        return parse_interval(age_seconds * 1000)
+
+    def to_dict(self):
+        return self.__dict__

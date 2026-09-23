@@ -218,6 +218,90 @@ limit output rows (use -1 for no limit)
 ### -o &lt;output&gt;, --output &lt;output&gt;
 output formats: json, table (default)
 
+## ecctool repair-sessions
+
+List and fail incremental repair sessions. Use ‘ecctool repair-sessions &lt;action&gt; –help’ for action information.
+
+```console
+usage: ecctool repair-sessions [-h] [-u URL] [-c COLUMNS] [-o OUTPUT] {list,fail} ...
+```
+
+
+### -h, --help
+show this help message and exit
+
+
+### -u &lt;url&gt;, --url &lt;url&gt;
+ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+
+
+### -c &lt;columns&gt;, --columns &lt;columns&gt;
+table columns to display (format: 0,1,2,…,N)
+
+
+### -o &lt;output&gt;, --output &lt;output&gt;
+output formats: json, table (default)
+
+## ecctool repair-sessions list
+
+List incremental repair sessions across all managed nodes. Prints a table with Node, Session Id, State, Coordinator, Last Update (rendered as an age), Participants and Tables.
+
+```console
+usage: ecctool repair-sessions list [-h] [-n NODE] [-u URL] [-c COLUMNS] [-o OUTPUT]
+```
+
+
+### -h, --help
+show this help message and exit
+
+
+### -n &lt;node&gt;, --node &lt;node&gt;
+only list sessions reported by this managed node
+
+
+### -u &lt;url&gt;, --url &lt;url&gt;
+ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+
+
+### -o &lt;output&gt;, --output &lt;output&gt;
+output formats: json, table (default)
+
+## ecctool repair-sessions fail
+
+Fail (cancel) an incremental repair session. By default the session is cancelled on its coordinator (force=false); with `--force` it is force-failed on every managed node that reports it. Prompts for confirmation unless `--yes` is given.
+
+```console
+usage: ecctool repair-sessions fail [-h] -s SESSION [-f] [-n NODE] [-y] [-u URL] [-o OUTPUT]
+```
+
+
+### -h, --help
+show this help message and exit
+
+
+### -s &lt;session&gt;, --session &lt;session&gt;
+repair session id
+
+
+### -f, --force
+force-fail the session on all managed nodes that report it, not only the coordinator
+
+
+### -n &lt;node&gt;, --node &lt;node&gt;
+restrict the operation to a single managed node
+
+
+### -y, --yes
+skip the confirmation prompt
+
+
+### -u &lt;url&gt;, --url &lt;url&gt;
+ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+
+
+### -o &lt;output&gt;, --output &lt;output&gt;
+output formats: json, table (default)
+
 ## ecctool repairs
 
 Show the status of all manual repairs.
