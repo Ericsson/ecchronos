@@ -510,9 +510,7 @@ def add_repair_sessions_subcommand(sub_parsers):
     add_common_arg(parser_list, ARG_COLUMNS)
     add_common_arg(parser_list, ARG_OUTPUT_JSON_TABLE)
 
-    parser_fail = repair_sessions_subparsers.add_parser(
-        "fail", help="fail (cancel) an incremental repair session"
-    )
+    parser_fail = repair_sessions_subparsers.add_parser("fail", help="fail (cancel) an incremental repair session")
     add_common_arg(parser_fail, ARG_SESSION_ID, required=True)
     add_common_arg(parser_fail, ARG_FORCE)
     add_common_arg(parser_fail, ARG_NODE_ID)

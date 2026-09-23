@@ -437,7 +437,8 @@ class RepairSessionsRequest(RestRequest):
 
     def fail_session(self, session_id, force=False, node_id=None):
         request_url = "{0}/{1}/fail?force={2}".format(
-            RepairSessionsRequest.ROOT, quote(str(session_id)), str(force).lower())
+            RepairSessionsRequest.ROOT, quote(str(session_id)), str(force).lower()
+        )
         if node_id:
             request_url = "{0}&nodeID={1}".format(request_url, node_id)
 
