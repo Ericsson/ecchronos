@@ -144,6 +144,24 @@ ARG_SINCE = {
 }
 ARG_START_HOUR = {"flags": ["-sh", "--start-hour"], "type": int, "help": "start hour"}
 ARG_START_MINUTE = {"flags": ["-sm", "--start-minute"], "type": int, "help": "start minute"}
+ARG_SESSION_ID = {
+    "flags": ["-s", "--session"],
+    "type": str,
+    "help": "repair session id",
+    "required": True,
+}
+ARG_FORCE = {
+    "flags": ["-f", "--force"],
+    "action": "store_true",
+    "help": "force-fail the session on all managed nodes that report it, not only the coordinator",
+    "required": False,
+}
+ARG_YES = {
+    "flags": ["-y", "--yes"],
+    "action": "store_true",
+    "help": "skip the confirmation prompt",
+    "required": False,
+}
 ARG_TABLE = {"flags": ["-t", "--table"], "type": str, "help": "table"}
 ARG_URL = {
     "flags": ["-u", "--url"],
@@ -163,6 +181,7 @@ def get_parser():
     add_config_subcommand(sub_parsers)
     add_rejections_subcommand(sub_parsers)
     add_repair_info_subcommand(sub_parsers)
+    add_repair_sessions_subcommand(sub_parsers)
     add_repairs_subcommand(sub_parsers)
     add_run_repair_subcommand(sub_parsers)
     add_running_job_subcommand(sub_parsers)
@@ -471,6 +490,35 @@ def add_rejections_update_action(rejections_subparsers):
     add_common_arg(parser_update, ARG_URL)
 
 
+def add_repair_sessions_subcommand(sub_parsers):
+    parser_repair_sessions = sub_parsers.add_parser(
+        "repair-sessions",
+        description="List and fail incremental repair sessions. "
+        "Use 'ecctool repair-sessions <action> --help' for action information.",
+    )
+    add_common_arg(parser_repair_sessions, ARG_URL)
+    add_common_arg(parser_repair_sessions, ARG_COLUMNS)
+    add_common_arg(parser_repair_sessions, ARG_OUTPUT_JSON_TABLE)
+
+    repair_sessions_subparsers = parser_repair_sessions.add_subparsers(dest="repair_sessions_action")
+
+    parser_list = repair_sessions_subparsers.add_parser(
+        "list", help="list incremental repair sessions across managed nodes"
+    )
+    add_common_arg(parser_list, ARG_NODE_ID)
+    add_common_arg(parser_list, ARG_URL)
+    add_common_arg(parser_list, ARG_COLUMNS)
+    add_common_arg(parser_list, ARG_OUTPUT_JSON_TABLE)
+
+    parser_fail = repair_sessions_subparsers.add_parser("fail", help="fail (cancel) an incremental repair session")
+    add_common_arg(parser_fail, ARG_SESSION_ID, required=True)
+    add_common_arg(parser_fail, ARG_FORCE)
+    add_common_arg(parser_fail, ARG_NODE_ID)
+    add_common_arg(parser_fail, ARG_YES)
+    add_common_arg(parser_fail, ARG_URL)
+    add_common_arg(parser_fail, ARG_OUTPUT_JSON_TABLE)
+
+
 def add_status_subcommand(sub_parsers):
     parser_status = sub_parsers.add_parser("status", description="View status of the ecChronos instance.")
     add_common_arg(parser_status, ARG_URL)
@@ -585,6 +633,43 @@ def rejections(arguments):
         _update_rejections(arguments)
     else:
         print("Specify a valid action (create, delete, get or update) for subcommand 'rejections'.")
+        sys.exit(1)
+
+
+def repair_sessions(arguments):
+    if arguments.repair_sessions_action == "list":
+        _list_repair_sessions(arguments)
+    elif arguments.repair_sessions_action == "fail":
+        _fail_repair_session(arguments)
+    else:
+        print("Specify a valid action (list or fail) for subcommand 'repair-sessions'.")
+        sys.exit(1)
+
+
+def _list_repair_sessions(arguments):
+    request = rest.RepairSessionsRequest(base_url=arguments.url)
+    result = request.list_sessions(node_id=arguments.node)
+    if result.is_successful():
+        table_printer.print_repair_sessions(result.data, columns=arguments.columns, output=arguments.output)
+    else:
+        print(result.format_exception())
+        sys.exit(1)
+
+
+def _fail_repair_session(arguments):
+    if not arguments.yes:
+        scope = "all managed nodes that report it" if arguments.force else "its coordinator"
+        answer = input("Fail repair session {0} on {1}? [y/N] ".format(arguments.session, scope))
+        if answer.strip().lower() not in ("y", "yes"):
+            print("Aborted.")
+            return
+
+    request = rest.RepairSessionsRequest(base_url=arguments.url)
+    result = request.fail_session(arguments.session, force=arguments.force, node_id=arguments.node)
+    if result.is_successful():
+        table_printer.print_repair_sessions(result.data, columns=arguments.columns, output=arguments.output)
+    else:
+        print(result.format_exception())
         sys.exit(1)
 
 
@@ -869,6 +954,9 @@ def run_subcommand(arguments):
     elif arguments.subcommand == "repair-info":
         status(arguments)
         repair_info(arguments)
+    elif arguments.subcommand == "repair-sessions":
+        status(arguments)
+        repair_sessions(arguments)
     elif arguments.subcommand == "repairs":
         status(arguments)
         repairs(arguments)

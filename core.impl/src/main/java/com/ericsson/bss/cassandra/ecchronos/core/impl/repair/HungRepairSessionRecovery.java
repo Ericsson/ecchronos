@@ -25,7 +25,6 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -57,17 +56,11 @@ public final class HungRepairSessionRecovery implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HungRepairSessionRecovery.class);
 
-    // Keys and value semantics come from Cassandra's org.apache.cassandra.repair.consistent.LocalSessionInfo:
-    //   SESSION_ID   = session.sessionID.toString()
-    //   STATE        = ConsistentSession.State enum name, e.g. "REPAIRING"
-    //   LAST_UPDATE  = absolute epoch SECONDS of the last session update (session.getLastUpdate(), nowInSeconds())
-    //   COORDINATOR  = InetAddressAndPort.toString() of the coordinator, e.g. "/127.0.0.1:7000" or "/[::1]:7000"
-    private static final String SESSION_KEY_ID = "SESSION_ID";
-    private static final String SESSION_KEY_STATE = "STATE";
-    private static final String SESSION_KEY_LAST_UPDATE = "LAST_UPDATE";
-    private static final String SESSION_KEY_COORDINATOR = "COORDINATOR";
+    // Session map keys and value semantics come from Cassandra's LocalSessionInfo; see RepairSessionInfo.
+    private static final String SESSION_KEY_ID = RepairSessionInfo.SESSION_ID;
+    private static final String SESSION_KEY_STATE = RepairSessionInfo.STATE;
+    private static final String SESSION_KEY_LAST_UPDATE = RepairSessionInfo.LAST_UPDATE;
     private static final String STATE_REPAIRING = "REPAIRING";
-    private static final long SINGLE_COLON = 1L;
     private static final long DEFAULT_SCAN_INTERVAL_MS = TimeUnit.MINUTES.toMillis(5);
     private static final long DEFAULT_STALL_THRESHOLD_MS = TimeUnit.MINUTES.toMillis(30);
     private static final int SHUTDOWN_TIMEOUT_SECONDS = 5;
@@ -309,7 +302,7 @@ public final class HungRepairSessionRecovery implements Closeable
                 continue;
             }
             boolean bypass = myBypassCoordinatorCheck;
-            boolean coordinator = isCoordinatedBy(session, coordinatorAddress);
+            boolean coordinator = RepairSessionInfo.isCoordinatedBy(session, coordinatorAddress);
             if (!bypass && !coordinator)
             {
                 continue;
@@ -351,78 +344,6 @@ public final class HungRepairSessionRecovery implements Closeable
                 LOG.error("Unable to fail repair session {} on node {}", sessionId, nodeID, e);
             }
         }
-    }
-
-    private boolean isCoordinatedBy(final Map<String, String> session, final InetAddress nodeAddress)
-    {
-        String host = extractHost(session.get(SESSION_KEY_COORDINATOR));
-        if (host == null)
-        {
-            return false;
-        }
-        try
-        {
-            // Compare parsed addresses so equivalent textual forms (e.g. IPv6 with/without brackets) match.
-            return InetAddress.getByName(host).equals(nodeAddress);
-        }
-        catch (UnknownHostException e)
-        {
-            LOG.debug("Unable to parse coordinator address '{}' for repair session {}",
-                    session.get(SESSION_KEY_COORDINATOR), session.get(SESSION_KEY_ID));
-            return false;
-        }
-    }
-
-    /**
-     * Extracts the host portion from Cassandra's {@code InetAddressAndPort.toString()}, which the JMX map exposes as
-     * the {@code COORDINATOR} value. Handles the leading slash and the optional {@code :port} suffix for both IPv4
-     * ({@code /127.0.0.1:7000}) and bracketed IPv6 ({@code /[::1]:7000}) forms, and strips any IPv6 scope id.
-     *
-     * @param coordinator the raw COORDINATOR value.
-     * @return the bare host string, or {@code null} if it cannot be determined.
-     */
-    private static String extractHost(final String coordinator)
-    {
-        if (coordinator == null)
-        {
-            return null;
-        }
-        String value = coordinator.trim();
-        if (value.startsWith("/"))
-        {
-            value = value.substring(1);
-        }
-        if (value.isEmpty())
-        {
-            return null;
-        }
-        String host;
-        if (value.startsWith("["))
-        {
-            // Bracketed IPv6: [addr]:port -> take what is inside the brackets.
-            int end = value.indexOf(']');
-            if (end < 0)
-            {
-                return null;
-            }
-            host = value.substring(1, end);
-        }
-        else if (value.chars().filter(c -> c == ':').count() == SINGLE_COLON)
-        {
-            // Exactly one colon: IPv4 host:port.
-            host = value.substring(0, value.indexOf(':'));
-        }
-        else
-        {
-            // No colon (bare IPv4) or many colons (bare/unbracketed IPv6): use as-is.
-            host = value;
-        }
-        int scope = host.indexOf('%');
-        if (scope >= 0)
-        {
-            host = host.substring(0, scope);
-        }
-        return host.isEmpty() ? null : host;
     }
 
     private boolean isHung(final Map<String, String> session)
