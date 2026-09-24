@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
 import java.net.InetSocketAddress;
+import java.time.Duration;
 
 import java.util.Map;
 import java.util.UUID;
@@ -26,6 +27,8 @@ import org.testcontainers.containers.CassandraContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.metadata.Node;
 
 public class AbstractCassandraContainerTest
@@ -56,9 +59,31 @@ public class AbstractCassandraContainerTest
         String containerIpAddress = node.getHost();
         Integer containerPort = node.getMappedPort(9042);
 
+        // The default driver request timeout (2s) is too tight for schema (DDL) and CAS
+        // (LOCAL_SERIAL/SERIAL) operations against a single-node container that may be slow
+        // or under load in CI. This causes DriverTimeoutException (PT2S), schema-agreement
+        // races ("Unknown CF"/"table does not exist") and, once the node is marked down,
+        // cascading "No connection was available" failures. Raise the relevant timeouts so
+        // tests fail on real logic issues rather than transient timing.
+        //
+        // Additionally, tighten the reconnection policy. With the default exponential backoff
+        // (base 1s, max 60s), a single-node container that is briefly marked down can stay
+        // "down" for the rest of the test run, causing every subsequent test to fail in its
+        // @Before with NodeUnavailableException. A short, bounded backoff lets a transient
+        // blip recover within the run instead of cascading.
+        DriverConfigLoader configLoader = DriverConfigLoader.programmaticBuilder()
+                .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(30))
+                .withDuration(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, Duration.ofSeconds(30))
+                .withDuration(DefaultDriverOption.CONTROL_CONNECTION_TIMEOUT, Duration.ofSeconds(30))
+                .withDuration(DefaultDriverOption.METADATA_SCHEMA_REQUEST_TIMEOUT, Duration.ofSeconds(30))
+                .withDuration(DefaultDriverOption.RECONNECTION_BASE_DELAY, Duration.ofSeconds(1))
+                .withDuration(DefaultDriverOption.RECONNECTION_MAX_DELAY, Duration.ofSeconds(5))
+                .build();
+
         mySession = CqlSession.builder()
                 .addContactPoint(new InetSocketAddress(containerIpAddress, containerPort))
                 .withLocalDatacenter("DC1")
+                .withConfigLoader(configLoader)
                 .build();
 
         Map<UUID, Node> nodesList = mySession.getMetadata().getNodes();
