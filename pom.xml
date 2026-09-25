@@ -985,6 +985,20 @@ limitations under the License.
                                 </goals>
                                 <configuration>
                                     <quiet>true</quiet>
+                                    <!--
+                                        Minimise the generated javadoc jar to keep the published
+                                        release under the Maven Central size limit. A valid
+                                        -javadoc.jar is still produced (required by Central), but the
+                                        large auxiliary artifacts (search index, class tree, help page,
+                                        navigation) are omitted.
+                                    -->
+                                    <doclint>none</doclint>
+                                    <nohelp>true</nohelp>
+                                    <noindex>true</noindex>
+                                    <notree>true</notree>
+                                    <nonavbar>true</nonavbar>
+                                    <splitindex>false</splitindex>
+                                    <failOnError>false</failOnError>
                                 </configuration>
                             </execution>
                         </executions>
