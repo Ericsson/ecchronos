@@ -16,11 +16,14 @@ package cassandracluster;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -104,10 +107,24 @@ public class AbstractCassandraCluster
 
     protected static CqlSessionBuilder defaultBuilder()
     {
+        // The default driver request timeout (2s) is too tight for schema (DDL) and CAS operations against
+        // this 4-node/2-DC container cluster, which can be slow or under load in CI, causing
+        // DriverTimeoutException (PT2S). Raise the relevant timeouts so tests fail on real issues rather than
+        // transient timing, mirroring the core.impl AbstractCassandraContainerTest configuration.
+        DriverConfigLoader configLoader = DriverConfigLoader.programmaticBuilder()
+                .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(30))
+                .withDuration(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, Duration.ofSeconds(30))
+                .withDuration(DefaultDriverOption.CONTROL_CONNECTION_TIMEOUT, Duration.ofSeconds(30))
+                .withDuration(DefaultDriverOption.METADATA_SCHEMA_REQUEST_TIMEOUT, Duration.ofSeconds(30))
+                .withDuration(DefaultDriverOption.RECONNECTION_BASE_DELAY, Duration.ofSeconds(1))
+                .withDuration(DefaultDriverOption.RECONNECTION_MAX_DELAY, Duration.ofSeconds(5))
+                .build();
+
         return CqlSession.builder()
                 .addContactPoint(new InetSocketAddress(containerIP, 9042))
                 .withLocalDatacenter("datacenter1")
-                .withAuthCredentials("cassandra", "cassandra");
+                .withAuthCredentials("cassandra", "cassandra")
+                .withConfigLoader(configLoader);
     }
 
     @AfterClass
