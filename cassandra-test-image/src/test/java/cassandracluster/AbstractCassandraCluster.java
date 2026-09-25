@@ -16,11 +16,14 @@ package cassandracluster;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -92,6 +95,7 @@ public class AbstractCassandraCluster
         waitForNodesToBeUp(CASSANDRA_SEED_NODE_NAME,4,DEFAULT_WAIT_TIME_IN_MS);
         modifySystemAuthKeyspace();
         runFullRepair();
+        waitForAuthReady();
         setupDb();
         verifyKeyspaceExists();
     }
@@ -103,10 +107,24 @@ public class AbstractCassandraCluster
 
     protected static CqlSessionBuilder defaultBuilder()
     {
+        // The default driver request timeout (2s) is too tight for schema (DDL) and CAS operations against
+        // this 4-node/2-DC container cluster, which can be slow or under load in CI, causing
+        // DriverTimeoutException (PT2S). Raise the relevant timeouts so tests fail on real issues rather than
+        // transient timing, mirroring the core.impl AbstractCassandraContainerTest configuration.
+        DriverConfigLoader configLoader = DriverConfigLoader.programmaticBuilder()
+                .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(30))
+                .withDuration(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, Duration.ofSeconds(30))
+                .withDuration(DefaultDriverOption.CONTROL_CONNECTION_TIMEOUT, Duration.ofSeconds(30))
+                .withDuration(DefaultDriverOption.METADATA_SCHEMA_REQUEST_TIMEOUT, Duration.ofSeconds(30))
+                .withDuration(DefaultDriverOption.RECONNECTION_BASE_DELAY, Duration.ofSeconds(1))
+                .withDuration(DefaultDriverOption.RECONNECTION_MAX_DELAY, Duration.ofSeconds(5))
+                .build();
+
         return CqlSession.builder()
                 .addContactPoint(new InetSocketAddress(containerIP, 9042))
                 .withLocalDatacenter("datacenter1")
-                .withAuthCredentials("cassandra", "cassandra");
+                .withAuthCredentials("cassandra", "cassandra")
+                .withConfigLoader(configLoader);
     }
 
     @AfterClass
@@ -173,6 +191,33 @@ public class AbstractCassandraCluster
     {
         composeContainer.getContainerByServiceName(CASSANDRA_SEED_NODE_NAME).get()
                 .execInContainer("nodetool", "-u", "cassandra", "-pw", "cassandra", "repair", "--full");
+    }
+
+    /**
+     * Wait until the 'cassandra' superuser can actually authenticate.
+     *
+     * After raising the system_auth replication factor, the default superuser is read at QUORUM and its
+     * credentials may not yet be present on the newly required replicas, causing transient
+     * "Provided username cassandra and/or password are incorrect" failures when the tests build their
+     * CqlSession. Poll an authenticated query until it succeeds so that setup_db.sh and the test sessions
+     * do not run against a cluster that cannot yet authenticate.
+     */
+    private static void waitForAuthReady() throws IOException, InterruptedException
+    {
+        for (int i = 1; i < 30; i++)
+        {
+            int exitCode = composeContainer.getContainerByServiceName(CASSANDRA_SEED_NODE_NAME).get()
+                    .execInContainer("cqlsh", "-u", "cassandra", "-p", "cassandra",
+                            "-e", "SELECT now() FROM system.local;").getExitCode();
+            if (exitCode == 0)
+            {
+                LOG.info("Authentication ready on attempt " + i);
+                return;
+            }
+            Thread.sleep(2000);
+        }
+        LOG.warn("Authentication as user 'cassandra' was not confirmed ready; proceeding anyway. "
+                + "The system_auth replication change may not have fully propagated.");
     }
 
     private static void verifyKeyspaceExists() throws IOException, InterruptedException

@@ -71,6 +71,7 @@ class CassandraCluster:
         self._wait_for_nodes_to_be_up(4, DEFAULT_WAIT_TIME_IN_SECS * 1000)
         self._modify_system_auth_keyspace()
         self._run_full_repair()
+        self._wait_for_auth_ready()
         self._setup_db()
         self._set_network()
 
@@ -300,13 +301,20 @@ class CassandraCluster:
     def _modify_system_auth_keyspace(self):
         logger.info("Changing system_auth replication strategy")
         command = ["docker", "exec", self.container_id, "cqlsh", "-e", f"{ALTER_SYSTEM_AUTH_CQL}"]
-        subprocess.run(
+        result = subprocess.run(
             command,
             timeout=DEFAULT_WAIT_TIME_IN_SECS * 3,
             encoding="utf-8",
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
+        if result.returncode != 0:
+            logger.warning(
+                "Altering system_auth replication exited with return code %s. stdout: %s. stderr: %s",
+                result.returncode,
+                result.stdout.strip(),
+                result.stderr.strip(),
+            )
 
     def _run_full_repair(self):
         logger.info("Running Full Repair")
@@ -317,7 +325,7 @@ class CassandraCluster:
                 self.container_id,
                 "bash",
                 "-c",
-                "nodetool -ssl -u cassandra -pw cassandra repair --full",
+                "nodetool --ssl -u cassandra -pw cassandra repair --full",
             ]
         else:
             command = [
@@ -329,12 +337,83 @@ class CassandraCluster:
                 "nodetool -u cassandra -pw cassandra repair --full",
             ]
 
-        subprocess.run(
+        result = subprocess.run(
             command,
             timeout=DEFAULT_WAIT_TIME_IN_SECS * 3,
             encoding="utf-8",
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+        )
+        if result.returncode != 0:
+            logger.warning(
+                "Full repair exited with return code %s. stdout: %s. stderr: %s",
+                result.returncode,
+                result.stdout.strip(),
+                result.stderr.strip(),
+            )
+
+    def _wait_for_auth_ready(self):
+        """Wait until the 'cassandra' superuser can actually authenticate.
+
+        After raising the system_auth replication factor, the default superuser is
+        read at QUORUM and its credentials may not yet be present on the newly
+        required replicas, causing transient "Bad credentials" failures. Poll a
+        trivial authenticated query until it succeeds so that setup_db.sh does not
+        run against a cluster that cannot yet authenticate (which otherwise surfaces
+        as a misleading "keyspace not found" timeout).
+
+        Note: unlike the system_auth ALTER and full repair (which only log a warning
+        on failure, since a single hiccup is often self-correcting), this method
+        raises if authentication never succeeds. Proceeding without a working login
+        cannot succeed and only produces the confusing downstream timeout, so failing
+        fast here with an accurate message is intentional.
+        """
+        max_attempts = 20
+        last_returncode = None
+        last_stderr = ""
+
+        for attempt in range(max_attempts):
+            try:
+                command = [
+                    "docker",
+                    "exec",
+                    self.container_id,
+                    "cqlsh",
+                    "-u",
+                    "cassandra",
+                    "-p",
+                    "cassandra",
+                    "-e",
+                    "SELECT now() FROM system.local;",
+                ]
+                result = subprocess.run(
+                    command, timeout=10, encoding="utf-8", stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                )
+
+                last_returncode = result.returncode
+                last_stderr = result.stderr.strip()
+
+                if result.returncode == 0:
+                    logger.info("Authentication ready on attempt %s", attempt + 1)
+                    return
+
+                logger.warning(
+                    "Attempt %s to verify authentication failed with return code %s. stderr: %s",
+                    attempt + 1,
+                    result.returncode,
+                    last_stderr,
+                )
+            except Exception as e:
+                last_stderr = str(e)
+                logger.warning("Attempt %s to verify authentication failed: %s", attempt + 1, e)
+
+            sleep(3)
+
+        raise TimeoutError(
+            f"Authentication as user 'cassandra' not available after {max_attempts} attempts. "
+            f"Last return code: {last_returncode}. Last stderr: {last_stderr}. "
+            "The system_auth replication change may not have propagated (repair did not "
+            "reconcile the superuser credentials) before the integration test continued."
         )
 
     def stop_cluster(self):
