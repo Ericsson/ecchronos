@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.standalone;
 
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.auth.AuthProvider;
 import com.datastax.oss.driver.api.core.auth.ProgrammaticPlainTextAuthProvider;
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -238,7 +239,34 @@ abstract public class TestBase
 
     private static CqlSession createDefaultSession()
     {
-       return defaultBuilder().build();
+        // The shared cluster raises the system_auth replication factor during setup; the default
+        // 'cassandra' superuser is read at QUORUM and its credentials may momentarily not be present
+        // on the newly required replicas, yielding a transient AuthenticationException here. Retry a
+        // bounded number of times so a brief propagation delay does not fail the whole test class.
+        AllNodesFailedException lastError = null;
+        for (int attempt = 1; attempt <= 15; attempt++)
+        {
+            try
+            {
+                return defaultBuilder().build();
+            }
+            catch (AllNodesFailedException e)
+            {
+                lastError = e;
+                LOG.warn("Attempt {} to build default session failed (likely transient auth propagation): {}",
+                        attempt, e.getMessage());
+                try
+                {
+                    Thread.sleep(2000);
+                }
+                catch (InterruptedException ie)
+                {
+                    Thread.currentThread().interrupt();
+                    throw e;
+                }
+            }
+        }
+        throw lastError;
     }
 
     private static CqlSessionBuilder defaultBuilder()

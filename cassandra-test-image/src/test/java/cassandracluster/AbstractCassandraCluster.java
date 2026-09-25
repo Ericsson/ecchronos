@@ -92,6 +92,7 @@ public class AbstractCassandraCluster
         waitForNodesToBeUp(CASSANDRA_SEED_NODE_NAME,4,DEFAULT_WAIT_TIME_IN_MS);
         modifySystemAuthKeyspace();
         runFullRepair();
+        waitForAuthReady();
         setupDb();
         verifyKeyspaceExists();
     }
@@ -173,6 +174,33 @@ public class AbstractCassandraCluster
     {
         composeContainer.getContainerByServiceName(CASSANDRA_SEED_NODE_NAME).get()
                 .execInContainer("nodetool", "-u", "cassandra", "-pw", "cassandra", "repair", "--full");
+    }
+
+    /**
+     * Wait until the 'cassandra' superuser can actually authenticate.
+     *
+     * After raising the system_auth replication factor, the default superuser is read at QUORUM and its
+     * credentials may not yet be present on the newly required replicas, causing transient
+     * "Provided username cassandra and/or password are incorrect" failures when the tests build their
+     * CqlSession. Poll an authenticated query until it succeeds so that setup_db.sh and the test sessions
+     * do not run against a cluster that cannot yet authenticate.
+     */
+    private static void waitForAuthReady() throws IOException, InterruptedException
+    {
+        for (int i = 1; i < 30; i++)
+        {
+            int exitCode = composeContainer.getContainerByServiceName(CASSANDRA_SEED_NODE_NAME).get()
+                    .execInContainer("cqlsh", "-u", "cassandra", "-p", "cassandra",
+                            "-e", "SELECT now() FROM system.local;").getExitCode();
+            if (exitCode == 0)
+            {
+                LOG.info("Authentication ready on attempt " + i);
+                return;
+            }
+            Thread.sleep(2000);
+        }
+        LOG.warn("Authentication as user 'cassandra' was not confirmed ready; proceeding anyway. "
+                + "The system_auth replication change may not have fully propagated.");
     }
 
     private static void verifyKeyspaceExists() throws IOException, InterruptedException
