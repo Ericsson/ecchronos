@@ -2,6 +2,8 @@
 
 ## Version 1.1.2
 
+* Skip refreshing repair state for scheduled jobs that cannot run this pass (in backoff), reducing scheduler CPU usage - Issue #1851
+
 ## Version 1.1.1
 
 * Fix schedules/repairs REST endpoints hanging indefinitely when a JMX metric fetch stalls - Issue #1839

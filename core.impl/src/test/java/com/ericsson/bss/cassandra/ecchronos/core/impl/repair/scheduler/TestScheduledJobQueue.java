@@ -138,6 +138,81 @@ public class TestScheduledJobQueue
         assertThat(queue.iterator()).toIterable().containsExactly(job2);
     }
 
+    @Test
+    public void testRefreshPredicateSkipsExcludedJobs()
+    {
+        RefreshCountingJob refreshed = new RefreshCountingJob(ScheduledJob.Priority.LOW);
+        RefreshCountingJob skipped = new RefreshCountingJob(ScheduledJob.Priority.HIGH);
+
+        queue.add(refreshed);
+        queue.add(skipped);
+
+        // Only refresh 'refreshed'; 'skipped' must not have refreshState() invoked.
+        Iterator<ScheduledJob> iterator = queue.iterator(job -> job == refreshed);
+        // drain
+        while (iterator.hasNext())
+        {
+            iterator.next();
+        }
+
+        assertThat(refreshed.refreshCount).isEqualTo(1);
+        assertThat(skipped.refreshCount).isEqualTo(0);
+    }
+
+    @Test
+    public void testRefreshPredicateAllRefreshesEveryJob()
+    {
+        RefreshCountingJob job1 = new RefreshCountingJob(ScheduledJob.Priority.LOW);
+        RefreshCountingJob job2 = new RefreshCountingJob(ScheduledJob.Priority.HIGH);
+
+        queue.add(job1);
+        queue.add(job2);
+
+        Iterator<ScheduledJob> iterator = queue.iterator(job -> true);
+        while (iterator.hasNext())
+        {
+            iterator.next();
+        }
+
+        assertThat(job1.refreshCount).isEqualTo(1);
+        assertThat(job2.refreshCount).isEqualTo(1);
+    }
+
+    @Test
+    public void testNoArgIteratorRefreshesEveryJob()
+    {
+        RefreshCountingJob job1 = new RefreshCountingJob(ScheduledJob.Priority.LOW);
+        RefreshCountingJob job2 = new RefreshCountingJob(ScheduledJob.Priority.HIGH);
+
+        queue.add(job1);
+        queue.add(job2);
+
+        Iterator<ScheduledJob> iterator = queue.iterator();
+        while (iterator.hasNext())
+        {
+            iterator.next();
+        }
+
+        assertThat(job1.refreshCount).isEqualTo(1);
+        assertThat(job2.refreshCount).isEqualTo(1);
+    }
+
+    @Test
+    public void testSkippedJobIsStillSelectableUsingItsExistingState()
+    {
+        // A job excluded from refresh is not removed from the queue; it is still returned by the iterator.
+        RefreshCountingJob refreshed = new RefreshCountingJob(ScheduledJob.Priority.HIGH);
+        RefreshCountingJob skipped = new RefreshCountingJob(ScheduledJob.Priority.LOW);
+
+        queue.add(refreshed);
+        queue.add(skipped);
+
+        Iterator<ScheduledJob> iterator = queue.iterator(job -> job == refreshed);
+
+        assertThat(iterator).toIterable().containsExactly(refreshed, skipped);
+        assertThat(skipped.refreshCount).isEqualTo(0);
+    }
+
     private class Comp implements Comparator<ScheduledJob>
     {
 
@@ -189,6 +264,28 @@ public class TestScheduledJobQueue
         public State getState()
         {
             return state;
+        }
+    }
+
+    private class RefreshCountingJob extends DummyJob
+    {
+        private int refreshCount = 0;
+
+        RefreshCountingJob(Priority priority)
+        {
+            super(priority, nodeId);
+        }
+
+        @Override
+        public void refreshState()
+        {
+            refreshCount++;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "RefreshCountingJob " + getPriority();
         }
     }
 }

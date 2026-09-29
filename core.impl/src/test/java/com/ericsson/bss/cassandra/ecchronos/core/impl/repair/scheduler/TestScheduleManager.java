@@ -119,6 +119,31 @@ public class TestScheduleManager
     }
 
     @Test
+    public void testEligibleJobIsRefreshedOnPass()
+    {
+        RefreshCountingJob job = new RefreshCountingJob(ScheduledJob.Priority.LOW, nodeID1);
+        myScheduler.schedule(nodeID1, job);
+
+        myScheduler.run(nodeID1);
+
+        assertThat(job.refreshCount).isGreaterThanOrEqualTo(1);
+    }
+
+    @Test
+    public void testJobInBackoffIsNotRefreshedOnPass()
+    {
+        RefreshCountingJob job = new RefreshCountingJob(ScheduledJob.Priority.LOW, nodeID1);
+        // Put the job into a long run-backoff window; it cannot run this pass, so it must not be refreshed.
+        job.setRunnableIn(TimeUnit.HOURS.toMillis(1));
+        myScheduler.schedule(nodeID1, job);
+
+        myScheduler.run(nodeID1);
+
+        assertThat(job.refreshCount).isEqualTo(0);
+        assertThat(job.hasRun()).isFalse();
+    }
+
+    @Test
     public void testSuccessfulJobIsNotRunAgainBeforeRunInterval() throws LockException
     {
         TestJob job = new TestJob(ScheduledJob.Priority.LOW, 1, nodeID1, "dc1", "resource1");
@@ -320,6 +345,22 @@ public class TestScheduleManager
         while(!job.hasRun())
         {
             Thread.sleep(10);
+        }
+    }
+
+    private class RefreshCountingJob extends DummyJob
+    {
+        private volatile int refreshCount = 0;
+
+        RefreshCountingJob(Priority priority, UUID nodeID)
+        {
+            super(priority, nodeID);
+        }
+
+        @Override
+        public void refreshState()
+        {
+            refreshCount++;
         }
     }
 

@@ -143,6 +143,22 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     }
 
     /**
+     * Whether the job is currently in a run backoff window (for example after a failed run or an explicit
+     * {@link #setRunnableIn(long)}).
+     * <p>
+     * This is derived purely from timing state and, unlike {@link #runnable()} / {@link #getState()} in some
+     * subclasses, does <strong>not</strong> depend on any externally refreshed repair state. It is therefore safe
+     * to consult before {@link #refreshState()} to decide whether a (potentially expensive) refresh can be skipped
+     * for this pass: a job in backoff cannot run this pass regardless of its repair state.
+     *
+     * @return true if the job is within a backoff window and cannot run yet.
+     */
+    public final boolean isInBackoff()
+    {
+        return myNextRunTimeInMs > System.currentTimeMillis();
+    }
+
+    /**
      * Get current State of the job.
      *
      * @return current State
