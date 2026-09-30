@@ -23,6 +23,7 @@ import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.AbstractIterator;
@@ -128,11 +129,30 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
     @Override
     public final Iterator<ScheduledJob> iterator()
     {
+        return iterator(job -> true);
+    }
+
+    /**
+     * Returns an iterator over the runnable jobs, refreshing only the jobs for which {@code shouldRefresh} returns
+     * {@code true} before selection.
+     * <p>
+     * {@link ScheduledJob#refreshState()} can be expensive (for VNODE repair it recomputes O(nodes × tables ×
+     * ranges) repair state and performs I/O). Refreshing every job on every scheduler pass burns CPU on jobs that
+     * cannot possibly run this pass. Callers should pass a predicate that excludes such jobs (for example those in
+     * a backoff window or already failed) using only signals that do not themselves depend on the refreshed state,
+     * so that plausibly-eligible jobs are still refreshed and not starved.
+     *
+     * @param shouldRefresh predicate deciding whether a given job should have its state refreshed this pass.
+     * @return an iterator over the currently runnable jobs.
+     */
+    public final Iterator<ScheduledJob> iterator(final Predicate<ScheduledJob> shouldRefresh)
+    {
         List<ScheduledJob> jobsToRefresh;
         synchronized (this)
         {
             jobsToRefresh = myJobQueues.values().stream()
                     .flatMap(Collection::stream)
+                    .filter(shouldRefresh)
                     .collect(Collectors.toList());
         }
 

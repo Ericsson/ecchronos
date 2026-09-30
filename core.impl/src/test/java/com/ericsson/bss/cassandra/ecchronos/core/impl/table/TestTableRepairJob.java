@@ -16,6 +16,8 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.table;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.impl.table.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
@@ -138,5 +140,34 @@ public class TestTableRepairJob
         job.setRunnableIn(TimeUnit.HOURS.toMillis(1));
 
         assertThat(job.getView().getStatus()).isEqualTo(ScheduledRepairJobView.Status.LATE);
+    }
+
+    @Test
+    public void testRefreshStateIsThrottledWithinInterval()
+    {
+        TableRepairJob job = buildJob();
+
+        // The refresh interval is derived from the repair interval and clamped well above the scheduler run delay,
+        // so repeated refreshes within the same window trigger only a single repair-state update.
+        job.refreshState();
+        job.refreshState();
+        job.refreshState();
+
+        verify(myRepairState, times(1)).update();
+    }
+
+    @Test
+    public void testRefreshStateRunsAgainAfterPostExecute()
+    {
+        TableRepairJob job = buildJob();
+
+        job.refreshState();
+        verify(myRepairState, times(1)).update();
+
+        // postExecute resets the throttle so the next pass refreshes even within the interval window.
+        job.postExecute(true, null);
+        job.refreshState();
+
+        verify(myRepairState, times(2)).update();
     }
 }

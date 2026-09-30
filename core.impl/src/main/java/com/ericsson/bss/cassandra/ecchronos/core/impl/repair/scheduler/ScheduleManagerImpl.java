@@ -26,6 +26,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -423,9 +424,11 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             boolean hadWork = false;
 
             List<ScheduledJob> candidates = new ArrayList<>();
-            for (ScheduledJob next : myQueue.get(nodeID))
+            ScheduledJobQueue queue = myQueue.get(nodeID);
+            Iterator<ScheduledJob> jobIterator = queue.iterator(this::shouldRefreshJob);
+            while (jobIterator.hasNext())
             {
-                candidates.add(next);
+                candidates.add(jobIterator.next());
             }
 
             for (ScheduledJob next : candidates)
@@ -525,6 +528,30 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 return true;
             }
             return !validate(job);
+        }
+
+        /**
+         * Decides whether a job's (potentially expensive) state should be refreshed this pass.
+         * <p>
+         * Refreshing recomputes repair state and performs I/O, so jobs that cannot run this pass regardless of
+         * their repair state are skipped. Only signals that do <strong>not</strong> depend on the refreshed repair
+         * state are used here, so a job that could become runnable only after a refresh is never wrongly skipped:
+         * <ul>
+         *   <li>jobs within the scheduler's contention backoff window,</li>
+         *   <li>jobs within their own run backoff window (for example after a failed run).</li>
+         * </ul>
+         *
+         * @param job the job to consider.
+         * @return true if the job should be refreshed this pass.
+         */
+        private boolean shouldRefreshJob(final ScheduledJob job)
+        {
+            Long backoffUntil = myContentionBackoff.get(job);
+            if (backoffUntil != null && System.currentTimeMillis() < backoffUntil)
+            {
+                return false;
+            }
+            return !job.isInBackoff();
         }
 
         private int executeJobTasks(

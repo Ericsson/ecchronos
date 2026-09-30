@@ -57,13 +57,20 @@ public class TableRepairJob extends ScheduledRepairJob
 {
     private static final Logger LOG = LoggerFactory.getLogger(TableRepairJob.class);
     private static final int DAYS_IN_A_WEEK = 7;
-    private static final long MIN_REFRESH_INTERVAL_MS = TimeUnit.SECONDS.toMillis(30);
+    // The minimum time between repair-state refreshes. This is intentionally decoupled from — and larger than — the
+    // scheduler run delay (ScheduleManagerImpl.DEFAULT_RUN_DELAY_IN_MS = 30s): if it equalled the run delay, nearly
+    // every scheduler pass would trigger a full O(nodes x tables x ranges) refresh (see #1851). It is derived from
+    // the configured repair interval and clamped to keep it well above the run delay while bounding staleness.
+    private static final long MIN_REFRESH_INTERVAL_MS = TimeUnit.MINUTES.toMillis(5);
+    private static final long MAX_REFRESH_INTERVAL_MS = TimeUnit.HOURS.toMillis(1);
+    private static final long REFRESH_INTERVAL_DIVISOR = 100;
     private final Node myNode;
     private final RepairState myRepairState;
     private final TableStorageStates myTableStorageStates;
     private final RepairHistoryService myRepairHistory;
     private final TimeBasedRunPolicy myTimeBasedRunPolicy;
     private volatile long myLastRefreshTime;
+    private final long myRefreshIntervalMs;
 
     TableRepairJob(final Builder builder)
     {
@@ -80,6 +87,22 @@ public class TableRepairJob extends ScheduledRepairJob
                 "Repair history must be set");
         myTimeBasedRunPolicy = Preconditions.checkNotNull(builder.myTimeBasedRunPolicy,
             "TimeBasedRunPolicy must be set");
+        myRefreshIntervalMs = calculateRefreshInterval(myRunIntervalInMs);
+    }
+
+    /**
+     * Derive the repair-state refresh throttle from the configured repair interval, clamped between
+     * {@link #MIN_REFRESH_INTERVAL_MS} and {@link #MAX_REFRESH_INTERVAL_MS}. This keeps the refresh cadence
+     * decoupled from — and larger than — the scheduler run delay so that ineligible/near-idle jobs are not
+     * refreshed on every pass (see #1851), while bounding how stale the repair state can become.
+     *
+     * @param runIntervalInMs the configured repair interval in milliseconds.
+     * @return the refresh throttle interval in milliseconds.
+     */
+    private static long calculateRefreshInterval(final long runIntervalInMs)
+    {
+        long derived = runIntervalInMs / REFRESH_INTERVAL_DIVISOR;
+        return Math.min(MAX_REFRESH_INTERVAL_MS, Math.max(MIN_REFRESH_INTERVAL_MS, derived));
     }
 
     /**
@@ -210,14 +233,15 @@ public class TableRepairJob extends ScheduledRepairJob
 
     /**
      * Refresh the repair state.
-     * Throttled to at most once per {@link #MIN_REFRESH_INTERVAL_MS} to prevent
-     * snapshot accumulation under adaptive 1-second rescheduling.
+     * Throttled to at most once per refresh interval (derived from the repair interval and decoupled from the
+     * scheduler run delay, see {@link #calculateRefreshInterval(long)}) to avoid recomputing repair state on every
+     * scheduler pass and to prevent snapshot accumulation under adaptive rescheduling.
      */
     @Override
     public void refreshState()
     {
         long now = System.currentTimeMillis();
-        if (now - myLastRefreshTime < MIN_REFRESH_INTERVAL_MS)
+        if (now - myLastRefreshTime < myRefreshIntervalMs)
         {
             return;
         }
