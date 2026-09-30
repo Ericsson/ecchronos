@@ -119,6 +119,67 @@ public class TestScheduleManager
     }
 
     @Test
+    public void testConcurrencyIsCappedBelowNodeCount() throws LockException
+    {
+        int maxConcurrency = 2;
+        List<UUID> manyNodes = new ArrayList<>();
+        Map<UUID, Node> nodeMap = new HashMap<>();
+        for (int i = 0; i < 10; i++)
+        {
+            UUID id = UUID.randomUUID();
+            manyNodes.add(id);
+            nodeMap.put(id, node1);
+        }
+        when(myNativeConnectionProvider.getNodes()).thenReturn(nodeMap);
+
+        ScheduleManagerImpl scheduler = ScheduleManagerImpl.builder()
+                .withNodeIDList(manyNodes)
+                .withNativeConnectionProvider(myNativeConnectionProvider)
+                .withLockFactory(myLockFactory)
+                .withMaxConcurrency(maxConcurrency)
+                .build();
+        try
+        {
+            scheduler.createScheduleFutureForNodeIDList(manyNodes);
+            assertThat(scheduler.getExecutorCorePoolSize()).isEqualTo(maxConcurrency);
+        }
+        finally
+        {
+            scheduler.close();
+        }
+    }
+
+    @Test
+    public void testUnboundedConcurrencyUsesOneThreadPerNode() throws LockException
+    {
+        List<UUID> manyNodes = new ArrayList<>();
+        Map<UUID, Node> nodeMap = new HashMap<>();
+        for (int i = 0; i < 5; i++)
+        {
+            UUID id = UUID.randomUUID();
+            manyNodes.add(id);
+            nodeMap.put(id, node1);
+        }
+        when(myNativeConnectionProvider.getNodes()).thenReturn(nodeMap);
+
+        // No cap configured: current behaviour (one thread per node) is preserved.
+        ScheduleManagerImpl scheduler = ScheduleManagerImpl.builder()
+                .withNodeIDList(manyNodes)
+                .withNativeConnectionProvider(myNativeConnectionProvider)
+                .withLockFactory(myLockFactory)
+                .build();
+        try
+        {
+            scheduler.createScheduleFutureForNodeIDList(manyNodes);
+            assertThat(scheduler.getExecutorCorePoolSize()).isEqualTo(manyNodes.size());
+        }
+        finally
+        {
+            scheduler.close();
+        }
+    }
+
+    @Test
     public void testEligibleJobIsRefreshedOnPass()
     {
         RefreshCountingJob job = new RefreshCountingJob(ScheduledJob.Priority.LOW, nodeID1);

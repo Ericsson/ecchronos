@@ -29,6 +29,7 @@ public class SchedulerConfig
     private Interval myFrequency = new Interval(THIRTY_SECONDS, TimeUnit.SECONDS);
     private Interval mySessionWindow = new Interval(DEFAULT_SESSION_WINDOW_SECONDS, TimeUnit.SECONDS);
     private Interval myCooldown = new Interval(DEFAULT_COOLDOWN_SECONDS, TimeUnit.SECONDS);
+    private int myMaxConcurrency = 0;
 
     /** Default constructor. */
     public SchedulerConfig()
@@ -97,5 +98,30 @@ public class SchedulerConfig
     public final void setCooldown(final Interval cooldown)
     {
         myCooldown = cooldown;
+    }
+
+    /**
+     * Returns the maximum number of concurrent CPU-bound scheduler threads. A value of {@code 0} (or negative)
+     * means no cap: the scheduler uses one thread per managed node. Setting a positive value bounds the concurrency
+     * regardless of node count, which is useful on CPU-constrained deployments (see #1850).
+     *
+     * @return the maximum concurrency, or {@code 0} for unbounded.
+     */
+    @JsonProperty("max_concurrency")
+    public final int getMaxConcurrency()
+    {
+        return myMaxConcurrency;
+    }
+
+    /**
+     * Sets the maximum number of concurrent CPU-bound scheduler threads. Use {@code 0} for no cap (one thread per
+     * managed node).
+     *
+     * @param maxConcurrency the maximum concurrency, or {@code 0} for unbounded.
+     */
+    @JsonProperty("max_concurrency")
+    public final void setMaxConcurrency(final int maxConcurrency)
+    {
+        myMaxConcurrency = maxConcurrency;
     }
 }
