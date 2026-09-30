@@ -2,7 +2,7 @@
 
 ## Version 1.1.2
 
-* Skip refreshing repair state for scheduled jobs that cannot run this pass (in backoff), reducing scheduler CPU usage - Issue #1851
+* Reduce scheduler CPU usage by skipping repair-state refresh for jobs that cannot run this pass and decoupling the refresh throttle from the scheduler run interval - Issue #1851
 
 ## Version 1.1.1
 
