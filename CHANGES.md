@@ -1,5 +1,7 @@
 # Changes
 
+## Version 1.1.2
+
 ## Version 1.1.1
 
 * Fix schedules/repairs REST endpoints hanging indefinitely when a JMX metric fetch stalls - Issue #1839
