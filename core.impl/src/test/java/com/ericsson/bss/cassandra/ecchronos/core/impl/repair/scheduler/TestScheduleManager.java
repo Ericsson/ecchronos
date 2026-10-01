@@ -150,6 +150,45 @@ public class TestScheduleManager
     }
 
     @Test
+    public void testRemovingNodeKeepsConcurrencyCapped() throws LockException
+    {
+        int maxConcurrency = 2;
+        List<UUID> manyNodes = new ArrayList<>();
+        Map<UUID, Node> nodeMap = new HashMap<>();
+
+        for (int i = 0; i < 5; i++)
+        {
+            UUID id = UUID.randomUUID();
+            manyNodes.add(id);
+            nodeMap.put(id, node1);
+        }
+
+        when(myNativeConnectionProvider.getNodes()).thenReturn(nodeMap);
+
+        ScheduleManagerImpl scheduler = ScheduleManagerImpl.builder()
+                .withNodeIDList(manyNodes)
+                .withNativeConnectionProvider(myNativeConnectionProvider)
+                .withLockFactory(myLockFactory)
+                .withMaxConcurrency(maxConcurrency)
+                .build();
+
+        try
+        {
+            scheduler.createScheduleFutureForNodeIDList(manyNodes);
+
+            assertThat(scheduler.getExecutorCorePoolSize()).isEqualTo(maxConcurrency);
+
+            scheduler.removeScheduleFutureForNode(manyNodes.get(0));
+
+            assertThat(scheduler.getExecutorCorePoolSize()).isEqualTo(maxConcurrency);
+        }
+        finally
+        {
+            scheduler.close();
+        }
+    }
+
+    @Test
     public void testSetMaxConcurrencyResizesPoolAtRuntime() throws LockException
     {
         List<UUID> manyNodes = new ArrayList<>();
