@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.locks;
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.DriverException;
+import com.datastax.oss.driver.api.core.DriverTimeoutException;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
@@ -24,6 +25,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockClientSaturationException;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.common.annotations.VisibleForTesting;
@@ -305,6 +307,15 @@ public final class CASLockFactory implements LockFactory, Closeable
             {
                 throw new LockException(String.format("Unable to lock resource %s in datacenter %s", resource, dataCenter));
             }
+        }
+        catch (DriverTimeoutException e)
+        {
+            // Client-side request timeout: the CQL request did not complete within the driver timeout. This points
+            // at ecChronos-side saturation (CPU/request budget), NOT at the Cassandra cluster being unavailable.
+            LOG.warn("Timed out acquiring lock for resource {}; ecChronos appears saturated (client-side request "
+                    + "timeout), the Cassandra cluster is not necessarily unavailable", resource, e);
+            throw new LockClientSaturationException(
+                    "Client timed out acquiring lock for resource " + resource, e);
         }
         catch (DriverException e)
         {

@@ -30,6 +30,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairResource;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockClientSaturationException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
@@ -104,6 +105,23 @@ public class TestRepairLockFactoryImpl
         verifyExceptionIsThrownWhenGettingLock(repairLockFactory, priority, metadata, repairResource);
         verify(mockLock, never()).close();
     }
+    @Test
+    public void testClientSaturationIsPreservedThroughSlotExhaustion() throws LockException
+    {
+        RepairResource repairResource = new RepairResource("DC1", "my-resource");
+        Map<String, String> metadata = Collections.singletonMap("metadatakey", "metadatavalue");
+        int priority = 1;
+
+        // Every slot times out client-side; the final exhaustion exception must preserve the saturation type so
+        // callers can distinguish ecChronos saturation from genuine resource exhaustion / cluster unavailability.
+        when(mockLockFactory.tryLock(eq("DC1"), anyString(), eq(priority), eq(metadata), any()))
+                .thenThrow(new LockClientSaturationException("client timeout"));
+
+        assertThatExceptionOfType(LockClientSaturationException.class).isThrownBy(() ->
+                repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(repairResource), metadata, priority,
+                        UUID.randomUUID()));
+    }
+
 
     @Test
     public void testSingleLockFailing() throws LockException

@@ -18,7 +18,6 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.CASLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.RepairLockFactoryImpl;
-import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
@@ -35,17 +34,16 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.management.RuntimeMBeanException;
 
 /**
  * ScheduleManager handles the run scheduler and update scheduler.
@@ -71,7 +69,6 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
     private final Map<UUID, ScheduledJobQueue> myQueue = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, ScheduledJob> currentExecutingJobs = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<ScheduledJob, Long> myContentionBackoff = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, AtomicInteger> myConsecutiveFailures = new ConcurrentHashMap<>();
     private final Set<RunPolicy> myRunPolicies = Sets.newConcurrentHashSet();
     private final Map<UUID, ScheduledFuture<?>> myRunFuture = new ConcurrentHashMap<>();
@@ -79,6 +76,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     private final CASLockFactory myLockFactory;
     private final RepairLockFactoryImpl myRepairLockFactory;
     private final DistributedNativeConnectionProvider myNativeConnectionProvider;
+    private final LockFailureBackoff myLockFailureBackoff;
 
     private final ScheduledThreadPoolExecutor myExecutor;
     private final long myRunIntervalInMs;
@@ -103,6 +101,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         myRunIntervalInMs = builder.myRunIntervalInMs;
         mySessionWindowInMs = builder.mySessionWindowInMs;
         myCooldownInMs = builder.myCooldownInMs;
+        myLockFailureBackoff = new LockFailureBackoff(myRunIntervalInMs, builder.myMeterRegistry);
     }
 
     /**
@@ -135,6 +134,19 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                     + "throttling. Consider lowering the managed-node count per instance or setting a concurrency "
                     + "cap.", corePoolSize, nodeCount, availableProcessors);
         }
+    }
+
+    /**
+     * Whether the given throwable represents a client-side saturation lock failure (a CQL/driver timeout) rather
+     * than cluster unavailability. Delegates to {@link LockFailureBackoff#isClientSaturation(Throwable)}.
+     *
+     * @param throwable the throwable to inspect.
+     * @return true if a client saturation exception is found anywhere in the cause chain.
+     */
+    @VisibleForTesting
+    static boolean isClientSaturation(final Throwable throwable)
+    {
+        return LockFailureBackoff.isClientSaturation(throwable);
     }
 
     /**
@@ -314,7 +326,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         {
             queue.remove(job);
         }
-        myContentionBackoff.remove(job);
+        myLockFailureBackoff.reset(job);
         myConsecutiveFailures.remove(job.getJobId());
     }
 
@@ -344,7 +356,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         myRunTasks.clear();
         myQueue.clear();
         currentExecutingJobs.clear();
-        myContentionBackoff.clear();
+        myLockFailureBackoff.clear();
         myConsecutiveFailures.clear();
         myRunPolicies.clear();
     }
@@ -395,6 +407,29 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     int getExecutorCorePoolSize()
     {
         return myExecutor.getCorePoolSize();
+    }
+
+    /**
+     * Made available for testing.
+     *
+     * @param job the job to check.
+     * @return true if the job is currently within a contention backoff window.
+     */
+    @VisibleForTesting
+    boolean isInContentionBackoff(final ScheduledJob job)
+    {
+        return myLockFailureBackoff.isInBackoff(job);
+    }
+
+    /**
+     * Made available for testing: clear the contention backoff window for a job so a subsequent pass retries it.
+     *
+     * @param job the job whose backoff to clear.
+     */
+    @VisibleForTesting
+    void clearContentionBackoffForTesting(final ScheduledJob job)
+    {
+        myLockFailureBackoff.clearBackoff(job);
     }
 
     private Long validateJob(final ScheduledJob job, final Node node)
@@ -506,15 +541,11 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
             for (ScheduledJob next : candidates)
             {
-                Long backoffUntil = myContentionBackoff.get(next);
-                if (backoffUntil != null)
+                if (myLockFailureBackoff.isInBackoff(next))
                 {
-                    if (System.currentTimeMillis() < backoffUntil)
-                    {
-                        continue;
-                    }
-                    myContentionBackoff.remove(next);
+                    continue;
                 }
+                myLockFailureBackoff.clearBackoff(next);
                 if (validate(next))
                 {
                     currentExecutingJobs.put(nodeID, next);
@@ -595,8 +626,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             {
                 return true;
             }
-            Long backoffUntil = myContentionBackoff.get(job);
-            if (backoffUntil != null && System.currentTimeMillis() < backoffUntil)
+            if (myLockFailureBackoff.isInBackoff(job))
             {
                 return true;
             }
@@ -619,8 +649,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
          */
         private boolean shouldRefreshJob(final ScheduledJob job)
         {
-            Long backoffUntil = myContentionBackoff.get(job);
-            if (backoffUntil != null && System.currentTimeMillis() < backoffUntil)
+            if (myLockFailureBackoff.isInBackoff(job))
             {
                 return false;
             }
@@ -652,6 +681,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                     {
                         tasksExecuted++;
                         failureCounter.set(0);
+                        myLockFailureBackoff.reset(job);
                     }
                     else if (handleUnsuccessfulTask(job, failureCounter))
                     {
@@ -720,31 +750,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
         private void handleLockFailure(final ScheduledJob job, final Exception e)
         {
-            if (e instanceof RuntimeMBeanException rme)
-            {
-                if (rme.getCause() instanceof IllegalStateException
-                        && rme.getCause().getMessage() != null
-                        && rme.getCause().getMessage().contains("More than one key found"))
-                {
-                    LOG.debug("Unable to get schedule lock on job {} in node {}, probably Jolokia 2.3.0 or older",
-                            job, nodeID, e);
-                }
-                else
-                {
-                    LOG.warn("Unable to get schedule lock on job {} in node {}", job, nodeID, e);
-                }
-            }
-            else if (e instanceof LockException)
-            {
-                LOG.debug("Lock contention for job {} in node {}: {}", job, nodeID, e.getMessage());
-            }
-            else
-            {
-                LOG.warn("Unable to get schedule lock on job {} in node {}", job, nodeID, e);
-            }
-            long backoff = ThreadLocalRandom.current().nextLong(
-                    myRunIntervalInMs / 2, myRunIntervalInMs);
-            myContentionBackoff.put(job, System.currentTimeMillis() + backoff);
+            myLockFailureBackoff.recordFailure(job, e, nodeID);
         }
 
         private boolean runTask(
@@ -788,6 +794,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         private long myCooldownInMs = 0;
         private DistributedNativeConnectionProvider myNativeConnectionProvider;
         private int myMaxConcurrency = UNBOUNDED_CONCURRENCY;
+        private MeterRegistry myMeterRegistry;
 
         /**
          * Default constructor.
@@ -861,6 +868,20 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         public final Builder withMaxConcurrency(final int maxConcurrency)
         {
             myMaxConcurrency = maxConcurrency < 1 ? UNBOUNDED_CONCURRENCY : maxConcurrency;
+            return this;
+        }
+
+        /**
+         * Build ScheduleManager with a meter registry for lock-failure metrics. Optional; when not set no metrics
+         * are recorded. Enables the {@code ecc.lock.saturation.timeouts} and {@code ecc.lock.unavailable} counters
+         * that distinguish client-side saturation from cluster unavailability (see #1852).
+         *
+         * @param meterRegistry the meter registry, may be {@code null}.
+         * @return Builder with the meter registry set.
+         */
+        public final Builder withMeterRegistry(final MeterRegistry meterRegistry)
+        {
+            myMeterRegistry = meterRegistry;
             return this;
         }
 
