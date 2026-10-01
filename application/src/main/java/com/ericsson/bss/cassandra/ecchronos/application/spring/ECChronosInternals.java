@@ -183,6 +183,7 @@ public class ECChronosInternals implements Closeable
                 .withNodeIDList(jmxConnectionProvider.getJmxConnections().keySet())
                 .withNativeConnectionProvider(nativeConnectionProvider)
                 .withLockFactory(myLockFactory)
+                .withMaxConcurrency(configuration.getSchedulerConfig().getMaxConcurrency())
                 .build();
     }
 

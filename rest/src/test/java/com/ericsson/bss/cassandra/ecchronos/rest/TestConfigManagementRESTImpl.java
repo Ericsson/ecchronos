@@ -57,6 +57,7 @@ public class TestConfigManagementRESTImpl
         when(myScheduleManager.getSessionWindowInMs()).thenReturn(300000L);
         when(myScheduleManager.getCooldownInMs()).thenReturn(0L);
         when(myScheduleManager.getLocksPerResource()).thenReturn(3);
+        when(myScheduleManager.getMaxConcurrency()).thenReturn(0);
         when(myJmxProxyFactory.getMaxWaitTimeInMinutes()).thenReturn(40);
         when(myHungRepairSessionRecovery.isEnabled()).thenReturn(false);
         when(myHungRepairSessionRecovery.getStallThresholdMs()).thenReturn(1800000L);
@@ -74,6 +75,7 @@ public class TestConfigManagementRESTImpl
         assertThat(body.get("session_window_ms")).isEqualTo(300000L);
         assertThat(body.get("cooldown_ms")).isEqualTo(0L);
         assertThat(body.get("locks_per_resource")).isEqualTo(3);
+        assertThat(body.get("max_concurrency")).isEqualTo(0);
         assertThat(body.get("max_wait_time_minutes")).isEqualTo(40);
         assertThat(body.get("hung_repair_recovery_enabled")).isEqualTo(false);
         assertThat(body.get("hung_repair_stall_threshold_ms")).isEqualTo(1800000L);
@@ -112,6 +114,41 @@ public class TestConfigManagementRESTImpl
         controller.patchConfig(patch);
 
         verify(myScheduleManager).setLocksPerResource(5);
+    }
+
+    @Test
+    public void testPatchMaxConcurrency()
+    {
+        Map<String, Object> patch = new HashMap<>();
+        patch.put("max_concurrency", 4);
+
+        controller.patchConfig(patch);
+
+        verify(myScheduleManager).setMaxConcurrency(4);
+    }
+
+    @Test
+    public void testPatchMaxConcurrencyZeroIsAllowed()
+    {
+        Map<String, Object> patch = new HashMap<>();
+        patch.put("max_concurrency", 0);
+
+        controller.patchConfig(patch);
+
+        verify(myScheduleManager).setMaxConcurrency(0);
+    }
+
+    @Test
+    public void testPatchInvalidMaxConcurrencyReturns400()
+    {
+        Map<String, Object> patch = new HashMap<>();
+        patch.put("max_concurrency", -1);
+
+        ResponseEntity<Map<String, Object>> response = controller.patchConfig(patch);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody().get("error")).isEqualTo("max_concurrency must be >= 0");
+        verify(myScheduleManager, never()).setMaxConcurrency(anyInt());
     }
 
     @Test

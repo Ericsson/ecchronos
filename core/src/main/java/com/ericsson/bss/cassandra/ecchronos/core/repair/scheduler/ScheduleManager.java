@@ -104,4 +104,18 @@ public interface ScheduleManager
      * @param locksPerResource new value, must be at least 1
      */
     void setLocksPerResource(int locksPerResource);
+
+    /**
+     * Get the current maximum concurrency (the cap on concurrent CPU-bound scheduler threads).
+     * @return the maximum concurrency, or {@code 0} if unbounded (one thread per managed node)
+     */
+    int getMaxConcurrency();
+
+    /**
+     * Set the maximum concurrency at runtime. The executor pool is resized live. A value less than 1 means
+     * unbounded (one thread per managed node). In-flight tasks are not interrupted when lowering the cap; the
+     * reduced pool size takes effect as running tasks complete.
+     * @param maxConcurrency the maximum number of concurrent scheduler threads, or {@code 0}/negative for unbounded
+     */
+    void setMaxConcurrency(int maxConcurrency);
 }

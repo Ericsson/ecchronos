@@ -573,7 +573,7 @@ file containing process id
 Show or update ecChronos runtime configuration. Changes are in-memory only — restarting ecChronos restores values from `ecc.yml`.
 
 ```console
-usage: ecctool config [-h] [--session-window SESSION_WINDOW] [--cooldown COOLDOWN] [--locks-per-resource LOCKS_PER_RESOURCE] [--max-wait-time MAX_WAIT_TIME] [--hung-repair-recovery {on,off}] [--hung-repair-threshold HUNG_REPAIR_THRESHOLD] [--hung-repair-bypass-coordinator {on,off}] [--hung-repair-force {on,off}] [-u URL]
+usage: ecctool config [-h] [--session-window SESSION_WINDOW] [--cooldown COOLDOWN] [--locks-per-resource LOCKS_PER_RESOURCE] [--max-concurrency MAX_CONCURRENCY] [--max-wait-time MAX_WAIT_TIME] [--hung-repair-recovery {on,off}] [--hung-repair-threshold HUNG_REPAIR_THRESHOLD] [--hung-repair-bypass-coordinator {on,off}] [--hung-repair-force {on,off}] [-u URL]
 ```
 
 When called without arguments, displays the current configuration. When called with one or more parameters, updates the specified values.
@@ -586,6 +586,9 @@ Cooldown period after a session completes. Accepts same duration format as `--se
 
 ### --locks-per-resource &lt;int&gt;
 Number of concurrent locks per datacenter resource. Must be >= 1.
+
+### --max-concurrency &lt;int&gt;
+Maximum number of concurrent CPU-bound scheduler threads. `0` means unbounded (one thread per managed node). On CPU-constrained deployments a lower value avoids oversubscribing the CPU quota. Applied live: raising the cap takes effect for subsequently scheduled tasks; lowering it shrinks the pool as in-flight tasks complete.
 
 ### --max-wait-time &lt;int&gt;
 Maximum time in minutes ecChronos waits for a repair to complete before terminating and rescheduling it. Must be > 0. New repairs pick up the value immediately; in-flight repairs keep their original timeout.

@@ -227,6 +227,11 @@ def add_config_subcommand(sub_parsers):
     parser_config.add_argument("--session-window", type=str, help="session window duration (e.g. 5m, 30s, 300000)")
     parser_config.add_argument("--cooldown", type=str, help="cooldown duration (e.g. 5m, 30s, 300000)")
     parser_config.add_argument("--locks-per-resource", type=int, help="locks per resource")
+    parser_config.add_argument(
+        "--max-concurrency",
+        type=int,
+        help="max concurrent scheduler threads (0 = unbounded, one thread per managed node)",
+    )
     parser_config.add_argument("--max-wait-time", type=int, help="max wait time in minutes for a repair (> 0)")
     parser_config.add_argument(
         "--hung-repair-recovery",
@@ -254,12 +259,17 @@ def add_config_subcommand(sub_parsers):
     add_common_arg(parser_config, ARG_URL)
 
 
+def _on_off_to_bool(value):
+    return value == "on" if value is not None else None
+
+
 def config(arguments):
     request = rest.ConfigRequest(base_url=arguments.url)
     has_updates = (
         arguments.session_window is not None
         or arguments.cooldown is not None
         or arguments.locks_per_resource is not None
+        or arguments.max_concurrency is not None
         or arguments.max_wait_time is not None
         or arguments.hung_repair_recovery is not None
         or arguments.hung_repair_threshold is not None
@@ -269,27 +279,19 @@ def config(arguments):
     if has_updates:
         session_window_ms = parse_duration_ms(arguments.session_window) if arguments.session_window else None
         cooldown_ms = parse_duration_ms(arguments.cooldown) if arguments.cooldown else None
-        hung_repair_recovery_enabled = (
-            arguments.hung_repair_recovery == "on" if arguments.hung_repair_recovery is not None else None
-        )
         hung_repair_stall_threshold_ms = (
             parse_duration_ms(arguments.hung_repair_threshold) if arguments.hung_repair_threshold else None
         )
-        hung_repair_bypass_coordinator_check = (
-            arguments.hung_repair_bypass_coordinator == "on"
-            if arguments.hung_repair_bypass_coordinator is not None
-            else None
-        )
-        hung_repair_force = arguments.hung_repair_force == "on" if arguments.hung_repair_force is not None else None
         result = request.patch(
             session_window_ms=session_window_ms,
             cooldown_ms=cooldown_ms,
             locks_per_resource=arguments.locks_per_resource,
+            max_concurrency=arguments.max_concurrency,
             max_wait_time_minutes=arguments.max_wait_time,
-            hung_repair_recovery_enabled=hung_repair_recovery_enabled,
+            hung_repair_recovery_enabled=_on_off_to_bool(arguments.hung_repair_recovery),
             hung_repair_stall_threshold_ms=hung_repair_stall_threshold_ms,
-            hung_repair_bypass_coordinator_check=hung_repair_bypass_coordinator_check,
-            hung_repair_force=hung_repair_force,
+            hung_repair_bypass_coordinator_check=_on_off_to_bool(arguments.hung_repair_bypass_coordinator),
+            hung_repair_force=_on_off_to_bool(arguments.hung_repair_force),
         )
     else:
         result = request.get()

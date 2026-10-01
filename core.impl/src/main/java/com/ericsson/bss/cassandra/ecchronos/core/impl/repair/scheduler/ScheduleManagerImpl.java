@@ -61,6 +61,13 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     public static final int DEFAULT_TIMEOUT = 5;
     /** Maximum consecutive task failures before a job is marked as FAILED. */
     static final int MAX_CONSECUTIVE_TASK_FAILURES = 5;
+    /** No concurrency cap: the scheduler uses one thread per managed node. */
+    public static final int UNBOUNDED_CONCURRENCY = Integer.MAX_VALUE;
+    /**
+     * If the number of managed nodes exceeds the available (cgroup-aware) CPUs by more than this factor, a startup
+     * warning is emitted since the CPU-bound repair work is likely to oversubscribe the CPU quota (see #1850).
+     */
+    static final int OVERSUBSCRIPTION_WARN_FACTOR = 4;
 
     private final Map<UUID, ScheduledJobQueue> myQueue = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, ScheduledJob> currentExecutingJobs = new ConcurrentHashMap<>();
@@ -75,6 +82,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
     private final ScheduledThreadPoolExecutor myExecutor;
     private final long myRunIntervalInMs;
+    private volatile int myMaxConcurrency;
     private volatile long mySessionWindowInMs;
     private volatile long myCooldownInMs;
 
@@ -82,8 +90,12 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     {
         Collection<UUID> nodeIDList = builder.myNodeIDList;
         myNativeConnectionProvider = builder.myNativeConnectionProvider;
+        myMaxConcurrency = builder.myMaxConcurrency;
+        int nodeCount = nodeIDList.size();
+        int corePoolSize = resolveCorePoolSize(nodeCount);
+        warnIfOversubscribed(nodeCount, corePoolSize);
         myExecutor  = new ScheduledThreadPoolExecutor(
-                nodeIDList.size(), new ThreadFactoryBuilder().setNameFormat("TaskExecutor-%d").build());
+                corePoolSize, new ThreadFactoryBuilder().setNameFormat("TaskExecutor-%d").build());
         myExecutor.setKeepAliveTime(DEFAULT_KEEP_ALIVE_TIME, TimeUnit.SECONDS);
         myExecutor.allowCoreThreadTimeOut(true);
         myLockFactory = builder.myLockFactory;
@@ -91,6 +103,38 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         myRunIntervalInMs = builder.myRunIntervalInMs;
         mySessionWindowInMs = builder.mySessionWindowInMs;
         myCooldownInMs = builder.myCooldownInMs;
+    }
+
+    /**
+     * Resolve the executor core pool size: one thread per managed node, capped at the configured maximum
+     * concurrency. A pool size of at least 1 is always returned so an empty node list still yields a valid pool.
+     *
+     * @param nodeCount the number of managed nodes.
+     * @return the core pool size to use.
+     */
+    private int resolveCorePoolSize(final int nodeCount)
+    {
+        return Math.max(1, Math.min(nodeCount, myMaxConcurrency));
+    }
+
+    /**
+     * Emit a startup warning when the managed-node count greatly exceeds the available (cgroup-aware) CPUs and no
+     * concurrency cap is limiting the CPU-bound scheduler work, since this is likely to oversubscribe the CPU quota
+     * and cause CFS throttling (see #1850).
+     *
+     * @param nodeCount the number of managed nodes.
+     * @param corePoolSize the resolved executor core pool size.
+     */
+    private void warnIfOversubscribed(final int nodeCount, final int corePoolSize)
+    {
+        int availableProcessors = Runtime.getRuntime().availableProcessors();
+        if (corePoolSize > (long) availableProcessors * OVERSUBSCRIPTION_WARN_FACTOR)
+        {
+            LOG.warn("Scheduler configured with {} concurrent TaskExecutor threads for {} managed nodes but only {} "
+                    + "CPU(s) are available; CPU-bound repair work may oversubscribe the CPU quota and cause "
+                    + "throttling. Consider lowering the managed-node count per instance or setting a concurrency "
+                    + "cap.", corePoolSize, nodeCount, availableProcessors);
+        }
     }
 
     /**
@@ -117,7 +161,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         myRunTasks.computeIfAbsent(nodeID, id ->
         {
             JobRunTask runTask = new JobRunTask(id);
-            int requiredSize = myRunTasks.size() + 1;
+            int requiredSize = resolveCorePoolSize(myRunTasks.size() + 1);
             if (myExecutor.getCorePoolSize() < requiredSize)
             {
                 myExecutor.setCorePoolSize(requiredSize);
@@ -209,6 +253,24 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     public void setLocksPerResource(final int locksPerResource)
     {
         RepairLockFactoryImpl.configure(locksPerResource);
+    }
+
+    @Override
+    public int getMaxConcurrency()
+    {
+        return myMaxConcurrency == UNBOUNDED_CONCURRENCY ? 0 : myMaxConcurrency;
+    }
+
+    @Override
+    public void setMaxConcurrency(final int maxConcurrency)
+    {
+        myMaxConcurrency = maxConcurrency < 1 ? UNBOUNDED_CONCURRENCY : maxConcurrency;
+        // Resize the pool live. setCorePoolSize does not interrupt running tasks, so a lowered cap takes effect as
+        // in-flight tasks complete; a raised cap applies to subsequently scheduled tasks.
+        int corePoolSize = resolveCorePoolSize(myRunTasks.size());
+        myExecutor.setCorePoolSize(corePoolSize);
+        LOG.info("Scheduler max concurrency set to {} (executor core pool size now {})",
+                getMaxConcurrency(), corePoolSize);
     }
 
     /**
@@ -322,6 +384,17 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     public int getQueueSize(final UUID nodeID)
     {
         return myQueue.get(nodeID).size();
+    }
+
+    /**
+     * Made available for testing.
+     *
+     * @return the current core pool size of the TaskExecutor.
+     */
+    @VisibleForTesting
+    int getExecutorCorePoolSize()
+    {
+        return myExecutor.getCorePoolSize();
     }
 
     private Long validateJob(final ScheduledJob job, final Node node)
@@ -714,6 +787,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         private long mySessionWindowInMs = DEFAULT_SESSION_WINDOW_MS;
         private long myCooldownInMs = 0;
         private DistributedNativeConnectionProvider myNativeConnectionProvider;
+        private int myMaxConcurrency = UNBOUNDED_CONCURRENCY;
 
         /**
          * Default constructor.
@@ -771,6 +845,22 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         public Builder withNodeIDList(final Collection<UUID> nodeIDList)
         {
             myNodeIDList = nodeIDList;
+            return this;
+        }
+
+        /**
+         * Build ScheduleManager with a maximum concurrency cap on the CPU-bound TaskExecutor pool.
+         * <p>
+         * By default the pool uses one thread per managed node. On CPU-constrained deployments this can
+         * oversubscribe the CPU quota; setting a cap bounds the number of concurrent CPU-bound scheduler threads
+         * regardless of node count (see #1850). Values less than 1 are treated as {@link #UNBOUNDED_CONCURRENCY}.
+         *
+         * @param maxConcurrency the maximum number of concurrent TaskExecutor threads.
+         * @return Builder with the concurrency cap set.
+         */
+        public final Builder withMaxConcurrency(final int maxConcurrency)
+        {
+            myMaxConcurrency = maxConcurrency < 1 ? UNBOUNDED_CONCURRENCY : maxConcurrency;
             return this;
         }
 

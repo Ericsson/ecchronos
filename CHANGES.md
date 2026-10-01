@@ -2,6 +2,7 @@
 
 ## Version 1.1.2
 
+* Add CPU/cgroup-aware scheduler concurrency: cap TaskExecutor threads via scheduler.max_concurrency (also tunable at runtime through the config REST API / ecctool) and warn at startup when managed-node count greatly exceeds available CPUs - Issue #1850
 * Reduce scheduler CPU usage by skipping repair-state refresh for jobs that cannot run this pass and decoupling the refresh throttle from the scheduler run interval - Issue #1851
 
 ## Version 1.1.1

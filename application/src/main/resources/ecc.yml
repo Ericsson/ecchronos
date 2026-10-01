@@ -518,6 +518,15 @@ scheduler:
   cooldown:
     time: 0
     unit: SECONDS
+  ##
+  ## Specifies the maximum number of concurrent CPU-bound scheduler threads.
+  ## By default (0) the scheduler uses one thread per managed node. On CPU-constrained deployments (for example a
+  ## small cgroup CPU quota with many managed nodes) this can oversubscribe the CPU and cause throttling; set a
+  ## positive value to cap the concurrency regardless of node count. ecChronos logs a startup warning when the
+  ## managed-node count greatly exceeds the available CPUs.
+  ## Default: 0 (one thread per node, no cap).
+  ##
+  max_concurrency: 0
 
 rest_server:
   ##
