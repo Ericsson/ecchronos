@@ -359,7 +359,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         }
         myRunTasks.remove(nodeID);
         myQueue.remove(nodeID);
-        myExecutor.setCorePoolSize(Math.max(1, myRunTasks.size()));
+        myExecutor.setCorePoolSize(resolveCorePoolSize(myRunTasks.size()));
         LOG.info("Removed schedule future and queue for node {}", nodeID);
     }
 
