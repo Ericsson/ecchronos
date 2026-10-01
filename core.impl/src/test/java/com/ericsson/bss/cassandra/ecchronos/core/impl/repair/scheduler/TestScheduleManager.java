@@ -150,6 +150,52 @@ public class TestScheduleManager
     }
 
     @Test
+    public void testSetMaxConcurrencyResizesPoolAtRuntime() throws LockException
+    {
+        List<UUID> manyNodes = new ArrayList<>();
+        Map<UUID, Node> nodeMap = new HashMap<>();
+        for (int i = 0; i < 8; i++)
+        {
+            UUID id = UUID.randomUUID();
+            manyNodes.add(id);
+            nodeMap.put(id, node1);
+        }
+        when(myNativeConnectionProvider.getNodes()).thenReturn(nodeMap);
+
+        ScheduleManagerImpl scheduler = ScheduleManagerImpl.builder()
+                .withNodeIDList(manyNodes)
+                .withNativeConnectionProvider(myNativeConnectionProvider)
+                .withLockFactory(myLockFactory)
+                .build();
+        try
+        {
+            scheduler.createScheduleFutureForNodeIDList(manyNodes);
+            // Unbounded by default -> one thread per node.
+            assertThat(scheduler.getMaxConcurrency()).isEqualTo(0);
+            assertThat(scheduler.getExecutorCorePoolSize()).isEqualTo(manyNodes.size());
+
+            // Lower the cap at runtime: the pool shrinks.
+            scheduler.setMaxConcurrency(3);
+            assertThat(scheduler.getMaxConcurrency()).isEqualTo(3);
+            assertThat(scheduler.getExecutorCorePoolSize()).isEqualTo(3);
+
+            // Raise the cap again (still below node count).
+            scheduler.setMaxConcurrency(5);
+            assertThat(scheduler.getMaxConcurrency()).isEqualTo(5);
+            assertThat(scheduler.getExecutorCorePoolSize()).isEqualTo(5);
+
+            // Reset to unbounded -> back to one thread per node.
+            scheduler.setMaxConcurrency(0);
+            assertThat(scheduler.getMaxConcurrency()).isEqualTo(0);
+            assertThat(scheduler.getExecutorCorePoolSize()).isEqualTo(manyNodes.size());
+        }
+        finally
+        {
+            scheduler.close();
+        }
+    }
+
+    @Test
     public void testUnboundedConcurrencyUsesOneThreadPerNode() throws LockException
     {
         List<UUID> manyNodes = new ArrayList<>();

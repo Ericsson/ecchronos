@@ -393,6 +393,7 @@ class ConfigRequest(RestRequest):
         "session_window_ms",
         "cooldown_ms",
         "locks_per_resource",
+        "max_concurrency",
         "max_wait_time_minutes",
         "hung_repair_recovery_enabled",
         "hung_repair_stall_threshold_ms",

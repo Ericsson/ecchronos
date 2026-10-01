@@ -82,7 +82,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
     private final ScheduledThreadPoolExecutor myExecutor;
     private final long myRunIntervalInMs;
-    private final int myMaxConcurrency;
+    private volatile int myMaxConcurrency;
     private volatile long mySessionWindowInMs;
     private volatile long myCooldownInMs;
 
@@ -253,6 +253,24 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     public void setLocksPerResource(final int locksPerResource)
     {
         RepairLockFactoryImpl.configure(locksPerResource);
+    }
+
+    @Override
+    public int getMaxConcurrency()
+    {
+        return myMaxConcurrency == UNBOUNDED_CONCURRENCY ? 0 : myMaxConcurrency;
+    }
+
+    @Override
+    public void setMaxConcurrency(final int maxConcurrency)
+    {
+        myMaxConcurrency = maxConcurrency < 1 ? UNBOUNDED_CONCURRENCY : maxConcurrency;
+        // Resize the pool live. setCorePoolSize does not interrupt running tasks, so a lowered cap takes effect as
+        // in-flight tasks complete; a raised cap applies to subsequently scheduled tasks.
+        int corePoolSize = resolveCorePoolSize(myRunTasks.size());
+        myExecutor.setCorePoolSize(corePoolSize);
+        LOG.info("Scheduler max concurrency set to {} (executor core pool size now {})",
+                getMaxConcurrency(), corePoolSize);
     }
 
     /**
