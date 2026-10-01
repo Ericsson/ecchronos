@@ -1,5 +1,39 @@
 # Upgrade to 1.1.x
 
+## nodes_sync self-healing (heartbeat + TTL)
+
+From this version, each ecChronos instance periodically renews (heartbeats) its own rows in
+`ecchronos.nodes_sync`, writing them with a TTL. While an instance is running its rows are
+continuously refreshed and persist; if an instance is permanently stopped (for example when a
+datacenter is decommissioned), its rows are no longer renewed and expire automatically via the
+TTL. This resolves where orphaned rows previously remained `AVAILABLE` indefinitely.
+
+No schema change is required: the TTL is applied per write (`USING TTL`), not via
+`default_time_to_live`. Any pre-existing rows written by an older version have no TTL. Rows still
+owned by a running instance are healed automatically on the first heartbeat after upgrade (they are
+rewritten with a TTL). Rows belonging to instances that no longer exist were never going to be
+renewed, so they must be removed once, manually:
+
+```
+DELETE FROM ecchronos.nodes_sync WHERE ecchronos_id = '<retired-instance-id>';
+```
+
+The heartbeat is configurable in `ecc.yml` under `connection.cql.nodesSyncHeartbeat`. Both
+`interval` and `ttl` are expressed in the same `unit` (defaults: `interval: 1`, `unit: hours`).
+If `ttl` is left unset it defaults to 3x the interval (so 3 hours by default). The TTL must be
+greater than the interval so a single missed heartbeat does not prematurely expire a live node's
+row; the application fails to start if an explicitly configured TTL violates this. The TTL is
+converted to seconds internally for Cassandra's `USING TTL`.
+
+Additionally, `ecctool nodes state` (and the `/state/nodes` REST endpoint) now expose node
+freshness. The legacy `Node Status` column is unchanged (it keeps showing the raw status such as
+`AVAILABLE`). A new `Stale For` column shows, for a node whose row has not been refreshed within
+roughly two heartbeat intervals, how long it has been since its last successful heartbeat (e.g.
+`0 day(s) 00h 05m 31s`); for a healthy node it shows `---`. The REST/JSON output carries two new
+fields: `stale` (boolean) and `lastHeartbeatAgeMs` (always the time since the last successful
+heartbeat, in milliseconds), the latter being useful for trend monitoring. The underlying
+`nodeStatus` value is left untouched.
+
 ## Incremental Repairs
 
 During the fix of [Incremental Repair does not works properly](https://github.com/Ericsson/ecchronos/issues/1777) table ecchronos.repair_history has gotten a new column `repair_type`.

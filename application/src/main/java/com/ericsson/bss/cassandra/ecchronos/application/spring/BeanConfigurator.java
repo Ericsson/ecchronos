@@ -362,6 +362,23 @@ public class BeanConfigurator
     }
 
     /**
+     * Provides a {@link NodeSyncHeartbeatService} bean that periodically renews this instance's
+     * rows in the nodes_sync table with a TTL, enabling self-healing of stale entries.
+     *
+     * @param config the {@link Config} object containing the heartbeat configuration.
+     * @param eccNodesSync the {@link EccNodesSync} instance for node synchronization.
+     * @param nativeConnectionProvider the provider used to check current topology membership.
+     * @return a {@link NodeSyncHeartbeatService} instance.
+     */
+    @Bean
+    public NodeSyncHeartbeatService nodeSyncHeartbeatService(final Config config,
+                                                             final EccNodesSync eccNodesSync,
+                                                             final DistributedNativeConnectionProvider nativeConnectionProvider)
+    {
+        return new NodeSyncHeartbeatService(config, eccNodesSync, nativeConnectionProvider);
+    }
+
+    /**
      * Provides a {@link ReloadSchedulerService} bean for handling scheduled reload of repair configurations.
      *
      * @param config
@@ -510,12 +527,19 @@ public class BeanConfigurator
     ) throws UnknownHostException, EcChronosException, ConfigurationException
     {
         Interval connectionDelay = config().getConnectionConfig().getCqlConnection().getConnectionDelay();
+        long heartbeatIntervalInMs = config().getConnectionConfig().getCqlConnection()
+                .getNodesSyncHeartbeat().getIntervalInMs();
+        // A row is considered stale once it has not been refreshed for 2 heartbeat intervals.
+        // The row is still removed by its TTL (default 3x interval); staleness surfaces the
+        // transition in the REST/CLI output before the row disappears.
+        long staleThresholdInMs = heartbeatIntervalInMs * 2;
         EccNodesSync myEccNodesSync = EccNodesSync.newBuilder()
                 .withNativeConnection(distributedNativeConnectionProvider)
                 .withSession(distributedNativeConnectionProvider.getCqlSession())
                 .withEcchronosID(ecChronosID)
                 .withConnectionDelayValue(connectionDelay.getTime())
                 .withConnectionDelayUnit(connectionDelay.getUnit())
+                .withStaleThresholdInMs(staleThresholdInMs)
                 .build();
         myEccNodesSync.acquireNodes();
         LOG.info("Nodes acquired with success");

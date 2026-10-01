@@ -103,6 +103,22 @@ connection:
       ## unit can be milliseconds, seconds, minutes, hours, days.
       unit: days
     ##
+    ## Configuration for the NodeSyncHeartbeatService, which periodically renews this instance's
+    ## rows in the nodes_sync table with a TTL. While this instance is running the rows are kept
+    ## alive; if the instance is permanently stopped (e.g. a decommissioned datacenter), the rows
+    ## are no longer renewed and expire automatically via their TTL. This makes nodes_sync
+    ## self-healing for scale-in without any manual cleanup.
+    nodesSyncHeartbeat:
+      ## Interval between heartbeats. Every interval, all rows owned by this instance are renewed.
+      interval: 1
+      ## TTL applied to each heartbeat write, in the same unit as the interval. Must be greater
+      ## than the interval so a single missed heartbeat does not prematurely expire a live node's
+      ## row. If left unset, it defaults to 3x the interval. The TTL is converted to seconds
+      ## internally.
+      # ttl: 3
+      ## unit applies to BOTH interval and ttl. Can be milliseconds, seconds, minutes, hours, days.
+      unit: hours
+    ##
     ## Connection Timeout for a CQL attempt.
     ## Specify a time to wait for cassandra to come up.
     ## Connection is tried based on retry policy delay calculations. Each connection attempt will use the timeout to calculate CQL connection process delay.

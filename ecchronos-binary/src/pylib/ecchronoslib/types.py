@@ -185,7 +185,7 @@ class RepairStats(object):
 
 
 class NodeSyncState(object):
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods,too-many-instance-attributes
     def __init__(self, data):
         self.ecchronos_id = data["ecchronosId"] if "ecchronosId" in data else "<UNKNOWN>"
         self.datacenter_name = data["datacenterName"] if "datacenterName" in data else "<UNKNOWN>"
@@ -194,6 +194,17 @@ class NodeSyncState(object):
         self.next_connection = data["nextConnection"] if "nextConnection" in data else "<UNKNOWN>"
         self.node_endpoint = data["nodeEndpoint"] if "nodeEndpoint" in data else "<UNKNOWN>"
         self.node_status = data["nodeStatus"] if "nodeStatus" in data else "<UNKNOWN>"
+        self.stale = data["stale"] if "stale" in data else False
+        self.last_heartbeat_age_ms = data["lastHeartbeatAgeMs"] if "lastHeartbeatAgeMs" in data else -1
+
+    def get_stale_for(self):
+        # The 'node_status' column keeps its legacy value untouched. This dedicated column shows,
+        # for a stale node, how long it has been since the last successful heartbeat (i.e. the
+        # owning instance may be down / decommissioned; the row will expire once its TTL elapses).
+        # For a healthy node it simply shows '---'.
+        if not self.stale or self.last_heartbeat_age_ms < 0:
+            return "---"
+        return parse_interval(self.last_heartbeat_age_ms)
 
     def to_dict(self):
         return self.__dict__

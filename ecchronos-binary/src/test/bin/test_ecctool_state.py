@@ -74,3 +74,60 @@ def test_state_command_parses_json_output_flag():
     args = get_parser().parse_args(["state", "-o", "json", "nodes"])
     assert args.output == "json"
     assert args.state_subcommand == "nodes"
+
+
+def _stale_node():
+    return NodeSyncState(
+        {
+            "ecchronosId": "ecc-1",
+            "datacenterName": "datacenter1",
+            "nodeId": "8a9d2a57-1388-42be-aab6-06a4e5f6fe84",
+            "lastConnection": "2025-12-15T15:49:41.762Z",
+            "nextConnection": "2025-12-15T16:19:41.762Z",
+            "nodeEndpoint": "/127.0.0.1:9042",
+            "nodeStatus": "AVAILABLE",
+            "stale": True,
+            "lastHeartbeatAgeMs": 331000,
+        }
+    )
+
+
+def test_healthy_node_stale_for_is_dashes_and_status_untouched():
+    node = _sample_node()
+    assert node.stale is False
+    # Node Status column stays pure legacy.
+    assert node.node_status == "AVAILABLE"
+    # Dedicated column shows '---' for a healthy node.
+    assert node.get_stale_for() == "---"
+
+
+def test_stale_node_stale_for_shows_age_and_status_untouched():
+    node = _stale_node()
+    assert node.stale is True
+    # Node Status is NOT decorated anymore.
+    assert node.node_status == "AVAILABLE"
+    # 331000 ms -> 5m 31s since the last heartbeat.
+    assert node.get_stale_for() == " 0 day(s) 00h 05m 31s"
+
+
+def test_print_nodes_table_has_stale_for_column_and_no_marker():
+    output = io.StringIO()
+    with redirect_stdout(output):
+        table_printer.print_nodes([_stale_node()], output="table")
+
+    rendered = output.getvalue()
+    assert "Stale For" in rendered
+    assert "0 day(s) 00h 05m 31s" in rendered
+    # Legacy status column must not carry the old '*' marker.
+    assert "AVAILABLE*" not in rendered
+
+
+def test_print_nodes_json_includes_age_field():
+    output = io.StringIO()
+    with redirect_stdout(output):
+        table_printer.print_nodes([_stale_node()], output="json")
+
+    node = json.loads(output.getvalue())["nodes"][0]
+    assert node["stale"] is True
+    assert node["last_heartbeat_age_ms"] == 331000
+    assert node["node_status"] == "AVAILABLE"

@@ -379,7 +379,16 @@ def _print_nodes_json_format(nodes):
 
 def _print_nodes_table_format(nodes, columns=None):
     node_table = [
-        ["EcchronosID", "Datacenter", "NodeID", "Last Connection", "Next Connection", "Endpoint", "Node Status"]
+        [
+            "EcchronosID",
+            "Datacenter",
+            "NodeID",
+            "Last Connection",
+            "Next Connection",
+            "Endpoint",
+            "Node Status",
+            "Stale For",
+        ]
     ]
     for node in nodes:
         node_table.append(_convert_node(node))
@@ -395,6 +404,7 @@ def _convert_node(node):
         node.next_connection,
         node.node_endpoint,
         node.node_status,
+        node.get_stale_for(),
     ]
     return entry
 

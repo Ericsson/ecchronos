@@ -4,6 +4,7 @@
 
 * Back off adaptively on repeated lock CQL timeouts and distinguish ecChronos client saturation from Cassandra unavailability in logs and metrics - Issue #1852
 * Add CPU/cgroup-aware scheduler concurrency: cap TaskExecutor threads via scheduler.max_concurrency (also tunable at runtime through the config REST API / ecctool) and warn at startup when managed-node count greatly exceeds available CPUs - Issue #1850
+* Self-heal nodes_sync entries using heartbeats and TTL, and surface not-recently-refreshed nodes as stale in state output - Issue #1826
 * Reduce scheduler CPU usage by skipping repair-state refresh for jobs that cannot run this pass and decoupling the refresh throttle from the scheduler run interval - Issue #1851
 
 ## Version 1.1.1

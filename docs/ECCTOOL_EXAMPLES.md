@@ -393,11 +393,25 @@ Use *state* subcommand and its actions for internal state information.
 ecctool state nodes
 ```
 ```text
-----------------------------------------------------------------------------------------------------------------------------------------------------------------
-| EcchronosID       | Datacenter  | NodeID                               | Last Connection          | Next Connection          | Endpoint        | Node Status |
-----------------------------------------------------------------------------------------------------------------------------------------------------------------
-| unique_identifier | datacenter1 | 8a9d2a57-1388-42be-aab6-06a4e5f6fe84 | 2025-12-15T15:49:41.762Z | 2025-12-15T16:19:41.762Z | /127.0.0.1:9042 | AVAILABLE   |
-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| EcchronosID       | Datacenter  | NodeID                               | Last Connection          | Next Connection          | Endpoint        | Node Status | Stale For |
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| unique_identifier | datacenter1 | 8a9d2a57-1388-42be-aab6-06a4e5f6fe84 | 2025-12-15T15:49:41.762Z | 2025-12-15T16:19:41.762Z | /127.0.0.1:9042 | AVAILABLE   | ---       |
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+```
+
+The `Node Status` column shows the last observed status of the node (`AVAILABLE`, `UNAVAILABLE` or
+`UNREACHABLE`). The `Stale For` column shows how long it has been since the node's row was last
+refreshed by a heartbeat. For a healthy node it shows `---`. If the owning instance stops renewing
+the row (for example a decommissioned datacenter), the node is reported as stale and this column
+shows the elapsed time since the last successful heartbeat, until the row eventually expires:
+
+```text
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| EcchronosID   | Datacenter | NodeID                               | Last Connection          | Next Connection          | Endpoint       | Node Status | Stale For             |
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| dc3-ecchronos | dc3        | eed4ec7b-1388-42be-aab6-06a4e5f6fe84 | 2026-09-30T09:00:12.000Z | 2026-09-30T09:30:12.000Z | /10.0.3.1:9042 | AVAILABLE   |  0 day(s) 00h 05m 31s |
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ```
 
 With JSON output format selected:
@@ -416,11 +430,18 @@ ecctool state -o json nodes
             "last_connection": "2025-12-15T15:49:41.762Z",
             "next_connection": "2025-12-15T16:19:41.762Z",
             "node_endpoint": "/127.0.0.1:9042",
-            "node_status": "AVAILABLE"
+            "node_status": "AVAILABLE",
+            "stale": false,
+            "last_heartbeat_age_ms": 42000
         }
     ]
 }
 ```
+
+The `stale` field indicates whether the node's row has not been refreshed within roughly two
+heartbeat intervals. The `last_heartbeat_age_ms` field is always present and reports the time since
+the last successful heartbeat in milliseconds (useful for trend monitoring), independent of whether
+the node is currently considered stale.
 
 ## status
 
