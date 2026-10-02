@@ -77,6 +77,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     private final RepairLockFactoryImpl myRepairLockFactory;
     private final DistributedNativeConnectionProvider myNativeConnectionProvider;
     private final LockFailureBackoff myLockFailureBackoff;
+    private final SchedulerMetrics mySchedulerMetrics;
 
     private final ScheduledThreadPoolExecutor myExecutor;
     private final long myRunIntervalInMs;
@@ -102,6 +103,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         mySessionWindowInMs = builder.mySessionWindowInMs;
         myCooldownInMs = builder.myCooldownInMs;
         myLockFailureBackoff = new LockFailureBackoff(myRunIntervalInMs, builder.myMeterRegistry);
+        mySchedulerMetrics = new SchedulerMetrics(builder.myMeterRegistry);
     }
 
     /**
@@ -533,12 +535,15 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
             List<ScheduledJob> candidates = new ArrayList<>();
             ScheduledJobQueue queue = myQueue.get(nodeID);
+            long refreshStart = System.nanoTime();
             Iterator<ScheduledJob> jobIterator = queue.iterator(this::shouldRefreshJob);
             while (jobIterator.hasNext())
             {
                 candidates.add(jobIterator.next());
             }
+            mySchedulerMetrics.recordRefresh(System.nanoTime() - refreshStart, candidates.size());
 
+            boolean hadRunnableWork = false;
             for (ScheduledJob next : candidates)
             {
                 if (myLockFailureBackoff.isInBackoff(next))
@@ -548,6 +553,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 myLockFailureBackoff.clearBackoff(next);
                 if (validate(next))
                 {
+                    hadRunnableWork = true;
                     currentExecutingJobs.put(nodeID, next);
                     hadWork = runSession(next, candidates);
                     break;
@@ -558,6 +564,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 }
             }
             currentExecutingJobs.remove(nodeID);
+            mySchedulerMetrics.recordPassOutcome(hadWork, hadRunnableWork, nodeID);
             return hadWork;
         }
 
@@ -593,6 +600,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
             LOG.info("Session ended for node {}, executed {} tasks in {}ms",
                     nodeID, tasksExecuted, System.currentTimeMillis() - sessionStart);
+            mySchedulerMetrics.recordPass(withinSessionWindow(sessionStart));
             applyCooldown(tasksExecuted);
             return tasksExecuted > 0;
         }
@@ -672,9 +680,11 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                     break;
                 }
                 index++;
+                long lockStart = System.nanoTime();
                 try
                 {
                     lockPool.acquireForTask(task);
+                    mySchedulerMetrics.recordLockAttempt(true, System.nanoTime() - lockStart);
                     boolean successful = runTask(task, index);
                     job.postExecute(successful, task);
                     if (successful)
@@ -690,6 +700,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 }
                 catch (Exception e)
                 {
+                    mySchedulerMetrics.recordLockAttempt(false, System.nanoTime() - lockStart);
                     handleLockFailure(job, e);
                 }
             }
