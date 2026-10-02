@@ -19,6 +19,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairResource;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockClientSaturationException;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -216,6 +217,7 @@ public class RepairLockFactoryImpl implements RepairLockFactory
         String dataCenter = repairResource.getDataCenter();
         int locksPerResource = effectiveMaxSlots(repairResource);
 
+        LockException saturationCause = null;
         int startLock = LOCK_COUNTER.getAndIncrement();
         for (int i = 0; i < locksPerResource; i++)
         {
@@ -237,6 +239,14 @@ public class RepairLockFactoryImpl implements RepairLockFactory
                     return new LocallyGatedLock(myLock, gate);
                 }
             }
+            catch (LockClientSaturationException e)
+            {
+                LOG.debug("Lock ({} in datacenter {}) timed out client-side, trying next lock", resource, dataCenter,
+                        e);
+                // Remember a client-side saturation failure so the final exhaustion exception can carry it,
+                // letting callers distinguish ecChronos saturation from genuine resource exhaustion (#1852).
+                saturationCause = e;
+            }
             catch (LockException e)
             {
                 LOG.debug("Lock ({} in datacenter {}) got error, trying next lock",
@@ -247,6 +257,13 @@ public class RepairLockFactoryImpl implements RepairLockFactory
             gate.release();
         }
 
+        if (saturationCause != null)
+        {
+            String satMsg = String.format("Lock resources exhausted for %s due to client-side timeouts "
+                    + "(ecChronos appears saturated)", repairResource);
+            LOG.debug(satMsg);
+            throw new LockClientSaturationException(satMsg, saturationCause);
+        }
         String msg = String.format("Lock resources exhausted for %s", repairResource);
         LOG.debug(msg);
         throw new LockException(msg);

@@ -184,6 +184,7 @@ public class ECChronosInternals implements Closeable
                 .withNativeConnectionProvider(nativeConnectionProvider)
                 .withLockFactory(myLockFactory)
                 .withMaxConcurrency(configuration.getSchedulerConfig().getMaxConcurrency())
+                .withMeterRegistry(meterRegistry)
                 .build();
     }
 
