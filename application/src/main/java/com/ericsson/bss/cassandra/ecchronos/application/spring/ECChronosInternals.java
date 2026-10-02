@@ -266,6 +266,17 @@ public class ECChronosInternals implements Closeable
     }
 
     /**
+     * Returns the CAS lock factory, exposed so the opt-in unified schedule manager can reuse the same
+     * distributed lock factory as the legacy schedule manager.
+     *
+     * @return the {@link CASLockFactory} instance.
+     */
+    public final CASLockFactory getLockFactory()
+    {
+        return myLockFactory;
+    }
+
+    /**
      * Adds a run policy to the schedule manager.
      * @param runPolicy the run policy to add
      * @return true if the policy was added successfully

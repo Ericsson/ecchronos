@@ -17,7 +17,6 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads.NodeWorkerManager;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.refresh.NodeAddedAction;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.refresh.NodeRemovedAction;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.ReplicaSetCache;
@@ -40,7 +39,7 @@ public class NodeLifecycleHandler
     private final EccNodesSync myEccNodesSync;
     private final DistributedJmxConnectionProvider myJmxConnectionProvider;
     private final DistributedNativeConnectionProvider myAgentNativeConnectionProvider;
-    private final NodeWorkerManager myWorkerManager;
+    private final SchemaChangeHandler mySchemaChangeHandler;
     private final ScheduleManager myScheduleManager;
     private final ExecutorService myService;
     private final ReplicaSetCache myReplicaSetCache;
@@ -51,19 +50,19 @@ public class NodeLifecycleHandler
      * @param eccNodesSync the node sync service.
      * @param jmxConnectionProvider the JMX connection provider.
      * @param agentNativeConnectionProvider the native connection provider.
-     * @param workerManager the node worker manager.
+     * @param schemaChangeHandler the schema-change handler (legacy worker manager or unified coordinator).
      * @param scheduleManager the schedule manager.
      * @param service the executor service for async actions.
      */
     public NodeLifecycleHandler(final EccNodesSync eccNodesSync,
                                 final DistributedJmxConnectionProvider jmxConnectionProvider,
                                 final DistributedNativeConnectionProvider agentNativeConnectionProvider,
-                                final NodeWorkerManager workerManager,
+                                final SchemaChangeHandler schemaChangeHandler,
                                 final ScheduleManager scheduleManager,
                                 final ExecutorService service)
     {
         this(eccNodesSync, jmxConnectionProvider, agentNativeConnectionProvider,
-                workerManager, scheduleManager, service, null);
+                schemaChangeHandler, scheduleManager, service, null);
     }
 
     /**
@@ -72,7 +71,7 @@ public class NodeLifecycleHandler
      * @param eccNodesSync the node sync service.
      * @param jmxConnectionProvider the JMX connection provider.
      * @param agentNativeConnectionProvider the native connection provider.
-     * @param workerManager the node worker manager.
+     * @param schemaChangeHandler the schema-change handler (legacy worker manager or unified coordinator).
      * @param scheduleManager the schedule manager.
      * @param service the executor service for async actions.
      * @param replicaSetCache the replica set cache to invalidate on topology changes.
@@ -80,7 +79,7 @@ public class NodeLifecycleHandler
     public NodeLifecycleHandler(final EccNodesSync eccNodesSync,
                                 final DistributedJmxConnectionProvider jmxConnectionProvider,
                                 final DistributedNativeConnectionProvider agentNativeConnectionProvider,
-                                final NodeWorkerManager workerManager,
+                                final SchemaChangeHandler schemaChangeHandler,
                                 final ScheduleManager scheduleManager,
                                 final ExecutorService service,
                                 final ReplicaSetCache replicaSetCache)
@@ -88,7 +87,7 @@ public class NodeLifecycleHandler
         myEccNodesSync = eccNodesSync;
         myJmxConnectionProvider = jmxConnectionProvider;
         myAgentNativeConnectionProvider = agentNativeConnectionProvider;
-        myWorkerManager = workerManager;
+        mySchemaChangeHandler = schemaChangeHandler;
         myScheduleManager = scheduleManager;
         myService = service;
         myReplicaSetCache = replicaSetCache;
@@ -149,9 +148,9 @@ public class NodeLifecycleHandler
             NodeAddedAction callable = new NodeAddedAction(myEccNodesSync, myJmxConnectionProvider,
                     myAgentNativeConnectionProvider, node);
             myService.submit(callable);
-            if (myWorkerManager != null)
+            if (mySchemaChangeHandler != null)
             {
-                myWorkerManager.addNode(node);
+                mySchemaChangeHandler.addNode(node);
             }
             if (myScheduleManager != null)
             {
@@ -179,9 +178,9 @@ public class NodeLifecycleHandler
             NodeRemovedAction callable = new NodeRemovedAction(myEccNodesSync, myJmxConnectionProvider,
                     myAgentNativeConnectionProvider, node);
             myService.submit(callable);
-            if (myWorkerManager != null)
+            if (mySchemaChangeHandler != null)
             {
-                myWorkerManager.removeNode(node);
+                mySchemaChangeHandler.removeNode(node);
             }
             if (myScheduleManager != null)
             {

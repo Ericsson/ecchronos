@@ -186,6 +186,7 @@ def get_parser():
     add_run_repair_subcommand(sub_parsers)
     add_running_job_subcommand(sub_parsers)
     add_schedules_subcommand(sub_parsers)
+    add_unified_schedules_subcommand(sub_parsers)
     add_start_subcommand(sub_parsers)
     add_state_subcommand(sub_parsers)
     add_status_subcommand(sub_parsers)
@@ -343,6 +344,37 @@ def add_schedules_subcommand(sub_parsers):
     add_common_arg(parser_schedules, table_arg)
 
     add_common_arg(parser_schedules, ARG_URL)
+
+
+def add_unified_schedules_subcommand(sub_parsers):
+    parser_unified = sub_parsers.add_parser(
+        "unified-schedules",
+        description="Show the status of consolidated UNIFIED_VNODE schedules, which coordinate one table "
+        "across all of its nodes under a single job. With no node/job it shows a per-table aggregate "
+        "(worst-case status across nodes, average ratio).",
+    )
+    add_common_arg(parser_unified, ARG_COLUMNS)
+    add_common_arg(parser_unified, ARG_FULL)
+
+    job_arg = ARG_JOB_ID.copy()
+    job_arg["help"] = "show the nodes of this unified job id (use with -n/--node to show a single node)"
+    add_common_arg(parser_unified, job_arg)
+
+    node_arg = ARG_NODE_ID.copy()
+    node_arg["help"] = "show only this node of the unified job (requires -i/--id)"
+    add_common_arg(parser_unified, node_arg)
+
+    keyspace_arg = ARG_KEYSPACE.copy()
+    keyspace_arg["help"] = "filter aggregates on this keyspace"
+    add_common_arg(parser_unified, keyspace_arg)
+
+    table_arg = ARG_TABLE.copy()
+    table_arg["help"] = "filter aggregates on this table (requires -k/--keyspace)"
+    add_common_arg(parser_unified, table_arg)
+
+    add_common_arg(parser_unified, ARG_LIMIT)
+    add_common_arg(parser_unified, ARG_OUTPUT_JSON_TABLE)
+    add_common_arg(parser_unified, ARG_URL)
 
 
 def add_run_repair_subcommand(sub_parsers):
@@ -743,6 +775,44 @@ def schedules(arguments):
         print(result.format_exception())
 
 
+def unified_schedules(arguments):
+    request = rest.UnifiedScheduleRequest(base_url=arguments.url)
+    if arguments.id and arguments.node:
+        result = request.get_unified_schedule_node(job_id=arguments.id, node_id=arguments.node, full=arguments.full)
+        if result.is_successful():
+            table_printer.print_schedule(
+                result.data, arguments.limit, arguments.full, columns=arguments.columns, output=arguments.output
+            )
+        else:
+            print(result.format_exception())
+        return
+    if arguments.id:
+        result = request.list_unified_schedule_nodes(job_id=arguments.id)
+        if result.is_successful():
+            table_printer.print_schedules(
+                result.data, arguments.limit, columns=arguments.columns, output=arguments.output
+            )
+        else:
+            print(result.format_exception())
+        return
+    if arguments.node:
+        print("Must specify -i/--id (the unified job id) when using -n/--node.")
+        sys.exit(1)
+    if arguments.full:
+        print("Must specify -i/--id and -n/--node with --full.")
+        sys.exit(1)
+    if arguments.table and not arguments.keyspace:
+        print("Must specify --keyspace if --table is specified.")
+        sys.exit(1)
+    result = request.list_unified_schedules(keyspace=arguments.keyspace, table=arguments.table)
+    if result.is_successful():
+        table_printer.print_unified_schedules(
+            result.data, arguments.limit, columns=arguments.columns, output=arguments.output
+        )
+    else:
+        print(result.format_exception())
+
+
 def repairs(arguments):
     request = rest.RepairSchedulerRequest(base_url=arguments.url)
     if arguments.node or arguments.id:
@@ -971,6 +1041,9 @@ def run_subcommand(arguments):
     elif arguments.subcommand == "schedules":
         status(arguments)
         schedules(arguments)
+    elif arguments.subcommand == "unified-schedules":
+        status(arguments)
+        unified_schedules(arguments)
     elif arguments.subcommand == "start":
         start(arguments)
     elif arguments.subcommand == "state":

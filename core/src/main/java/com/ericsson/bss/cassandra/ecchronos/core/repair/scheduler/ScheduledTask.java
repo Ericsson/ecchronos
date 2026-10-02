@@ -75,6 +75,21 @@ public abstract class ScheduledTask
     public abstract boolean execute(UUID nodeID) throws ScheduledJobException;
 
     /**
+     * Get the identifier of the node this task targets, if any.
+     * <p>
+     * Used by a multi-node scheduler to open the distributed lock / session in the name of the correct
+     * coordinator node for this unit of work. The default returns {@code null}, meaning the task is not tied
+     * to a specific node and the caller may use the scheduling node. Node-specific tasks (such as a repair
+     * group bound to one node) should override this to return that node's id.
+     *
+     * @return the target node id, or {@code null} if not node-specific.
+     */
+    public UUID getNodeId()
+    {
+        return null;
+    }
+
+    /**
      * Cleanup of the task that should be run after the task has been executed.
      */
     public void cleanup()

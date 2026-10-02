@@ -22,6 +22,8 @@ import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementRESTImpl;
 import com.ericsson.bss.cassandra.ecchronos.rest.RepairSessionsRESTImpl;
 import com.ericsson.bss.cassandra.ecchronos.rest.ScheduleRepairManagementRESTImpl;
 import com.ericsson.bss.cassandra.ecchronos.rest.StateManagementRESTImpl;
+import com.ericsson.bss.cassandra.ecchronos.rest.UnifiedScheduleRepairManagementRESTImpl;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -32,7 +34,7 @@ import org.springframework.context.annotation.Import;
 @SpringBootApplication
 @Import(value = { RepairManagementRESTImpl.class, ScheduleRepairManagementRESTImpl.class,
         OnDemandRepairManagementRESTImpl.class, StateManagementRESTImpl.class, MetricsRESTImpl.class,
-        RejectConfigREST.class, ConfigManagementRESTImpl.class, RepairSessionsRESTImpl.class})
+        RejectConfigREST.class, ConfigManagementRESTImpl.class, RepairSessionsRESTImpl.class, UnifiedScheduleRepairManagementRESTImpl.class})
 public class SpringBooter extends SpringBootServletInitializer
 {
     private static final Logger LOG = LoggerFactory.getLogger(SpringBooter.class);
