@@ -51,6 +51,7 @@ public class DistributedNativeConnection extends Connection<DistributedNativeCon
     private HostAware myHostAware = new HostAware();
     private String myInstanceName;
     private RetryPolicyConfig.RetrySchedule myRetrySchedule = new RetryPolicyConfig.RetrySchedule();
+    private NodesSyncHeartbeatConfig myNodesSyncHeartbeat = new NodesSyncHeartbeatConfig();
 
     /**
      * Default constructor. Sets the provider to {@link AgentNativeConnectionProvider}.
@@ -360,6 +361,31 @@ public class DistributedNativeConnection extends Connection<DistributedNativeCon
     public final RetryPolicyConfig.RetrySchedule getReloadSchedule()
     {
         return myRetrySchedule;
+    }
+
+    /**
+     * Sets the nodes_sync heartbeat configuration.
+     *
+     * @param nodesSyncHeartbeat the heartbeat configuration to set.
+     */
+    @JsonProperty("nodesSyncHeartbeat")
+    public final void setNodesSyncHeartbeat(final NodesSyncHeartbeatConfig nodesSyncHeartbeat)
+    {
+        if (nodesSyncHeartbeat != null)
+        {
+            myNodesSyncHeartbeat = nodesSyncHeartbeat;
+        }
+    }
+
+    /**
+     * Gets the nodes_sync heartbeat configuration.
+     *
+     * @return the heartbeat configuration.
+     */
+    @JsonProperty("nodesSyncHeartbeat")
+    public final NodesSyncHeartbeatConfig getNodesSyncHeartbeat()
+    {
+        return myNodesSyncHeartbeat;
     }
 
     /**

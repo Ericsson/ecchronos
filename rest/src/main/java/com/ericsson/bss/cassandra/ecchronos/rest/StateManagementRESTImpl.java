@@ -72,9 +72,10 @@ public class StateManagementRESTImpl implements StateManagementREST
 
         List<NodeSyncState> nodesList = new ArrayList<>();
 
+        long staleThresholdInMs = myEccNodesSync.getStaleThresholdInMs();
         rs.forEach(row ->
         {
-            NodeSyncState nodeSyncState = NodeSyncState.fromRow(row);
+            NodeSyncState nodeSyncState = NodeSyncState.fromRow(row, staleThresholdInMs);
             nodesList.add(nodeSyncState);
         });
         return nodesList;

@@ -18,7 +18,7 @@ from behave import when, then  # pylint: disable=no-name-in-module
 from ecc_step_library.common import run_ecctool, validate_header
 
 STATE_NODES_HEADER = (
-    r"| EcchronosID | Datacenter | NodeID | Last Connection | Next Connection | Endpoint | Node Status |"
+    r"| EcchronosID | Datacenter | NodeID | Last Connection | Next Connection | Endpoint | Node Status | Stale For |"
 )
 
 

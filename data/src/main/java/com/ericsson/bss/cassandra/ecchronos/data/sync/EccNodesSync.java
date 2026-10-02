@@ -68,6 +68,7 @@ public final class EccNodesSync
 
     private final PreparedStatement myCreateStatement;
     private final PreparedStatement myUpdateStatusStatement;
+    private final PreparedStatement myHeartbeatStatement;
     private final PreparedStatement mySelectStatusStatement;
     private final PreparedStatement myDeleteStatement;
 
@@ -75,6 +76,7 @@ public final class EccNodesSync
     private final PreparedStatement myGetByEccInstanceAndDCStatement;
     private final Long connectionDelayValue;
     private final ChronoUnit connectionDelayUnit;
+    private final long staleThresholdInMs;
 
     private EccNodesSync(final Builder builder)
     {
@@ -108,6 +110,21 @@ public final class EccNodesSync
                 .whereColumn(COLUMN_NODE_ID).isEqualTo(bindMarker())
                 .build()
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM));
+        // Heartbeat write: an upsert that (re)writes ALL value columns with a TTL so the whole
+        // row expires together if the owning instance stops renewing it. node_status and
+        // node_endpoint are preserved by the caller (read from the current row), while
+        // last_connection is refreshed to now so it doubles as a freshness signal.
+        myHeartbeatStatement = mySession.prepare(QueryBuilder.insertInto(KEYSPACE_NAME, TABLE_NAME)
+                .value(COLUMN_ECCHRONOS_ID, bindMarker())
+                .value(COLUMN_DC_NAME, bindMarker())
+                .value(COLUMN_NODE_ENDPOINT, bindMarker())
+                .value(COLUMN_NODE_STATUS, bindMarker())
+                .value(COLUMN_LAST_CONNECTION, bindMarker())
+                .value(COLUMN_NEXT_CONNECTION, bindMarker())
+                .value(COLUMN_NODE_ID, bindMarker())
+                .usingTtl(bindMarker())
+                .build()
+                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM));
         mySelectStatusStatement = mySession.prepare(selectFrom(KEYSPACE_NAME, TABLE_NAME)
                 .columns(COLUMN_NODE_ID, COLUMN_NODE_ENDPOINT, COLUMN_DC_NAME, COLUMN_NODE_STATUS)
                 .whereColumn(COLUMN_ECCHRONOS_ID).isEqualTo(bindMarker())
@@ -129,6 +146,7 @@ public final class EccNodesSync
 
         connectionDelayValue = builder.myConnectionDelayValue;
         connectionDelayUnit = builder.myConnectionDelayUnit;
+        staleThresholdInMs = builder.myStaleThresholdInMs;
     }
 
     /**
@@ -152,6 +170,18 @@ public final class EccNodesSync
     {
         BoundStatement boundStatement = myGetByEccInstanceStatement.bind(ecChronosID);
         return mySession.execute(boundStatement);
+    }
+
+    /**
+     * Returns the threshold (in milliseconds) after which a node whose row has not been refreshed
+     * is considered stale. This is derived from the heartbeat configuration and used by the REST
+     * layer to flag stale nodes on the read path.
+     *
+     * @return the stale threshold in milliseconds; {@code 0} or negative disables staleness.
+     */
+    public long getStaleThresholdInMs()
+    {
+        return staleThresholdInMs;
     }
 
     /**
@@ -255,6 +285,53 @@ public final class EccNodesSync
         else
         {
             LOG.error("Unable to update node {}", nodeID);
+        }
+        return tmpResultSet;
+    }
+
+    /**
+     * Writes a heartbeat for a node owned by this ecChronos instance.
+     *
+     * <p>This re-writes the node's row with a TTL so that the whole row expires together if this
+     * instance stops renewing it (e.g. after a permanent decommission). The current
+     * {@code node_status} and {@code node_endpoint} are preserved as provided by the caller, while
+     * {@code last_connection} is refreshed to the current time so it can be used as a freshness
+     * signal. All value columns are (re)written with the same TTL; this is required for the entire
+     * row to expire rather than leaving a primary-key-only ghost row.</p>
+     *
+     * @param nodeStatus the current status to preserve for the node.
+     * @param datacenterName the datacenter the node belongs to.
+     * @param nodeEndpoint the endpoint address to preserve for the node.
+     * @param nodeID the unique identifier of the node.
+     * @param ttlInSeconds the TTL (in seconds) applied to all value columns.
+     * @return the result set from the heartbeat operation.
+     */
+    public ResultSet updateNodeHeartbeat(
+            final NodeStatus nodeStatus,
+            final String datacenterName,
+            final String nodeEndpoint,
+            final UUID nodeID,
+            final int ttlInSeconds
+    )
+    {
+        BoundStatement heartbeat = myHeartbeatStatement.bind(
+                ecChronosID,
+                datacenterName,
+                nodeEndpoint,
+                nodeStatus.toString(),
+                Instant.now(),
+                Instant.now().plus(connectionDelayValue, connectionDelayUnit),
+                nodeID,
+                ttlInSeconds
+        );
+        ResultSet tmpResultSet = execute(heartbeat);
+        if (tmpResultSet.wasApplied())
+        {
+            LOG.debug("Heartbeat written for node {} with TTL {}s", nodeID, ttlInSeconds);
+        }
+        else
+        {
+            LOG.warn("Unable to write heartbeat for node {}", nodeID);
         }
         return tmpResultSet;
     }
@@ -381,6 +458,7 @@ public final class EccNodesSync
         private String myEcchronosID;
         private Long myConnectionDelayValue;
         private ChronoUnit myConnectionDelayUnit;
+        private long myStaleThresholdInMs;
 
         /**
          * Builds EccNodesSync with session.
@@ -444,6 +522,20 @@ public final class EccNodesSync
         public Builder withEcchronosID(final String echronosID)
         {
             this.myEcchronosID = echronosID;
+            return this;
+        }
+
+        /**
+         * Builds EccNodesSync with the stale threshold used by the REST layer to flag nodes whose
+         * rows have not been refreshed recently.
+         *
+         * @param staleThresholdInMs
+         *          the threshold in milliseconds; {@code 0} or negative disables staleness flagging.
+         * @return Builder
+         */
+        public Builder withStaleThresholdInMs(final long staleThresholdInMs)
+        {
+            this.myStaleThresholdInMs = staleThresholdInMs;
             return this;
         }
 

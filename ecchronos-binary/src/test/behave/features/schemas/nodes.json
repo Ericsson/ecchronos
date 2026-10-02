@@ -26,6 +26,12 @@
       },
       "nodeStatus": {
         "type": "string"
+      },
+      "stale": {
+        "type": "boolean"
+      },
+      "lastHeartbeatAgeMs": {
+        "type": "integer"
       }
     }
   }

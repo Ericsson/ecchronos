@@ -110,6 +110,17 @@ CREATE TABLE ecchronos.nodes_sync
     node_id DESC
 );
 ```
+
+Each instance owns the partition keyed by its own `ecchronos_id` and periodically renews its rows
+(a heartbeat) using a per-write TTL. While an instance runs, its rows are continuously refreshed
+and persist; if an instance is permanently removed (e.g. a decommissioned datacenter), its rows
+are no longer renewed and expire automatically via the TTL, keeping `nodes_sync` consistent with
+the real topology without manual cleanup. The heartbeat interval and TTL are configurable under
+`connection.cql.nodesSyncHeartbeat` in `ecc.yml`. On the read path (REST/`ecctool nodes state`), a
+node whose row has not been refreshed recently is reported via a dedicated `Stale For` column (and
+a `stale` flag plus a `lastHeartbeatAgeMs` value in REST/JSON) while its row still exists; the raw
+`node_status` value is left unchanged.
+
 ### Repair History
 
 A RepairHistory table to store relevant repair operation data. Data can be retrieved for auditing or debugging purposes.
