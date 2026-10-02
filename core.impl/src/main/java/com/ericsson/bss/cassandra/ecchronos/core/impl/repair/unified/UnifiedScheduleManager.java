@@ -74,6 +74,8 @@ public final class UnifiedScheduleManager implements ScheduleManager, Closeable
     static final int MAX_CONSECUTIVE_TASK_FAILURES = 5;
     /** Worker-pool safety cap (repair concurrency is bounded by the CAS lock, not this). */
     static final int WORKER_POOL_SAFETY_CAP = 256;
+    /** Sentinel for an unbounded max concurrency (worker pool bounded only by {@link #WORKER_POOL_SAFETY_CAP}). */
+    static final int UNBOUNDED_CONCURRENCY = 0;
     static final long LOCK_CONTENTION_BACKOFF_MIN_MS = TimeUnit.SECONDS.toMillis(1);
     static final long LOCK_CONTENTION_BACKOFF_MAX_MS = TimeUnit.SECONDS.toMillis(5);
     static final long ACTIVE_DISPATCH_DELAY_MS = TimeUnit.SECONDS.toMillis(1);
@@ -89,7 +91,7 @@ public final class UnifiedScheduleManager implements ScheduleManager, Closeable
     private final DistributedNativeConnectionProvider myNativeConnectionProvider;
 
     private final ScheduledThreadPoolExecutor myExecutor;
-    private final ExecutorService myWorkerPool;
+    private final ThreadPoolExecutor myWorkerPool;
     private final DispatchTask myDispatchTask = new DispatchTask();
     private volatile ScheduledFuture<?> myDispatchFuture;
     private volatile boolean myDispatchStarted;
@@ -98,6 +100,7 @@ public final class UnifiedScheduleManager implements ScheduleManager, Closeable
     private final long myRunIntervalInMs;
     private volatile long mySessionWindowInMs;
     private volatile long myCooldownInMs;
+    private volatile int myMaxConcurrency = UNBOUNDED_CONCURRENCY;
 
     private record JobNodeKey(UUID jobId, UUID nodeId)
     {
@@ -210,6 +213,27 @@ public final class UnifiedScheduleManager implements ScheduleManager, Closeable
     public void setLocksPerResource(final int locksPerResource)
     {
         RepairLockFactoryImpl.configure(locksPerResource);
+    }
+
+    @Override
+    public int getMaxConcurrency()
+    {
+        return myMaxConcurrency;
+    }
+
+    @Override
+    public void setMaxConcurrency(final int maxConcurrency)
+    {
+        myMaxConcurrency = maxConcurrency < 1 ? UNBOUNDED_CONCURRENCY : maxConcurrency;
+        // Bound the elastic worker pool. 0/unbounded falls back to the safety cap; a positive value caps the
+        // number of concurrently dispatched repair units. setMaximumPoolSize applies to subsequently submitted
+        // units; in-flight units are not interrupted.
+        int poolMax = myMaxConcurrency == UNBOUNDED_CONCURRENCY
+                ? WORKER_POOL_SAFETY_CAP
+                : Math.min(myMaxConcurrency, WORKER_POOL_SAFETY_CAP);
+        myWorkerPool.setMaximumPoolSize(poolMax);
+        LOG.info("Unified scheduler max concurrency set to {} (worker pool max now {})",
+                getMaxConcurrency(), poolMax);
     }
 
     /**
