@@ -38,7 +38,7 @@ import java.util.UUID;
  * If a lock cannot be acquired for a task, the task is skipped (not the entire job).
  * All locks are released when the session ends via {@link #close()}.
  */
-final class SessionLockPool implements Closeable
+public final class SessionLockPool implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(SessionLockPool.class);
 
@@ -48,7 +48,7 @@ final class SessionLockPool implements Closeable
     private final Set<RepairResource> myHeldResources = new HashSet<>();
     private final List<LockFactory.DistributedLock> myHeldLocks = new ArrayList<>();
 
-    SessionLockPool(final LockFactory lockFactory, final RepairLockFactoryImpl repairLockFactory, final UUID nodeId)
+    public SessionLockPool(final LockFactory lockFactory, final RepairLockFactoryImpl repairLockFactory, final UUID nodeId)
     {
         myLockFactory = lockFactory;
         myRepairLockFactory = repairLockFactory;
@@ -62,7 +62,7 @@ final class SessionLockPool implements Closeable
      * @param task The task whose resources need to be locked.
      * @throws LockException If unable to acquire a required lock.
      */
-    void acquireForTask(final ScheduledTask task) throws LockException
+    public void acquireForTask(final ScheduledTask task) throws LockException
     {
         Set<RepairResource> required = task.getRepairResources();
         if (required.isEmpty())
