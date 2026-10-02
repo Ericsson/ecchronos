@@ -387,10 +387,14 @@ repair:
     unit: MINUTES
   ##
   ## Specifies the default repair_type.
-  ## Possible values are: vnode, parallel_vnode, incremental
+  ## Possible values are: vnode, parallel_vnode, incremental, unified_vnode
   ## vnode = repair 1 vnode at a time (supports size_target to split the vnode further, in this case there will be 1 repair session per subrange)
   ## parallel_vnode = repair vnodes in parallel, this will combine vnodes into a single repair session per repair group
   ## incremental = repair vnodes incrementally (incremental repair)
+  ## unified_vnode = (EXPERIMENTAL) same vnode repair as 'vnode', but managed by the consolidated multi-node
+  ##   scheduling subsystem: a single repair job per table coordinates all of its nodes instead of one job per
+  ##   node. This selects the unified subsystem for the whole instance and is mutually exclusive with the
+  ##   legacy types above (see schedule.yml: mixed repair types are not allowed).
   ##
   repair_type: vnode
   ##

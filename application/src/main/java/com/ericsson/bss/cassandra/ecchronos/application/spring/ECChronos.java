@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -45,9 +46,14 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads.NodeWorkerMan
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.HungRepairSessionRecovery;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandStatus;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.SchemaChangeHandler;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.SchemaRefresher;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.OnDemandRepairSchedulerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.RepairSchedulerImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.unified.SchemaChangeCoordinator;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.unified.UnifiedRepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.unified.UnifiedScheduleManager;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.RepairStateFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.VnodeRepairStateFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
@@ -70,11 +76,13 @@ public class ECChronos implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ECChronos.class);
     private final ECChronosInternals myECChronosInternals;
-    private final RepairSchedulerImpl myRepairSchedulerImpl;
+    private final RepairScheduler myRepairScheduler;
+    private final SchemaChangeHandler mySchemaChangeHandler;
+    private final UnifiedScheduleManager myUnifiedScheduleManager;
+    private final boolean myUnifiedMode;
     private final TimeBasedRunPolicy myTimeBasedRunPolicy;
     private final OnDemandRepairSchedulerImpl myOnDemandRepairSchedulerImpl;
     private final RepairStatsProvider myRepairStatsProvider;
-    private final NodeWorkerManager myNodeWorkerManager;
     private final HungRepairSessionRecovery myHungRepairSessionRecovery;
 
     /**
@@ -145,60 +153,91 @@ public class ECChronos implements Closeable
                 .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
                 .build();
 
-        myRepairSchedulerImpl = RepairSchedulerImpl.builder()
-                .withJmxProxyFactory(myECChronosInternals.getJmxProxyFactory())
-                .withScheduleManager(myECChronosInternals.getScheduleManager())
-                .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
-                .withCassandraMetrics(myECChronosInternals.getCassandraMetrics())
-                .withReplicationState(replicationState)
-                .withRepairPolicies(Collections.singletonList(myTimeBasedRunPolicy))
-                .withCassandraMetrics(myECChronosInternals.getCassandraMetrics())
-                .withRepairStateFactory(repairStateFactoryImpl)
-                .withRepairHistory(repairHistoryService)
-                .withFaultReporter(repairFaultReporter)
-                .withTableStorageStates(myECChronosInternals.getTableStorageStates())
-                .withRepairLockType(configuration.getRepairConfig().getRepairLockType())
-                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
-                .build();
+        AbstractRepairConfigurationProvider repairConfigurationProvider =
+                new FileBasedRepairConfiguration(applicationContext);
 
-        AbstractRepairConfigurationProvider repairConfigurationProvider = new FileBasedRepairConfiguration(applicationContext);
+        myUnifiedMode = RepairType.UNIFIED_VNODE.equals(configuration.getRepairConfig().getRepairType());
 
-        myOnDemandRepairSchedulerImpl = OnDemandRepairSchedulerImpl.builder()
-                .withScheduleManager(myECChronosInternals.getScheduleManager())
-                .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
-                .withJmxProxyFactory(myECChronosInternals.getJmxProxyFactory())
-                .withReplicationState(replicationState)
-                .withRepairLockType(configuration.getRepairConfig().getRepairLockType())
-                .withSession(session)
-                .withRepairConfigurationFunction(configuration.getRepairConfig().asRepairConfiguration())
-                .withRepairHistory(repairHistoryService)
-                .withRepairConfigurationFunction(repairConfigurationProvider::get)
-                .withOnDemandStatus(new OnDemandStatus(nativeConnectionProvider))
-                .withCassandraMetrics(myECChronosInternals.getCassandraMetrics())
-                .withRetryAttempts(configuration.getRepairConfig().getOnDemandRetry().getAttempts())
-                .withRetryBackoffMs(configuration.getRepairConfig().getOnDemandRetry().getBackoffInMs())
-                .build();
+        if (myUnifiedMode)
+        {
+            LOG.info("Repair type is {}; starting the consolidated (unified) repair subsystem",
+                    configuration.getRepairConfig().getRepairType());
+            myUnifiedScheduleManager = UnifiedScheduleManager.builder()
+                    .withRunInterval(
+                            configuration.getSchedulerConfig().getFrequency().getInterval(TimeUnit.MILLISECONDS),
+                            TimeUnit.MILLISECONDS)
+                    .withSessionWindow(
+                            configuration.getSchedulerConfig().getSessionWindow().getInterval(TimeUnit.MILLISECONDS),
+                            TimeUnit.MILLISECONDS)
+                    .withCooldown(configuration.getSchedulerConfig().getCooldown().getInterval(TimeUnit.MILLISECONDS),
+                            TimeUnit.MILLISECONDS)
+                    .withLockFactory(myECChronosInternals.getLockFactory())
+                    .withNativeConnectionProvider(nativeConnectionProvider)
+                    .build();
+            myUnifiedScheduleManager.addRunPolicy(myTimeBasedRunPolicy);
+            myRepairScheduler = UnifiedRepairScheduler.builder()
+                    .withJmxProxyFactory(myECChronosInternals.getJmxProxyFactory())
+                    .withScheduleManager(myUnifiedScheduleManager)
+                    .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
+                    .withRepairPolicies(Collections.singletonList(myTimeBasedRunPolicy))
+                    .withRepairStateFactory(repairStateFactoryImpl)
+                    .withRepairHistory(repairHistoryService)
+                    .withFaultReporter(repairFaultReporter)
+                    .withTableStorageStates(myECChronosInternals.getTableStorageStates())
+                    .withRepairLockType(configuration.getRepairConfig().getRepairLockType())
+                    .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
+                    .build();
 
-        ThreadPoolTaskConfig threadPoolTaskConfig = configuration.getConnectionConfig().getThreadPoolTaskConfig();
+            SchemaRefresher schemaRefresher = new SchemaRefresher(
+                    myECChronosInternals.getReplicatedTableProvider(),
+                    myRepairScheduler,
+                    myECChronosInternals.getTableReferenceFactory(),
+                    repairConfigurationProvider::get,
+                    session);
+            mySchemaChangeHandler = new SchemaChangeCoordinator(nativeConnectionProvider, schemaRefresher);
+        }
+        else
+        {
+            LOG.info("Repair type is {}; starting the legacy per-node repair subsystem",
+                    configuration.getRepairConfig().getRepairType());
+            myUnifiedScheduleManager = null;
+            myRepairScheduler = RepairSchedulerImpl.builder()
+                    .withJmxProxyFactory(myECChronosInternals.getJmxProxyFactory())
+                    .withScheduleManager(myECChronosInternals.getScheduleManager())
+                    .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
+                    .withCassandraMetrics(myECChronosInternals.getCassandraMetrics())
+                    .withReplicationState(replicationState)
+                    .withRepairPolicies(Collections.singletonList(myTimeBasedRunPolicy))
+                    .withRepairStateFactory(repairStateFactoryImpl)
+                    .withRepairHistory(repairHistoryService)
+                    .withFaultReporter(repairFaultReporter)
+                    .withTableStorageStates(myECChronosInternals.getTableStorageStates())
+                    .withRepairLockType(configuration.getRepairConfig().getRepairLockType())
+                    .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
+                    .build();
 
-        SchemaRefresher schemaRefresher = new SchemaRefresher(
-            myECChronosInternals.getReplicatedTableProvider(),
-            myRepairSchedulerImpl,
-            myECChronosInternals.getTableReferenceFactory(),
-            repairConfigurationProvider::get,
-            session);
+            SchemaRefresher schemaRefresher = new SchemaRefresher(
+                    myECChronosInternals.getReplicatedTableProvider(),
+                    myRepairScheduler,
+                    myECChronosInternals.getTableReferenceFactory(),
+                    repairConfigurationProvider::get,
+                    session);
 
-        LOG.debug("myNodeWorkerManager being created");
-        myNodeWorkerManager = NodeWorkerManager.newBuilder()
-                .withNativeConnection(nativeConnectionProvider)
-                .withSchemaRefresher(schemaRefresher)
-                .withThreadPool(setupThreadPool(threadPoolTaskConfig)).build();
+            ThreadPoolTaskConfig threadPoolTaskConfig = configuration.getConnectionConfig().getThreadPoolTaskConfig();
+            mySchemaChangeHandler = NodeWorkerManager.newBuilder()
+                    .withNativeConnection(nativeConnectionProvider)
+                    .withSchemaRefresher(schemaRefresher)
+                    .withThreadPool(setupThreadPool(threadPoolTaskConfig)).build();
+        }
+
+        myOnDemandRepairSchedulerImpl = buildOnDemandScheduler(configuration, nativeConnectionProvider,
+                replicationState, repairHistoryService, session, repairConfigurationProvider);
 
         defaultRepairConfigurationProvider.fromBuilder(DefaultRepairConfigurationProvider.newBuilder()
                 .withSession(session)
                 .withEccNodesSync(eccNodesSync)
                 .withJmxConnectionProvider(jmxConnectionProvider)
-                .withNodeWorkerManager(myNodeWorkerManager)
+                .withSchemaChangeHandler(mySchemaChangeHandler)
                 .withScheduleManager(myECChronosInternals.getScheduleManager())
                 .withDistributedNativeConnectionProvider(nativeConnectionProvider)
                 .withReplicaSetCache(repairStateFactoryImpl.getReplicaSetCache()));
@@ -210,7 +249,14 @@ public class ECChronos implements Closeable
 
         Collection<UUID> nodeIDList = nativeConnectionProvider.getNodes().keySet();
         LOG.debug("Total nodes found: {}", nodeIDList.size());
-        myECChronosInternals.getScheduleManager().createScheduleFutureForNodeIDList(nodeIDList);
+        if (myUnifiedMode)
+        {
+            myUnifiedScheduleManager.createScheduleFutureForNodeIDList(nodeIDList);
+        }
+        else
+        {
+            myECChronosInternals.getScheduleManager().createScheduleFutureForNodeIDList(nodeIDList);
+        }
 
         HungRepairRecoveryConfig hungRepairRecoveryConfig = configuration.getRepairConfig().getHungRepairRecovery();
         myHungRepairSessionRecovery = new HungRepairSessionRecovery(
@@ -245,13 +291,14 @@ public class ECChronos implements Closeable
     }
 
     /**
-     * Returns the repair scheduler.
+     * Returns the active repair scheduler for the configured repair type (the unified scheduler when the
+     * global repair type is {@code unified_*}, otherwise the legacy per-node scheduler).
      * @return the repair scheduler
      */
     @Bean(destroyMethod = "")
     public RepairScheduler repairScheduler()
     {
-        return myRepairSchedulerImpl;
+        return myRepairScheduler;
     }
 
     /**
@@ -309,16 +356,6 @@ public class ECChronos implements Closeable
     }
 
     /**
-     * Returns the node worker manager.
-     * @return the node worker manager
-     */
-    @Bean
-    public NodeWorkerManager nodeWorkerManager()
-    {
-        return myNodeWorkerManager;
-    }
-
-    /**
      * Returns the hung repair session recovery component.
      * @return the hung repair session recovery component
      */
@@ -332,12 +369,58 @@ public class ECChronos implements Closeable
     public final void close()
     {
         myECChronosInternals.removeRunPolicy(myTimeBasedRunPolicy);
+        if (myUnifiedScheduleManager != null)
+        {
+            myUnifiedScheduleManager.removeRunPolicy(myTimeBasedRunPolicy);
+        }
         myTimeBasedRunPolicy.close();
-        myRepairSchedulerImpl.close();
+        closeQuietly(myRepairScheduler);
+        if (myUnifiedScheduleManager != null)
+        {
+            myUnifiedScheduleManager.close();
+        }
         myECChronosInternals.close();
         myOnDemandRepairSchedulerImpl.close();
-        myNodeWorkerManager.shutdown();
+        mySchemaChangeHandler.shutdown();
         myHungRepairSessionRecovery.close();
+    }
+
+    private void closeQuietly(final RepairScheduler scheduler)
+    {
+        if (scheduler instanceof Closeable)
+        {
+            try
+            {
+                ((Closeable) scheduler).close();
+            }
+            catch (java.io.IOException e)
+            {
+                LOG.warn("Error closing repair scheduler", e);
+            }
+        }
+    }
+
+    private OnDemandRepairSchedulerImpl buildOnDemandScheduler(
+            final Config configuration,
+            final DistributedNativeConnectionProvider nativeConnectionProvider,
+            final ReplicationState replicationState,
+            final RepairHistoryService repairHistoryService,
+            final CqlSession session,
+            final AbstractRepairConfigurationProvider repairConfigurationProvider)
+    {
+        return OnDemandRepairSchedulerImpl.builder()
+                .withScheduleManager(myECChronosInternals.getScheduleManager())
+                .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
+                .withJmxProxyFactory(myECChronosInternals.getJmxProxyFactory())
+                .withReplicationState(replicationState)
+                .withRepairLockType(configuration.getRepairConfig().getRepairLockType())
+                .withSession(session)
+                .withRepairConfigurationFunction(configuration.getRepairConfig().asRepairConfiguration())
+                .withRepairHistory(repairHistoryService)
+                .withRepairConfigurationFunction(repairConfigurationProvider::get)
+                .withOnDemandStatus(new OnDemandStatus(nativeConnectionProvider))
+                .withCassandraMetrics(myECChronosInternals.getCassandraMetrics())
+                .build();
     }
 
     private ThreadPoolTaskExecutor setupThreadPool(final ThreadPoolTaskConfig threadPoolTaskConfig)

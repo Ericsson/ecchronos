@@ -125,6 +125,44 @@ class FullSchedule(Schedule):
         return schedule_dict
 
 
+class UnifiedScheduleAggregate(object):
+    # pylint: disable=too-many-instance-attributes
+    def __init__(self, data):
+        self.job_id = data["jobID"] if "jobID" in data else "<UNKNOWN>"
+        self.keyspace = data["keyspace"] if "keyspace" in data else "<UNKNOWN>"
+        self.table = data["table"] if "table" in data else "<UNKNOWN>"
+        self.status = data["status"] if "status" in data else "<UNKNOWN>"
+        self.repaired_ratio = float(data["repairedRatio"] if "repairedRatio" in data else 0)
+        self.last_repaired_at_in_ms = int(data["lastRepairedAtInMs"] if "lastRepairedAtInMs" in data else -1)
+        self.next_repair_in_ms = int(data["nextRepairInMs"] if "nextRepairInMs" in data else -1)
+        self.node_count = int(data["nodeCount"] if "nodeCount" in data else 0)
+        self.nodes = data["nodes"] if "nodes" in data else []
+        self.config = data["config"] if "config" in data else "<UNKNOWN>"
+        self.repair_type = data["repairType"] if "repairType" in data else "UNIFIED_VNODE"
+
+    def is_valid(self):
+        return self.keyspace != "<UNKNOWN>"
+
+    def get_repair_percentage(self):
+        return "{0:.2f}".format(self.repaired_ratio * 100.0)
+
+    def get_config(self):
+        return json.dumps(self.config).strip("{}")
+
+    def get_last_repaired_at(self):
+        if self.last_repaired_at_in_ms == -1:
+            return "-"
+        return datetime.datetime.fromtimestamp(self.last_repaired_at_in_ms / 1000).strftime("%Y-%m-%d %H:%M:%S")
+
+    def get_next_repair(self):
+        if self.next_repair_in_ms == -1:
+            return "-"
+        return datetime.datetime.fromtimestamp(self.next_repair_in_ms / 1000).strftime("%Y-%m-%d %H:%M:%S")
+
+    def to_dict(self):
+        return self.__dict__
+
+
 class RepairInfo(object):
     def __init__(self, data):
         self.since_in_ms = int(data["sinceInMs"] if "sinceInMs" in data else -1)
