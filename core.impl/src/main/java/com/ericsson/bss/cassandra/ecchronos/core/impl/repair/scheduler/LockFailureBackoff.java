@@ -130,7 +130,9 @@ final class LockFailureBackoff
     {
         int consecutive = mySaturationTimeouts.computeIfAbsent(job, k -> new AtomicInteger(0)).incrementAndGet();
         incrementMetric(METRIC_LOCK_SATURATION_TIMEOUTS);
-        long multiplier = Math.min(1L << (consecutive - 1), MAX_SATURATION_BACKOFF_MULTIPLIER);
+        int maxExponent = Integer.numberOfTrailingZeros(MAX_SATURATION_BACKOFF_MULTIPLIER);
+        int exponent = Math.min(consecutive - 1, maxExponent);
+        long multiplier = 1L << exponent;
         long backoff = flatBackoff() * multiplier;
         myContentionBackoff.put(job, System.currentTimeMillis() + backoff);
         LOG.warn("ecChronos appears saturated: lock acquisition for job {} on node {} timed out {} time(s) in a row "
