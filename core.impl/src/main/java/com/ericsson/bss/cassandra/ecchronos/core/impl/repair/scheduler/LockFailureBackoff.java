@@ -42,7 +42,7 @@ final class LockFailureBackoff
 {
     private static final Logger LOG = LoggerFactory.getLogger(LockFailureBackoff.class);
 
-    /** Maximum multiplier applied to the base backoff when client saturation timeouts repeat. */
+    /** Maximum multiplier applied to the base backoff when client saturation timeouts repeat, this must be a power-of-two. */
     static final int MAX_SATURATION_BACKOFF_MULTIPLIER = 32;
     /** Metric counting lock acquisition failures caused by client-side saturation (CQL timeouts). */
     static final String METRIC_LOCK_SATURATION_TIMEOUTS = "ecc.lock.saturation.timeouts";
