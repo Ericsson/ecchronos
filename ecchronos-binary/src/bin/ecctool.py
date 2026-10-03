@@ -25,6 +25,7 @@ import glob
 import subprocess
 from argparse import ArgumentParser, ArgumentTypeError
 from io import open
+from urllib.error import HTTPError
 
 try:
     from ecchronoslib import rest, table_printer
@@ -179,6 +180,7 @@ def get_parser():
     sub_parsers = parser.add_subparsers(dest="subcommand", help="")
 
     add_config_subcommand(sub_parsers)
+    add_metrics_subcommand(sub_parsers)
     add_rejections_subcommand(sub_parsers)
     add_repair_info_subcommand(sub_parsers)
     add_repair_sessions_subcommand(sub_parsers)
@@ -425,6 +427,35 @@ def add_state_subcommand(sub_parsers):
 def add_state_nodes_subcommand(state_subparsers):
     parser_nodes = state_subparsers.add_parser("nodes", help="Get nodes managed by local instance.")
     add_common_arg(parser_nodes, ARG_URL)
+
+
+def add_metrics_subcommand(sub_parsers):
+    parser_metrics = sub_parsers.add_parser(
+        "metrics",
+        description="Fetch the agent metrics exposition text (native Prometheus/OpenMetrics passthrough).",
+    )
+    parser_metrics.add_argument(
+        "--name",
+        action="append",
+        dest="name",
+        default=None,
+        metavar="SUBSTR",
+        help="only show metrics whose name contains the given substring "
+        "(repeatable, case-insensitive, '.' and '_' are equivalent)",
+    )
+    parser_metrics.add_argument(
+        "--format",
+        choices=["prometheus", "openmetrics"],
+        default="prometheus",
+        help="exposition format to request (default: prometheus)",
+    )
+    parser_metrics.add_argument(
+        "--raw",
+        action="store_true",
+        default=False,
+        help="suppress '# HELP' and '# TYPE' comment lines, showing only sample lines",
+    )
+    add_common_arg(parser_metrics, ARG_URL)
 
 
 def add_common_arg(parser, arg_config, required=None):
@@ -919,14 +950,15 @@ def stop(arguments):
 def status(arguments, print_running=False):
     request = rest.RepairSchedulerRequest(base_url=arguments.url)
     result = request.list_schedules()
+    output = getattr(arguments, "output", "")
     if result.is_successful():
         if print_running:
-            if arguments.output == "json":
+            if output == "json":
                 table_printer.output_json({"running": True})
             elif print_running:
                 print("ecChronos is running.")
     else:
-        if arguments.output == "json":
+        if output == "json":
             table_printer.output_json({"running": False})
         else:
             print("ecChronos is not running.")
@@ -946,10 +978,100 @@ def running_job(arguments):
             print("Repair job with id " + result + " is running.")
 
 
+def _normalize_metric_name(value):
+    """Normalize a metric name fragment for forgiving comparison."""
+    return value.lower().replace(".", "_")
+
+
+def _sample_metric_name(line):
+    """Return the metric name of a sample line, or None for comments/blanks."""
+    text = line.strip()
+    if not text or text.startswith("#"):
+        return None
+    end = len(text)
+    for sep in ("{", " ", "\t", "="):
+        idx = text.find(sep)
+        if idx != -1:
+            end = min(end, idx)
+    return text[:end]
+
+
+def _comment_metric_name(line):
+    """Return the metric name of a '# HELP'/'# TYPE' line, or None."""
+    parts = line.strip().split()
+    if len(parts) >= 3 and parts[0] == "#" and parts[1] in ("HELP", "TYPE"):
+        return parts[2]
+    return None
+
+
+def filter_metrics_text(scrape_text, names=None, include_comments=True):
+    """Filter exposition text client-side by metric name substrings.
+
+    Matching is case-insensitive with '.' and '_' treated as equivalent,
+    so a remembered fragment like 'lock.latency' matches
+    'ecc_scheduler_lock_latency_seconds'. A line is kept when its metric
+    name contains any of the given substrings. Without names the text is
+    returned unchanged (unless comments are excluded via --raw).
+    """
+    normalized = [_normalize_metric_name(name) for name in names] if names else []
+
+    if not normalized and include_comments:
+        return scrape_text
+
+    def matches(metric_name):
+        return not normalized or any(
+            fragment in _normalize_metric_name(metric_name) for fragment in normalized
+        )
+
+    kept = []
+    for line in scrape_text.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("#"):
+            if not include_comments:
+                continue
+            if stripped == "# EOF":
+                kept.append(line)
+            else:
+                metric_name = _comment_metric_name(stripped)
+                if metric_name is None:
+                    if not normalized:
+                        kept.append(line)
+                elif matches(metric_name):
+                    kept.append(line)
+        elif matches(_sample_metric_name(stripped)):
+            kept.append(line)
+
+    if not kept:
+        return ""
+    result = "\n".join(kept)
+    if scrape_text.endswith("\n"):
+        result += "\n"
+    return result
+
+
+def metrics(arguments):
+    request = rest.MetricsRequest(base_url=arguments.url)
+    result = request.get_metrics(open_metrics=arguments.format == "openmetrics")
+    if isinstance(result, rest.RequestResult):
+        # basic_request() reports connection failures as 404 as well, so only
+        # a genuine HTTP 404 from the agent means statistics are disabled.
+        if result.status_code == 404 and isinstance(result.exception, HTTPError):
+            print("Metrics are not enabled on this instance (statistics.enabled is false).")
+        else:
+            print(result.format_exception())
+        sys.exit(1)
+    sys.stdout.write(filter_metrics_text(result, names=arguments.name, include_comments=not arguments.raw))
+
+
 def run_subcommand(arguments):
     if arguments.subcommand == "config":
         status(arguments)
         config(arguments)
+    elif arguments.subcommand == "metrics":
+        status(arguments)
+        metrics(arguments)
     elif arguments.subcommand == "rejections":
         status(arguments)
         rejections(arguments)

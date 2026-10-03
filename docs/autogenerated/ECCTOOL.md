@@ -3,12 +3,40 @@
 ecctool is a command line utility used to perform operations toward an ecChronos instance. Run ‘ecctool &lt;subcommand&gt; –help’ to get more information about each subcommand.
 
 ```console
-usage: ecctool [-h] {rejections,repair-info,repairs,run-repair,running-job,schedules,start,state,status,stop} ...
+usage: ecctool [-h] {config,metrics,rejections,repair-info,repair-sessions,repairs,run-repair,running-job,schedules,start,state,status,stop} ...
 ```
 
 
 ### -h, --help
 show this help message and exit
+
+## ecctool metrics
+
+Fetch the agent metrics exposition text (native Prometheus/OpenMetrics passthrough).
+
+```console
+usage: ecctool metrics [-h] [--name SUBSTR] [--format {prometheus,openmetrics}] [--raw] [-u URL]
+```
+
+
+### -h, --help
+show this help message and exit
+
+
+### --name &lt;substr&gt;
+only show metrics whose name contains the given substring (repeatable, case-insensitive, '.' and '_' are equivalent)
+
+
+### --format &lt;{prometheus,openmetrics}&gt;
+exposition format to request (default: prometheus)
+
+
+### --raw
+suppress '# HELP' and '# TYPE' comment lines, showing only sample lines
+
+
+### -u &lt;url&gt;, --url &lt;url&gt;
+ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
 
 ## ecctool rejections
 

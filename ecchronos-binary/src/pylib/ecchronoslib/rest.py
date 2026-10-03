@@ -115,11 +115,14 @@ class RestRequest(object):
         except Exception as e:  # pylint: disable=broad-except
             return RequestResult(exception=e, message="Unable to retrieve resource {0}".format(request_url))
 
-    def basic_request(self, url, method="GET"):
+    def basic_request(self, url, method="GET", headers=None):
         request_url = "{0}/{1}".format(self.base_url, url)
         try:
             request = Request(request_url)
             request.get_method = lambda: method
+            if headers:
+                for k, v in headers.items():
+                    request.add_header(k, v)
             cert_file = os.getenv("ECCTOOL_CERT_FILE")
             key_file = os.getenv("ECCTOOL_KEY_FILE")
             ca_file = os.getenv("ECCTOOL_CA_FILE")
@@ -416,6 +419,25 @@ def _create_response(request):
         context.load_cert_chain(cert_file, key_file)
         return urlopen(request, context=context)
     return urlopen(request)
+
+
+class MetricsRequest(RestRequest):
+    METRICS = "metrics"
+
+    PROMETHEUS_ACCEPT = "text/plain; version=0.0.4; charset=utf-8"
+    OPENMETRICS_ACCEPT = "application/openmetrics-text; version=1.0.0; charset=utf-8"
+
+    def __init__(self, base_url=None):
+        RestRequest.__init__(self, base_url)
+
+    def get_metrics(self, open_metrics=False):
+        """Fetch the raw metrics exposition text.
+
+        Returns the scrape text on success, or a RequestResult on failure
+        (e.g. 404 when statistics are disabled on the agent).
+        """
+        accept = MetricsRequest.OPENMETRICS_ACCEPT if open_metrics else MetricsRequest.PROMETHEUS_ACCEPT
+        return self.basic_request(MetricsRequest.METRICS, headers={"Accept": accept})
 
 
 class RepairSessionsRequest(RestRequest):
