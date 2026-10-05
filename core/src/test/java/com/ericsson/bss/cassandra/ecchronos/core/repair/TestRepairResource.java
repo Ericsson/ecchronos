@@ -43,6 +43,16 @@ public class TestRepairResource
     }
 
     @Test
+    public void testResourceNameAndToStringFormatUnchanged()
+    {
+        // Guards the String.format -> concatenation optimization (#1854): the produced strings must be identical.
+        RepairResource resource = new RepairResource("DC1", "my-resource");
+        assertThat(resource.getResourceName(1)).isEqualTo("RepairResource-my-resource-1");
+        assertThat(resource.getResourceName(42)).isEqualTo("RepairResource-my-resource-42");
+        assertThat(resource.toString()).isEqualTo("RepairResource(dc=DC1,resource=my-resource)");
+    }
+
+    @Test
     public void testEqualsIgnoresMaxSlots()
     {
         RepairResource global = new RepairResource("DC1", "my-resource");
