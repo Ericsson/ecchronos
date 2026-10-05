@@ -84,7 +84,10 @@ public class RepairResource
      */
     public String getResourceName(final int n)
     {
-        return String.format("RepairResource-%s-%d", myResourceName, n);
+        // Plain concatenation instead of String.format: this is called per lock resource per acquisition attempt
+        // in the scheduler session loop and String.format (regex-based spec parsing) was a dominant CPU/allocation
+        // cost in profiling (see #1854).
+        return "RepairResource-" + myResourceName + "-" + n;
     }
 
     /**
@@ -95,7 +98,7 @@ public class RepairResource
     @Override
     public String toString()
     {
-        return String.format("RepairResource(dc=%s,resource=%s)", myDataCenter, myResourceName);
+        return "RepairResource(dc=" + myDataCenter + ",resource=" + myResourceName + ")";
     }
 
     /**
