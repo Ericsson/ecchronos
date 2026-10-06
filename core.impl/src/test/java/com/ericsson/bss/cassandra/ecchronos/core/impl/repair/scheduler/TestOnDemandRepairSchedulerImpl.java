@@ -119,7 +119,7 @@ public class TestOnDemandRepairSchedulerImpl
     @Test
     public void testScheduleVnodeRepairOnTable() throws EcChronosException
     {
-        OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
+        OnDemandRepairSchedulerImpl repairScheduler = dormantPollerOnDemandRepairSchedulerImplBuilder().build();
         when(metadata.getKeyspace(TABLE_REFERENCE.getKeyspace())).thenReturn(Optional.of(myKeyspaceMetadata));
         when(myKeyspaceMetadata.getTable(TABLE_REFERENCE.getTable())).thenReturn(Optional.of(myTableMetadata));
 
@@ -139,7 +139,7 @@ public class TestOnDemandRepairSchedulerImpl
     @Test
     public void testScheduleIncrementalRepairOnTable() throws EcChronosException
     {
-        OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
+        OnDemandRepairSchedulerImpl repairScheduler = dormantPollerOnDemandRepairSchedulerImplBuilder().build();
         when(metadata.getKeyspace(TABLE_REFERENCE.getKeyspace())).thenReturn(Optional.of(myKeyspaceMetadata));
         when(myKeyspaceMetadata.getTable(TABLE_REFERENCE.getTable())).thenReturn(Optional.of(myTableMetadata));
 
@@ -159,7 +159,7 @@ public class TestOnDemandRepairSchedulerImpl
     @Test
     public void testScheduleTwoVnodeRepairOnTable() throws EcChronosException
     {
-        OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
+        OnDemandRepairSchedulerImpl repairScheduler = dormantPollerOnDemandRepairSchedulerImplBuilder().build();
         when(metadata.getKeyspace(TABLE_REFERENCE.getKeyspace())).thenReturn(Optional.of(myKeyspaceMetadata));
         when(myKeyspaceMetadata.getTable(TABLE_REFERENCE.getTable())).thenReturn(Optional.of(myTableMetadata));
 
@@ -180,7 +180,7 @@ public class TestOnDemandRepairSchedulerImpl
     @Test
     public void testScheduleTwoIncrementalRepairOnTable() throws EcChronosException
     {
-        OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
+        OnDemandRepairSchedulerImpl repairScheduler = dormantPollerOnDemandRepairSchedulerImplBuilder().build();
         when(metadata.getKeyspace(TABLE_REFERENCE.getKeyspace())).thenReturn(Optional.of(myKeyspaceMetadata));
         when(myKeyspaceMetadata.getTable(TABLE_REFERENCE.getTable())).thenReturn(Optional.of(myTableMetadata));
 
@@ -350,6 +350,18 @@ public class TestOnDemandRepairSchedulerImpl
                 .withRepairConfigurationFunction(RepairConfiguration.DEFAULT)
                 .withRepairHistory(repairHistory)
                 .withOnDemandStatus(myOnDemandStatus);
+    }
+
+    /**
+     * Builder variant that keeps the background ongoing-jobs poller dormant, so that
+     * removeFinishedJobs() cannot race with assertions on the scheduled jobs. Used by the
+     * schedule tests that assert on getActiveRepairJobs(); the restart tests rely on the poller
+     * running and therefore use {@link #defaultOnDemandRepairSchedulerImplBuilder()}.
+     */
+    private OnDemandRepairSchedulerImpl.Builder dormantPollerOnDemandRepairSchedulerImplBuilder()
+    {
+        return defaultOnDemandRepairSchedulerImplBuilder()
+                .withPollerInitialDelaySeconds(Long.MAX_VALUE);
     }
 }
 

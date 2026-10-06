@@ -61,7 +61,8 @@ public final class OnDemandJobPoller implements Closeable
         myJobFactory = builder.myJobFactory;
         myTryAddJob = builder.myTryAddJob;
         myRemoveFinishedJobs = builder.myRemoveFinishedJobs;
-        myExecutor.scheduleAtFixedRate(this::pollOngoingJobs, 0, ONGOING_JOBS_PERIOD_SECONDS, TimeUnit.SECONDS);
+        myExecutor.scheduleAtFixedRate(
+                this::pollOngoingJobs, builder.myInitialDelaySeconds, ONGOING_JOBS_PERIOD_SECONDS, TimeUnit.SECONDS);
     }
 
     /**
@@ -159,6 +160,7 @@ public final class OnDemandJobPoller implements Closeable
         private OnDemandRepairJobFactory myJobFactory;
         private Function<OnDemandRepairJob, Boolean> myTryAddJob;
         private Runnable myRemoveFinishedJobs;
+        private long myInitialDelaySeconds = 0;
 
         /**
          * Default constructor.
@@ -166,6 +168,19 @@ public final class OnDemandJobPoller implements Closeable
         public Builder()
         {
             // Default constructor
+        }
+
+        /**
+         * Set the initial delay before the first poll.
+         * Defaults to 0 seconds (immediate start).
+         *
+         * @param initialDelaySeconds the initial delay in seconds.
+         * @return this builder.
+         */
+        public Builder withInitialDelaySeconds(final long initialDelaySeconds)
+        {
+            myInitialDelaySeconds = initialDelaySeconds;
+            return this;
         }
 
         /**
