@@ -321,6 +321,13 @@ public final class OnDemandStatus
         int tokenMapHash = row.getInt(TOKEN_MAP_HASH_COLUMN_NAME);
         Set<UdtValue> repairedTokens = row.getSet(REPAIRED_TOKENS_COLUMN_NAME, UdtValue.class);
         UdtValue uDTTableReference = row.getUdtValue(TABLE_REFERENCE_COLUMN_NAME);
+        if (uDTTableReference == null)
+        {
+            // The row may be in a partially written state (e.g. table_reference column not yet
+            // persisted). Skip it instead of failing the whole listing with an NPE.
+            LOG.info("Skipping repair job with id {} as its table reference is not available", jobId);
+            return;
+        }
         String keyspace = uDTTableReference.getString(UDT_KEYSPACE_NAME);
         String table = uDTTableReference.getString(UDT_TABLE_NAME);
         TableReference tableReference = myTableReferenceFactory.forTable(keyspace, table);

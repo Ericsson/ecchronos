@@ -331,6 +331,24 @@ public class TestOnDemandStatus extends AbstractCassandraContainerTest
     }
 
     @Test
+    public void testGetAllClusterWideJobsSkipsRowWithNullTableReference()
+    {
+        // Regression test: a status row written in a partial state (status present but the
+        // table_reference UDT column still null) must be skipped rather than causing an NPE that
+        // surfaces as an HTTP 500 on GET /repair-management/repairs.
+        UUID jobId = UUID.randomUUID();
+        mySession.execute(String.format(
+                "INSERT INTO %s.%s (host_id, job_id, status, repair_type) VALUES (%s, %s, '%s', '%s')",
+                KEYSPACE_NAME, TABLE_NAME, myHostId, jobId, STATUS_STARTED, RepairType.VNODE));
+
+        OnDemandStatus onDemandStatus = new OnDemandStatus(getNativeConnectionProvider());
+
+        Set<OngoingJob> ongoingJobs = onDemandStatus.getAllClusterWideJobs();
+
+        assertThat(ongoingJobs).isEmpty();
+    }
+
+    @Test
     public void testGetOngoingJobsNoJobs()
     {
         OnDemandStatus onDemandStatus = new OnDemandStatus(getNativeConnectionProvider());
