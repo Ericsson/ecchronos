@@ -324,6 +324,17 @@ public final class OnDemandStatus
         String keyspace = uDTTableReference.getString(UDT_KEYSPACE_NAME);
         String table = uDTTableReference.getString(UDT_TABLE_NAME);
         TableReference tableReference = myTableReferenceFactory.forTable(keyspace, table);
+        if (tableReference == null)
+        {
+            // The table metadata may be temporarily unavailable (e.g. schema not yet refreshed on this
+            // node, or the table has been dropped). Skip this job instead of failing the whole listing
+            // with an NPE, mirroring the defensive node check above.
+            LOG.info("Skipping repair job with id {} as table {}.{} could not be resolved",
+                    row.getUuid(JOB_ID_COLUMN_NAME),
+                    keyspace,
+                    table);
+            return;
+        }
         Instant completed = row.get(COMPLETED_TIME_COLUMN_NAME, Instant.class);
         RepairType repairType = RepairType.VNODE;
         String repairTypeStr = row.getString(REPAIR_TYPE_COLUMN_NAME);

@@ -105,7 +105,7 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
                 .flatMap(node -> mySession.getMetadata().getKeyspaces().values().stream()
                         .filter(k -> accept(node, k.getName().asInternal()))
                         .flatMap(k -> k.getTables().values().stream())
-                        .map(tb -> myTableReferenceFactory.forTable(tb.getKeyspace().asInternal(), tb.getName().asInternal()))
+                        .map(myTableReferenceFactory::forTable)
                 )
                 .collect(Collectors.toSet());
     }

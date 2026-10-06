@@ -303,6 +303,34 @@ public class TestOnDemandStatus extends AbstractCassandraContainerTest
     }
 
     @Test
+    public void testGetAllClusterWideJobsSkipsUnresolvableTable()
+    {
+        // Regression test: a status row whose table can no longer be resolved (e.g. schema not yet
+        // refreshed on this node, or the table was dropped) must be skipped rather than causing an
+        // NPE that surfaces as an HTTP 500 on GET /repair-management/repairs.
+        String droppedTableName = "dropped_table";
+        mySession.execute(String.format(
+                "CREATE TABLE IF NOT EXISTS %s.%s (col1 int, col2 int, PRIMARY KEY(col1))",
+                KEYSPACE_NAME, droppedTableName));
+        TableReferenceFactory factory = new TableReferenceFactoryImpl(mySession);
+        TableReference droppedTableReference = factory.forTable(KEYSPACE_NAME, droppedTableName);
+
+        OnDemandStatus onDemandStatus = new OnDemandStatus(getNativeConnectionProvider());
+        UUID jobId = UUID.randomUUID();
+        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenMap = new HashMap<>();
+        when(myReplicationState.getTokenRangeToReplicas(droppedTableReference,
+                getNativeConnectionProvider().getNodes().get(0))).thenReturn(tokenMap);
+        onDemandStatus.addNewJob(myHostId, jobId, droppedTableReference, 1, RepairType.VNODE);
+
+        // Drop the table so forTable(...) returns null for the persisted job.
+        mySession.execute(String.format("DROP TABLE %s.%s", KEYSPACE_NAME, droppedTableName));
+
+        Set<OngoingJob> ongoingJobs = onDemandStatus.getAllClusterWideJobs();
+
+        assertThat(ongoingJobs).isEmpty();
+    }
+
+    @Test
     public void testGetOngoingJobsNoJobs()
     {
         OnDemandStatus onDemandStatus = new OnDemandStatus(getNativeConnectionProvider());
