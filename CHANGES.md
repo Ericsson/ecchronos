@@ -2,6 +2,7 @@
 
 ## Version 1.1.2
 
+* Add ecctool metrics subcommand - Issue #1864
 * Optimize the lock-resource hot path (avoid String.format in RepairResource) and add scheduler saturation observability metrics (refresh rate/duration, pass-within-window ratio, lock success rate/latency, and a schedule-falling-behind warning) - Issue #1854
 * Back off adaptively on repeated lock CQL timeouts and distinguish ecChronos client saturation from Cassandra unavailability in logs and metrics - Issue #1852
 * Add CPU/cgroup-aware scheduler concurrency: cap TaskExecutor threads via scheduler.max_concurrency (also tunable at runtime through the config REST API / ecctool) and warn at startup when managed-node count greatly exceeds available CPUs - Issue #1850

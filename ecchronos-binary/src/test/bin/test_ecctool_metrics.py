@@ -54,7 +54,7 @@ def test_filter_metrics_text_substring_match():
     assert result == "# EOF\n"
 
     result = filter_metrics_text(SAMPLE_SCRAPE, names=["jvm"])
-    assert "jvm_memory_used_bytes{area=\"heap\"} 1000" in result
+    assert 'jvm_memory_used_bytes{area="heap"} 1000' in result
     assert "ecc_scheduler_lock_latency" not in result
     # HELP/TYPE of the match are kept, others are dropped.
     assert "# HELP jvm_memory_used_bytes" in result

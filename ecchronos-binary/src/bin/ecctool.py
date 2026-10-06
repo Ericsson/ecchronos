@@ -23,7 +23,7 @@ import signal
 import sys
 import glob
 import subprocess
-from argparse import ArgumentParser, ArgumentTypeError
+from argparse import ArgumentParser
 from io import open
 from urllib.error import HTTPError
 
@@ -34,17 +34,12 @@ except ImportError:
     LIB_DIR = os.path.join(SCRIPT_DIR, "..", "pylib")
     sys.path.append(LIB_DIR)
     from ecchronoslib import rest, table_printer
+from ecchronoslib.metrics_filter import filter_metrics_text
+from ecchronoslib.argparse_types import comma_separated_ints, parse_duration_ms
+from ecchronoslib.rejections import rejections
 
 DEFAULT_PID_FILE = "ecc.pid"
 SPRINGBOOT_MAIN_CLASS = "com.ericsson.bss.cassandra.ecchronos.application.SpringBooter"
-
-
-def comma_separated_ints(value):
-    """Parse comma-separated integers for columns specification."""
-    try:
-        return [int(x.strip()) for x in value.split(",")]
-    except ValueError as exc:
-        raise ArgumentTypeError(f"'{value}' is not a valid comma-separated list of integers") from exc
 
 
 # Argument configurations
@@ -200,28 +195,6 @@ def add_running_job_subcommand(sub_parsers):
     parser_repairs = sub_parsers.add_parser("running-job", description="Show which (if any) job is currently running.")
     add_common_arg(parser_repairs, ARG_OUTPUT_JSON)
     add_common_arg(parser_repairs, ARG_URL)
-
-
-def parse_duration_ms(value):
-    """Parse duration string (e.g. '5m', '30s', '300000') to milliseconds."""
-    try:
-        if value.endswith("ms"):
-            result = int(value[:-2])
-        elif value.endswith("s"):
-            result = int(value[:-1]) * 1000
-        elif value.endswith("m"):
-            result = int(value[:-1]) * 60 * 1000
-        elif value.endswith("h"):
-            result = int(value[:-1]) * 3600 * 1000
-        else:
-            result = int(value)
-    except ValueError:
-        print(f"Invalid duration format: '{value}'. Use e.g. 5m, 30s, 2h, 500ms, or raw milliseconds.")
-        sys.exit(1)
-    if result < 0:
-        print(f"Duration must not be negative: '{value}'")
-        sys.exit(1)
-    return result
 
 
 def add_config_subcommand(sub_parsers):
@@ -558,117 +531,6 @@ def add_status_subcommand(sub_parsers):
     add_common_arg(parser_status, ARG_OUTPUT_JSON)
 
 
-def _create_rejections(arguments):
-    request = rest.RejectionsRequest(base_url=arguments.url)
-    rejection_body = {
-        "keyspaceName": arguments.keyspace,
-        "tableName": arguments.table,
-        "startHour": arguments.start_hour,
-        "startMinute": arguments.start_minute,
-        "endHour": arguments.end_hour,
-        "endMinute": arguments.end_minute,
-        "dcExclusions": arguments.dc_exclusions,
-    }
-
-    result = request.create_rejection(rejection_body)
-
-    if result.is_successful():
-        if arguments.output != "json":
-            print(result.message)
-        table_printer.print_rejections(result.data, columns=arguments.columns, output=arguments.output)
-    else:
-        print(result.format_exception())
-
-
-def _delete_rejections(arguments):
-    request = rest.RejectionsRequest(base_url=arguments.url)
-    result = None
-
-    if arguments.all:
-        result = request.truncate_rejections()
-    elif not None in [arguments.keyspace, arguments.table, arguments.start_hour, arguments.start_minute]:
-        dc_exclusions = arguments.dc_exclusions
-
-        if dc_exclusions is None:
-            dc_exclusions = []
-
-        rejection_body = {
-            "keyspaceName": arguments.keyspace,
-            "tableName": arguments.table,
-            "startHour": arguments.start_hour,
-            "startMinute": arguments.start_minute,
-            "endHour": None,
-            "endMinute": None,
-            "dcExclusions": dc_exclusions,
-        }
-
-        result = request.delete_rejection(rejection_body)
-    else:
-        print("--keyspace, --table, --start-hour and --start-minute are mandatory arguments.")
-        sys.exit(1)
-
-    if result.is_successful():
-        if arguments.output != "json":
-            print(result.message)
-        table_printer.print_rejections(result.data, columns=arguments.columns, output=arguments.output)
-    else:
-        print(result.format_exception())
-
-
-def _get_rejections(arguments):
-    request = rest.RejectionsRequest(base_url=arguments.url)
-    if arguments.table:
-        if not arguments.keyspace:
-            print("--keyspace is required.")
-            sys.exit(1)
-        result = request.list_rejections(keyspace=arguments.keyspace, table=arguments.table)
-        if result.is_successful():
-            table_printer.print_rejections(result.data, columns=arguments.columns, output=arguments.output)
-        else:
-            print(result.format_exception())
-    else:
-        result = request.list_rejections(keyspace=arguments.keyspace)
-        if result.is_successful():
-            table_printer.print_rejections(result.data, columns=arguments.columns, output=arguments.output)
-        else:
-            print(result.format_exception())
-
-
-def _update_rejections(arguments):
-    request = rest.RejectionsRequest(base_url=arguments.url)
-    rejection_body = {
-        "keyspaceName": arguments.keyspace,
-        "tableName": arguments.table,
-        "startHour": arguments.start_hour,
-        "startMinute": arguments.start_minute,
-        "endHour": None,
-        "endMinute": None,
-        "dcExclusions": arguments.dc_exclusions,
-    }
-    result = request.update_rejection(rejection_body)
-
-    if result.is_successful():
-        if arguments.output != "json":
-            print(result.message)
-        table_printer.print_rejections(result.data, columns=arguments.columns, output=arguments.output)
-    else:
-        print(result.format_exception())
-
-
-def rejections(arguments):
-    if arguments.rejections_action == "create":
-        _create_rejections(arguments)
-    elif arguments.rejections_action == "delete":
-        _delete_rejections(arguments)
-    elif arguments.rejections_action == "get":
-        _get_rejections(arguments)
-    elif arguments.rejections_action == "update":
-        _update_rejections(arguments)
-    else:
-        print("Specify a valid action (create, delete, get or update) for subcommand 'rejections'.")
-        sys.exit(1)
-
-
 def repair_sessions(arguments):
     if arguments.repair_sessions_action == "list":
         _list_repair_sessions(arguments)
@@ -978,79 +840,6 @@ def running_job(arguments):
             print("Repair job with id " + result + " is running.")
 
 
-def _normalize_metric_name(value):
-    """Normalize a metric name fragment for forgiving comparison."""
-    return value.lower().replace(".", "_")
-
-
-def _sample_metric_name(line):
-    """Return the metric name of a sample line, or None for comments/blanks."""
-    text = line.strip()
-    if not text or text.startswith("#"):
-        return None
-    end = len(text)
-    for sep in ("{", " ", "\t", "="):
-        idx = text.find(sep)
-        if idx != -1:
-            end = min(end, idx)
-    return text[:end]
-
-
-def _comment_metric_name(line):
-    """Return the metric name of a '# HELP'/'# TYPE' line, or None."""
-    parts = line.strip().split()
-    if len(parts) >= 3 and parts[0] == "#" and parts[1] in ("HELP", "TYPE"):
-        return parts[2]
-    return None
-
-
-def filter_metrics_text(scrape_text, names=None, include_comments=True):
-    """Filter exposition text client-side by metric name substrings.
-
-    Matching is case-insensitive with '.' and '_' treated as equivalent,
-    so a remembered fragment like 'lock.latency' matches
-    'ecc_scheduler_lock_latency_seconds'. A line is kept when its metric
-    name contains any of the given substrings. Without names the text is
-    returned unchanged (unless comments are excluded via --raw).
-    """
-    normalized = [_normalize_metric_name(name) for name in names] if names else []
-
-    if not normalized and include_comments:
-        return scrape_text
-
-    def matches(metric_name):
-        return not normalized or any(
-            fragment in _normalize_metric_name(metric_name) for fragment in normalized
-        )
-
-    kept = []
-    for line in scrape_text.splitlines():
-        stripped = line.strip()
-        if not stripped:
-            continue
-        if stripped.startswith("#"):
-            if not include_comments:
-                continue
-            if stripped == "# EOF":
-                kept.append(line)
-            else:
-                metric_name = _comment_metric_name(stripped)
-                if metric_name is None:
-                    if not normalized:
-                        kept.append(line)
-                elif matches(metric_name):
-                    kept.append(line)
-        elif matches(_sample_metric_name(stripped)):
-            kept.append(line)
-
-    if not kept:
-        return ""
-    result = "\n".join(kept)
-    if scrape_text.endswith("\n"):
-        result += "\n"
-    return result
-
-
 def metrics(arguments):
     request = rest.MetricsRequest(base_url=arguments.url)
     result = request.get_metrics(open_metrics=arguments.format == "openmetrics")
@@ -1065,43 +854,39 @@ def metrics(arguments):
     sys.stdout.write(filter_metrics_text(result, names=arguments.name, include_comments=not arguments.raw))
 
 
+def _with_status(handler):
+    """Wrap a handler so the status preflight runs before it."""
+
+    def run(arguments):
+        status(arguments)
+        handler(arguments)
+
+    return run
+
+
+# Maps each subcommand to its handler. Most commands run a status preflight
+# first; start/stop/status are handled directly.
+SUBCOMMANDS = {
+    "config": _with_status(config),
+    "metrics": _with_status(metrics),
+    "rejections": _with_status(rejections),
+    "repair-info": _with_status(repair_info),
+    "repair-sessions": _with_status(repair_sessions),
+    "repairs": _with_status(repairs),
+    "run-repair": _with_status(run_repair),
+    "running-job": _with_status(running_job),
+    "schedules": _with_status(schedules),
+    "start": start,
+    "state": _with_status(state),
+    "status": lambda arguments: status(arguments, print_running=True),
+    "stop": stop,
+}
+
+
 def run_subcommand(arguments):
-    if arguments.subcommand == "config":
-        status(arguments)
-        config(arguments)
-    elif arguments.subcommand == "metrics":
-        status(arguments)
-        metrics(arguments)
-    elif arguments.subcommand == "rejections":
-        status(arguments)
-        rejections(arguments)
-    elif arguments.subcommand == "repair-info":
-        status(arguments)
-        repair_info(arguments)
-    elif arguments.subcommand == "repair-sessions":
-        status(arguments)
-        repair_sessions(arguments)
-    elif arguments.subcommand == "repairs":
-        status(arguments)
-        repairs(arguments)
-    elif arguments.subcommand == "run-repair":
-        status(arguments)
-        run_repair(arguments)
-    elif arguments.subcommand == "running-job":
-        status(arguments)
-        running_job(arguments)
-    elif arguments.subcommand == "schedules":
-        status(arguments)
-        schedules(arguments)
-    elif arguments.subcommand == "start":
-        start(arguments)
-    elif arguments.subcommand == "state":
-        status(arguments)
-        state(arguments)
-    elif arguments.subcommand == "status":
-        status(arguments, print_running=True)
-    elif arguments.subcommand == "stop":
-        stop(arguments)
+    handler = SUBCOMMANDS.get(arguments.subcommand)
+    if handler is not None:
+        handler(arguments)
 
 
 def main():
