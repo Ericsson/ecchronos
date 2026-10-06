@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  * A factory creating {@link OnDemandRepairJob}'s for tables.
@@ -91,6 +92,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
                 .withJobFactory(myJobFactory)
                 .withTryAddJob(this::tryAddJob)
                 .withRemoveFinishedJobs(this::removeFinishedJobs)
+                .withInitialDelaySeconds(builder.myPollerInitialDelaySeconds)
                 .build();
     }
 
@@ -321,6 +323,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         private OnDemandStatus onDemandStatus;
         private Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
         private CassandraMetrics myCassandraMetrics;
+        private long myPollerInitialDelaySeconds = 0;
 
         /**
          * Default constructor.
@@ -461,6 +464,21 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         public Builder withOnDemandStatus(final OnDemandStatus theOnDemandStatus)
         {
             this.onDemandStatus = theOnDemandStatus;
+            return this;
+        }
+
+        /**
+         * Set the initial delay in seconds before the background ongoing-jobs poller starts.
+         * Defaults to 0 (immediate start, production behaviour). Intended for tests that need to
+         * keep the poller dormant to avoid racing with assertions on the scheduled jobs.
+         *
+         * @param pollerInitialDelaySeconds the initial delay in seconds.
+         * @return Builder
+         */
+        @VisibleForTesting
+        Builder withPollerInitialDelaySeconds(final long pollerInitialDelaySeconds)
+        {
+            myPollerInitialDelaySeconds = pollerInitialDelaySeconds;
             return this;
         }
 
