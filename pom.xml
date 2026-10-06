@@ -124,10 +124,10 @@
         <!-- Cassandra -->
         <cassandra.driver.core.version>4.19.3</cassandra.driver.core.version>
         <com.typesafe.config.version>1.4.9</com.typesafe.config.version>
-        <guava.version>33.7.1-jre</guava.version>
+        <guava.version>33.7.2-jre</guava.version>
         <caffeine.version>3.3.0</caffeine.version>
         <slf4j.version>2.0.20</slf4j.version>
-        <logback.version>1.6.4</logback.version>
+        <logback.version>1.6.5</logback.version>
         <com.fasterxml.jackson.version>2.22.3</com.fasterxml.jackson.version>
 
         <!-- Jackson -->

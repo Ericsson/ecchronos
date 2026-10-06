@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.CASLockFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.DummyLock;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairResource;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
@@ -119,6 +120,40 @@ public class TestScheduleManagerSaturationBackoff
         assertThat(ScheduleManagerImpl.isClientSaturation(
                 new LockException("Not enough nodes available"))).isFalse();
         assertThat(ScheduleManagerImpl.isClientSaturation(null)).isFalse();
+    }
+
+    @Test
+    public void testObservabilityMetricsRecordedOnSuccessfulPass() throws LockException
+    {
+        myScheduler = buildScheduler();
+        when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap(), any())).thenReturn(new DummyLock());
+
+        LockJob job = new LockJob(nodeID1, 1, "dc1", "nodeA");
+        myScheduler.schedule(nodeID1, job);
+
+        myScheduler.run(nodeID1);
+
+        // The pass refreshed, acquired a lock successfully, and completed within the window.
+        assertThat(myMeterRegistry.timer("ecc.scheduler.refresh").count()).isGreaterThanOrEqualTo(1L);
+        assertThat(myMeterRegistry.counter("ecc.scheduler.lock.success").count()).isGreaterThanOrEqualTo(1.0d);
+        assertThat(myMeterRegistry.timer("ecc.scheduler.lock.latency").count()).isGreaterThanOrEqualTo(1L);
+        assertThat(myMeterRegistry.counter("ecc.scheduler.pass.within_window").count()).isGreaterThanOrEqualTo(1.0d);
+        assertThat(job.getTaskRuns()).isGreaterThanOrEqualTo(1);
+    }
+
+    @Test
+    public void testLockFailureRecordsLockFailureMetric() throws LockException
+    {
+        myScheduler = buildScheduler();
+        when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap(), any()))
+                .thenThrow(new LockException("Not enough nodes available"));
+
+        LockJob job = new LockJob(nodeID1, 1, "dc1", "nodeA");
+        myScheduler.schedule(nodeID1, job);
+
+        myScheduler.run(nodeID1);
+
+        assertThat(myMeterRegistry.counter("ecc.scheduler.lock.failure").count()).isGreaterThanOrEqualTo(1.0d);
     }
 
     @Test
