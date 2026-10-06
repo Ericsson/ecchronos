@@ -138,7 +138,7 @@ def test_metrics_command_rejects_bad_format():
 
 
 def _metrics_args(**overrides):
-    base = {"url": None, "name": None, "format": "prometheus", "raw": False}
+    base = {"url": None, "name": None, "format": "prometheus", "raw": False, "timeout": None}
     base.update(overrides)
     return SimpleNamespace(**base)
 
@@ -149,7 +149,7 @@ def test_metrics_prints_scrape_passthrough(monkeypatch):
     captured = {}
 
     class FakeMetricsRequest:
-        def __init__(self, base_url=None):
+        def __init__(self, base_url=None, timeout=None):
             captured["base_url"] = base_url
 
         def get_metrics(self, open_metrics=False):
@@ -168,7 +168,7 @@ def test_metrics_applies_name_filter_and_raw(monkeypatch):
     import ecctool  # pylint: disable=import-outside-toplevel
 
     class FakeMetricsRequest:
-        def __init__(self, base_url=None):
+        def __init__(self, base_url=None, timeout=None):
             pass
 
         def get_metrics(self, open_metrics=False):
@@ -190,7 +190,7 @@ def test_metrics_openmetrics_format_requested(monkeypatch):
     captured = {}
 
     class FakeMetricsRequest:
-        def __init__(self, base_url=None):
+        def __init__(self, base_url=None, timeout=None):
             pass
 
         def get_metrics(self, open_metrics=False):
@@ -208,7 +208,7 @@ def test_metrics_disabled_reports_friendly_404(monkeypatch):
     from urllib.error import HTTPError  # pylint: disable=import-outside-toplevel
 
     class FakeMetricsRequest:
-        def __init__(self, base_url=None):
+        def __init__(self, base_url=None, timeout=None):
             pass
 
         def get_metrics(self, open_metrics=False):
@@ -232,7 +232,7 @@ def test_metrics_connection_error_reports_exception(monkeypatch):
     from urllib.error import URLError  # pylint: disable=import-outside-toplevel
 
     class FakeMetricsRequest:
-        def __init__(self, base_url=None):
+        def __init__(self, base_url=None, timeout=None):
             pass
 
         def get_metrics(self, open_metrics=False):
@@ -256,7 +256,7 @@ def test_status_tolerates_missing_output_flag(monkeypatch):
     import ecctool  # pylint: disable=import-outside-toplevel
 
     class FakeSchedulerRequest:
-        def __init__(self, base_url=None):
+        def __init__(self, base_url=None, timeout=None):
             pass
 
         def list_schedules(self):
@@ -302,7 +302,7 @@ def test_basic_request_forwards_headers(monkeypatch):
         def close(self):
             pass
 
-    def fake_urlopen(request, context=None):  # pylint: disable=unused-argument
+    def fake_urlopen(request, context=None, timeout=None):  # pylint: disable=unused-argument
         captured["accept"] = request.get_header("Accept")
         return FakeResponse()
 
