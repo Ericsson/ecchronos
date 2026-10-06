@@ -127,8 +127,9 @@ public class SchemaRefresher
     {
         if (myReplicatedTableProvider.accept(node, tableEvent.table().getKeyspace().asInternal()))
         {
-            TableReference tableReference = myTableReferenceFactory.forTable(tableEvent.table().getKeyspace().asInternal(),
-                    tableEvent.table().getName().asInternal());
+            // Use the TableMetadata overload (never null) rather than resolving by name again, which
+            // could transiently return null if the schema metadata changes between the event and here.
+            TableReference tableReference = myTableReferenceFactory.forTable(tableEvent.table());
             updateConfiguration(node, tableReference, tableEvent.table());
         }
     }
@@ -187,8 +188,9 @@ public class SchemaRefresher
     {
         for (TableMetadata tableMetadata : Metadata.getKeyspace(mySession, keyspaceName).get().getTables().values())
         {
-            String tableName = tableMetadata.getName().asInternal();
-            TableReference tableReference = myTableReferenceFactory.forTable(keyspaceName, tableName);
+            // Use the TableMetadata overload (never null) rather than resolving by name again, which
+            // could transiently return null if the schema metadata changes during iteration.
+            TableReference tableReference = myTableReferenceFactory.forTable(tableMetadata);
 
             consumer.accept(tableReference, tableMetadata);
         }

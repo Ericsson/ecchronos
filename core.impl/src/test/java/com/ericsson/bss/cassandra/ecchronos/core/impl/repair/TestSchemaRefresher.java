@@ -17,8 +17,10 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.TableCreatedEvent;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
@@ -32,11 +34,14 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -88,7 +93,7 @@ public class TestSchemaRefresher
         when(myTableMetadata.getKeyspace()).thenReturn(CqlIdentifier.fromInternal(KEYSPACE));
         when(myTableMetadata.getName()).thenReturn(CqlIdentifier.fromInternal(TABLE));
         when(myTableMetadata.getOptions()).thenReturn(Map.of());
-        when(myTableReferenceFactory.forTable(KEYSPACE, TABLE)).thenReturn(myTableReference);
+        when(myTableReferenceFactory.forTable(myTableMetadata)).thenReturn(myTableReference);
 
         mySchemaRefresher = new SchemaRefresher(myReplicatedTableProvider, myRepairScheduler,
                 myTableReferenceFactory, myRepairConfigurationFunction, mySession);
@@ -113,5 +118,39 @@ public class TestSchemaRefresher
 
         // Incremental goes through the same per-node path as vnode.
         verify(myRepairScheduler).putConfigurations(eq(myNode), eq(myTableReference), eq(Set.of(incrementalConfig)));
+    }
+
+    @Test
+    public void testOnTableCreatedResolvesViaMetadataOverload()
+    {
+        when(myReplicatedTableProvider.accept(myNode, KEYSPACE)).thenReturn(true);
+        when(myRepairConfigurationFunction.apply(myTableReference)).thenReturn(Set.of(vnodeConfig));
+
+        mySchemaRefresher.onTableCreated(myNode, new TableCreatedEvent(myTableMetadata));
+
+        // Must resolve through the never-null TableMetadata overload, not the name-based one.
+        verify(myTableReferenceFactory).forTable(myTableMetadata);
+        verify(myRepairScheduler).putConfigurations(eq(myNode), eq(myTableReference), eq(Set.of(vnodeConfig)));
+    }
+
+    @Test
+    public void testAllTableOperationResolvesViaMetadataOverload()
+    {
+        KeyspaceMetadata keyspaceMetadata = mock(KeyspaceMetadata.class);
+        when(keyspaceMetadata.getTables())
+                .thenReturn(Map.of(CqlIdentifier.fromInternal(TABLE), myTableMetadata));
+        com.datastax.oss.driver.api.core.metadata.Metadata driverMetadata =
+                mock(com.datastax.oss.driver.api.core.metadata.Metadata.class);
+        when(driverMetadata.getKeyspace(KEYSPACE)).thenReturn(Optional.of(keyspaceMetadata));
+        when(mySession.getMetadata()).thenReturn(driverMetadata);
+
+        @SuppressWarnings("unchecked")
+        BiConsumer<TableReference, TableMetadata> consumer = mock(BiConsumer.class);
+
+        mySchemaRefresher.allTableOperation(KEYSPACE, consumer);
+
+        // Must resolve through the never-null TableMetadata overload, not the name-based one.
+        verify(myTableReferenceFactory).forTable(myTableMetadata);
+        verify(consumer).accept(myTableReference, myTableMetadata);
     }
 }
