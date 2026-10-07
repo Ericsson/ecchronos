@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.datastax.oss.driver.api.core.data.UdtValue;
 import com.google.common.collect.ImmutableSet;
@@ -70,7 +71,16 @@ public final class OngoingJob
         myTableReference = builder.myTableReference;
         myReplicationState = builder.myReplicationState;
         myTokens = myReplicationState.getTokenRangeToReplicas(myTableReference, myCurrentNode);
-        myRepairedTokens = builder.myRepairedTokens;
+        // myRepairedTokens is mutated by the repair callback thread (finishRanges -> postExecute) while being
+        // read/iterated concurrently by the view/polling thread (getRepairedTokens / getProgress via
+        // getActiveRepairJobs). Wrap it in a ConcurrentHashMap-backed set so concurrent add + iteration is safe
+        // and does not throw ConcurrentModificationException. Seed it with any state restored via the builder.
+        Set<UdtValue> repairedTokens = ConcurrentHashMap.newKeySet();
+        if (builder.myRepairedTokens != null)
+        {
+            repairedTokens.addAll(builder.myRepairedTokens);
+        }
+        myRepairedTokens = repairedTokens;
         myTokenHash = builder.myTokenMapHash;
         myStatus = builder.myStatus;
         myCompletedTime = builder.myCompletedTime;
