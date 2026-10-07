@@ -22,8 +22,12 @@ except ImportError:
     from urllib import quote  # pylint: disable=ungrouped-imports
 import json
 import os
+import socket
 import ssl
 from ecchronoslib.types import FullSchedule, Repair, Schedule, RepairInfo, NodeSyncState, Rejection, RepairSession
+
+DEFAULT_TIMEOUT_SECONDS = 30.0
+TIMEOUT_ENV_VAR = "ECCTOOL_TIMEOUT_SECONDS"
 
 
 class RequestResult(object):
@@ -60,13 +64,14 @@ class RestRequest(object):
     default_base_url = "http://localhost:8080"
     default_https_base_url = "https://localhost:8080"
 
-    def __init__(self, base_url=None):
+    def __init__(self, base_url=None, timeout=None):
         if base_url:
             self.base_url = base_url
         elif os.getenv("ECCTOOL_CERT_FILE") and os.getenv("ECCTOOL_KEY_FILE") and os.getenv("ECCTOOL_CA_FILE"):
             self.base_url = RestRequest.default_https_base_url
         else:
             self.base_url = RestRequest.default_base_url
+        self.timeout = _resolve_timeout(timeout)
 
     @staticmethod
     def get_param(httpmessage, param):
@@ -78,6 +83,30 @@ class RestRequest(object):
     @staticmethod
     def get_charset(response):
         return RestRequest.get_param(response.info(), "charset") or "utf-8"
+
+    def _urlopen(self, request):
+        """Open a request applying the configured timeout and TLS context.
+
+        Centralizes timeout and client-certificate handling so every call
+        site (request/basic_request) behaves consistently.
+        """
+        context = _create_ssl_context()
+        if context is not None:
+            return urlopen(request, context=context, timeout=self.timeout)
+        return urlopen(request, timeout=self.timeout)
+
+    def _connection_error(self, request_url, exc):
+        """Build a RequestResult for a connection failure, clarifying timeouts.
+
+        Handles both a connect-phase timeout (wrapped as URLError with a
+        socket.timeout reason) and a read-phase timeout (a bare
+        socket.timeout raised while reading the response).
+        """
+        if isinstance(exc, socket.timeout) or isinstance(getattr(exc, "reason", None), socket.timeout):
+            message = "Request to {0} timed out after {1}s".format(request_url, self.timeout)
+        else:
+            message = "Unable to connect to {0}".format(request_url)
+        return RequestResult(status_code=404, message=message, exception=exc)
 
     def request(self, url, method="GET", body=None, headers=None):
         request_url = "{0}/{1}".format(self.base_url, url)
@@ -92,7 +121,7 @@ class RestRequest(object):
                 for k, v in headers.items():
                     request.add_header(k, v)
             request.get_method = lambda: method
-            response = _create_response(request)
+            response = self._urlopen(request)
             json_data = json.loads(response.read().decode(RestRequest.get_charset(response)))
 
             response.close()
@@ -111,7 +140,9 @@ class RestRequest(object):
                 exception=e,
             )
         except URLError as e:
-            return RequestResult(status_code=404, message="Unable to connect to {0}".format(request_url), exception=e)
+            return self._connection_error(request_url, e)
+        except socket.timeout as e:
+            return self._connection_error(request_url, e)
         except Exception as e:  # pylint: disable=broad-except
             return RequestResult(exception=e, message="Unable to retrieve resource {0}".format(request_url))
 
@@ -123,15 +154,7 @@ class RestRequest(object):
             if headers:
                 for k, v in headers.items():
                     request.add_header(k, v)
-            cert_file = os.getenv("ECCTOOL_CERT_FILE")
-            key_file = os.getenv("ECCTOOL_KEY_FILE")
-            ca_file = os.getenv("ECCTOOL_CA_FILE")
-            if cert_file and key_file and ca_file:
-                context = ssl.create_default_context(cafile=ca_file)
-                context.load_cert_chain(cert_file, key_file)
-                response = urlopen(request, context=context)
-            else:
-                response = urlopen(request)
+            response = self._urlopen(request)
 
             data = response.read()
 
@@ -142,7 +165,9 @@ class RestRequest(object):
                 status_code=e.code, message="Unable to retrieve resource {0}".format(request_url), exception=e
             )
         except URLError as e:
-            return RequestResult(status_code=404, message="Unable to connect to {0}".format(request_url), exception=e)
+            return self._connection_error(request_url, e)
+        except socket.timeout as e:
+            return self._connection_error(request_url, e)
         except Exception as e:  # pylint: disable=broad-except
             return RequestResult(exception=e, message="Unable to retrieve resource {0}".format(request_url))
 
@@ -167,8 +192,8 @@ class RepairSchedulerRequest(RestRequest):
 
     running_job_url = ROOT + "running-job"
 
-    def __init__(self, base_url=None):
-        RestRequest.__init__(self, base_url)
+    def __init__(self, base_url=None, timeout=None):
+        RestRequest.__init__(self, base_url, timeout=timeout)
 
     def get_schedule(
         self, node_id, keyspace, table, job_id=None, full=False
@@ -308,8 +333,8 @@ class StateManagementRequest(RestRequest):
     ROOT = "state/"
     NODES = ROOT + "nodes"
 
-    def __init__(self, base_url=None):
-        RestRequest.__init__(self, base_url)
+    def __init__(self, base_url=None, timeout=None):
+        RestRequest.__init__(self, base_url, timeout=timeout)
 
     def get_nodes(self):
         result = self.request(StateManagementRequest.NODES)
@@ -322,8 +347,8 @@ class RejectionsRequest(RestRequest):
     ROOT = "rejections"
     TRUNCATE = ROOT + "/all"
 
-    def __init__(self, base_url=None):
-        RestRequest.__init__(self, base_url)
+    def __init__(self, base_url=None, timeout=None):
+        RestRequest.__init__(self, base_url, timeout=timeout)
 
     def list_rejections(self, keyspace=None, table=None):
         request_url = RejectionsRequest.ROOT
@@ -386,8 +411,8 @@ class RejectionsRequest(RestRequest):
 class ConfigRequest(RestRequest):
     URL = "repair-management/v2/config"
 
-    def __init__(self, base_url=None):
-        RestRequest.__init__(self, base_url)
+    def __init__(self, base_url=None, timeout=None):
+        RestRequest.__init__(self, base_url, timeout=timeout)
 
     def get(self):
         return self.request(ConfigRequest.URL)
@@ -410,15 +435,46 @@ class ConfigRequest(RestRequest):
         return self.request(ConfigRequest.URL, "PATCH", body=body, headers=headers)
 
 
-def _create_response(request):
+def _create_ssl_context():
+    """Build a mutual-TLS SSL context when client-cert env vars are set.
+
+    Returns None when the certificate environment variables are not all
+    present, signalling that a plain (non-TLS) connection should be used.
+    """
     cert_file = os.getenv("ECCTOOL_CERT_FILE")
     key_file = os.getenv("ECCTOOL_KEY_FILE")
     ca_file = os.getenv("ECCTOOL_CA_FILE")
     if cert_file and key_file and ca_file:
         context = ssl.create_default_context(cafile=ca_file)
         context.load_cert_chain(cert_file, key_file)
-        return urlopen(request, context=context)
-    return urlopen(request)
+        return context
+    return None
+
+
+def _resolve_timeout(timeout):
+    """Resolve the request timeout in seconds.
+
+    Precedence: explicit ``timeout`` argument, then the
+    ``ECCTOOL_TIMEOUT_SECONDS`` environment variable, then
+    ``DEFAULT_TIMEOUT_SECONDS``. Non-positive or non-numeric values fall
+    back to the default so a bad setting can never disable the timeout.
+    """
+    if timeout is None:
+        env_value = os.getenv(TIMEOUT_ENV_VAR)
+        if env_value is not None:
+            try:
+                timeout = float(env_value)
+            except ValueError:
+                timeout = DEFAULT_TIMEOUT_SECONDS
+        else:
+            timeout = DEFAULT_TIMEOUT_SECONDS
+    try:
+        timeout = float(timeout)
+    except (TypeError, ValueError):
+        return DEFAULT_TIMEOUT_SECONDS
+    if timeout <= 0:
+        return DEFAULT_TIMEOUT_SECONDS
+    return timeout
 
 
 class MetricsRequest(RestRequest):
@@ -427,8 +483,8 @@ class MetricsRequest(RestRequest):
     PROMETHEUS_ACCEPT = "text/plain; version=0.0.4; charset=utf-8"
     OPENMETRICS_ACCEPT = "application/openmetrics-text; version=1.0.0; charset=utf-8"
 
-    def __init__(self, base_url=None):
-        RestRequest.__init__(self, base_url)
+    def __init__(self, base_url=None, timeout=None):
+        RestRequest.__init__(self, base_url, timeout=timeout)
 
     def get_metrics(self, open_metrics=False):
         """Fetch the raw metrics exposition text.
@@ -443,8 +499,8 @@ class MetricsRequest(RestRequest):
 class RepairSessionsRequest(RestRequest):
     ROOT = "repair-management/repairSessions"
 
-    def __init__(self, base_url=None):
-        RestRequest.__init__(self, base_url)
+    def __init__(self, base_url=None, timeout=None):
+        RestRequest.__init__(self, base_url, timeout=timeout)
 
     def list_sessions(self, node_id=None):
         request_url = RepairSessionsRequest.ROOT

@@ -165,6 +165,12 @@ ARG_URL = {
     "help": "ecchronos host URL (format: http://<host>:<port>)",
     "default": None,
 }
+ARG_TIMEOUT = {
+    "flags": ["-T", "--timeout"],
+    "type": float,
+    "help": "request timeout in seconds (default: 30, or set ECCTOOL_TIMEOUT_SECONDS)",
+    "default": None,
+}
 
 
 def get_parser():
@@ -195,6 +201,7 @@ def add_running_job_subcommand(sub_parsers):
     parser_repairs = sub_parsers.add_parser("running-job", description="Show which (if any) job is currently running.")
     add_common_arg(parser_repairs, ARG_OUTPUT_JSON)
     add_common_arg(parser_repairs, ARG_URL)
+    add_common_arg(parser_repairs, ARG_TIMEOUT)
 
 
 def add_config_subcommand(sub_parsers):
@@ -232,6 +239,7 @@ def add_config_subcommand(sub_parsers):
         help="value of the force flag passed to failSession, used for all requests",
     )
     add_common_arg(parser_config, ARG_URL)
+    add_common_arg(parser_config, ARG_TIMEOUT)
 
 
 def _on_off_to_bool(value):
@@ -239,7 +247,7 @@ def _on_off_to_bool(value):
 
 
 def config(arguments):
-    request = rest.ConfigRequest(base_url=arguments.url)
+    request = rest.ConfigRequest(base_url=arguments.url, timeout=arguments.timeout)
     has_updates = (
         arguments.session_window is not None
         or arguments.cooldown is not None
@@ -291,6 +299,7 @@ def add_repairs_subcommand(sub_parsers):
     add_common_arg(parser_repairs, table_arg)
 
     add_common_arg(parser_repairs, ARG_URL)
+    add_common_arg(parser_repairs, ARG_TIMEOUT)
 
     add_common_arg(parser_repairs, ARG_ID)
     add_common_arg(parser_repairs, ARG_JOB_ID)
@@ -318,6 +327,7 @@ def add_schedules_subcommand(sub_parsers):
     add_common_arg(parser_schedules, table_arg)
 
     add_common_arg(parser_schedules, ARG_URL)
+    add_common_arg(parser_schedules, ARG_TIMEOUT)
 
 
 def add_run_repair_subcommand(sub_parsers):
@@ -328,6 +338,7 @@ def add_run_repair_subcommand(sub_parsers):
     add_common_arg(parser_run_repair, ARG_COLUMNS)
     add_common_arg(parser_run_repair, ARG_ID)
     add_common_arg(parser_run_repair, ARG_URL)
+    add_common_arg(parser_run_repair, ARG_TIMEOUT)
     add_common_arg(parser_run_repair, ARG_OUTPUT_JSON_TABLE)
     add_common_arg(parser_run_repair, ARG_REPAIR_TYPE)
     add_common_arg(parser_run_repair, ARG_FORCE_TWCS)
@@ -363,6 +374,7 @@ def add_repair_info_subcommand(sub_parsers):
     add_common_arg(parser_repair_info, ARG_SINCE)
     add_common_arg(parser_repair_info, ARG_DURATION)
     add_common_arg(parser_repair_info, ARG_URL)
+    add_common_arg(parser_repair_info, ARG_TIMEOUT)
     add_common_arg(parser_repair_info, ARG_LIMIT)
     add_common_arg(parser_repair_info, ARG_OUTPUT_JSON_TABLE)
 
@@ -395,11 +407,13 @@ def add_state_subcommand(sub_parsers):
     add_common_arg(parser_state, ARG_COLUMNS)
     add_common_arg(parser_state, ARG_OUTPUT_JSON)
     add_common_arg(parser_state, ARG_URL)
+    add_common_arg(parser_state, ARG_TIMEOUT)
 
 
 def add_state_nodes_subcommand(state_subparsers):
     parser_nodes = state_subparsers.add_parser("nodes", help="Get nodes managed by local instance.")
     add_common_arg(parser_nodes, ARG_URL)
+    add_common_arg(parser_nodes, ARG_TIMEOUT)
 
 
 def add_metrics_subcommand(sub_parsers):
@@ -429,6 +443,7 @@ def add_metrics_subcommand(sub_parsers):
         help="suppress '# HELP' and '# TYPE' comment lines, showing only sample lines",
     )
     add_common_arg(parser_metrics, ARG_URL)
+    add_common_arg(parser_metrics, ARG_TIMEOUT)
 
 
 def add_common_arg(parser, arg_config, required=None):
@@ -445,6 +460,7 @@ def add_rejections_subcommand(sub_parsers):
         description="Manage ecchronos rejections. Use 'ecctool rejections <action> --help' for action information.",
     )
     add_common_arg(parser_rejections, ARG_URL)
+    add_common_arg(parser_rejections, ARG_TIMEOUT)
     add_common_arg(parser_rejections, ARG_COLUMNS)
     add_common_arg(parser_rejections, ARG_OUTPUT_JSON_TABLE)
 
@@ -466,6 +482,7 @@ def add_rejections_create_action(rejections_subparsers):
     add_common_arg(parser_post, ARG_END_MINUTE, required=True)
     add_common_arg(parser_post, ARG_DC_EXCLUSIONS, required=True)
     add_common_arg(parser_post, ARG_URL)
+    add_common_arg(parser_post, ARG_TIMEOUT)
 
 
 def add_rejections_delete_action(rejections_subparsers):
@@ -477,6 +494,7 @@ def add_rejections_delete_action(rejections_subparsers):
     add_common_arg(parser_delete, ARG_START_MINUTE, required=False)
     add_common_arg(parser_delete, ARG_DC_EXCLUSIONS, required=False)
     add_common_arg(parser_delete, ARG_URL)
+    add_common_arg(parser_delete, ARG_TIMEOUT)
 
 
 def add_rejections_get_action(rejections_subparsers):
@@ -484,6 +502,7 @@ def add_rejections_get_action(rejections_subparsers):
     add_common_arg(parser_get, ARG_KEYSPACE)
     add_common_arg(parser_get, ARG_TABLE)
     add_common_arg(parser_get, ARG_URL)
+    add_common_arg(parser_get, ARG_TIMEOUT)
 
 
 def add_rejections_update_action(rejections_subparsers):
@@ -494,6 +513,7 @@ def add_rejections_update_action(rejections_subparsers):
     add_common_arg(parser_update, ARG_START_MINUTE, required=True)
     add_common_arg(parser_update, ARG_DC_EXCLUSIONS, required=False)
     add_common_arg(parser_update, ARG_URL)
+    add_common_arg(parser_update, ARG_TIMEOUT)
 
 
 def add_repair_sessions_subcommand(sub_parsers):
@@ -503,6 +523,7 @@ def add_repair_sessions_subcommand(sub_parsers):
         "Use 'ecctool repair-sessions <action> --help' for action information.",
     )
     add_common_arg(parser_repair_sessions, ARG_URL)
+    add_common_arg(parser_repair_sessions, ARG_TIMEOUT)
     add_common_arg(parser_repair_sessions, ARG_COLUMNS)
     add_common_arg(parser_repair_sessions, ARG_OUTPUT_JSON_TABLE)
 
@@ -513,6 +534,7 @@ def add_repair_sessions_subcommand(sub_parsers):
     )
     add_common_arg(parser_list, ARG_NODE_ID)
     add_common_arg(parser_list, ARG_URL)
+    add_common_arg(parser_list, ARG_TIMEOUT)
     add_common_arg(parser_list, ARG_COLUMNS)
     add_common_arg(parser_list, ARG_OUTPUT_JSON_TABLE)
 
@@ -522,12 +544,14 @@ def add_repair_sessions_subcommand(sub_parsers):
     add_common_arg(parser_fail, ARG_NODE_ID)
     add_common_arg(parser_fail, ARG_YES)
     add_common_arg(parser_fail, ARG_URL)
+    add_common_arg(parser_fail, ARG_TIMEOUT)
     add_common_arg(parser_fail, ARG_OUTPUT_JSON_TABLE)
 
 
 def add_status_subcommand(sub_parsers):
     parser_status = sub_parsers.add_parser("status", description="View status of the ecChronos instance.")
     add_common_arg(parser_status, ARG_URL)
+    add_common_arg(parser_status, ARG_TIMEOUT)
     add_common_arg(parser_status, ARG_OUTPUT_JSON)
 
 
@@ -542,7 +566,7 @@ def repair_sessions(arguments):
 
 
 def _list_repair_sessions(arguments):
-    request = rest.RepairSessionsRequest(base_url=arguments.url)
+    request = rest.RepairSessionsRequest(base_url=arguments.url, timeout=arguments.timeout)
     result = request.list_sessions(node_id=arguments.node)
     if result.is_successful():
         table_printer.print_repair_sessions(result.data, columns=arguments.columns, output=arguments.output)
@@ -559,7 +583,7 @@ def _fail_repair_session(arguments):
             print("Aborted.")
             return
 
-    request = rest.RepairSessionsRequest(base_url=arguments.url)
+    request = rest.RepairSessionsRequest(base_url=arguments.url, timeout=arguments.timeout)
     result = request.fail_session(arguments.session, force=arguments.force, node_id=arguments.node)
     if result.is_successful():
         table_printer.print_repair_sessions(result.data, columns=arguments.columns, output=arguments.output)
@@ -577,7 +601,7 @@ def state(arguments):
 
 
 def _state_nodes(arguments):
-    request = rest.StateManagementRequest(base_url=arguments.url)
+    request = rest.StateManagementRequest(base_url=arguments.url, timeout=arguments.timeout)
     result = request.get_nodes()
 
     if result.is_successful():
@@ -588,7 +612,7 @@ def _state_nodes(arguments):
 
 def schedules(arguments):
     # pylint: disable=too-many-branches
-    request = rest.RepairSchedulerRequest(base_url=arguments.url)
+    request = rest.RepairSchedulerRequest(base_url=arguments.url, timeout=arguments.timeout)
     full = False
     result = None
     if arguments.node or arguments.id:
@@ -637,7 +661,7 @@ def schedules(arguments):
 
 
 def repairs(arguments):
-    request = rest.RepairSchedulerRequest(base_url=arguments.url)
+    request = rest.RepairSchedulerRequest(base_url=arguments.url, timeout=arguments.timeout)
     if arguments.node or arguments.id:
         node = arguments.node or "all"
         result = request.get_repair(node_id=node, job_id=arguments.id)
@@ -669,7 +693,7 @@ def repairs(arguments):
 
 
 def run_repair(arguments):
-    request = rest.RepairSchedulerRequest(base_url=arguments.url)
+    request = rest.RepairSchedulerRequest(base_url=arguments.url, timeout=arguments.timeout)
     if not arguments.keyspace and arguments.table:
         print("--keyspace must be specified if --table is specified.")
         sys.exit(1)
@@ -698,7 +722,7 @@ def run_repair(arguments):
 
 
 def repair_info(arguments):
-    request = rest.RepairSchedulerRequest(base_url=arguments.url)
+    request = rest.RepairSchedulerRequest(base_url=arguments.url, timeout=arguments.timeout)
     if not arguments.node:
         print("--node must be specified.")
         sys.exit(1)
@@ -810,7 +834,9 @@ def stop(arguments):
 
 
 def status(arguments, print_running=False):
-    request = rest.RepairSchedulerRequest(base_url=arguments.url)
+    request = rest.RepairSchedulerRequest(
+        base_url=getattr(arguments, "url", None), timeout=getattr(arguments, "timeout", None)
+    )
     result = request.list_schedules()
     output = getattr(arguments, "output", "")
     if result.is_successful():
@@ -828,7 +854,7 @@ def status(arguments, print_running=False):
 
 
 def running_job(arguments):
-    request = rest.RepairSchedulerRequest(base_url=arguments.url)
+    request = rest.RepairSchedulerRequest(base_url=arguments.url, timeout=arguments.timeout)
     result = request.running_job()
 
     if arguments.output == "json":
@@ -841,7 +867,7 @@ def running_job(arguments):
 
 
 def metrics(arguments):
-    request = rest.MetricsRequest(base_url=arguments.url)
+    request = rest.MetricsRequest(base_url=arguments.url, timeout=arguments.timeout)
     result = request.get_metrics(open_metrics=arguments.format == "openmetrics")
     if isinstance(result, rest.RequestResult):
         # basic_request() reports connection failures as 404 as well, so only

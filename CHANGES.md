@@ -2,6 +2,7 @@
 
 ## Version 1.1.2
 
+* Add configurable request timeout to ecctool (default 30s, overridable via --timeout or ECCTOOL_TIMEOUT_SECONDS) - Issue #1804
 * Add ecctool metrics subcommand - Issue #1864
 * Optimize the lock-resource hot path (avoid String.format in RepairResource) and add scheduler saturation observability metrics (refresh rate/duration, pass-within-window ratio, lock success rate/latency, and a schedule-falling-behind warning) - Issue #1854
 * Back off adaptively on repeated lock CQL timeouts and distinguish ecChronos client saturation from Cassandra unavailability in logs and metrics - Issue #1852

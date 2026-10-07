@@ -33,7 +33,7 @@ def _print_result(arguments, result):
 
 
 def create_rejections(arguments):
-    request = rest.RejectionsRequest(base_url=arguments.url)
+    request = rest.RejectionsRequest(base_url=arguments.url, timeout=arguments.timeout)
     rejection_body = {
         "keyspaceName": arguments.keyspace,
         "tableName": arguments.table,
@@ -47,7 +47,7 @@ def create_rejections(arguments):
 
 
 def delete_rejections(arguments):
-    request = rest.RejectionsRequest(base_url=arguments.url)
+    request = rest.RejectionsRequest(base_url=arguments.url, timeout=arguments.timeout)
 
     if arguments.all:
         result = request.truncate_rejections()
@@ -70,7 +70,7 @@ def delete_rejections(arguments):
 
 
 def get_rejections(arguments):
-    request = rest.RejectionsRequest(base_url=arguments.url)
+    request = rest.RejectionsRequest(base_url=arguments.url, timeout=arguments.timeout)
     if arguments.table and not arguments.keyspace:
         print("--keyspace is required.")
         sys.exit(1)
@@ -82,7 +82,7 @@ def get_rejections(arguments):
 
 
 def update_rejections(arguments):
-    request = rest.RejectionsRequest(base_url=arguments.url)
+    request = rest.RejectionsRequest(base_url=arguments.url, timeout=arguments.timeout)
     rejection_body = {
         "keyspaceName": arguments.keyspace,
         "tableName": arguments.table,
