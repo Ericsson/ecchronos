@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.impl.table;
 
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
 import static com.ericsson.bss.cassandra.ecchronos.core.impl.table.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
@@ -165,7 +166,7 @@ public class TestTableRepairJob
         verify(myRepairState, times(1)).update();
 
         // postExecute resets the throttle so the next pass refreshes even within the interval window.
-        job.postExecute(true, null);
+        job.postExecute(TaskExecutionResult.SUCCESS, null);
         job.refreshState();
 
         verify(myRepairState, times(2)).update();

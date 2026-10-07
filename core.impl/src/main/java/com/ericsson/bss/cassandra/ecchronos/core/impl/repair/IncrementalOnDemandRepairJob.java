@@ -23,6 +23,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicaRepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
@@ -51,6 +52,8 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
     private final List<ScheduledTask> myTasks;
     private final int myTotalTasks;
     private final CassandraMetrics myCassandraMetrics;
+    private final ReplicaRepairGroup myReplicaRepairGroup;
+    private int myAttempts;
 
     /**
      * Constructs an incremental on-demand repair job from the provided builder.
@@ -61,26 +64,29 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
     {
         super(builder.myConfiguration, builder.myJmxProxyFactory, builder.myRepairConfiguration,
                 builder.myRepairLockType, builder.myOnFinishedHook, builder.myTableRepairMetrics, builder.myOngoingJob,
-                builder.myCurrentNode);
+                builder.myCurrentNode, builder.myRetryAttempts, builder.myRetryBackoffMs);
         myReplicationState = Preconditions.checkNotNull(builder.myReplicationState,
                 "Replication state must be set");
         myRepairHistory = Preconditions.checkNotNull(builder.myRepairHistory,
                 "Repair History must be set");
         myCassandraMetrics = builder.myCassandraMetrics;
+        myReplicaRepairGroup = new ReplicaRepairGroup(
+                myReplicationState.getReplicas(getTableReference(), getCurrentNode()),
+                ImmutableList.of(), -1L);
         myTasks = initializeTasks();
         myTotalTasks = myTasks.size();
     }
 
     private List<ScheduledTask> initializeTasks()
     {
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(
-                myReplicationState.getReplicas(getTableReference(), getCurrentNode()),
-                ImmutableList.of(), -1L);
-
-        RepairGroup.Builder groupBuilder = createRepairGroupBuilder(replicaRepairGroup);
         List<ScheduledTask> taskList = new ArrayList<>();
-        taskList.add(groupBuilder.build(Priority.HIGHEST.getValue()));
+        taskList.add(buildTask());
         return taskList;
+    }
+
+    private ScheduledTask buildTask()
+    {
+        return createRepairGroupBuilder(myReplicaRepairGroup).build(Priority.HIGHEST.getValue());
     }
 
     private RepairGroup.Builder createRepairGroupBuilder(final ReplicaRepairGroup replicaRepairGroup)
@@ -140,15 +146,18 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
      * {@inheritDoc}
      */
     @Override
-    public void postExecute(final boolean successful, final ScheduledTask task)
+    public void postExecute(final TaskExecutionResult result, final ScheduledTask task)
     {
         myTasks.remove(task);
-        if (!successful)
+        TaskOutcome outcome = decideTaskOutcome(result, task, myAttempts);
+        if (outcome == TaskOutcome.RETRY)
         {
-            LOG.error("Error running {}", task);
-            setFailed(true);
+            // Rebuild a fresh single-use task for the same replica group, then defer via backoff. See #1848.
+            myAttempts++;
+            myTasks.add(buildTask());
+            applyRetryBackoff();
         }
-        super.postExecute(successful, task);
+        super.postExecute(result, task);
     }
 
     /**
@@ -215,6 +224,8 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
         private ReplicationState myReplicationState;
         private RepairHistory myRepairHistory;
         private CassandraMetrics myCassandraMetrics;
+        private int myRetryAttempts = OnDemandRepairJob.DEFAULT_RETRY_ATTEMPTS;
+        private long myRetryBackoffMs = OnDemandRepairJob.DEFAULT_RETRY_BACKOFF_MS;
 
         /**
          * Default constructor.
@@ -342,6 +353,30 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
         public final Builder withCassandraMetrics(final CassandraMetrics cassandraMetrics)
         {
             this.myCassandraMetrics = cassandraMetrics;
+            return this;
+        }
+
+        /**
+         * Sets the maximum number of attempts per task (1 = no retry). Values below 1 are treated as 1.
+         *
+         * @param attempts the maximum attempts per task.
+         * @return this builder.
+         */
+        public final Builder withRetryAttempts(final int attempts)
+        {
+            this.myRetryAttempts = Math.max(1, attempts);
+            return this;
+        }
+
+        /**
+         * Sets the delay between retry attempts, in milliseconds.
+         *
+         * @param backoffMs the backoff in milliseconds.
+         * @return this builder.
+         */
+        public final Builder withRetryBackoffMs(final long backoffMs)
+        {
+            this.myRetryBackoffMs = backoffMs;
             return this;
         }
 

@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental;
 
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
@@ -407,7 +408,7 @@ public class TestIncrementalRepairJob
                 .when(myRepairHistoryProvider).iterate(eq(mockNode), eq(myTableReference), anyLong(), anyLong(), any());
 
         IncrementalRepairJob job = getIncrementalRepairJobWithHistory();
-        job.postExecute(true, mock(ScheduledTask.class));
+        job.postExecute(TaskExecutionResult.SUCCESS, mock(ScheduledTask.class));
 
         // A completed repair must be recorded for the replicas this instance is responsible for.
         verify(myRepairHistory).recordCompletedRepair(eq(myTableReference), eq(job.getJobId()),
@@ -424,7 +425,7 @@ public class TestIncrementalRepairJob
                 .when(myRepairHistoryProvider).iterate(eq(mockNode), eq(myTableReference), anyLong(), anyLong(), any());
 
         IncrementalRepairJob job = getIncrementalRepairJobWithHistory();
-        job.postExecute(false, mock(ScheduledTask.class));
+        job.postExecute(TaskExecutionResult.TERMINAL, mock(ScheduledTask.class));
 
         verify(myRepairHistory, org.mockito.Mockito.never()).recordCompletedRepair(any(), any(), any(), any(), any(),
                 anyLong(), anyLong(), any());

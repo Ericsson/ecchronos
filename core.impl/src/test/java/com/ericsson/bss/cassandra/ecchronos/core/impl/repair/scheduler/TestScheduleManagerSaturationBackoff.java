@@ -28,6 +28,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.DummyLock;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairResource;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockClientSaturationException;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 
@@ -267,10 +268,10 @@ public class TestScheduleManagerSaturationBackoff
         }
 
         @Override
-        public boolean execute(final UUID nodeID)
+        public TaskExecutionResult execute(final UUID nodeID)
         {
             myRunCounter.incrementAndGet();
-            return true;
+            return TaskExecutionResult.SUCCESS;
         }
     }
 }

@@ -24,6 +24,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfigurati
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
 import com.ericsson.bss.cassandra.ecchronos.core.state.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicaRepairGroup;
@@ -55,23 +56,43 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
 {
     private static final Logger LOG = LoggerFactory.getLogger(VnodeOnDemandRepairJob.class);
     private final RepairHistory myRepairHistory;
-    private final Map<ScheduledTask, Set<LongTokenRange>> myTasks;
+    private final Map<ScheduledTask, TaskContext> myTasks;
     private final int myTotalTokens;
+    private final Node myNode;
 
     private VnodeOnDemandRepairJob(final Builder builder)
     {
         super(builder.configuration, builder.jmxProxyFactory, builder.repairConfiguration,
                 builder.repairLockType, builder.onFinishedHook, builder.tableRepairMetrics, builder.ongoingJob,
-                builder.currentNode);
+                builder.currentNode, builder.retryAttempts, builder.retryBackoffMs);
         myRepairHistory = Preconditions.checkNotNull(builder.repairHistory,
                 "Repair history must be set");
+        myNode = builder.currentNode;
         myTotalTokens = getOngoingJob().getTokens().size();
         myTasks = createRepairTasks(getOngoingJob().getTokens(), getOngoingJob().getRepairedTokens(), builder.currentNode);
     }
 
-    private Map<ScheduledTask, Set<LongTokenRange>> createRepairTasks(final Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRanges,
-                                                                      final Set<LongTokenRange> repairedTokens,
-                                                                      final Node currentNode)
+    /**
+     * Per-task retry bookkeeping: the replica repair group a task was built from (so a fresh task can be rebuilt on
+     * retry — the task object itself is single-use), the token ranges it covers, and how many attempts have run.
+     */
+    private static final class TaskContext
+    {
+        private final ReplicaRepairGroup myReplicaRepairGroup;
+        private final Set<LongTokenRange> myRanges;
+        private final int myAttempts;
+
+        TaskContext(final ReplicaRepairGroup replicaRepairGroup, final Set<LongTokenRange> ranges, final int attempts)
+        {
+            myReplicaRepairGroup = replicaRepairGroup;
+            myRanges = ranges;
+            myAttempts = attempts;
+        }
+    }
+
+    private Map<ScheduledTask, TaskContext> createRepairTasks(final Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRanges,
+                                                              final Set<LongTokenRange> repairedTokens,
+                                                              final Node currentNode)
     {
         Map<LongTokenRange, ImmutableSet<DriverNode>> remainingTokenRanges = filterRemainingTokenRanges(tokenRanges, repairedTokens);
         List<VnodeRepairState> vnodeRepairStates = createVnodeRepairStates(remainingTokenRanges);
@@ -108,16 +129,16 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
         return VnodeRepairGroupFactory.INSTANCE.generateReplicaRepairGroups(vnodeRepairStates);
     }
 
-    private Map<ScheduledTask, Set<LongTokenRange>> mapRepairGroupsToTasks(final List<ReplicaRepairGroup> repairGroups,
-                                                                           final Node currentNode)
+    private Map<ScheduledTask, TaskContext> mapRepairGroupsToTasks(final List<ReplicaRepairGroup> repairGroups,
+                                                                   final Node currentNode)
     {
-        Map<ScheduledTask, Set<LongTokenRange>> taskMap = new ConcurrentHashMap<>();
+        Map<ScheduledTask, TaskContext> taskMap = new ConcurrentHashMap<>();
         for (ReplicaRepairGroup replicaRepairGroup : repairGroups)
         {
             Set<LongTokenRange> groupTokenRange = new HashSet<>();
             replicaRepairGroup.iterator().forEachRemaining(groupTokenRange::add);
             ScheduledTask task = createScheduledTask(replicaRepairGroup, currentNode);
-            taskMap.put(task, groupTokenRange);
+            taskMap.put(task, new TaskContext(replicaRepairGroup, groupTokenRange, 0));
         }
         return taskMap;
     }
@@ -157,20 +178,29 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
     }
 
     @Override
-    public void postExecute(final boolean successful, final ScheduledTask task)
+    public void postExecute(final TaskExecutionResult result, final ScheduledTask task)
     {
-        Set<LongTokenRange> repairedTokenSet = myTasks.remove(task);
-        if (!successful)
+        TaskContext context = myTasks.get(task);
+        myTasks.remove(task);
+        TaskOutcome outcome = decideTaskOutcome(result, task, context == null ? 0 : context.myAttempts);
+        if (outcome == TaskOutcome.FINISHED)
         {
-            LOG.error("Error running {}", task);
-            setFailed(true);
+            if (context != null)
+            {
+                getOngoingJob().finishRanges(context.myRanges);
+            }
         }
-        else
+        else if (outcome == TaskOutcome.RETRY && context != null)
         {
-            getOngoingJob().finishRanges(repairedTokenSet);
+            // Rebuild a fresh task for the same range set — the task object is single-use — then defer via backoff
+            // so the job is never parked without a task to run. See #1848.
+            ScheduledTask retryTask = createScheduledTask(context.myReplicaRepairGroup, myNode);
+            myTasks.put(retryTask, new TaskContext(context.myReplicaRepairGroup, context.myRanges,
+                    context.myAttempts + 1));
+            applyRetryBackoff();
         }
 
-        super.postExecute(successful, task);
+        super.postExecute(result, task);
     }
 
     @Override
@@ -254,6 +284,8 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
         private RepairHistory repairHistory;
         private OngoingJob ongoingJob;
         private Node currentNode;
+        private int retryAttempts = OnDemandRepairJob.DEFAULT_RETRY_ATTEMPTS;
+        private long retryBackoffMs = OnDemandRepairJob.DEFAULT_RETRY_BACKOFF_MS;
 
         /**
          * Default constructor.
@@ -356,6 +388,30 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
         public final Builder withOngoingJob(final OngoingJob anOngoingJob)
         {
             this.ongoingJob = anOngoingJob;
+            return this;
+        }
+
+        /**
+         * Sets the maximum number of attempts per task (1 = no retry). Values below 1 are treated as 1.
+         *
+         * @param attempts the maximum attempts per task.
+         * @return this builder instance.
+         */
+        public final Builder withRetryAttempts(final int attempts)
+        {
+            this.retryAttempts = Math.max(1, attempts);
+            return this;
+        }
+
+        /**
+         * Sets the delay between retry attempts, in milliseconds.
+         *
+         * @param backoffMs the backoff in milliseconds.
+         * @return this builder instance.
+         */
+        public final Builder withRetryBackoffMs(final long backoffMs)
+        {
+            this.retryBackoffMs = backoffMs;
             return this;
         }
 

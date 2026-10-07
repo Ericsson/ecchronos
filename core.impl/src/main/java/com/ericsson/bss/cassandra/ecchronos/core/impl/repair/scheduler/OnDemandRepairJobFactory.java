@@ -48,6 +48,8 @@ public final class OnDemandRepairJobFactory
     private final OnDemandStatus myOnDemandStatus;
     private final BiConsumer<UUID, UUID> myOnFinishedHook;
     private final CassandraMetrics myCassandraMetrics;
+    private final int myRetryAttempts;
+    private final long myRetryBackoffMs;
 
     private OnDemandRepairJobFactory(final Builder builder)
     {
@@ -60,6 +62,8 @@ public final class OnDemandRepairJobFactory
         myOnDemandStatus = builder.myOnDemandStatus;
         myOnFinishedHook = builder.myOnFinishedHook;
         myCassandraMetrics = builder.myCassandraMetrics;
+        myRetryAttempts = builder.myRetryAttempts;
+        myRetryBackoffMs = builder.myRetryBackoffMs;
     }
 
     /**
@@ -87,6 +91,8 @@ public final class OnDemandRepairJobFactory
                     .withCassandraMetrics(myCassandraMetrics)
                     .withOngoingJob(ongoingJob)
                     .withNode(node)
+                    .withRetryAttempts(myRetryAttempts)
+                    .withRetryBackoffMs(myRetryBackoffMs)
                     .build();
         }
         return new VnodeOnDemandRepairJob.Builder()
@@ -98,6 +104,8 @@ public final class OnDemandRepairJobFactory
                 .withRepairHistory(myRepairHistory)
                 .withOngoingJob(ongoingJob)
                 .withNode(node)
+                .withRetryAttempts(myRetryAttempts)
+                .withRetryBackoffMs(myRetryBackoffMs)
                 .build();
     }
 
@@ -163,6 +171,8 @@ public final class OnDemandRepairJobFactory
         private OnDemandStatus myOnDemandStatus;
         private BiConsumer<UUID, UUID> myOnFinishedHook;
         private CassandraMetrics myCassandraMetrics;
+        private int myRetryAttempts = OnDemandRepairJob.DEFAULT_RETRY_ATTEMPTS;
+        private long myRetryBackoffMs = OnDemandRepairJob.DEFAULT_RETRY_BACKOFF_MS;
 
         /**
          * Default constructor.
@@ -278,6 +288,30 @@ public final class OnDemandRepairJobFactory
         public Builder withCassandraMetrics(final CassandraMetrics cassandraMetrics)
         {
             myCassandraMetrics = cassandraMetrics;
+            return this;
+        }
+
+        /**
+         * Sets the maximum number of attempts per on-demand repair task (1 = no retry).
+         *
+         * @param retryAttempts the maximum attempts per task.
+         * @return this builder.
+         */
+        public Builder withRetryAttempts(final int retryAttempts)
+        {
+            myRetryAttempts = retryAttempts;
+            return this;
+        }
+
+        /**
+         * Sets the delay between retry attempts, in milliseconds.
+         *
+         * @param retryBackoffMs the backoff in milliseconds.
+         * @return this builder.
+         */
+        public Builder withRetryBackoffMs(final long retryBackoffMs)
+        {
+            myRetryBackoffMs = retryBackoffMs;
             return this;
         }
 

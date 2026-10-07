@@ -50,6 +50,8 @@ public class RepairConfig
 
     private HungRepairRecoveryConfig myHungRepairRecovery = new HungRepairRecoveryConfig();
 
+    private OnDemandRetryConfig myOnDemandRetry = new OnDemandRetryConfig();
+
     /** Default constructor. */
     public RepairConfig()
     {
@@ -132,6 +134,26 @@ public class RepairConfig
     public final void setHungRepairRecovery(final HungRepairRecoveryConfig hungRepairRecovery)
     {
         myHungRepairRecovery = hungRepairRecovery;
+    }
+
+    /**
+     * Returns the on-demand repair retry configuration.
+     * @return the on-demand retry configuration
+     */
+    @JsonProperty("on_demand_retry")
+    public final OnDemandRetryConfig getOnDemandRetry()
+    {
+        return myOnDemandRetry;
+    }
+
+    /**
+     * Sets the on-demand repair retry configuration.
+     * @param onDemandRetry the on-demand retry configuration
+     */
+    @JsonProperty("on_demand_retry")
+    public final void setOnDemandRetry(final OnDemandRetryConfig onDemandRetry)
+    {
+        myOnDemandRetry = onDemandRetry;
     }
 
     /**
