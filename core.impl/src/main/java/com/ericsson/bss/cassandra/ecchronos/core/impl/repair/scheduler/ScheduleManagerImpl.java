@@ -21,6 +21,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.RepairLockFactoryIm
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
 import java.io.Closeable;
 import java.util.ArrayList;
@@ -673,7 +674,13 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             int index = 0;
             AtomicInteger failureCounter = myConsecutiveFailures.computeIfAbsent(
                     job.getJobId(), k -> new AtomicInteger(0));
-            for (ScheduledTask task : job)
+            // Snapshot the tasks before iterating. postExecute may re-add a rebuilt task to the job on a retryable
+            // failure; iterating a live (weakly consistent) view could surface that new task in the same session
+            // and run it immediately, bypassing the retry backoff. The snapshot defers the retry to a later tick
+            // (gated by setRunnableIn). See #1848.
+            List<ScheduledTask> tasksForSession = new ArrayList<>();
+            job.iterator().forEachRemaining(tasksForSession::add);
+            for (ScheduledTask task : tasksForSession)
             {
                 if (!withinSessionWindow(sessionStart))
                 {
@@ -685,13 +692,21 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 {
                     lockPool.acquireForTask(task);
                     mySchedulerMetrics.recordLockAttempt(true, System.nanoTime() - lockStart);
-                    boolean successful = runTask(task, index);
-                    job.postExecute(successful, task);
-                    if (successful)
+                    TaskExecutionResult result = runTask(task, index);
+                    job.postExecute(result, task);
+                    if (result.isSuccessful())
                     {
                         tasksExecuted++;
                         failureCounter.set(0);
                         myLockFailureBackoff.reset(job);
+                    }
+                    else if (result.isRetryable())
+                    {
+                        // A retryable (transient) failure is owned by the job's own retry logic (attempt counting
+                        // + backoff). Do not advance the scheduler's consecutive-failure circuit breaker, so a
+                        // configured retry_attempts is not silently capped by MAX_CONSECUTIVE_TASK_FAILURES, and
+                        // leave the rest of this session's snapshot to run. See #1848.
+                        continue;
                     }
                     else if (handleUnsuccessfulTask(job, failureCounter))
                     {
@@ -764,7 +779,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             myLockFailureBackoff.recordFailure(job, e, nodeID);
         }
 
-        private boolean runTask(
+        private TaskExecutionResult runTask(
                 final ScheduledTask task,
                 final int index)
         {
@@ -778,7 +793,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 LOG.warn("Unable to run task: {} in node: {}", task, nodeID, e);
             }
 
-            return false;
+            return TaskExecutionResult.TERMINAL;
         }
     }
 

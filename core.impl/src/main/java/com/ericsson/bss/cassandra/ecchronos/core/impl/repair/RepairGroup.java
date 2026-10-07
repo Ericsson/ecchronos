@@ -27,6 +27,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairResource;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairResourceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
 import com.ericsson.bss.cassandra.ecchronos.core.state.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicaRepairGroup;
@@ -37,6 +38,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairPolicy;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ScheduledJobException;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.TransientRepairException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import java.math.BigInteger;
@@ -119,16 +121,21 @@ public class RepairGroup extends ScheduledTask
     }
 
     /**
-     * Executes the repair tasks this repair group is responsible for. Repair tasks can succeed or fail. Repair
-     * tasks blocked by run policy are counted as failed.
+     * Executes the repair tasks this repair group is responsible for.
+     * <p>
+     * Returns {@link TaskExecutionResult#SUCCESS} if all tasks completed, {@link TaskExecutionResult#RETRYABLE} for
+     * a transient failure (JMX/connection issue, repair session failing to start, or stopped by run policy —
+     * "will continue later"), and {@link TaskExecutionResult#TERMINAL} for a terminal failure such as Cassandra
+     * reporting failed ranges or lost notifications.
      *
-     * @return boolean
+     * @param nodeID the node to run on.
+     * @return the task execution result.
      */
     @Override
-    public boolean execute(final UUID nodeID)
+    public TaskExecutionResult execute(final UUID nodeID)
     {
         LOG.debug("Table {} running repair job {}", myTableReference, myReplicaRepairGroup);
-        boolean successful = true;
+        TaskExecutionResult result = TaskExecutionResult.SUCCESS;
         Collection<RepairTask> tasks = getRepairTasks(nodeID);
         try
         {
@@ -137,18 +144,27 @@ public class RepairGroup extends ScheduledTask
                 if (!shouldContinue())
                 {
                     LOG.info("Repair of {} was stopped by policy, will continue later", this);
-                    successful = false;
+                    result = TaskExecutionResult.RETRYABLE;
                     break;
                 }
                 try
                 {
                     repairTask.execute();
                 }
+                catch (TransientRepairException e)
+                {
+                    LOG.warn("Encountered transient issue when running repair task {}", repairTask, e);
+                    result = TaskExecutionResult.RETRYABLE;
+                    if (e.getCause() instanceof InterruptedException)
+                    {
+                        LOG.info("{} thread was interrupted", this);
+                        break;
+                    }
+                }
                 catch (ScheduledJobException e)
                 {
                     LOG.warn("Encountered issue when running repair task {}", repairTask, e);
-                    LOG.debug("", e);
-                    successful = false;
+                    result = TaskExecutionResult.TERMINAL;
                     if (e.getCause() instanceof InterruptedException)
                     {
                         LOG.info("{} thread was interrupted", this);
@@ -162,7 +178,7 @@ public class RepairGroup extends ScheduledTask
             tasks.forEach(RepairTask::cleanup);
         }
 
-        return successful;
+        return result;
     }
 
     private boolean shouldContinue()

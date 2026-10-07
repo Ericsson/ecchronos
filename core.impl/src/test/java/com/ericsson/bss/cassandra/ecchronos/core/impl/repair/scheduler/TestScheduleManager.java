@@ -34,6 +34,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairResource;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -594,7 +595,7 @@ public class TestScheduleManager
             }
 
             @Override
-            public boolean execute(UUID nodeID)
+            public TaskExecutionResult execute(UUID nodeID)
             {
                 hasStarted = true;
                 try
@@ -611,7 +612,7 @@ public class TestScheduleManager
                 onCompletion.run();
                 taskRuns.incrementAndGet();
                 hasRun = true;
-                return true;
+                return TaskExecutionResult.SUCCESS;
             }
         }
     }
@@ -638,17 +639,17 @@ public class TestScheduleManager
                 this.latch = latch;
             }
             @Override
-            public boolean execute(UUID nodeID)
+            public TaskExecutionResult execute(UUID nodeID)
             {
                 try
                 {
                     latch.await();
-                    return true;
+                    return TaskExecutionResult.SUCCESS;
                 }
                 catch (InterruptedException e)
                 {
                     Thread.currentThread().interrupt();
-                    return false;
+                    return TaskExecutionResult.TERMINAL;
                 }
             }
         }

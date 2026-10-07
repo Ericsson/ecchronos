@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.IncrementalOnDemandRepairJob;
@@ -111,7 +112,7 @@ public class TestIncrementalOnDemandRepairJob
     {
         IncrementalOnDemandRepairJob repairJob = createIncrementalOnDemandRepairJob();
         Iterator<ScheduledTask> it = repairJob.iterator();
-        repairJob.postExecute(false, it.next());
+        repairJob.postExecute(TaskExecutionResult.TERMINAL, it.next());
         OnDemandRepairJobView expectedView = new OnDemandRepairJobView(repairJob.getJobId(), myHostId, myTableReference,
                 OnDemandRepairJobView.Status.ERROR, 0, System.currentTimeMillis(), RepairType.INCREMENTAL);
         assertThat(repairJob.getLastSuccessfulRun()).isEqualTo(-1);
@@ -159,7 +160,7 @@ public class TestIncrementalOnDemandRepairJob
         IncrementalOnDemandRepairJob repairJob = createIncrementalOnDemandRepairJob();
         Iterator<ScheduledTask> it = repairJob.iterator();
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
-        repairJob.postExecute(true, it.next());
+        repairJob.postExecute(TaskExecutionResult.SUCCESS, it.next());
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.FINISHED);
     }
 
@@ -169,7 +170,7 @@ public class TestIncrementalOnDemandRepairJob
         IncrementalOnDemandRepairJob repairJob = createIncrementalOnDemandRepairJob();
         Iterator<ScheduledTask> it = repairJob.iterator();
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
-        repairJob.postExecute(true, it.next());
+        repairJob.postExecute(TaskExecutionResult.SUCCESS, it.next());
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.FINISHED);
     }
 
@@ -179,7 +180,7 @@ public class TestIncrementalOnDemandRepairJob
         IncrementalOnDemandRepairJob repairJob = createIncrementalOnDemandRepairJob();
         Iterator<ScheduledTask> it = repairJob.iterator();
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
-        repairJob.postExecute(false, it.next());
+        repairJob.postExecute(TaskExecutionResult.TERMINAL, it.next());
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.FAILED);
     }
 
@@ -189,7 +190,7 @@ public class TestIncrementalOnDemandRepairJob
         IncrementalOnDemandRepairJob repairJob = createIncrementalOnDemandRepairJob();
         assertThat(repairJob.getProgress()).isEqualTo(0);
         Iterator<ScheduledTask> it = repairJob.iterator();
-        repairJob.postExecute(true, it.next());
+        repairJob.postExecute(TaskExecutionResult.SUCCESS, it.next());
         assertThat(repairJob.getProgress()).isEqualTo(1);
     }
 
@@ -214,7 +215,7 @@ public class TestIncrementalOnDemandRepairJob
     {
         IncrementalOnDemandRepairJob repairJob = createIncrementalOnDemandRepairJob();
         Iterator<ScheduledTask> it = repairJob.iterator();
-        repairJob.postExecute(true, it.next());
+        repairJob.postExecute(TaskExecutionResult.SUCCESS, it.next());
         repairJob.finishJob();
         verify(myHook).accept(any(UUID.class));
         verify(myOngoingJob).finishJob();
@@ -225,7 +226,7 @@ public class TestIncrementalOnDemandRepairJob
     {
         IncrementalOnDemandRepairJob repairJob = createIncrementalOnDemandRepairJob();
         Iterator<ScheduledTask> it = repairJob.iterator();
-        repairJob.postExecute(false, it.next());
+        repairJob.postExecute(TaskExecutionResult.TERMINAL, it.next());
         repairJob.finishJob();
         verify(myHook).accept(any(UUID.class));
         verify(myOngoingJob).failJob();
@@ -242,6 +243,73 @@ public class TestIncrementalOnDemandRepairJob
                 .withOngoingJob(myOngoingJob)
                 .withOnFinished(myHook)
                 .withNode(myNode)
+                .build();
+    }
+
+    @Test
+    public void testRetryableFailureReschedulesWithoutFailing()
+    {
+        IncrementalOnDemandRepairJob repairJob = createRetryJob(3, 1000L);
+        ScheduledTask firstTask = repairJob.iterator().next();
+
+        repairJob.postExecute(TaskExecutionResult.RETRYABLE, firstTask);
+
+        assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
+        assertThat(repairJob.isInBackoff()).isTrue();
+        ScheduledTask retryTask = repairJob.iterator().next();
+        assertThat(retryTask).isNotSameAs(firstTask);
+    }
+
+    @Test
+    public void testRetrySucceedsOnSecondAttempt()
+    {
+        IncrementalOnDemandRepairJob repairJob = createRetryJob(3, 1000L);
+        repairJob.postExecute(TaskExecutionResult.RETRYABLE, repairJob.iterator().next());
+        assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
+
+        repairJob.postExecute(TaskExecutionResult.SUCCESS, repairJob.iterator().next());
+        assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.FINISHED);
+    }
+
+    @Test
+    public void testRetryExhaustedFailsJob()
+    {
+        IncrementalOnDemandRepairJob repairJob = createRetryJob(2, 1000L);
+        repairJob.postExecute(TaskExecutionResult.RETRYABLE, repairJob.iterator().next());
+        assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
+        repairJob.postExecute(TaskExecutionResult.RETRYABLE, repairJob.iterator().next());
+        assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.FAILED);
+    }
+
+    @Test
+    public void testTerminalFailureIsNotRetried()
+    {
+        IncrementalOnDemandRepairJob repairJob = createRetryJob(3, 1000L);
+        repairJob.postExecute(TaskExecutionResult.TERMINAL, repairJob.iterator().next());
+        assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.FAILED);
+    }
+
+    @Test
+    public void testNoRetryWhenAttemptsIsOne()
+    {
+        IncrementalOnDemandRepairJob repairJob = createRetryJob(1, 1000L);
+        repairJob.postExecute(TaskExecutionResult.RETRYABLE, repairJob.iterator().next());
+        assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.FAILED);
+    }
+
+    private IncrementalOnDemandRepairJob createRetryJob(final int retryAttempts, final long retryBackoffMs)
+    {
+        return new IncrementalOnDemandRepairJob.Builder()
+                .withJmxProxyFactory(myJmxProxyFactory)
+                .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairLockType(RepairLockType.VNODE)
+                .withReplicationState(myReplicationState)
+                .withRepairHistory(myRepairHistory)
+                .withOngoingJob(myOngoingJob)
+                .withOnFinished(myHook)
+                .withNode(myNode)
+                .withRetryAttempts(retryAttempts)
+                .withRetryBackoffMs(retryBackoffMs)
                 .build();
     }
 }

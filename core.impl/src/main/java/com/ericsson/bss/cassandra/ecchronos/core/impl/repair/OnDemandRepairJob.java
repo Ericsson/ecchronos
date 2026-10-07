@@ -21,11 +21,16 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import com.google.common.base.Preconditions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Abstract base class for on-demand repair jobs, providing common fields for JMX connectivity,
@@ -35,6 +40,11 @@ public abstract class OnDemandRepairJob extends ScheduledJob
 {
     /** The shared repair lock factory instance. */
     protected static final RepairLockFactory REPAIR_LOCK_FACTORY = new RepairLockFactoryImpl();
+    /** Default number of attempts per task (3 = up to two retries after the first attempt). */
+    public static final int DEFAULT_RETRY_ATTEMPTS = 3;
+    /** Default delay between retry attempts, in milliseconds. */
+    public static final long DEFAULT_RETRY_BACKOFF_MS = TimeUnit.MINUTES.toMillis(1);
+    private static final Logger LOG = LoggerFactory.getLogger(OnDemandRepairJob.class);
     private final DistributedJmxProxyFactory myJmxProxyFactory;
     private final RepairConfiguration myRepairConfiguration;
     private final RepairLockType myRepairLockType;
@@ -42,6 +52,8 @@ public abstract class OnDemandRepairJob extends ScheduledJob
     private final TableRepairMetrics myTableRepairMetrics;
     private final OngoingJob myOngoingJob;
     private final Node myCurrentNode;
+    private final int myRetryAttempts;
+    private final long myRetryBackoffMs;
 
     private boolean hasFailed;
 
@@ -56,12 +68,17 @@ public abstract class OnDemandRepairJob extends ScheduledJob
      * @param tableRepairMetrics the metrics tracker for table repair.
      * @param ongoingJob the ongoing job reference.
      * @param currentNode the current Cassandra node.
+     * @param retryAttempts the maximum number of attempts per task (1 = no retry).
+     * @param retryBackoffMs the delay between retry attempts, in milliseconds.
      */
+    // CHECKSTYLE:OFF ParameterNumber
     public OnDemandRepairJob(final Configuration configuration, final DistributedJmxProxyFactory jmxProxyFactory,
                              final RepairConfiguration repairConfiguration, final RepairLockType repairLockType,
                              final Consumer<UUID> onFinishedHook, final TableRepairMetrics tableRepairMetrics,
                              final OngoingJob ongoingJob,
-                             final Node currentNode)
+                             final Node currentNode,
+                             final int retryAttempts,
+                             final long retryBackoffMs)
     {
         super(configuration, ongoingJob.getJobId(), ongoingJob.getHostId());
         myOngoingJob = Preconditions.checkNotNull(ongoingJob,
@@ -78,6 +95,64 @@ public abstract class OnDemandRepairJob extends ScheduledJob
                 "On finished hook must be set");
         myCurrentNode = Preconditions.checkNotNull(currentNode,
                 "On current node must be set");
+        myRetryAttempts = Math.max(1, retryAttempts);
+        myRetryBackoffMs = retryBackoffMs;
+    }
+    // CHECKSTYLE:ON ParameterNumber
+
+    /**
+     * The outcome of a completed task, as decided by the shared on-demand retry policy.
+     */
+    protected enum TaskOutcome
+    {
+        /** The task succeeded; its ranges can be finished. */
+        FINISHED,
+        /** The task failed transiently and should be retried after a backoff. */
+        RETRY,
+        /** The task failed terminally, or exhausted its retries; the job should fail. */
+        FAILED
+    }
+
+    /**
+     * Decide, from a task result and how many attempts have already run, whether a task succeeded, should be retried
+     * after a backoff, or should fail the job. This centralises the on-demand retry policy so vnode and incremental
+     * jobs behave identically. This method is side-effect free except for the terminal FAILED case: on a
+     * {@link TaskOutcome#RETRY} the caller is responsible for rebuilding a fresh task (tasks are single-use) and must
+     * then call {@link #applyRetryBackoff()} so the retry is deferred to a later tick only when a task actually
+     * exists to run. See #1848.
+     *
+     * @param result the task execution result.
+     * @param task the task that was executed (for logging).
+     * @param attemptsSoFar how many attempts have already completed for this unit of work (0 for the first run).
+     * @return the decided outcome.
+     */
+    protected final TaskOutcome decideTaskOutcome(final TaskExecutionResult result, final ScheduledTask task,
+                                                  final int attemptsSoFar)
+    {
+        if (result.isSuccessful())
+        {
+            return TaskOutcome.FINISHED;
+        }
+        if (result.isRetryable() && attemptsSoFar + 1 < myRetryAttempts)
+        {
+            // Transient failure (for example a JMX problem): the caller rebuilds a fresh task for the same unit of
+            // work and defers it via applyRetryBackoff(). See #1848.
+            LOG.warn("Transient failure running {}; scheduling retry {}/{} after {} ms",
+                    task, attemptsSoFar + 1, myRetryAttempts - 1, myRetryBackoffMs);
+            return TaskOutcome.RETRY;
+        }
+        LOG.error("Error running {}", task);
+        setFailed(true);
+        return TaskOutcome.FAILED;
+    }
+
+    /**
+     * Defer the next run by the configured retry backoff. Call this only after a fresh retry task has actually been
+     * registered, so the job is never parked without a task to run. See #1848.
+     */
+    protected final void applyRetryBackoff()
+    {
+        setRunnableIn(myRetryBackoffMs);
     }
 
     /**

@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler;
 
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
@@ -79,7 +80,7 @@ public class TestScheduledJobQueue
 
         for (ScheduledJob job : queue)
         {
-            job.postExecute(true, null);
+            job.postExecute(TaskExecutionResult.SUCCESS, null);
         }
 
         assertThat(queue.iterator()).toIterable().isEmpty();

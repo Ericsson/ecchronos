@@ -29,6 +29,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.DummyLock;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairResource;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 
 import java.util.ArrayList;
@@ -358,10 +359,10 @@ public class TestScheduleManagerSession
         }
 
         @Override
-        public boolean execute(final UUID nodeID)
+        public TaskExecutionResult execute(final UUID nodeID)
         {
             myRunCounter.incrementAndGet();
-            return true;
+            return TaskExecutionResult.SUCCESS;
         }
     }
 
@@ -410,7 +411,7 @@ public class TestScheduleManagerSession
         }
 
         @Override
-        public boolean execute(final UUID nodeID)
+        public TaskExecutionResult execute(final UUID nodeID)
         {
             try
             {
@@ -419,10 +420,10 @@ public class TestScheduleManagerSession
             catch (InterruptedException e)
             {
                 Thread.currentThread().interrupt();
-                return false;
+                return TaskExecutionResult.SUCCESS;
             }
             myRunCounter.incrementAndGet();
-            return true;
+            return TaskExecutionResult.TERMINAL;
         }
     }
 }

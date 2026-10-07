@@ -22,6 +22,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfigurati
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
 import com.ericsson.bss.cassandra.ecchronos.core.state.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairStateSnapshot;
@@ -225,9 +226,9 @@ public class TableRepairJob extends ScheduledRepairJob
     }
 
     @Override
-    public final void postExecute(final boolean successful, final ScheduledTask task)
+    public final void postExecute(final TaskExecutionResult result, final ScheduledTask task)
     {
-        super.postExecute(successful, task);
+        super.postExecute(result, task);
         myLastRefreshTime = 0;
     }
 

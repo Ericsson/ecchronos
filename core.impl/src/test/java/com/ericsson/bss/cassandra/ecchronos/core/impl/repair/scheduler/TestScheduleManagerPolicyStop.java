@@ -27,6 +27,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.CASLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.DummyLock;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 
 import java.util.ArrayList;
@@ -201,11 +202,11 @@ public class TestScheduleManagerPolicyStop
         private final class PolicyStoppedTask extends ScheduledTask
         {
             @Override
-            public boolean execute(final UUID nodeID)
+            public TaskExecutionResult execute(final UUID nodeID)
             {
                 myTaskRuns.incrementAndGet();
-                // Mimic RepairGroup.execute(): returns false when stopped by policy (or a real failure).
-                return mySucceed;
+                // Mimic RepairGroup.execute(): a policy stop (or transient failure) is retryable.
+                return mySucceed ? TaskExecutionResult.SUCCESS : TaskExecutionResult.RETRYABLE;
             }
         }
     }

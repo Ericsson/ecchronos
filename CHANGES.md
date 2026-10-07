@@ -2,6 +2,7 @@
 
 ## Version 1.1.2
 
+* Retry on-demand repair tasks that fail transiently (for example a JMX request failure) instead of failing the whole job, with configurable attempts and backoff (on_demand_retry, default 3 attempts) - Issue #1848
 * Add configurable request timeout to ecctool (default 30s, overridable via --timeout or ECCTOOL_TIMEOUT_SECONDS) - Issue #1804
 * Add ecctool metrics subcommand - Issue #1864
 * Optimize the lock-resource hot path (avoid String.format in RepairResource) and add scheduler saturation observability metrics (refresh rate/duration, pass-within-window ratio, lock success rate/latency, and a schedule-falling-behind warning) - Issue #1854

@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.UUID;
@@ -56,10 +57,10 @@ public class DummyJob extends ScheduledJob
     public class DummyTask extends ScheduledTask
     {
         @Override
-        public boolean execute(UUID nodeID)
+        public TaskExecutionResult execute(UUID nodeID)
         {
             hasRun = true;
-            return true;
+            return TaskExecutionResult.SUCCESS;
         }
 
         @Override

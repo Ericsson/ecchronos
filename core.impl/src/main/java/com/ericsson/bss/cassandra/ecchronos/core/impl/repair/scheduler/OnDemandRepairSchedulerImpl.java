@@ -83,6 +83,8 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
                 .withOnDemandStatus(builder.onDemandStatus)
                 .withCassandraMetrics(builder.myCassandraMetrics)
                 .withOnFinishedHook(this::removeScheduledJob)
+                .withRetryAttempts(builder.myRetryAttempts)
+                .withRetryBackoffMs(builder.myRetryBackoffMs)
                 .build();
 
         myPoller = OnDemandJobPoller.builder()
@@ -324,6 +326,8 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         private Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
         private CassandraMetrics myCassandraMetrics;
         private long myPollerInitialDelaySeconds = 0;
+        private int myRetryAttempts = OnDemandRepairJob.DEFAULT_RETRY_ATTEMPTS;
+        private long myRetryBackoffMs = OnDemandRepairJob.DEFAULT_RETRY_BACKOFF_MS;
 
         /**
          * Default constructor.
@@ -371,7 +375,31 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         }
 
         /**
-         * Build on demand repair scheduler with scheule manager.
+         * Build on demand repair scheduler with the maximum attempts per task (1 = no retry).
+         *
+         * @param retryAttempts the maximum attempts per task.
+         * @return Builder
+         */
+        public Builder withRetryAttempts(final int retryAttempts)
+        {
+            myRetryAttempts = Math.max(1, retryAttempts);
+            return this;
+        }
+
+        /**
+         * Build on demand repair scheduler with the retry backoff in milliseconds.
+         *
+         * @param retryBackoffMs the backoff in milliseconds.
+         * @return Builder
+         */
+        public Builder withRetryBackoffMs(final long retryBackoffMs)
+        {
+            myRetryBackoffMs = retryBackoffMs;
+            return this;
+        }
+
+        /**
+         * Build on demand repair scheduler with schedule manager.
          *
          * @param theScheduleManager Schedule manager.
          * @return Builder

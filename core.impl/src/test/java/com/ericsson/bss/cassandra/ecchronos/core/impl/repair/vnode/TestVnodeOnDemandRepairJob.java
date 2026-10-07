@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode;
 
 
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OngoingJob;
@@ -118,7 +119,7 @@ public class TestVnodeOnDemandRepairJob
     {
         VnodeOnDemandRepairJob repairJob = createVnodeOnDemandRepairJob(0);
         Iterator<ScheduledTask> it = repairJob.iterator();
-        repairJob.postExecute(false, it.next());
+        repairJob.postExecute(TaskExecutionResult.TERMINAL, it.next());
         OnDemandRepairJobView expectedView = new OnDemandRepairJobView(repairJob.getJobId(), myHostId, myTableReference,
                 OnDemandRepairJobView.Status.ERROR, 0, System.currentTimeMillis(), RepairType.VNODE);
         assertThat(repairJob.getLastSuccessfulRun()).isEqualTo(-1);
@@ -134,9 +135,9 @@ public class TestVnodeOnDemandRepairJob
         VnodeOnDemandRepairJob repairJob = createVnodeOnDemandRepairJob(0);
         Iterator<ScheduledTask> it = repairJob.iterator();
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
-        repairJob.postExecute(true, it.next());
+        repairJob.postExecute(TaskExecutionResult.SUCCESS, it.next());
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
-        repairJob.postExecute(true, it.next());
+        repairJob.postExecute(TaskExecutionResult.SUCCESS, it.next());
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.FINISHED);
     }
 
@@ -146,7 +147,7 @@ public class TestVnodeOnDemandRepairJob
         VnodeOnDemandRepairJob repairJob = createRestartedOnDemandRepairJob();
         Iterator<ScheduledTask> it = repairJob.iterator();
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
-        repairJob.postExecute(true, it.next());
+        repairJob.postExecute(TaskExecutionResult.SUCCESS, it.next());
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.FINISHED);
     }
 
@@ -163,10 +164,103 @@ public class TestVnodeOnDemandRepairJob
     {
         VnodeOnDemandRepairJob repairJob = createVnodeOnDemandRepairJob(0);
         Iterator<ScheduledTask> it = repairJob.iterator();
-        repairJob.postExecute(true, it.next());
+        repairJob.postExecute(TaskExecutionResult.SUCCESS, it.next());
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
-        repairJob.postExecute(false, it.next());
+        repairJob.postExecute(TaskExecutionResult.TERMINAL, it.next());
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.FAILED);
+    }
+
+    @Test
+    public void testRetryableFailureReschedulesWithoutFailing()
+    {
+        // attempts=3: a retryable failure on the first attempt must keep the job RUNNABLE (a fresh task is queued)
+        // and place the job in a backoff window, rather than failing it.
+        VnodeOnDemandRepairJob repairJob = createSingleRangeJob(3, 1000L);
+        Iterator<ScheduledTask> it = repairJob.iterator();
+        ScheduledTask firstTask = it.next();
+
+        repairJob.postExecute(TaskExecutionResult.RETRYABLE, firstTask);
+
+        assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
+        assertThat(repairJob.isInBackoff()).isTrue();
+        // A fresh task was rebuilt for the same range (the failed task object is single-use).
+        Iterator<ScheduledTask> afterRetry = repairJob.iterator();
+        assertThat(afterRetry.hasNext()).isTrue();
+        assertThat(afterRetry.next()).isNotSameAs(firstTask);
+    }
+
+    @Test
+    public void testRetrySucceedsOnSecondAttempt()
+    {
+        VnodeOnDemandRepairJob repairJob = createSingleRangeJob(3, 1000L);
+        ScheduledTask firstTask = repairJob.iterator().next();
+        repairJob.postExecute(TaskExecutionResult.RETRYABLE, firstTask);
+        assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
+
+        ScheduledTask retryTask = repairJob.iterator().next();
+        repairJob.postExecute(TaskExecutionResult.SUCCESS, retryTask);
+
+        assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.FINISHED);
+    }
+
+    @Test
+    public void testRetryExhaustedFailsJob()
+    {
+        // attempts=2 means: first attempt + one retry, then fail.
+        VnodeOnDemandRepairJob repairJob = createSingleRangeJob(2, 1000L);
+
+        ScheduledTask task = repairJob.iterator().next();
+        repairJob.postExecute(TaskExecutionResult.RETRYABLE, task); // attempt 1 -> retry queued
+        assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
+
+        ScheduledTask retryTask = repairJob.iterator().next();
+        repairJob.postExecute(TaskExecutionResult.RETRYABLE, retryTask); // attempt 2 -> exhausted
+        assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.FAILED);
+    }
+
+    @Test
+    public void testTerminalFailureIsNotRetried()
+    {
+        VnodeOnDemandRepairJob repairJob = createSingleRangeJob(3, 1000L);
+        ScheduledTask task = repairJob.iterator().next();
+
+        repairJob.postExecute(TaskExecutionResult.TERMINAL, task);
+
+        // Terminal failures fail fast regardless of remaining attempts.
+        assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.FAILED);
+    }
+
+    @Test
+    public void testNoRetryWhenAttemptsIsOne()
+    {
+        VnodeOnDemandRepairJob repairJob = createSingleRangeJob(1, 1000L);
+        ScheduledTask task = repairJob.iterator().next();
+
+        repairJob.postExecute(TaskExecutionResult.RETRYABLE, task);
+
+        // attempts=1 preserves the old behaviour: a single failure fails the job.
+        assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.FAILED);
+    }
+
+    private VnodeOnDemandRepairJob createSingleRangeJob(final int retryAttempts, final long retryBackoffMs)
+    {
+        LongTokenRange range1 = new LongTokenRange(1, 2);
+        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicas = new HashMap<>();
+        tokenRangeToReplicas.put(range1, ImmutableSet.of(mockReplica1, mockReplica2, mockReplica3));
+
+        when(myOngoingJob.getTokens()).thenReturn(tokenRangeToReplicas);
+        when(myOngoingJob.getRepairedTokens()).thenReturn(new HashSet<>());
+
+        return new VnodeOnDemandRepairJob.Builder()
+                .withJmxProxyFactory(myJmxProxyFactory)
+                .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairLockType(RepairLockType.VNODE)
+                .withRepairHistory(myRepairHistory)
+                .withOngoingJob(myOngoingJob)
+                .withNode(myNode)
+                .withRetryAttempts(retryAttempts)
+                .withRetryBackoffMs(retryBackoffMs)
+                .build();
     }
 
     @Test

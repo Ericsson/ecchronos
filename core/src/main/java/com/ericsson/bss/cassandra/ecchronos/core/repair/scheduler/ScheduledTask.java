@@ -68,11 +68,11 @@ public abstract class ScheduledTask
      * Run the task.
      *
      * @param nodeID the unique identifier of the node to execute the task on.
-     * @return True if the task was executed successfully.
+     * @return the {@link TaskExecutionResult} describing success, a retryable failure, or a terminal failure.
      * @throws ScheduledJobException
      *             if anything went wrong during running.
      */
-    public abstract boolean execute(UUID nodeID) throws ScheduledJobException;
+    public abstract TaskExecutionResult execute(UUID nodeID) throws ScheduledJobException;
 
     /**
      * Cleanup of the task that should be run after the task has been executed.

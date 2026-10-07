@@ -394,6 +394,18 @@ repair:
   ##
   repair_type: vnode
   ##
+  ## Retry of on-demand repair tasks that fail transiently (for example a JMX request failure to a node).
+  ## A single on-demand repair task is retried, keeping its token range set, up to 'attempts' times with a
+  ## 'backoff' delay between attempts. Only transient failures are retried; terminal failures (Cassandra reporting
+  ## failed ranges, a topology change, or lost notifications) fail the job immediately. Set attempts to 1 to
+  ## disable retry. This applies to on-demand repairs only, not scheduled repairs.
+  ##
+  on_demand_retry:
+    attempts: 3
+    backoff:
+      time: 1
+      unit: MINUTES
+  ##
   ## Automatic recovery of hung incremental repair sessions.
   ##
   ## When an incremental repair session hangs it stays in the REPAIRING state, holding SSTables and blocking

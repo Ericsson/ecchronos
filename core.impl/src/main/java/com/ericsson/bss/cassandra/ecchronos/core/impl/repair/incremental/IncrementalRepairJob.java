@@ -26,6 +26,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairEntry;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairHistoryProvider;
@@ -162,14 +163,14 @@ public class IncrementalRepairJob extends ScheduledRepairJob
      * After a successful repair, write one history row per replica involved so that every node can read its own
      * row and skip redundant work within the same interval.
      *
-     * @param successful whether the task ran successfully.
+     * @param result the result of the task execution.
      * @param task the task that was executed.
      */
     @Override
-    public void postExecute(final boolean successful, final ScheduledTask task)
+    public void postExecute(final TaskExecutionResult result, final ScheduledTask task)
     {
-        super.postExecute(successful, task);
-        if (successful)
+        super.postExecute(result, task);
+        if (result.isSuccessful())
         {
             recordRepairHistory(RepairStatus.SUCCESS, myLastSuccessfulRun, myLastSuccessfulRun);
             myStallGuard.onRepairCycleCompleted();

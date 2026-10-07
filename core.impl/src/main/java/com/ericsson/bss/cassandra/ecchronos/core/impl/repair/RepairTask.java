@@ -22,11 +22,13 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairStatus;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ScheduledJobException;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.TransientRepairException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -104,6 +106,19 @@ public abstract class RepairTask
             repair(proxy);
             onFinish(RepairStatus.SUCCESS);
         }
+        catch (TransientRepairException e)
+        {
+            onFinish(RepairStatus.FAILED);
+            successful = false;
+            throw e;
+        }
+        catch (IOException e)
+        {
+            // Failing to obtain the JMX connection is transient (node restarting, connection stale); retryable.
+            onFinish(RepairStatus.FAILED);
+            successful = false;
+            throw new TransientRepairException("Unable to connect for repair of '" + this + "'", e);
+        }
         catch (Exception e)
         {
             onFinish(RepairStatus.FAILED);
@@ -135,7 +150,7 @@ public abstract class RepairTask
         {
             String msg = String.format("Repair of %s has no jmx connection", myTableReference);
             LOG.warn(msg);
-            throw new ScheduledJobException(msg);
+            throw new TransientRepairException(msg);
         }
         try
         {
@@ -150,11 +165,12 @@ public abstract class RepairTask
             {
                 // A non-positive command means Cassandra did not start a repair session (for example an
                 // incremental repair aborting in the prepare phase because another session holds the SSTables).
-                // Nothing was repaired, so this must not be reported as a successful repair.
+                // Nothing was repaired. This is typically transient (the blocking session will finish), so it is
+                // retryable rather than a terminal failure.
                 String msg = String.format("Repair of %s did not start (command=%d), no data was repaired",
                         myTableReference, command);
                 LOG.warn(msg);
-                throw new ScheduledJobException(msg);
+                throw new TransientRepairException(msg);
             }
         }
         finally

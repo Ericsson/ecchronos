@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.eq;
@@ -52,6 +53,7 @@ import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairParallelism
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ScheduledJobException;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.TransientRepairException;
 import com.google.common.collect.Sets;
 
 import java.math.BigInteger;
@@ -286,8 +288,8 @@ public class TestRepairGroup
         doNothing().when(repairTask2).execute();
         doNothing().when(repairTask3).execute();
 
-        boolean success = repairGroup.execute(myNodeID);
-        assertThat(success).isTrue();
+        TaskExecutionResult result = repairGroup.execute(myNodeID);
+        assertThat(result.isSuccessful()).isTrue();
     }
 
     @Test
@@ -312,8 +314,8 @@ public class TestRepairGroup
         doThrow(new ScheduledJobException("foo")).when(repairTask2).execute();
         doThrow(new ScheduledJobException("foo")).when(repairTask3).execute();
 
-        boolean success = repairGroup.execute(myNodeID);
-        assertThat(success).isFalse();
+        TaskExecutionResult result = repairGroup.execute(myNodeID);
+        assertThat(result.isSuccessful()).isFalse();
     }
 
     @Test
@@ -338,8 +340,50 @@ public class TestRepairGroup
         doNothing().when(repairTask2).execute();
         doThrow(new ScheduledJobException("foo")).when(repairTask3).execute();
 
-        boolean success = repairGroup.execute(myNodeID);
-        assertThat(success).isFalse();
+        TaskExecutionResult result = repairGroup.execute(myNodeID);
+        assertThat(result.isSuccessful()).isFalse();
+    }
+
+    @Test
+    public void testExecuteTransientFailureIsRetryable() throws ScheduledJobException
+    {
+        DriverNode node = mockNode("DC1");
+        when(node.getId()).thenReturn(myNodeID);
+        LongTokenRange range = new LongTokenRange(1, 2);
+        ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range), System.currentTimeMillis());
+
+        RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).withNode(mockNode).build(PRIORITY));
+        RepairTask repairTask = mock(RepairTask.class);
+        Collection<RepairTask> tasks = new ArrayList<>();
+        tasks.add(repairTask);
+        doReturn(tasks).when(repairGroup).getRepairTasks(myNodeID);
+        doThrow(new TransientRepairException("jmx down")).when(repairTask).execute();
+
+        TaskExecutionResult result = repairGroup.execute(myNodeID);
+
+        assertThat(result).isEqualTo(TaskExecutionResult.RETRYABLE);
+    }
+
+    @Test
+    public void testExecuteTerminalFailureIsNotRetryable() throws ScheduledJobException
+    {
+        DriverNode node = mockNode("DC1");
+        when(node.getId()).thenReturn(myNodeID);
+        LongTokenRange range = new LongTokenRange(1, 2);
+        ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range), System.currentTimeMillis());
+
+        RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).withNode(mockNode).build(PRIORITY));
+        RepairTask repairTask = mock(RepairTask.class);
+        Collection<RepairTask> tasks = new ArrayList<>();
+        tasks.add(repairTask);
+        doReturn(tasks).when(repairGroup).getRepairTasks(myNodeID);
+        doThrow(new ScheduledJobException("failed ranges")).when(repairTask).execute();
+
+        TaskExecutionResult result = repairGroup.execute(myNodeID);
+
+        assertThat(result).isEqualTo(TaskExecutionResult.TERMINAL);
     }
 
     @Test
