@@ -38,6 +38,12 @@ public class AbstractCassandraCluster
     private static final String DOCKER_COMPOSE_FILE_PATH = "cassandra-test-image/src/main/docker/docker-compose.yml";
     private static final String CASSANDRA_SETUP_DB_SCRIPT_PATH = "/etc/cassandra/setup_db.sh";
     protected static final String CASSANDRA_SEED_NODE_NAME = "cassandra-seed-dc1-rack1-node1";
+    private static final String[] CASSANDRA_NODE_NAMES = {
+        "cassandra-seed-dc1-rack1-node1",
+        "cassandra-seed-dc2-rack1-node1",
+        "cassandra-node-dc1-rack1-node2",
+        "cassandra-node-dc2-rack1-node2",
+    };
     protected static final long DEFAULT_WAIT_TIME_IN_MS = 90000;
     protected static DockerComposeContainer<?> composeContainer;
     private static final Logger LOG = LoggerFactory.getLogger(AbstractCassandraCluster.class);
@@ -189,35 +195,51 @@ public class AbstractCassandraCluster
 
     private static void runFullRepair() throws IOException, InterruptedException
     {
-        composeContainer.getContainerByServiceName(CASSANDRA_SEED_NODE_NAME).get()
-                .execInContainer("nodetool", "-u", "cassandra", "-pw", "cassandra", "repair", "--full");
+        // After raising the system_auth replication factor, the default superuser row only exists on the
+        // original replica. It is read at QUORUM during authentication, so it must be reconciled onto all
+        // the newly required replicas (one in datacenter1, two in datacenter2) before any session is built.
+        // Repair system_auth explicitly on every node rather than running an untargeted full repair on the
+        // seed only, which does not reliably spread the row to quorum.
+        for (String node : CASSANDRA_NODE_NAMES)
+        {
+            composeContainer.getContainerByServiceName(node).get()
+                    .execInContainer("nodetool", "-u", "cassandra", "-pw", "cassandra",
+                            "repair", "--full", "system_auth");
+        }
     }
 
     /**
-     * Wait until the 'cassandra' superuser can actually authenticate.
+     * Wait until the 'cassandra' superuser can actually authenticate through the native driver.
      *
      * After raising the system_auth replication factor, the default superuser is read at QUORUM and its
      * credentials may not yet be present on the newly required replicas, causing transient
      * "Provided username cassandra and/or password are incorrect" failures when the tests build their
-     * CqlSession. Poll an authenticated query until it succeeds so that setup_db.sh and the test sessions
-     * do not run against a cluster that cannot yet authenticate.
+     * CqlSession. Verify readiness the same way the tests connect - a driver session against the cluster
+     * IP in datacenter1 - rather than a local cqlsh on the seed, which can succeed against a single node
+     * while a QUORUM read still fails. Fail fast if it never becomes ready, so the real cause is reported
+     * here instead of cascading into every test's session setup.
      */
-    private static void waitForAuthReady() throws IOException, InterruptedException
+    private static void waitForAuthReady() throws InterruptedException
     {
-        for (int i = 1; i < 30; i++)
+        int attempts = 60;
+        for (int i = 1; i <= attempts; i++)
         {
-            int exitCode = composeContainer.getContainerByServiceName(CASSANDRA_SEED_NODE_NAME).get()
-                    .execInContainer("cqlsh", "-u", "cassandra", "-p", "cassandra",
-                            "-e", "SELECT now() FROM system.local;").getExitCode();
-            if (exitCode == 0)
+            try (CqlSession session = defaultBuilder().build())
             {
-                LOG.info("Authentication ready on attempt " + i);
+                session.execute("SELECT now() FROM system.local");
+                LOG.info("Authentication ready on attempt {}", i);
                 return;
             }
-            Thread.sleep(2000);
+            catch (RuntimeException e)
+            {
+                LOG.warn("Attempt {} to verify authentication readiness failed (likely transient auth "
+                        + "propagation): {}", i, e.getMessage());
+                Thread.sleep(2000);
+            }
         }
-        LOG.warn("Authentication as user 'cassandra' was not confirmed ready; proceeding anyway. "
-                + "The system_auth replication change may not have fully propagated.");
+        throw new IllegalStateException("Authentication as user 'cassandra' was not ready after " + attempts
+                + " attempts. The system_auth replication change may not have propagated (repair did not "
+                + "reconcile the superuser credentials to quorum) before the integration test continued.");
     }
 
     private static void verifyKeyspaceExists() throws IOException, InterruptedException
