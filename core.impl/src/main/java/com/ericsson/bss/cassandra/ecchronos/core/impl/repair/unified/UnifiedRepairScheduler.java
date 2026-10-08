@@ -108,6 +108,7 @@ public final class UnifiedRepairScheduler implements RepairScheduler, Closeable
     }
 
     @Override
+    @SuppressWarnings("CPD-START")
     public List<ScheduledRepairJobView> getCurrentRepairJobs()
     {
         myLock.readLock().lock();
@@ -188,6 +189,7 @@ public final class UnifiedRepairScheduler implements RepairScheduler, Closeable
      *
      * @return Builder
      */
+    @SuppressWarnings("CPD-END")
     public static Builder builder()
     {
         return new Builder();
@@ -202,16 +204,19 @@ public final class UnifiedRepairScheduler implements RepairScheduler, Closeable
         private RepairFaultReporter myFaultReporter;
         private RepairStateFactory myRepairStateFactory;
         private ScheduleManager myScheduleManager;
+        // CPD-OFF: builder field declarations are intentionally near-identical to RepairSchedulerImpl.Builder
         private final List<TableRepairPolicy> myRepairPolicies = new ArrayList<>();
         private TableRepairMetrics myTableRepairMetrics;
         private RepairHistoryService myRepairHistoryService;
         private TableStorageStates myTableStorageStates;
         private RepairLockType myRepairLockType;
         private TimeBasedRunPolicy myTimeBasedRunPolicy;
+        // CPD-ON
 
         /**
          * Default constructor.
          */
+        @SuppressWarnings("CPD-START")
         public Builder()
         {
             // Default constructor
@@ -219,8 +224,6 @@ public final class UnifiedRepairScheduler implements RepairScheduler, Closeable
 
         /**
          * Build with repair lock type.
-         *
-         * @param repairLockType Repair lock type.
          * @return Builder
          */
         public Builder withRepairLockType(final RepairLockType repairLockType)
@@ -331,6 +334,7 @@ public final class UnifiedRepairScheduler implements RepairScheduler, Closeable
          * @param timeBasedRunPolicy TimeBasedRunPolicy.
          * @return Builder
          */
+        @SuppressWarnings("CPD-END")
         public Builder withTimeBasedRunPolicy(final TimeBasedRunPolicy timeBasedRunPolicy)
         {
             myTimeBasedRunPolicy = timeBasedRunPolicy;

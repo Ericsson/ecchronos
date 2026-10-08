@@ -79,6 +79,7 @@ public final class UnifiedRepairJobFactory
      * @param repairConfiguration the (vnode) repair configuration.
      * @return a new {@link UnifiedTableRepairJob}.
      */
+    @SuppressWarnings("CPD-START")
     public UnifiedTableRepairJob createMultiNode(
             final Collection<Node> nodes,
             final TableReference tableReference,
@@ -124,6 +125,7 @@ public final class UnifiedRepairJobFactory
      *
      * @return Builder
      */
+    @SuppressWarnings("CPD-END")
     public static Builder builder()
     {
         return new Builder();
@@ -139,10 +141,12 @@ public final class UnifiedRepairJobFactory
         private RepairFaultReporter myFaultReporter;
         private DistributedJmxProxyFactory myJmxProxyFactory;
         private RepairStateFactory myRepairStateFactory;
+        // CPD-OFF: builder field declarations are intentionally near-identical to ScheduledRepairJobFactory.Builder
         private final List<TableRepairPolicy> myRepairPolicies = new ArrayList<>();
         private TableStorageStates myTableStorageStates;
         private RepairLockType myRepairLockType;
         private TimeBasedRunPolicy myTimeBasedRunPolicy;
+        // CPD-ON
 
         /**
          * Default constructor.
