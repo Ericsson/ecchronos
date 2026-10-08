@@ -221,6 +221,58 @@ def _print_schedules_table(schedule_table, schedules, max_lines, columns=None):
     table_formatter.format_table(schedule_table, columns)
 
 
+def print_unified_schedules(aggregates, max_lines, columns=None, output="table"):
+    if output == "json":
+        _print_unified_schedules_json_format(aggregates, max_lines)
+    else:
+        print("Snapshot as of " + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ".")
+        _print_unified_schedules_table_format(aggregates, max_lines, columns)
+        _print_schedules_summary(aggregates)
+
+
+def _print_unified_schedules_json_format(aggregates, max_lines):
+    sorted_aggregates = sorted(aggregates, key=lambda x: (x.last_repaired_at_in_ms, x.repaired_ratio), reverse=False)
+    if max_lines > -1:
+        sorted_aggregates = sorted_aggregates[:max_lines]
+    aggregates_dict = [a.to_dict() for a in sorted_aggregates]
+    output_json({"unifiedSchedules": aggregates_dict})
+
+
+def _print_unified_schedules_table_format(aggregates, max_lines, columns=None):
+    aggregate_table = [
+        [
+            "JobID",
+            "Keyspace",
+            "Table",
+            "Status(worst)",
+            "Repaired(%)avg",
+            "Completed at",
+            "Next repair",
+            "Nodes",
+        ]
+    ]
+    sorted_aggregates = sorted(aggregates, key=lambda x: (x.last_repaired_at_in_ms, x.repaired_ratio), reverse=False)
+    if max_lines > -1:
+        sorted_aggregates = sorted_aggregates[:max_lines]
+    for aggregate in sorted_aggregates:
+        aggregate_table.append(_convert_unified_schedule(aggregate))
+    table_formatter.format_table(aggregate_table, columns)
+
+
+def _convert_unified_schedule(aggregate):
+    entry = [
+        aggregate.job_id,
+        aggregate.keyspace,
+        aggregate.table,
+        aggregate.status,
+        aggregate.get_repair_percentage(),
+        aggregate.get_last_repaired_at(),
+        aggregate.get_next_repair(),
+        aggregate.node_count,
+    ]
+    return entry
+
+
 def print_repairs(repairs, max_lines=-1, columns=None, output="table"):
     if output == "json":
         _print_repairs_json_format(repairs, max_lines)

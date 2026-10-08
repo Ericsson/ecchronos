@@ -154,6 +154,7 @@ public class TableRepairJob extends ScheduledRepairJob
      * @return Scheduled task iterator
      */
     @Override
+    @SuppressWarnings("CPD-START")
     public Iterator<ScheduledTask> iterator()
     {
         RepairStateSnapshot repairStateSnapshot = myRepairState.getSnapshot();
@@ -197,6 +198,7 @@ public class TableRepairJob extends ScheduledRepairJob
      * @return long
      */
     @Override
+    @SuppressWarnings("CPD-END")
     public long getLastSuccessfulRun()
     {
         return myRepairState.getSnapshot().lastCompletedAt();
@@ -225,6 +227,7 @@ public class TableRepairJob extends ScheduledRepairJob
     }
 
     @Override
+    @SuppressWarnings("CPD-START")
     public final void postExecute(final boolean successful, final ScheduledTask task)
     {
         super.postExecute(successful, task);
@@ -261,6 +264,7 @@ public class TableRepairJob extends ScheduledRepairJob
      * @return priority
      */
     @Override
+    @SuppressWarnings("CPD-END")
     public final int getRealPriority()
     {
         RepairStateSnapshot repairStateSnapshot = myRepairState.getSnapshot();
@@ -292,6 +296,7 @@ public class TableRepairJob extends ScheduledRepairJob
         return String.format("Repair job of %s", getTableReference());
     }
 
+    @SuppressWarnings("CPD-START")
     private BigInteger getTokensPerRepair(final VnodeRepairStates vnodeRepairStates)
     {
         BigInteger tokensPerRepair = LongTokenRange.FULL_RANGE;
@@ -322,6 +327,7 @@ public class TableRepairJob extends ScheduledRepairJob
     }
 
     @Override
+    @SuppressWarnings("CPD-END")
     public final boolean equals(final Object o)
     {
         if (this == o)
@@ -464,6 +470,7 @@ public class TableRepairJob extends ScheduledRepairJob
          *         Table repair metrics.
          * @return Builder
          */
+        @SuppressWarnings("CPD-START")
         public Builder withTableRepairMetrics(final TableRepairMetrics theTableRepairMetrics)
         {
             this.tableRepairMetrics = theTableRepairMetrics;
@@ -528,6 +535,7 @@ public class TableRepairJob extends ScheduledRepairJob
          * @param timeBasedRunPolicy TimeBasedRunPolicy.
          * @return Builder
          */
+        @SuppressWarnings("CPD-END")
         public Builder withTimeBasedRunPolicy(final TimeBasedRunPolicy timeBasedRunPolicy)
         {
             myTimeBasedRunPolicy = timeBasedRunPolicy;

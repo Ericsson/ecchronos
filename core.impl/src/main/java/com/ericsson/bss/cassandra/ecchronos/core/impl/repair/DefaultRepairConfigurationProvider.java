@@ -16,7 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads.NodeWorkerManager;
+
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.ReplicaSetCache;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.CloseEvent;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.KeyspaceCreatedEvent;
@@ -39,14 +39,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A repair configuration provider that adds configuration to {@link NodeWorkerManager} based on whether the table
+ * A repair configuration provider that adds configuration to the configured schema-change handler based on whether the table
  * is replicated locally using the default repair configuration provided during construction of this object.
  */
 public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase implements NodeStateListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultRepairConfigurationProvider.class);
     private static final Integer NO_OF_THREADS = 1;
-    private NodeWorkerManager myWorkerManager;
+    private SchemaChangeHandler mySchemaChangeHandler;
 
     private CqlSession mySession;
     private final ExecutorService myService;
@@ -63,13 +63,13 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
     private DefaultRepairConfigurationProvider(final Builder builder)
     {
         mySession = builder.mySession;
-        myWorkerManager = builder.myNodeWorkerManager;
+        mySchemaChangeHandler = builder.mySchemaChangeHandler;
         myService = Executors.newFixedThreadPool(NO_OF_THREADS);
         myNodeLifecycleHandler = new NodeLifecycleHandler(
                 builder.myEccNodesSync,
                 builder.myJmxConnectionProvider,
                 builder.myAgentNativeConnectionProvider,
-                builder.myNodeWorkerManager,
+                builder.mySchemaChangeHandler,
                 builder.myScheduleManager,
                 myService,
                 builder.myReplicaSetCache);
@@ -84,12 +84,12 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
     public void fromBuilder(final Builder builder)
     {
         mySession = builder.mySession;
-        myWorkerManager = builder.myNodeWorkerManager;
+        mySchemaChangeHandler = builder.mySchemaChangeHandler;
         myNodeLifecycleHandler = new NodeLifecycleHandler(
                 builder.myEccNodesSync,
                 builder.myJmxConnectionProvider,
                 builder.myAgentNativeConnectionProvider,
-                builder.myNodeWorkerManager,
+                builder.mySchemaChangeHandler,
                 builder.myScheduleManager,
                 myService,
                 builder.myReplicaSetCache);
@@ -104,10 +104,10 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
     @Override
     public void onKeyspaceCreated(final KeyspaceMetadata keyspace)
     {
-        if (myWorkerManager != null)
+        if (mySchemaChangeHandler != null)
         {
             LOG.debug("Keyspace creation being processed {}", keyspace.describe(true));
-            myWorkerManager.broadcastEvent(new KeyspaceCreatedEvent(keyspace));
+            mySchemaChangeHandler.broadcastEvent(new KeyspaceCreatedEvent(keyspace));
         }
         else
         {
@@ -147,10 +147,10 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
     @Override
     public void onTableCreated(final TableMetadata table)
     {
-        if (myWorkerManager != null)
+        if (mySchemaChangeHandler != null)
         {
             LOG.debug("Table creation being processed {}", table.describe(false));
-            myWorkerManager.broadcastEvent(new TableCreatedEvent(table));
+            mySchemaChangeHandler.broadcastEvent(new TableCreatedEvent(table));
         }
         else
         {
@@ -166,9 +166,9 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
     @Override
     public void onTableDropped(final TableMetadata table)
     {
-        if (myWorkerManager != null)
+        if (mySchemaChangeHandler != null)
         {
-            myWorkerManager.broadcastEvent(new TableDroppedEvent(table));
+            mySchemaChangeHandler.broadcastEvent(new TableDroppedEvent(table));
         }
     }
 
@@ -190,11 +190,11 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
     @Override
     public void close()
     {
-        if (mySession != null && myWorkerManager != null)
+        if (mySession != null && mySchemaChangeHandler != null)
         {
             for (KeyspaceMetadata keyspaceMetadata : mySession.getMetadata().getKeyspaces().values())
             {
-                myWorkerManager.broadcastEvent(new CloseEvent(keyspaceMetadata));
+                mySchemaChangeHandler.broadcastEvent(new CloseEvent(keyspaceMetadata));
             }
         }
         myService.shutdownNow();
@@ -265,7 +265,7 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
             return;
         }
 
-        if (myWorkerManager == null)
+        if (mySchemaChangeHandler == null)
         {
             LOG.debug("WorkerManager during setupConfiguration call was null.");
             return;
@@ -273,7 +273,7 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
 
         for (KeyspaceMetadata keyspaceMetadata : mySession.getMetadata().getKeyspaces().values())
         {
-            myWorkerManager.broadcastEvent(new SetupEvent(keyspaceMetadata));
+            mySchemaChangeHandler.broadcastEvent(new SetupEvent(keyspaceMetadata));
         }
     }
 
@@ -286,7 +286,7 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
         private EccNodesSync myEccNodesSync;
         private DistributedJmxConnectionProvider myJmxConnectionProvider;
         private DistributedNativeConnectionProvider myAgentNativeConnectionProvider;
-        private NodeWorkerManager myNodeWorkerManager;
+        private SchemaChangeHandler mySchemaChangeHandler;
         private ScheduleManager myScheduleManager;
         private ReplicaSetCache myReplicaSetCache;
 
@@ -345,13 +345,13 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
         }
 
         /**
-         * Build with NodeWorkerManager.
-         * @param nodeWorkerManager the node worker manager.
-         * @return Builder with NodeWorkerManager
+         * Build with SchemaChangeHandler.
+         * @param schemaChangeHandler the schema-change handler (legacy worker manager or unified coordinator).
+         * @return Builder with SchemaChangeHandler
          */
-        public Builder withNodeWorkerManager(final NodeWorkerManager nodeWorkerManager)
+        public Builder withSchemaChangeHandler(final SchemaChangeHandler schemaChangeHandler)
         {
-            myNodeWorkerManager = nodeWorkerManager;
+            mySchemaChangeHandler = schemaChangeHandler;
             return this;
         }
 

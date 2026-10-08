@@ -78,9 +78,15 @@ keyspaces:
 #      size_target:
 ##
 ## Specifies the default repair_type.
-## Possible values are: vnode, parallel_vnode, incremental
+## Possible values are: vnode, parallel_vnode, incremental, unified_vnode
 ## vnode = repair 1 vnode at a time (supports size_target to split the vnode further, in this case there will be 1 repair session per subrange)
 ## parallel_vnode = repair vnodes in parallel, this will combine vnodes into a single repair session per repair group
 ## incremental = repair vnodes incrementally (incremental repair)
+## unified_vnode = (EXPERIMENTAL) same vnode repair as 'vnode', managed by the consolidated multi-node subsystem.
+##
+## NOTE: mixed configuration is NOT allowed. The per-table repair_type must belong to the same family as the
+## global 'repair_type' in ecc.yml: if the global type is 'unified_vnode' every per-table override must also be
+## 'unified_vnode', and if the global type is a legacy type (vnode/parallel_vnode/incremental) no per-table
+## override may be 'unified_vnode'. A conflicting configuration fails startup.
 ##
 #      repair_type: vnode

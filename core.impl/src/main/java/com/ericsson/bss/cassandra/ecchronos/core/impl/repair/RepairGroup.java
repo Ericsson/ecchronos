@@ -109,13 +109,26 @@ public class RepairGroup extends ScheduledTask
                     .checkNotNull(builder.myRepairHistory, "Repair History must be set");
         myNode = Preconditions
                     .checkNotNull(builder.myNode, "Node must be set");
-        if (RepairType.VNODE.equals(myRepairConfiguration.getRepairType()))
+        if (isVnodeType(myRepairConfiguration.getRepairType()))
         {
             myTokensPerRepair = Preconditions
                     .checkNotNull(builder.myTokensPerRepair, "Tokens per repair must be set");
         }
         myJobId = Preconditions
                 .checkNotNull(builder.myJobId, "Job id must be set");
+    }
+
+    /**
+     * Whether the repair type is vnode-based (standard {@link RepairType#VNODE} or the consolidated
+     * {@link RepairType#UNIFIED_VNODE}). Both repair per token sub-range; they differ only in how the jobs
+     * are scheduled (per-node vs. a single multi-node job), not in how a repair group runs.
+     *
+     * @param repairType the repair type.
+     * @return {@code true} if the type is vnode-based.
+     */
+    private static boolean isVnodeType(final RepairType repairType)
+    {
+        return RepairType.VNODE.equals(repairType) || RepairType.UNIFIED_VNODE.equals(repairType);
     }
 
     /**
@@ -208,6 +221,18 @@ public class RepairGroup extends ScheduledTask
     }
 
     /**
+     * {@inheritDoc}
+     * <p>
+     * A repair group is bound to the node it was generated for; this is the coordinator node used both to
+     * run the repair and to acquire the distributed lock in the correct node's name.
+     */
+    @Override
+    public UUID getNodeId()
+    {
+        return myNode.getHostId();
+    }
+
+    /**
      * String representation.
      *
      * @return String
@@ -244,7 +269,7 @@ public class RepairGroup extends ScheduledTask
                     replicas,
                     myCassandraMetrics));
         }
-        else if (myRepairConfiguration.getRepairType().equals(RepairType.VNODE))
+        else if (isVnodeType(myRepairConfiguration.getRepairType()))
         {
             Set<DriverNode> replicas = filterParticipants(myReplicaRepairGroup.replicas(), myTableReference);
 

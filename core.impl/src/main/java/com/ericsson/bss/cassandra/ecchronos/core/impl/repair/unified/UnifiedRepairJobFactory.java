@@ -12,29 +12,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler;
+package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.unified;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.ScheduledRepairJob;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.AlarmPostUpdateHook;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TableRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairStateFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHistoryService;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
-import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,33 +38,33 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Factory responsible for creating {@link ScheduledRepairJob} instances.
+ * Factory responsible for creating one multi-node {@link UnifiedTableRepairJob} per table and configuration.
+ * <p>
+ * Mirrors the legacy {@code ScheduledRepairJobFactory} but is dedicated to the {@code UNIFIED_VNODE} path:
+ * for the given set of nodes it builds a per-node {@link RepairState} (via {@link RepairStateFactory}) wrapped
+ * in a {@link NodeRepairState}, and assembles them into a single consolidated job.
  */
-public final class ScheduledRepairJobFactory
+public final class UnifiedRepairJobFactory
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ScheduledRepairJobFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(UnifiedRepairJobFactory.class);
 
     private final TableRepairMetrics myTableRepairMetrics;
     private final RepairHistoryService myRepairHistoryService;
     private final RepairFaultReporter myFaultReporter;
     private final DistributedJmxProxyFactory myJmxProxyFactory;
     private final RepairStateFactory myRepairStateFactory;
-    private final ReplicationState myReplicationState;
-    private final CassandraMetrics myCassandraMetrics;
     private final List<TableRepairPolicy> myRepairPolicies;
     private final TableStorageStates myTableStorageStates;
     private final RepairLockType myRepairLockType;
     private final TimeBasedRunPolicy myTimeBasedRunPolicy;
 
-    private ScheduledRepairJobFactory(final Builder builder)
+    private UnifiedRepairJobFactory(final Builder builder)
     {
         myTableRepairMetrics = builder.myTableRepairMetrics;
         myRepairHistoryService = builder.myRepairHistoryService;
         myFaultReporter = builder.myFaultReporter;
         myJmxProxyFactory = builder.myJmxProxyFactory;
         myRepairStateFactory = builder.myRepairStateFactory;
-        myReplicationState = builder.myReplicationState;
-        myCassandraMetrics = builder.myCassandraMetrics;
         myRepairPolicies = new ArrayList<>(builder.myRepairPolicies);
         myTableStorageStates = builder.myTableStorageStates;
         myRepairLockType = builder.myRepairLockType;
@@ -78,16 +72,16 @@ public final class ScheduledRepairJobFactory
     }
 
     /**
-     * Create a scheduled repair job for the given node, table, and configuration.
+     * Create a consolidated multi-node repair job for the given nodes, table, and configuration.
      *
-     * @param node The node to create the job for.
-     * @param tableReference The table reference.
-     * @param repairConfiguration The repair configuration.
-     * @return A new ScheduledRepairJob.
+     * @param nodes the nodes that replicate the table.
+     * @param tableReference the table.
+     * @param repairConfiguration the (vnode) repair configuration.
+     * @return a new {@link UnifiedTableRepairJob}.
      */
     @SuppressWarnings("CPD-START")
-    public ScheduledRepairJob create(
-            final Node node,
+    public UnifiedTableRepairJob createMultiNode(
+            final Collection<Node> nodes,
             final TableReference tableReference,
             final RepairConfiguration repairConfiguration)
     {
@@ -97,49 +91,31 @@ public final class ScheduledRepairJobFactory
                 .withBackoff(repairConfiguration.getBackoffInMs(), TimeUnit.MILLISECONDS)
                 .withPriorityGranularity(repairConfiguration.getPriorityGranularityUnit())
                 .build();
-        ScheduledRepairJob job;
-        if (repairConfiguration.getRepairType().equals(RepairType.INCREMENTAL))
+
+        UnifiedTableRepairJob.Builder builder = new UnifiedTableRepairJob.Builder()
+                .withConfiguration(configuration)
+                .withJmxProxyFactory(myJmxProxyFactory)
+                .withTableReference(tableReference)
+                .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairConfiguration(repairConfiguration)
+                .withTableStorageStates(myTableStorageStates)
+                .withRepairPolices(myRepairPolicies)
+                .withRepairHistory(myRepairHistoryService)
+                .withRepairLockType(myRepairLockType)
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy);
+
+        for (Node node : nodes)
         {
-            LOG.info("Creating IncrementalRepairJob for node {}", node.getHostId());
-            job = new IncrementalRepairJob.Builder()
-                    .withConfiguration(configuration)
-                    .withNode(node)
-                    .withJmxProxyFactory(myJmxProxyFactory)
-                    .withTableReference(tableReference)
-                    .withRepairConfiguration(repairConfiguration)
-                    .withTableRepairMetrics(myTableRepairMetrics)
-                    .withCassandraMetrics(myCassandraMetrics)
-                    .withReplicationState(myReplicationState)
-                    .withRepairPolices(myRepairPolicies)
-                    .withRepairLockType(myRepairLockType)
-                    .withRepairHistory(myRepairHistoryService)
-                    .withRepairHistoryProvider(myRepairHistoryService)
-                    .withFaultReporter(myFaultReporter)
-                    .build();
+            AlarmPostUpdateHook alarmPostUpdateHook =
+                    new AlarmPostUpdateHook(tableReference, repairConfiguration, myFaultReporter);
+            RepairState repairState =
+                    myRepairStateFactory.create(node, tableReference, repairConfiguration, alarmPostUpdateHook);
+            builder.withNodeRepairState(new NodeRepairState(node, repairState));
         }
-        else
-        {
-            LOG.info("Creating TableRepairJob for table {}.{} in node {}",
-                    tableReference.getKeyspace(), tableReference.getTable(), node.getHostId());
-            AlarmPostUpdateHook alarmPostUpdateHook = new AlarmPostUpdateHook(tableReference, repairConfiguration,
-                    myFaultReporter);
-            RepairState repairState = myRepairStateFactory.create(node, tableReference, repairConfiguration,
-                    alarmPostUpdateHook);
-            job = new TableRepairJob.Builder()
-                    .withConfiguration(configuration)
-                    .withJmxProxyFactory(myJmxProxyFactory)
-                    .withTableReference(tableReference)
-                    .withRepairState(repairState)
-                    .withTableRepairMetrics(myTableRepairMetrics)
-                    .withRepairConfiguration(repairConfiguration)
-                    .withTableStorageStates(myTableStorageStates)
-                    .withRepairPolices(myRepairPolicies)
-                    .withRepairHistory(myRepairHistoryService)
-                    .withRepairLockType(myRepairLockType)
-                    .withNode(node)
-                    .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
-                    .build();
-        }
+
+        LOG.debug("Creating UnifiedTableRepairJob for table {}.{} across {} nodes",
+                tableReference.getKeyspace(), tableReference.getTable(), nodes.size());
+        UnifiedTableRepairJob job = builder.build();
         job.refreshState();
         return job;
     }
@@ -156,7 +132,7 @@ public final class ScheduledRepairJobFactory
     }
 
     /**
-     * Builder for constructing {@link ScheduledRepairJobFactory}.
+     * Builder for constructing {@link UnifiedRepairJobFactory}.
      */
     public static final class Builder
     {
@@ -165,9 +141,7 @@ public final class ScheduledRepairJobFactory
         private RepairFaultReporter myFaultReporter;
         private DistributedJmxProxyFactory myJmxProxyFactory;
         private RepairStateFactory myRepairStateFactory;
-        private ReplicationState myReplicationState;
-        private CassandraMetrics myCassandraMetrics;
-        // CPD-OFF: builder field declarations are intentionally near-identical to UnifiedRepairJobFactory.Builder
+        // CPD-OFF: builder field declarations are intentionally near-identical to ScheduledRepairJobFactory.Builder
         private final List<TableRepairPolicy> myRepairPolicies = new ArrayList<>();
         private TableStorageStates myTableStorageStates;
         private RepairLockType myRepairLockType;
@@ -243,30 +217,6 @@ public final class ScheduledRepairJobFactory
         }
 
         /**
-         * Set the replication state.
-         *
-         * @param replicationState the replication state.
-         * @return this builder.
-         */
-        public Builder withReplicationState(final ReplicationState replicationState)
-        {
-            myReplicationState = replicationState;
-            return this;
-        }
-
-        /**
-         * Set the Cassandra metrics.
-         *
-         * @param cassandraMetrics the Cassandra metrics.
-         * @return this builder.
-         */
-        public Builder withCassandraMetrics(final CassandraMetrics cassandraMetrics)
-        {
-            myCassandraMetrics = cassandraMetrics;
-            return this;
-        }
-
-        /**
          * Set the repair policies.
          *
          * @param repairPolicies the collection of repair policies.
@@ -315,13 +265,13 @@ public final class ScheduledRepairJobFactory
         }
 
         /**
-         * Build the {@link ScheduledRepairJobFactory}.
+         * Build the {@link UnifiedRepairJobFactory}.
          *
-         * @return a new ScheduledRepairJobFactory instance.
+         * @return a new UnifiedRepairJobFactory instance.
          */
-        public ScheduledRepairJobFactory build()
+        public UnifiedRepairJobFactory build()
         {
-            return new ScheduledRepairJobFactory(this);
+            return new UnifiedRepairJobFactory(this);
         }
     }
 }

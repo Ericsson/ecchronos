@@ -15,6 +15,9 @@
 package com.ericsson.bss.cassandra.ecchronos.application.config.repair;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
+
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -60,6 +63,72 @@ public class RepairSchedule
     {
         return findMatching(keyspaceName, myKeyspaceSchedules,
                 keyspaceSchedule -> keyspaceSchedule.getRepairConfiguration(tableName));
+    }
+
+    /**
+     * Enumerate every explicitly configured per-table repair type, labelled by keyspace and table, so the
+     * repair-type mode can be validated against the global configuration.
+     *
+     * @return the list of configured table repair types.
+     */
+    public final List<TableRepairType> getConfiguredRepairTypes()
+    {
+        List<TableRepairType> result = new ArrayList<>();
+        for (KeyspaceSchedule keyspaceSchedule : myKeyspaceSchedules.values())
+        {
+            for (Set<TableRepairConfig> tableConfigs : keyspaceSchedule.myTableConfigs.values())
+            {
+                for (TableRepairConfig tableConfig : tableConfigs)
+                {
+                    result.add(new TableRepairType(keyspaceSchedule.getKeyspaceName(),
+                            tableConfig.getTableName(), tableConfig.getRepairType()));
+                }
+            }
+        }
+        return result;
+    }
+
+    /** A per-table configured repair type, labelled by keyspace and table. */
+    public static final class TableRepairType
+    {
+        private final String myKeyspace;
+        private final String myTable;
+        private final com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType myRepairType;
+
+        TableRepairType(final String keyspace, final String table,
+                final com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType repairType)
+        {
+            myKeyspace = keyspace;
+            myTable = table;
+            myRepairType = repairType;
+        }
+
+        /**
+         * Get the keyspace name.
+         * @return the keyspace.
+         */
+        public String getKeyspace()
+        {
+            return myKeyspace;
+        }
+
+        /**
+         * Get the table name.
+         * @return the table.
+         */
+        public String getTable()
+        {
+            return myTable;
+        }
+
+        /**
+         * Get the configured repair type.
+         * @return the repair type.
+         */
+        public RepairType getRepairType()
+        {
+            return myRepairType;
+        }
     }
 
     static class KeyspaceSchedule

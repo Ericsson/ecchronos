@@ -23,7 +23,16 @@ except ImportError:
 import json
 import os
 import ssl
-from ecchronoslib.types import FullSchedule, Repair, Schedule, RepairInfo, NodeSyncState, Rejection, RepairSession
+from ecchronoslib.types import (
+    FullSchedule,
+    Repair,
+    Schedule,
+    RepairInfo,
+    NodeSyncState,
+    Rejection,
+    RepairSession,
+    UnifiedScheduleAggregate,
+)
 
 
 class RequestResult(object):
@@ -298,6 +307,49 @@ class RepairSchedulerRequest(RestRequest):
     def running_job(self):
         request_url = RepairSchedulerRequest.running_job_url
         result = self.basic_request(request_url)
+        return result
+
+
+class UnifiedScheduleRequest(RestRequest):
+    ROOT = "repair-management/"
+    UNIFIED = ROOT + "unified-schedules"
+
+    unified_url = UNIFIED
+    unified_nodes_url = UNIFIED + "/{0}/nodes"
+    unified_node_url = UNIFIED + "/{0}/nodes/{1}"
+
+    def __init__(self, base_url=None):
+        RestRequest.__init__(self, base_url)
+
+    def list_unified_schedules(self, keyspace=None, table=None):
+        request_url = UnifiedScheduleRequest.unified_url
+        if keyspace and table:
+            request_url = "{0}?keyspace={1}&table={2}".format(request_url, keyspace, table)
+        elif keyspace:
+            request_url = "{0}?keyspace={1}".format(request_url, keyspace)
+
+        result = self.request(request_url)
+        if result.is_successful():
+            result = result.transform_with_data(new_data=[UnifiedScheduleAggregate(x) for x in result.data])
+        return result
+
+    def list_unified_schedule_nodes(self, job_id):
+        request_url = UnifiedScheduleRequest.unified_nodes_url.format(job_id)
+        result = self.request(request_url)
+        if result.is_successful():
+            result = result.transform_with_data(new_data=[Schedule(x) for x in result.data])
+        return result
+
+    def get_unified_schedule_node(self, job_id, node_id, full=False):
+        request_url = UnifiedScheduleRequest.unified_node_url.format(job_id, node_id)
+        if full:
+            request_url += "?full=true"
+        result = self.request(request_url)
+        if result.is_successful():
+            if full:
+                result = result.transform_with_data(new_data=FullSchedule(result.data))
+            else:
+                result = result.transform_with_data(new_data=Schedule(result.data))
         return result
 
 
