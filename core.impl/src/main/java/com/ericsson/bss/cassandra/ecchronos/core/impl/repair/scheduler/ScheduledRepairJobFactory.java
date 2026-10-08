@@ -85,6 +85,7 @@ public final class ScheduledRepairJobFactory
      * @param repairConfiguration The repair configuration.
      * @return A new ScheduledRepairJob.
      */
+    @SuppressWarnings("CPD-START")
     public ScheduledRepairJob create(
             final Node node,
             final TableReference tableReference,
@@ -148,6 +149,7 @@ public final class ScheduledRepairJobFactory
      *
      * @return Builder
      */
+    @SuppressWarnings("CPD-END")
     public static Builder builder()
     {
         return new Builder();
@@ -165,10 +167,12 @@ public final class ScheduledRepairJobFactory
         private RepairStateFactory myRepairStateFactory;
         private ReplicationState myReplicationState;
         private CassandraMetrics myCassandraMetrics;
+        // CPD-OFF: builder field declarations are intentionally near-identical to UnifiedRepairJobFactory.Builder
         private final List<TableRepairPolicy> myRepairPolicies = new ArrayList<>();
         private TableStorageStates myTableStorageStates;
         private RepairLockType myRepairLockType;
         private TimeBasedRunPolicy myTimeBasedRunPolicy;
+        // CPD-ON
 
         /**
          * Default constructor.
