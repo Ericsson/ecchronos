@@ -23,13 +23,12 @@ import java.util.concurrent.TimeUnit;
 public class SchedulerConfig
 {
     private static final int THIRTY_SECONDS = 30;
-    private static final int DEFAULT_SESSION_WINDOW_SECONDS = 300;
     private static final int DEFAULT_COOLDOWN_SECONDS = 0;
 
     private Interval myFrequency = new Interval(THIRTY_SECONDS, TimeUnit.SECONDS);
-    private Interval mySessionWindow = new Interval(DEFAULT_SESSION_WINDOW_SECONDS, TimeUnit.SECONDS);
     private Interval myCooldown = new Interval(DEFAULT_COOLDOWN_SECONDS, TimeUnit.SECONDS);
     private int myMaxConcurrency = 0;
+    private LockSessionConfig myLockSession = new LockSessionConfig();
 
     /** Default constructor. */
     public SchedulerConfig()
@@ -54,28 +53,6 @@ public class SchedulerConfig
     public final void setFrequency(final Interval frequency)
     {
         myFrequency = frequency;
-    }
-
-    /**
-     * Returns the session window interval that limits how long a repair session can run.
-     *
-     * @return the session window interval
-     */
-    @JsonProperty("session_window")
-    public final Interval getSessionWindow()
-    {
-        return mySessionWindow;
-    }
-
-    /**
-     * Sets the session window interval that limits how long a repair session can run.
-     *
-     * @param sessionWindow the session window interval
-     */
-    @JsonProperty("session_window")
-    public final void setSessionWindow(final Interval sessionWindow)
-    {
-        mySessionWindow = sessionWindow;
     }
 
     /**
@@ -123,5 +100,31 @@ public class SchedulerConfig
     public final void setMaxConcurrency(final int maxConcurrency)
     {
         myMaxConcurrency = maxConcurrency;
+    }
+
+    /**
+     * Returns the lock-session configuration controlling whether distributed locks are batched for the duration of
+     * a session (default) or acquired and released per task (sidecar semantics).
+     *
+     * @return the lock-session configuration.
+     */
+    @JsonProperty("session_window")
+    public final LockSessionConfig getLockSession()
+    {
+        return myLockSession;
+    }
+
+    /**
+     * Sets the lock-session configuration.
+     *
+     * @param lockSession the lock-session configuration; ignored when {@code null}.
+     */
+    @JsonProperty("session_window")
+    public final void setLockSession(final LockSessionConfig lockSession)
+    {
+        if (lockSession != null)
+        {
+            myLockSession = lockSession;
+        }
     }
 }
