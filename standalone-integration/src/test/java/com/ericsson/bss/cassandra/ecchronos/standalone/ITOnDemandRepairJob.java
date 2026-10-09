@@ -177,6 +177,7 @@ public class ITOnDemandRepairJob extends TestBase
                         .isEqualTo(literal(node.getHostId()))
                         .build());
             }
+            dropRepairTable(myAdminSession, tableReference.getTable());
         }
         myRepairs.clear();
         reset(mockTableRepairMetrics);
@@ -199,7 +200,8 @@ public class ITOnDemandRepairJob extends TestBase
     {
         long startTime = System.currentTimeMillis();
         Node node = myLocalHost;
-        TableReference tableReference = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
+        TableReference tableReference = myTableReferenceFactory.forTable(
+                TEST_KEYSPACE, createUniqueRepairTable(myAdminSession, getSession(), "ondemand_single"));
 
         schedule(tableReference, node.getHostId());
 
@@ -226,8 +228,10 @@ public class ITOnDemandRepairJob extends TestBase
     {
         long startTime = System.currentTimeMillis();
         Node node = myLocalHost;
-        TableReference tableReference = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
-        TableReference tableReference2 = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_TWO_NAME);
+        TableReference tableReference = myTableReferenceFactory.forTable(
+                TEST_KEYSPACE, createUniqueRepairTable(myAdminSession, getSession(), "ondemand_multi1"));
+        TableReference tableReference2 = myTableReferenceFactory.forTable(
+                TEST_KEYSPACE, createUniqueRepairTable(myAdminSession, getSession(), "ondemand_multi2"));
 
         schedule(tableReference, node.getHostId());
         schedule(tableReference2, node.getHostId());
@@ -252,7 +256,8 @@ public class ITOnDemandRepairJob extends TestBase
     {
         long startTime = System.currentTimeMillis();
         Node node = myLocalHost;
-        TableReference tableReference = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
+        TableReference tableReference = myTableReferenceFactory.forTable(
+                TEST_KEYSPACE, createUniqueRepairTable(myAdminSession, getSession(), "ondemand_twice"));
 
         schedule(tableReference, node.getHostId());
         schedule(tableReference, node.getHostId());
