@@ -85,6 +85,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     private volatile int myMaxConcurrency;
     private volatile long mySessionWindowInMs;
     private volatile long myCooldownInMs;
+    private volatile boolean myLockSessionEnabled;
 
     private ScheduleManagerImpl(final Builder builder)
     {
@@ -103,6 +104,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         myRunIntervalInMs = builder.myRunIntervalInMs;
         mySessionWindowInMs = builder.mySessionWindowInMs;
         myCooldownInMs = builder.myCooldownInMs;
+        myLockSessionEnabled = builder.myLockSessionEnabled;
         myLockFailureBackoff = new LockFailureBackoff(myRunIntervalInMs, builder.myMeterRegistry);
         mySchedulerMetrics = new SchedulerMetrics(builder.myMeterRegistry);
     }
@@ -586,10 +588,13 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         private boolean runSession(final ScheduledJob firstJob, final List<ScheduledJob> candidates)
         {
             long sessionStart = System.currentTimeMillis();
-            LOG.info("Session started for node {}, window={}ms", nodeID, mySessionWindowInMs);
+            boolean batched = myLockSessionEnabled;
+            LOG.info("Session started for node {}, window={}ms, lockBatching={}",
+                    nodeID, mySessionWindowInMs, batched);
             int tasksExecuted;
 
-            try (SessionLockPool lockPool = new SessionLockPool(myLockFactory, myRepairLockFactory, nodeID))
+            try (SessionLockPool lockPool =
+                    new SessionLockPool(myLockFactory, myRepairLockFactory, nodeID, batched))
             {
                 tasksExecuted = executeJobTasks(firstJob, sessionStart, lockPool);
 
@@ -670,10 +675,44 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 final long sessionStart,
                 final SessionLockPool lockPool)
         {
-            int tasksExecuted = 0;
-            int index = 0;
             AtomicInteger failureCounter = myConsecutiveFailures.computeIfAbsent(
                     job.getJobId(), k -> new AtomicInteger(0));
+            // Drain the job's current task snapshot in full (bounded by the session window). The snapshot is the
+            // set of tasks the job already derived from its EXISTING repair-state snapshot - obtaining it does not
+            // recompute repair state. We deliberately do NOT call refreshState()/regenerate the snapshot between
+            // or per task to decide whether more work remains: refreshState() rebuilds the RepairState (reads
+            // repair history and recomputes O(ranges) vnode state) and is CPU/I/O expensive, so doing it per task
+            // or per re-drive would dominate scheduler cost. Instead we simply run the tasks the job currently
+            // exposes; when they are exhausted the session for this job ends naturally. See the standalone
+            // session-serialization investigation.
+            int tasksExecuted = drainTaskSnapshot(job, sessionStart, lockPool, failureCounter);
+            // Refresh once, after the snapshot is drained and only if work was done, so the NEXT scheduler tick
+            // (rescheduled after ~1s because this pass did work) sees up-to-date state and continues the job. This
+            // keeps a single, amortised refresh per session rather than one per task/re-drive.
+            if (tasksExecuted > 0)
+            {
+                job.refreshState();
+            }
+            return tasksExecuted;
+        }
+
+        /**
+         * Drain a single snapshot of the job's currently-available tasks within the session window.
+         *
+         * @param job the job to drain.
+         * @param sessionStart the session start time, used to enforce the session window.
+         * @param lockPool the session lock pool (batched or per-task).
+         * @param failureCounter the per-job consecutive-failure counter.
+         * @return the number of tasks executed successfully in this snapshot pass.
+         */
+        private int drainTaskSnapshot(
+                final ScheduledJob job,
+                final long sessionStart,
+                final SessionLockPool lockPool,
+                final AtomicInteger failureCounter)
+        {
+            int tasksExecuted = 0;
+            int index = 0;
             // Snapshot the tasks before iterating. postExecute may re-add a rebuilt task to the job on a retryable
             // failure; iterating a live (weakly consistent) view could surface that new task in the same session
             // and run it immediately, bypassing the retry backoff. The snapshot defers the retry to a later tick
@@ -718,10 +757,13 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                     mySchedulerMetrics.recordLockAttempt(false, System.nanoTime() - lockStart);
                     handleLockFailure(job, e);
                 }
-            }
-            if (tasksExecuted > 0)
-            {
-                job.refreshState();
+                finally
+                {
+                    // In non-batched mode this releases the locks acquired for this task immediately,
+                    // so a replica-set lock is held only for the duration of a single task. In batched mode it is
+                    // a no-op and locks remain held until the session's SessionLockPool is closed.
+                    lockPool.releaseTaskLocks();
+                }
             }
             return tasksExecuted;
         }
@@ -821,6 +863,9 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         private DistributedNativeConnectionProvider myNativeConnectionProvider;
         private int myMaxConcurrency = UNBOUNDED_CONCURRENCY;
         private MeterRegistry myMeterRegistry;
+        // Batched lock sessions are enabled by default to preserve the historical behaviour; the application wires
+        // this from scheduler.lock_session.enabled (default true). Disable for per-task locking.
+        private boolean myLockSessionEnabled = true;
 
         /**
          * Default constructor.
@@ -933,6 +978,25 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         public Builder withNativeConnectionProvider(final DistributedNativeConnectionProvider nativeConnectionProvider)
         {
             myNativeConnectionProvider = nativeConnectionProvider;
+            return this;
+        }
+
+        /**
+         * Build ScheduleManager with batched lock sessions enabled or disabled.
+         * <p>
+         * When enabled (the default), a repair session holds the distributed locks for the replica resources it
+         * touches for the duration of the session window, reusing shared resource locks across tasks. When
+         * disabled, the scheduler acquires and releases the distributed lock per task (sidecar semantics), holding
+         * a replica-set lock only for the duration of a single task; this maximises cross-node concurrency for a
+         * standalone instance managing many nodes at the cost of more frequent lock acquisitions.
+         *
+         * @param lockSessionEnabled {@code true} to batch locks for the session window; {@code false} for per-task
+         *                           lock acquire/release.
+         * @return Builder with the lock-session mode set.
+         */
+        public final Builder withLockSessionEnabled(final boolean lockSessionEnabled)
+        {
+            myLockSessionEnabled = lockSessionEnabled;
             return this;
         }
 
