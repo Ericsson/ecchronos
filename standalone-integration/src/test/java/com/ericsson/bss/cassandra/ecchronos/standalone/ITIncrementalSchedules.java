@@ -173,6 +173,10 @@ public class ITIncrementalSchedules extends TestBase
         {
             CompletableFutures.getUninterruptibly(stage);
         }
+        for (TableReference tableReference : myRepairs)
+        {
+            dropRepairTable(myAdminSession, tableReference.getTable());
+        }
         myRepairs.clear();
         reset(mockTableRepairMetrics);
         reset(mockFaultReporter);
@@ -203,7 +207,8 @@ public class ITIncrementalSchedules extends TestBase
     public void repairSingleTable() throws Exception
     {
         Node node = myLocalHost;
-        TableReference tableReference = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
+        TableReference tableReference = myTableReferenceFactory.forTable(
+                TEST_KEYSPACE, createUniqueRepairTable(myAdminSession, getSession(), "incrsched"));
         insertSomeDataAndFlush(tableReference, myAdminSession, node);
         long startTime = System.currentTimeMillis();
 

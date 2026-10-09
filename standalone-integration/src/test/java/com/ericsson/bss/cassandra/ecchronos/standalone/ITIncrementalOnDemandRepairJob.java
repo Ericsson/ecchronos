@@ -149,6 +149,7 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
                         .isEqualTo(literal(node.getHostId()))
                         .build());
             }
+            dropRepairTable(myAdminSession, tableReference.getTable());
         }
         myRepairs.clear();
         reset(mockTableRepairMetrics);
@@ -178,7 +179,8 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
     @Test
     public void repairSingleTable() throws Exception
     {
-        TableReference tableReference = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
+        TableReference tableReference = myTableReferenceFactory.forTable(
+                TEST_KEYSPACE, createUniqueRepairTable(myAdminSession, getSession(), "incr_single"));
         Node node = myLocalHost;
         getJmxConnectionProvider().add(node);
         assertThat(tableReference).isNotNull();
@@ -240,8 +242,10 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
         long startTime = System.currentTimeMillis();
         Node node = myLocalHost;
         getJmxConnectionProvider().add(node);
-        TableReference tableReference1 = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
-        TableReference tableReference2 = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_TWO_NAME);
+        TableReference tableReference1 = myTableReferenceFactory.forTable(
+                TEST_KEYSPACE, createUniqueRepairTable(myAdminSession, getSession(), "incr_multi1"));
+        TableReference tableReference2 = myTableReferenceFactory.forTable(
+                TEST_KEYSPACE, createUniqueRepairTable(myAdminSession, getSession(), "incr_multi2"));
         assertThat(tableReference1).isNotNull();
         assertThat(tableReference2).isNotNull();
         insertSomeDataAndFlush(tableReference1, myAdminSession, node);
@@ -277,7 +281,8 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
         long startTime = System.currentTimeMillis();
         Node node = myLocalHost;
         getJmxConnectionProvider().add(node);
-        TableReference tableReference = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
+        TableReference tableReference = myTableReferenceFactory.forTable(
+                TEST_KEYSPACE, createUniqueRepairTable(myAdminSession, getSession(), "incr_twice"));
         assertThat(tableReference).isNotNull();
         insertSomeDataAndFlush(tableReference, myAdminSession, node);
         UUID jobId1 = triggerRepair(tableReference, node);

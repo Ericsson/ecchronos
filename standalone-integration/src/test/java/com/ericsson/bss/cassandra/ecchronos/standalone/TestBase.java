@@ -37,6 +37,7 @@ import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -51,6 +52,7 @@ import javax.management.ReflectionException;
 import javax.management.remote.JMXConnector;
 import java.io.IOException;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,6 +86,11 @@ abstract public class TestBase
 
     protected static Node MyLocalNode;
     private static final Object lock = new Object();
+    private static final AtomicInteger UNIQUE_TABLE_COUNTER = new AtomicInteger();
+    // DDL (CREATE/DROP TABLE) on this multi-DC cluster regularly takes longer than the 2s default
+    // request timeout while schema migrations/compactions settle, so give schema statements their own
+    // generous timeout to avoid spurious DriverTimeoutException during test setup/teardown.
+    private static final Duration DDL_TIMEOUT = Duration.ofSeconds(30);
     private static boolean myJolokiaEnabled;
 
     @BeforeClass
@@ -275,6 +282,94 @@ abstract public class TestBase
                 .addContactPoint(new InetSocketAddress(SharedCassandraCluster.getContainerIP(), CASSANDRA_NATIVE_PORT))
                 .withLocalDatacenter("datacenter1")
                 .withAuthCredentials("cassandra", "cassandra");
+    }
+
+    /**
+     * Create a unique table in the {@link #TEST_KEYSPACE} keyspace for a test that runs a real repair.
+     *
+     * <p>Tests that run real repairs must not share a table: one test's incremental repaired-state
+     * (anticompaction / consistent sessions left on the shared Cassandra node) can otherwise leak into
+     * another and cause a sporadic {@code repairSession(..., false)}. These tables are created at test
+     * time rather than in {@code cassandra-test-image/src/main/docker/create_keyspaces.cql} on purpose:
+     * that schema file is shared with the behave and topology test harnesses, which assert the exact set
+     * of tables / schedule counts, so any table added there leaks into those unrelated suites.
+     *
+     * <p>The table schema matches the static {@code test.table*} tables so that
+     * {@link #insertSomeDataAndFlush} works unchanged. The name is made unique per invocation to avoid
+     * collisions between tests (and re-runs) that share the long-lived {@link SharedCassandraCluster}.
+     *
+     * @param prefix a short, test-specific prefix for readability in logs (e.g. {@code "hungrecovery"}).
+     * @return the created unique table name.
+     */
+    protected static String createUniqueRepairTable(final CqlSession adminSession,
+                                                     final CqlSession readingSession,
+                                                     final String prefix)
+    {
+        String tableName = prefix + "_" + Long.toUnsignedString(System.nanoTime(), 36)
+                + "_" + UNIQUE_TABLE_COUNTER.incrementAndGet();
+        adminSession.execute(SimpleStatement.newInstance(
+                "CREATE TABLE IF NOT EXISTS " + TEST_KEYSPACE + "." + tableName
+                        + " (key1 text, key2 int, value int, PRIMARY KEY(key1, key2))")
+                .setTimeout(DDL_TIMEOUT));
+        // Block until all nodes agree on the new schema so the subsequent repair does not race ahead of
+        // the table being visible cluster-wide. checkSchemaAgreement() is a point-in-time check, so poll
+        // briefly until agreement is reached rather than trusting a single sample. Up to ~15s (30 x 500ms).
+        for (int attempt = 0; attempt < 30 && !adminSession.checkSchemaAgreement(); attempt++)
+        {
+            sleepMillis(500);
+        }
+        // The TableReferenceFactory used by the tests reads schema from readingSession (a different
+        // CqlSession than adminSession, with its own metadata cache). Wait until that session has the
+        // new table in its metadata, otherwise forTable(...) returns null and the test NPEs.
+        // Up to ~30s (60 x 500ms).
+        for (int attempt = 0; attempt < 60 && !tableVisible(readingSession, tableName); attempt++)
+        {
+            sleepMillis(500);
+        }
+        return tableName;
+    }
+
+    private static boolean tableVisible(final CqlSession session, final String tableName)
+    {
+        return session.getMetadata()
+                .getKeyspace(TEST_KEYSPACE)
+                .flatMap(ks -> ks.getTable(tableName))
+                .isPresent();
+    }
+
+    private static void sleepMillis(final long millis)
+    {
+        try
+        {
+            Thread.sleep(millis);
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while waiting for schema propagation", e);
+        }
+    }
+
+    /**
+     * Drop a table previously created by {@link #createUniqueRepairTable}. Safe to call in test teardown;
+     * failures are swallowed so cleanup never masks the actual test result.
+     */
+    protected static void dropRepairTable(final CqlSession adminSession, final String tableName)
+    {
+        if (tableName == null)
+        {
+            return;
+        }
+        try
+        {
+            adminSession.execute(SimpleStatement.newInstance(
+                    "DROP TABLE IF EXISTS " + TEST_KEYSPACE + "." + tableName)
+                    .setTimeout(DDL_TIMEOUT));
+        }
+        catch (RuntimeException e)
+        {
+            LOG.warn("Failed to drop test table {}.{} during cleanup: {}", TEST_KEYSPACE, tableName, e.getMessage());
+        }
     }
 
     protected void insertSomeDataAndFlush(TableReference tableReference, CqlSession session, Node node)

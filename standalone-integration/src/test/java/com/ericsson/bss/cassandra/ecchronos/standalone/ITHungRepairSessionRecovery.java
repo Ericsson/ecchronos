@@ -157,6 +157,7 @@ public class ITHungRepairSessionRecovery extends TestBase
                         .isEqualTo(literal(node.getHostId()))
                         .build());
             }
+            dropRepairTable(myAdminSession, tableReference.getTable());
         }
         myRepairs.clear();
         reset(mockTableRepairMetrics);
@@ -181,7 +182,8 @@ public class ITHungRepairSessionRecovery extends TestBase
     @Test
     public void getRepairSessionsExposesExpectedKeys() throws Exception
     {
-        TableReference tableReference = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
+        TableReference tableReference = myTableReferenceFactory.forTable(
+                TEST_KEYSPACE, createUniqueRepairTable(myAdminSession, getSession(), "hungrecovery"));
         Node node = myLocalHost;
         getJmxConnectionProvider().add(node);
         assertThat(tableReference).isNotNull();
