@@ -137,7 +137,7 @@ jobs:
             test_suite: 'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -Dit.jolokia.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Jolokia DatacenterAware Multi-Agent integration tests - Java 21 - PEM"
-            java_version: 17
+            java_version: 21
             test_suite: 'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
 
