@@ -21,8 +21,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.RepairLockFactoryIm
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -461,13 +459,20 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     private final class JobRunTask implements Runnable
     {
         private final UUID nodeID;
-        private final Node myNode;
+        private final JobRunExecutor myJobExecutor;
         private volatile long myCooldownUntil = 0;
 
         private JobRunTask(final UUID currentNodeID)
         {
             nodeID = currentNodeID;
-            myNode = myNativeConnectionProvider.getNodes().get(nodeID);
+            Node node = myNativeConnectionProvider.getNodes().get(nodeID);
+            myJobExecutor = new JobRunExecutor(
+                    nodeID,
+                    node,
+                    myLockFailureBackoff,
+                    mySchedulerMetrics,
+                    myConsecutiveFailures,
+                    ScheduleManagerImpl.this::validateJob);
         }
 
         @Override
@@ -521,7 +526,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             }
             try
             {
-                ScheduledFuture<?> future = myExecutor.schedule(this, delay, TimeUnit.MILLISECONDS);
+                ScheduledFuture<?> future = ScheduleManagerImpl.this.myExecutor.schedule(this, delay, TimeUnit.MILLISECONDS);
                 myRunFuture.put(nodeID, future);
             }
             catch (java.util.concurrent.RejectedExecutionException e)
@@ -574,14 +579,12 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         private boolean validate(final ScheduledJob job)
         {
             LOG.trace("Validating job {}", job);
-            long nextRun = validateJob(job, myNode);
-
-            if (nextRun != -1L)
+            long rejectDelay = validateJob(job, myNativeConnectionProvider.getNodes().get(nodeID));
+            if (rejectDelay != -1L)
             {
-                job.setRunnableIn(nextRun);
+                job.setRunnableIn(rejectDelay);
                 return false;
             }
-
             return true;
         }
 
@@ -596,7 +599,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             try (SessionLockPool lockPool =
                     new SessionLockPool(myLockFactory, myRepairLockFactory, nodeID, batched))
             {
-                tasksExecuted = executeJobTasks(firstJob, sessionStart, lockPool);
+                tasksExecuted = myJobExecutor.executeJobTasks(firstJob, sessionStart, lockPool, mySessionWindowInMs);
 
                 if (withinSessionWindow(sessionStart))
                 {
@@ -629,7 +632,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                     continue;
                 }
                 currentExecutingJobs.put(nodeID, job);
-                tasksExecuted += executeJobTasks(job, sessionStart, lockPool);
+                tasksExecuted += myJobExecutor.executeJobTasks(job, sessionStart, lockPool, mySessionWindowInMs);
             }
             return tasksExecuted;
         }
@@ -670,138 +673,6 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             return !job.isInBackoff();
         }
 
-        private int executeJobTasks(
-                final ScheduledJob job,
-                final long sessionStart,
-                final SessionLockPool lockPool)
-        {
-            AtomicInteger failureCounter = myConsecutiveFailures.computeIfAbsent(
-                    job.getJobId(), k -> new AtomicInteger(0));
-            // Drain the job's current task snapshot in full (bounded by the session window). The snapshot is the
-            // set of tasks the job already derived from its EXISTING repair-state snapshot - obtaining it does not
-            // recompute repair state. We deliberately do NOT call refreshState()/regenerate the snapshot between
-            // or per task to decide whether more work remains: refreshState() rebuilds the RepairState (reads
-            // repair history and recomputes O(ranges) vnode state) and is CPU/I/O expensive, so doing it per task
-            // or per re-drive would dominate scheduler cost. Instead we simply run the tasks the job currently
-            // exposes; when they are exhausted the session for this job ends naturally. See the standalone
-            // session-serialization investigation.
-            int tasksExecuted = drainTaskSnapshot(job, sessionStart, lockPool, failureCounter);
-            // Refresh once, after the snapshot is drained and only if work was done, so the NEXT scheduler tick
-            // (rescheduled after ~1s because this pass did work) sees up-to-date state and continues the job. This
-            // keeps a single, amortised refresh per session rather than one per task/re-drive.
-            if (tasksExecuted > 0)
-            {
-                job.refreshState();
-            }
-            return tasksExecuted;
-        }
-
-        /**
-         * Drain a single snapshot of the job's currently-available tasks within the session window.
-         *
-         * @param job the job to drain.
-         * @param sessionStart the session start time, used to enforce the session window.
-         * @param lockPool the session lock pool (batched or per-task).
-         * @param failureCounter the per-job consecutive-failure counter.
-         * @return the number of tasks executed successfully in this snapshot pass.
-         */
-        private int drainTaskSnapshot(
-                final ScheduledJob job,
-                final long sessionStart,
-                final SessionLockPool lockPool,
-                final AtomicInteger failureCounter)
-        {
-            int tasksExecuted = 0;
-            int index = 0;
-            // Snapshot the tasks before iterating. postExecute may re-add a rebuilt task to the job on a retryable
-            // failure; iterating a live (weakly consistent) view could surface that new task in the same session
-            // and run it immediately, bypassing the retry backoff. The snapshot defers the retry to a later tick
-            // (gated by setRunnableIn). See #1848.
-            List<ScheduledTask> tasksForSession = new ArrayList<>();
-            job.iterator().forEachRemaining(tasksForSession::add);
-            for (ScheduledTask task : tasksForSession)
-            {
-                if (!withinSessionWindow(sessionStart))
-                {
-                    break;
-                }
-                index++;
-                long lockStart = System.nanoTime();
-                try
-                {
-                    lockPool.acquireForTask(task);
-                    mySchedulerMetrics.recordLockAttempt(true, System.nanoTime() - lockStart);
-                    TaskExecutionResult result = runTask(task, index);
-                    job.postExecute(result, task);
-                    if (result.isSuccessful())
-                    {
-                        tasksExecuted++;
-                        failureCounter.set(0);
-                        myLockFailureBackoff.reset(job);
-                    }
-                    else if (result.isRetryable())
-                    {
-                        // A retryable (transient) failure is owned by the job's own retry logic (attempt counting
-                        // + backoff). Do not advance the scheduler's consecutive-failure circuit breaker, so a
-                        // configured retry_attempts is not silently capped by MAX_CONSECUTIVE_TASK_FAILURES, and
-                        // leave the rest of this session's snapshot to run. See #1848.
-                        continue;
-                    }
-                    else if (handleUnsuccessfulTask(job, failureCounter))
-                    {
-                        break;
-                    }
-                }
-                catch (Exception e)
-                {
-                    mySchedulerMetrics.recordLockAttempt(false, System.nanoTime() - lockStart);
-                    handleLockFailure(job, e);
-                }
-                finally
-                {
-                    // In non-batched mode this releases the locks acquired for this task immediately,
-                    // so a replica-set lock is held only for the duration of a single task. In batched mode it is
-                    // a no-op and locks remain held until the session's SessionLockPool is closed.
-                    lockPool.releaseTaskLocks();
-                }
-            }
-            return tasksExecuted;
-        }
-
-        /**
-         * Handle a task that did not complete successfully.
-         * <p>
-         * Distinguishes a run-policy stop from a genuine failure: if a run policy currently rejects the job's table
-         * (for example {@code reject_configuration} disabling repairs), the job is parked only until the rejection
-         * window ends and the failure counter is reset, so it resumes automatically when the policy clears instead
-         * of staying BLOCKED until restart. Otherwise the consecutive-failure counter is advanced and the job is
-         * marked FAILED once the threshold is reached.
-         *
-         * @param job the job whose task did not succeed.
-         * @param failureCounter the per-job consecutive-failure counter.
-         * @return true if the session for this job should stop (policy stop or marked FAILED).
-         */
-        private boolean handleUnsuccessfulTask(final ScheduledJob job, final AtomicInteger failureCounter)
-        {
-            long rejectDelay = validateJob(job, myNode);
-            if (rejectDelay != -1L)
-            {
-                job.setRunnableIn(rejectDelay);
-                failureCounter.set(0);
-                LOG.debug("Job {} on node {} stopped by run policy, parking for {} ms", job, nodeID, rejectDelay);
-                return true;
-            }
-            int failures = failureCounter.incrementAndGet();
-            if (failures >= MAX_CONSECUTIVE_TASK_FAILURES)
-            {
-                LOG.error("Job {} on node {} has failed {} consecutive task executions, marking as FAILED",
-                        job, nodeID, failures);
-                job.markFailed();
-                return true;
-            }
-            return false;
-        }
-
         private void applyCooldown(final int tasksExecuted)
         {
             if (tasksExecuted > 0 && myCooldownInMs > 0)
@@ -813,29 +684,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
         private boolean withinSessionWindow(final long sessionStart)
         {
-            return (System.currentTimeMillis() - sessionStart) < mySessionWindowInMs;
-        }
-
-        private void handleLockFailure(final ScheduledJob job, final Exception e)
-        {
-            myLockFailureBackoff.recordFailure(job, e, nodeID);
-        }
-
-        private TaskExecutionResult runTask(
-                final ScheduledTask task,
-                final int index)
-        {
-            try
-            {
-                LOG.debug("Running task: {} ({}), for node {}", task, index, nodeID);
-                return task.execute(nodeID);
-            }
-            catch (Exception e)
-            {
-                LOG.warn("Unable to run task: {} in node: {}", task, nodeID, e);
-            }
-
-            return TaskExecutionResult.TERMINAL;
+            return JobRunExecutor.withinSessionWindow(sessionStart, mySessionWindowInMs);
         }
     }
 

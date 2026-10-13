@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config.scheduler;
 
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.Interval;
@@ -30,12 +31,22 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * When {@code enabled} is {@code false} the scheduler acquires and releases the distributed lock <em>per task</em>
  * (sidecar semantics): a replica-set lock is held only for the duration of a single repair task, maximising
  * cross-node concurrency at the cost of more frequent lock acquisitions.
+ * <p>
+ * <strong>Backward compatibility:</strong> earlier versions declared {@code scheduler.session_window} as a bare
+ * interval, i.e. {@code session_window: {time: N, unit: X}}. To avoid silently reverting such a configuration to
+ * the default window, this type also accepts {@code time} and {@code unit} directly at the {@code session_window}
+ * level (the legacy form) as well as the new nested {@code interval: {time, unit}} form. If both are present the
+ * nested {@code interval} wins. {@code enabled} defaults to {@code true}, preserving the historical behaviour for
+ * old configuration files that do not set it.
  */
 public class LockSessionConfig
 {
     private static final int DEFAULT_SESSION_WINDOW_SECONDS = 300;
     private boolean myEnabled = true;
     private Interval mySessionWindow = new Interval(DEFAULT_SESSION_WINDOW_SECONDS, TimeUnit.SECONDS);
+    // Tracks whether the new nested "interval" form was supplied, so the legacy flat "time"/"unit" form does not
+    // override it when both happen to be present.
+    private boolean mySessionWindowSetFromInterval = false;
 
     /** Default constructor. */
     public LockSessionConfig()
@@ -78,13 +89,71 @@ public class LockSessionConfig
     }
 
     /**
-     * Sets the session window interval that limits how long a repair session can run.
+     * Sets the session window interval that limits how long a repair session can run (new nested form).
      *
      * @param sessionWindow the session window interval
      */
     @JsonProperty("interval")
     public final void setSessionWindow(final Interval sessionWindow)
     {
-        mySessionWindow = sessionWindow;
+        if (sessionWindow != null)
+        {
+            mySessionWindow = sessionWindow;
+            mySessionWindowSetFromInterval = true;
+        }
+    }
+
+    /**
+     * Legacy accessor for the session-window time, kept so the old flat form
+     * ({@code session_window: {time, unit}}) deserializes into the window instead of being ignored.
+     *
+     * @return the session window time value in its configured unit.
+     */
+    @JsonProperty("time")
+    public final long getTime()
+    {
+        return mySessionWindow.getTime();
+    }
+
+    /**
+     * Legacy setter for the old flat {@code session_window.time}. Only applied when the new nested
+     * {@code interval} form was not provided.
+     *
+     * @param time the session window time value.
+     */
+    @JsonProperty("time")
+    public final void setTime(final long time)
+    {
+        if (!mySessionWindowSetFromInterval)
+        {
+            mySessionWindow = new Interval(time, mySessionWindow.getUnit());
+        }
+    }
+
+    /**
+     * Legacy accessor for the session-window unit (see {@link #getTime()}).
+     *
+     * @return the session window time unit.
+     */
+    @JsonProperty("unit")
+    public final TimeUnit getUnit()
+    {
+        return mySessionWindow.getUnit();
+    }
+
+    /**
+     * Legacy setter for the old flat {@code session_window.unit}. Only applied when the new nested
+     * {@code interval} form was not provided.
+     *
+     * @param unit the session window time unit name (for example {@code MINUTES}).
+     */
+    @JsonProperty("unit")
+    public final void setUnit(final String unit)
+    {
+        if (!mySessionWindowSetFromInterval)
+        {
+            mySessionWindow = new Interval(mySessionWindow.getTime(),
+                    TimeUnit.valueOf(unit.toUpperCase(Locale.US)));
+        }
     }
 }
