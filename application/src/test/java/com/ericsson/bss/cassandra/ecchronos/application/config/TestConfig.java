@@ -19,6 +19,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.repair.FileBasedR
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.GlobalRepairConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.Interval;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.Priority;
+import com.ericsson.bss.cassandra.ecchronos.application.config.scheduler.LockSessionConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
@@ -400,6 +401,44 @@ public class TestConfig
     public void testUseBroadcastRPCAddress()
     {
         assertThat(config.getConnectionConfig().getJmxConnection().getUseBroadcastRPCAddress()).isFalse();
+    }
+
+    @Test
+    public void testSchedulerFrequency()
+    {
+        Interval frequency = config.getSchedulerConfig().getFrequency();
+        assertThat(frequency.getTime()).isEqualTo(30L);
+        assertThat(frequency.getUnit()).isEqualTo(TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testSchedulerCooldown()
+    {
+        Interval cooldown = config.getSchedulerConfig().getCooldown();
+        assertThat(cooldown.getTime()).isEqualTo(15L);
+        assertThat(cooldown.getUnit()).isEqualTo(TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testSchedulerMaxConcurrency()
+    {
+        assertThat(config.getSchedulerConfig().getMaxConcurrency()).isEqualTo(4);
+    }
+
+    @Test
+    public void testSchedulerLockSessionEnabled()
+    {
+        LockSessionConfig lockSession = config.getSchedulerConfig().getLockSession();
+        assertThat(lockSession).isNotNull();
+        assertThat(lockSession.isEnabled()).isFalse();
+    }
+
+    @Test
+    public void testSchedulerSessionWindowInterval()
+    {
+        Interval sessionWindow = config.getSchedulerConfig().getLockSession().getSessionWindow();
+        assertThat(sessionWindow.getTime()).isEqualTo(2L);
+        assertThat(sessionWindow.getUnit()).isEqualTo(TimeUnit.MINUTES);
     }
 }
 

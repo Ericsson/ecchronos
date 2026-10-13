@@ -104,6 +104,15 @@ scheduler:
   frequency:
     time: 30
     unit: SECONDS
+  cooldown:
+    time: 15
+    unit: SECONDS
+  max_concurrency: 4
+  session_window:
+    enabled: false
+    interval:
+      time: 2
+      unit: MINUTES
 
 statistics:
   enabled: false
