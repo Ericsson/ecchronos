@@ -134,7 +134,7 @@
         <com.fasterxml.jackson.annotations.version>2.22</com.fasterxml.jackson.annotations.version>
 
         <!-- Other -->
-        <io.netty.version>4.1.138.Final</io.netty.version>
+        <io.netty.version>4.1.139.Final</io.netty.version>
 
         <!-- Tests -->
         <awaitility.version>4.3.0</awaitility.version>
