@@ -44,6 +44,7 @@ public class LockSessionConfig
     private static final int DEFAULT_SESSION_WINDOW_SECONDS = 300;
     private boolean myEnabled = true;
     private Interval mySessionWindow = new Interval(DEFAULT_SESSION_WINDOW_SECONDS, TimeUnit.SECONDS);
+    private boolean myForceRefresh = false;
     // Tracks whether the new nested "interval" form was supplied, so the legacy flat "time"/"unit" form does not
     // override it when both happen to be present.
     private boolean mySessionWindowSetFromInterval = false;
@@ -75,6 +76,32 @@ public class LockSessionConfig
     public void setEnabled(final boolean enabled)
     {
         myEnabled = enabled;
+    }
+
+    /**
+     * Whether force-refresh is enabled. When {@code true}, a repair session that drains a job's current task
+     * snapshot within the window immediately forces a repair-state refresh and continues the job in the same
+     * session, instead of waiting for the throttled refresh; this reduces scheduler idle time between bursts.
+     * Defaults to {@code false} to preserve the historical behaviour.
+     *
+     * @return {@code true} if force-refresh is enabled.
+     */
+    @JsonProperty("force_refresh")
+    public boolean isForceRefresh()
+    {
+        return myForceRefresh;
+    }
+
+    /**
+     * Set whether force-refresh is enabled.
+     *
+     * @param forceRefresh {@code true} to force a repair-state refresh and re-drive a job within the same session
+     *                     once its current snapshot is drained; {@code false} for the historical behaviour.
+     */
+    @JsonProperty("force_refresh")
+    public void setForceRefresh(final boolean forceRefresh)
+    {
+        myForceRefresh = forceRefresh;
     }
 
     /**

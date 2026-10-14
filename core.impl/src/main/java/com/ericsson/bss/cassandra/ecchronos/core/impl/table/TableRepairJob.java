@@ -241,8 +241,25 @@ public class TableRepairJob extends ScheduledRepairJob
     @Override
     public void refreshState()
     {
+        refreshState(false);
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * When {@code force} is {@code true} the normal throttle is bypassed and the repair state is recomputed
+     * immediately. The scheduler uses this when a session has drained the job's current task snapshot and wants to
+     * pick up any further repairable ranges in the same session, rather than waiting for the throttle window
+     * (which, with a 24h repair interval, is ~14 minutes). Forcing happens at most once per drained snapshot
+     * (roughly once per session, not once per task), so the O(ranges) recompute cost stays amortised.
+     *
+     * @param force {@code true} to bypass the refresh throttle.
+     */
+    @Override
+    public void refreshState(final boolean force)
+    {
         long now = System.currentTimeMillis();
-        if (now - myLastRefreshTime < myRefreshIntervalMs)
+        if (!force && now - myLastRefreshTime < myRefreshIntervalMs)
         {
             return;
         }
@@ -255,6 +272,19 @@ public class TableRepairJob extends ScheduledRepairJob
         {
             LOG.warn("Unable to check repair history, {}", this, e);
         }
+    }
+
+    /**
+     * Whether this job currently has repairable ranges, i.e. more repair work is immediately available. Used by
+     * the scheduler to decide whether to continue draining the job within the same session after a forced
+     * refresh. Reads the current (already-computed) repair-state snapshot; it does not itself recompute state.
+     *
+     * @return {@code true} if the current repair state has repairable ranges.
+     */
+    @Override
+    public boolean hasRepairableWork()
+    {
+        return myRepairState.getSnapshot().canRepair();
     }
 
     /**

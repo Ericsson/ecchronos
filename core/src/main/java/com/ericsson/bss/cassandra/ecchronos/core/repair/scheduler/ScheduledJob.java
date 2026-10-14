@@ -111,6 +111,40 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     }
 
     /**
+     * Refresh this job's state, optionally bypassing any internal throttling.
+     * <p>
+     * The scheduler calls this with {@code force = true} when, within an ongoing repair session, a job's current
+     * task snapshot has been fully drained and there may be more work to pick up immediately. Forcing recomputes
+     * the state regardless of the normal (throttled) cadence so the session can continue without waiting for the
+     * next throttle window. The default implementation ignores {@code force} and delegates to
+     * {@link #refreshState()}; job types with expensive, throttled refreshes should override this to honour the
+     * force flag.
+     *
+     * @param force {@code true} to bypass refresh throttling; {@code false} for the normal throttled behaviour.
+     */
+    public void refreshState(final boolean force)
+    {
+        refreshState();
+    }
+
+    /**
+     * Whether the job currently has more immediately-runnable work (for repair jobs: repairable ranges) based on
+     * its current state.
+     * <p>
+     * The scheduler consults this after a forced {@link #refreshState(boolean)} to decide whether to keep draining
+     * the job within the same session. The default is {@code false} so that, unless a job type opts in, a job is
+     * drained at most once per session (the historical behaviour). Implementations must return {@code false} once
+     * no work remains so the session terminates. This reads already-computed state and must not itself be
+     * expensive.
+     *
+     * @return {@code true} if the job has more immediately-runnable work.
+     */
+    public boolean hasRepairableWork()
+    {
+        return false;
+    }
+
+    /**
      * Set the job to be runnable again after the given delay has elapsed.
      *
      * @param delay

@@ -63,19 +63,73 @@ final class JobRunExecutor
             final ScheduledJob job,
             final long sessionStart,
             final SessionLockPool lockPool,
-            final long sessionWindowInMs)
+            final long sessionWindowInMs,
+            final boolean forceRefresh)
     {
         AtomicInteger failureCounter = myConsecutiveFailures.computeIfAbsent(
                 job.getJobId(), k -> new AtomicInteger(0));
-        int tasksExecuted = drainTaskSnapshot(job, sessionStart, lockPool, failureCounter, sessionWindowInMs);
-        if (tasksExecuted > 0)
+
+        if (!forceRefresh)
         {
-            job.refreshState();
+            // Backward-compatible behaviour (default): drain the job's current snapshot once, then do a single
+            // throttled refresh if work was done so the next tick sees up-to-date state.
+            int executed = drainTaskSnapshot(job, sessionStart, lockPool, failureCounter, sessionWindowInMs)
+                    .tasksExecuted();
+            if (executed > 0)
+            {
+                job.refreshState();
+            }
+            return executed;
         }
-        return tasksExecuted;
+
+        int totalExecuted = 0;
+        // Force-refresh re-drive (opt-in via scheduler.lock_session.force_refresh). Drain the job's current task
+        // snapshot; if the whole snapshot was drained within the session window and work was done, force a
+        // repair-state refresh and re-drive the job while it still reports repairable work. This avoids leaving the
+        // node idle until the next (throttled, ~14 min for a 24h interval) refresh when there is more work to do
+        // now. The forced refresh happens at most once per drained snapshot - roughly once per ~tens of tasks, not
+        // per task - so the O(ranges) recompute cost stays amortised.
+        //
+        // The loop is bounded by a fixed iteration count (MAX_SESSION_REFRESH_REDRIVES + 1 passes) so it can never
+        // spin indefinitely; it also stops early as soon as the window closes, a drain is cut short by the window,
+        // no task runs, or the job reports no repairable work (empty snapshot). The first pass is the initial
+        // drain; each subsequent pass is a force-refresh re-drive.
+        boolean forcedRefreshed = false;
+        for (int pass = 0; pass <= ScheduleManagerImpl.MAX_SESSION_REFRESH_REDRIVES; pass++)
+        {
+            DrainResult result = drainTaskSnapshot(job, sessionStart, lockPool, failureCounter, sessionWindowInMs);
+            totalExecuted += result.tasksExecuted();
+
+            boolean stop = result.tasksExecuted() == 0
+                    || result.windowTruncated()
+                    || !withinSessionWindow(sessionStart, sessionWindowInMs);
+            if (!stop)
+            {
+                // Snapshot fully drained within the window and work was done: force a refresh and continue only if
+                // there are more repairable ranges to pick up this session.
+                job.refreshState(true);
+                forcedRefreshed = true;
+                if (!job.hasRepairableWork())
+                {
+                    stop = true;
+                }
+            }
+            if (stop)
+            {
+                // If we never forced a refresh this call, do a final throttled refresh (when work was done) so the
+                // next tick sees up-to-date state, matching the prior behaviour. A forced refresh already updated
+                // the state, so no extra refresh is needed in that case.
+                if (!forcedRefreshed && totalExecuted > 0)
+                {
+                    job.refreshState();
+                }
+                break;
+            }
+        }
+        return totalExecuted;
     }
 
-    private int drainTaskSnapshot(
+    private DrainResult drainTaskSnapshot(
             final ScheduledJob job,
             final long sessionStart,
             final SessionLockPool lockPool,
@@ -84,12 +138,15 @@ final class JobRunExecutor
     {
         int tasksExecuted = 0;
         int index = 0;
+        boolean windowTruncated = false;
         List<ScheduledTask> tasksForSession = new ArrayList<>();
         job.iterator().forEachRemaining(tasksForSession::add);
         for (ScheduledTask task : tasksForSession)
         {
             if (!withinSessionWindow(sessionStart, sessionWindowInMs))
             {
+                // Stopped before consuming the whole snapshot: there is more backlog but no time left this pass.
+                windowTruncated = true;
                 break;
             }
             index++;
@@ -125,7 +182,17 @@ final class JobRunExecutor
                 lockPool.releaseTaskLocks();
             }
         }
-        return tasksExecuted;
+        return new DrainResult(tasksExecuted, windowTruncated);
+    }
+
+    /**
+     * Outcome of draining one task snapshot.
+     *
+     * @param tasksExecuted number of tasks executed successfully.
+     * @param windowTruncated whether the pass stopped because the session window elapsed with tasks still pending.
+     */
+    private record DrainResult(int tasksExecuted, boolean windowTruncated)
+    {
     }
 
     boolean handleUnsuccessfulTask(final ScheduledJob job, final AtomicInteger failureCounter)

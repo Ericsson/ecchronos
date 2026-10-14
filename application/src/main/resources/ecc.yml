@@ -555,6 +555,17 @@ scheduler:
     interval:
       time: 5
       unit: MINUTES
+    ##
+    ## Force-refresh re-drive. When true, a repair session that drains a job's current task snapshot within the
+    ## window immediately forces a repair-state refresh (bypassing the normal refresh throttle) and continues the
+    ## same job in the same session while it still has repairable ranges. This avoids leaving a node idle until the
+    ## next throttled refresh (which, with a 24h repair interval, is ~14 minutes) when there is more work to do
+    ## now, significantly improving scheduler utilization for standalone instances managing many nodes. The forced
+    ## refresh happens at most once per drained snapshot (roughly once per session, not per task), so the extra
+    ## repair-state recompute cost stays amortised.
+    ## Default: false (preserves the historical behaviour).
+    ##
+    force_refresh: false
   ##
   ## Specifies the cooldown period after a batched session completes.
   ## After releasing the lock, the node waits this duration before attempting
