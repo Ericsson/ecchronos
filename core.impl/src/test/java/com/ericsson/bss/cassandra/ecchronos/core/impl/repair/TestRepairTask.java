@@ -28,7 +28,9 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfigurati
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairStatus;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.RepairAsyncTransportException;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ScheduledJobException;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.TransientRepairException;
 
 import java.util.Collections;
 import java.util.Map;
@@ -111,9 +113,57 @@ public class TestRepairTask
                 .forceTerminateAllRepairSessionsInSpecificNode(any(UUID.class));
     }
 
+    @Test
+    public void testLostResponseWithoutAdoptionIsTransient() throws Exception
+    {
+        // A lost repairAsync response that cannot be adopted (vnode / base behaviour) must be transient and
+        // retryable, not a terminal ScheduledJobException. See issue #1892.
+        when(myJmxProxy.repairAsync(eq(myNodeId), anyString(), any()))
+                .thenThrow(new RepairAsyncTransportException("lost response"));
+
+        TestableRepairTask task = new TestableRepairTask();
+
+        assertThatExceptionOfType(TransientRepairException.class)
+                .isThrownBy(task::execute);
+        assertThat(task.finishStatus).isEqualTo(RepairStatus.FAILED);
+    }
+
+    @Test
+    public void testLostResponseAdoptedSuccessDoesNotFail() throws Exception
+    {
+        // When the already-started session is adopted and finalizes, the task succeeds (no false failure,
+        // no re-trigger). See issue #1892.
+        when(myJmxProxy.repairAsync(eq(myNodeId), anyString(), any()))
+                .thenThrow(new RepairAsyncTransportException("lost response"));
+
+        TestableRepairTask task = new TestableRepairTask();
+        task.adoptionOutcome = RepairTask.LostResponseOutcome.ADOPTED_SUCCESS;
+
+        task.execute();
+
+        assertThat(task.finishStatus).isEqualTo(RepairStatus.SUCCESS);
+    }
+
+    @Test
+    public void testLostResponseAdoptedFailedIsTerminal() throws Exception
+    {
+        // When the adopted session ends in failure, the task fails terminally (a real failure), not transiently.
+        when(myJmxProxy.repairAsync(eq(myNodeId), anyString(), any()))
+                .thenThrow(new RepairAsyncTransportException("lost response"));
+
+        TestableRepairTask task = new TestableRepairTask();
+        task.adoptionOutcome = RepairTask.LostResponseOutcome.ADOPTED_FAILED;
+
+        assertThatExceptionOfType(ScheduledJobException.class)
+                .isThrownBy(task::execute)
+                .isNotInstanceOf(TransientRepairException.class);
+        assertThat(task.finishStatus).isEqualTo(RepairStatus.FAILED);
+    }
+
     private final class TestableRepairTask extends RepairTask
     {
         private volatile RepairStatus finishStatus;
+        private volatile RepairTask.LostResponseOutcome adoptionOutcome = RepairTask.LostResponseOutcome.NOT_ADOPTED;
 
         private TestableRepairTask()
         {
@@ -128,6 +178,13 @@ public class TestRepairTask
         void invokeVerifyRepair(final DistributedJmxProxy proxy) throws ScheduledJobException
         {
             verifyRepair(proxy);
+        }
+
+        @Override
+        protected RepairTask.LostResponseOutcome onLostRepairResponse(final DistributedJmxProxy proxy,
+                final long requestEpochSeconds)
+        {
+            return adoptionOutcome;
         }
 
         @Override

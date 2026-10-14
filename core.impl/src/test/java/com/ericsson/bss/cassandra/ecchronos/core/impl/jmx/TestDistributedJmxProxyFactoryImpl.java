@@ -120,6 +120,31 @@ public class TestDistributedJmxProxyFactoryImpl
     }
 
     @Test
+    public void testRepairAsyncLostResponseThrowsTransport() throws Exception
+    {
+        // A lost repairAsync response (Jolokia HTTP 100) must surface as RepairAsyncTransportException, not be
+        // swallowed to 0 nor escape as a raw RuntimeException. See issue #1892.
+        String keyspace = "test_keyspace";
+        Map<String, String> options = new HashMap<>();
+        options.put("option1", "value1");
+
+        when(mockMBeanServerConnection.invoke(any(ObjectName.class), eq("repairAsync"),
+                any(Object[].class), any(String[].class)))
+                .thenThrow(new org.jolokia.client.exception.JolokiaHttpException(
+                        "HTTP error 100 sending exec Jolokia request", 100));
+
+        try
+        {
+            distributedJmxProxy.repairAsync(nodeId, keyspace, options);
+            fail("Expected RepairAsyncTransportException");
+        }
+        catch (com.ericsson.bss.cassandra.ecchronos.utils.exceptions.RepairAsyncTransportException e)
+        {
+            assertTrue(e.getCause() instanceof org.jolokia.client.exception.JolokiaHttpException);
+        }
+    }
+
+    @Test
     public void testForceTerminateAllRepairSessionsInSpecificNode() throws Exception
     {
 

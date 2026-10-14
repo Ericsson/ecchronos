@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.RepairTask;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxy;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.DriverNode;
@@ -228,6 +229,96 @@ public class TestIncrementalRepairTask
         invokeVerifyRepair(task); // must not throw
 
         verify(myJmxProxy, org.mockito.Mockito.never()).forceTerminateAllRepairSessions();
+    }
+
+    @Test
+    public void testLostResponseAdoptsFinalizedSession() throws Throwable
+    {
+        // A started session covering keyspace.table that is FINALIZED must be adopted as a success (issue #1892).
+        long now = java.util.concurrent.TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+        when(myJmxProxy.getRepairSessions(myNodeId)).thenReturn(
+                java.util.List.of(session("s-1", "FINALIZED", now, "keyspace.table")));
+
+        IncrementalRepairTask task = new IncrementalRepairTask(
+                myNodeId, myJmxProxyFactory, myTableReference, myRepairConfiguration, myTableRepairMetrics);
+
+        assertThat(invokeOnLostRepairResponse(task, now - 5).toString()).isEqualTo("ADOPTED_SUCCESS");
+    }
+
+    @Test
+    public void testLostResponseFailedSessionIsAdoptedFailed() throws Throwable
+    {
+        long now = java.util.concurrent.TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+        when(myJmxProxy.getRepairSessions(myNodeId)).thenReturn(
+                java.util.List.of(session("s-2", "FAILED", now, "keyspace.table")));
+
+        IncrementalRepairTask task = new IncrementalRepairTask(
+                myNodeId, myJmxProxyFactory, myTableReference, myRepairConfiguration, myTableRepairMetrics);
+
+        assertThat(invokeOnLostRepairResponse(task, now - 5).toString()).isEqualTo("ADOPTED_FAILED");
+    }
+
+    @Test
+    public void testLostResponseNoMatchingSessionIsNotAdopted() throws Throwable
+    {
+        // A session for a different table must not be adopted.
+        long now = java.util.concurrent.TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+        when(myJmxProxy.getRepairSessions(myNodeId)).thenReturn(
+                java.util.List.of(session("s-3", "REPAIRING", now, "keyspace.other")));
+
+        IncrementalRepairTask task = new IncrementalRepairTask(
+                myNodeId, myJmxProxyFactory, myTableReference, myRepairConfiguration, myTableRepairMetrics);
+        task.setAdoptionTimings(0L, 0L);
+
+        assertThat(invokeOnLostRepairResponse(task, now - 5).toString()).isEqualTo("NOT_ADOPTED");
+    }
+
+    @Test
+    public void testLostResponseIgnoresStaleFinalizedSession() throws Throwable
+    {
+        // Concern (#1892 review): a retained, older FINALIZED session for the same table must NOT be adopted as the
+        // just-started repair's success. With only that stale session listed, discovery finds nothing started
+        // at/after the request time, so the outcome is NOT_ADOPTED (safe retry) rather than a false success.
+        long now = java.util.concurrent.TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+        long staleStarted = now - java.util.concurrent.TimeUnit.HOURS.toSeconds(3);
+        when(myJmxProxy.getRepairSessions(myNodeId)).thenReturn(
+                java.util.List.of(session("old-s", "FINALIZED", staleStarted, "keyspace.table")));
+
+        // Short-circuit the discovery retry window so the test does not actually wait.
+        IncrementalRepairTask task = new IncrementalRepairTask(
+                myNodeId, myJmxProxyFactory, myTableReference, myRepairConfiguration, myTableRepairMetrics);
+        task.setAdoptionTimings(0L, 0L);
+
+        assertThat(invokeOnLostRepairResponse(task, now).toString()).isEqualTo("NOT_ADOPTED");
+    }
+
+    private static java.util.Map<String, String> session(final String id, final String state, final long started,
+            final String tables)
+    {
+        java.util.Map<String, String> session = new java.util.HashMap<>();
+        session.put("SESSION_ID", id);
+        session.put("STATE", state);
+        session.put("STARTED", Long.toString(started));
+        session.put("TABLES", tables);
+        return session;
+    }
+
+    private Object invokeOnLostRepairResponse(final IncrementalRepairTask task, final long requestEpochSeconds)
+            throws Throwable
+    {
+        java.lang.reflect.Method m = RepairTask.class.getDeclaredMethod(
+                "onLostRepairResponse",
+                com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxy.class,
+                long.class);
+        m.setAccessible(true);
+        try
+        {
+            return m.invoke(task, myJmxProxy, requestEpochSeconds);
+        }
+        catch (java.lang.reflect.InvocationTargetException e)
+        {
+            throw e.getCause();
+        }
     }
 
     private IncrementalRepairTask newTaskWithMetrics()
