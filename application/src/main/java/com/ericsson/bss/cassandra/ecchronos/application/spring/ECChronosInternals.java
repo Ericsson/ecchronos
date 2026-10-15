@@ -176,7 +176,7 @@ public class ECChronosInternals implements Closeable
         myScheduleManagerImpl = ScheduleManagerImpl.builder()
                 .withRunInterval(configuration.getSchedulerConfig().getFrequency().getInterval(TimeUnit.MILLISECONDS),
                         TimeUnit.MILLISECONDS)
-                .withSessionWindow(configuration.getSchedulerConfig().getSessionWindow().getInterval(TimeUnit.MILLISECONDS),
+                .withSessionWindow(configuration.getSchedulerConfig().getLockSession().getSessionWindow().getInterval(TimeUnit.MILLISECONDS),
                         TimeUnit.MILLISECONDS)
                 .withCooldown(configuration.getSchedulerConfig().getCooldown().getInterval(TimeUnit.MILLISECONDS),
                         TimeUnit.MILLISECONDS)
@@ -184,6 +184,7 @@ public class ECChronosInternals implements Closeable
                 .withNativeConnectionProvider(nativeConnectionProvider)
                 .withLockFactory(myLockFactory)
                 .withMaxConcurrency(configuration.getSchedulerConfig().getMaxConcurrency())
+                .withLockSessionEnabled(configuration.getSchedulerConfig().getLockSession().isEnabled())
                 .withMeterRegistry(meterRegistry)
                 .build();
     }

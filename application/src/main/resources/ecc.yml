@@ -525,16 +525,36 @@ scheduler:
   frequency:
     time: 30
     unit: SECONDS
-  ##
-  ## Specifies the time window for batched lock sessions.
-  ## When a node acquires a distributed lock, it holds it for this duration
-  ## and executes multiple repair tasks within the window before releasing.
-  ## This reduces lock acquisition overhead significantly in large clusters.
-  ## Default: 5 minutes.
-  ##
   session_window:
-    time: 5
-    unit: MINUTES
+    ##
+    ## Controls how distributed (CAS) repair locks are scoped during a repair session.
+    ##
+    ##   enabled: true - "batched" / lock-session mode. When a node starts a repair session it acquires
+    ##     the distributed locks for the replica resources it touches and HOLDS them for the whole session_window,
+    ##     reusing shared resource locks across tasks. This minimises lock-acquisition overhead. Note: because the
+    ##     locks are held for the whole window, a single standalone instance managing many nodes can serialize work
+    ##     across those nodes (one node's session can hold the shared replica-set locks the others need).
+    ##
+    ##   enabled: false - per-task mode. The scheduler acquires the distributed lock for a task, runs the
+    ##     task, and releases the lock immediately, so a replica-set lock is held only for the duration of a single
+    ##     repair task. This maximises cross-node repair concurrency for a standalone instance managing many nodes,
+    ##     at the cost of more frequent lock acquisitions. This mirrors the lock scope of the sidecar architecture.
+    ##
+    ## If unsure, leave enabled: true. Consider enabled: false for a standalone instance managing many nodes whose
+    ## repairs are falling behind due to lock-induced serialization.
+    ## Default: true.
+    ##
+    enabled: true
+    ##
+    ## Specifies the time window for batched lock sessions.
+    ## When a node acquires a distributed lock, it holds it for this duration
+    ## and executes multiple repair tasks within the window before releasing.
+    ## This reduces lock acquisition overhead significantly in large clusters.
+    ## Default: 5 minutes.
+    ##
+    interval:
+      time: 5
+      unit: MINUTES
   ##
   ## Specifies the cooldown period after a batched session completes.
   ## After releasing the lock, the node waits this duration before attempting
