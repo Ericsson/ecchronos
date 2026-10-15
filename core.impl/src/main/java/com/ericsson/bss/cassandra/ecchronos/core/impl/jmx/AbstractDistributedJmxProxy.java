@@ -53,10 +53,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * Abstract base class for distributed JMX proxy implementations.
  * Contains all transport-agnostic method implementations.
  */
-// This class is a large transport-agnostic JMX wrapper whose total cyclomatic complexity sits at the default PMD
-// class threshold; adding the lost-repairAsync-response handling (#1892) requires one extra branch. Individual
-// methods remain well within the per-method limit.
-@SuppressWarnings("PMD.CyclomaticComplexity")
 abstract class AbstractDistributedJmxProxy implements DistributedJmxProxy
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractDistributedJmxProxy.class);
@@ -120,125 +116,90 @@ abstract class AbstractDistributedJmxProxy implements DistributedJmxProxy
         // NOOP - JolokiaNotificationController lifecycle is managed externally
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public List<String> getLiveNodes(final UUID nodeID)
     {
-        JMXConnector nodeConnection;
-        UUID nodeIdConnection = nodeID;
-        if (!myNodesMap.containsKey(nodeID))
-        {
-            LOG.debug("Node {} is not managed by local instance, using random connection to get live nodes", nodeID);
-            Optional<UUID> firstNode = myDistributedJmxConnectionProvider.getJmxConnections().keySet().stream().findFirst();
-            if (firstNode.isEmpty())
-            {
-                LOG.warn("No JMX connections available, cannot get live nodes for {}", nodeID);
-                throw new IllegalStateException("No JMX connections available to query live nodes for node " + nodeID);
-            }
-            nodeIdConnection = firstNode.get();
-            nodeConnection = myDistributedJmxConnectionProvider.getJmxConnector(nodeIdConnection);
-        }
-        else
-        {
-            nodeConnection = myDistributedJmxConnectionProvider.getJmxConnector(nodeID);
-        }
-        boolean isConnectionAvailable = validateJmxConnection(nodeConnection);
-        if (isConnectionAvailable)
-        {
-            try
-            {
-                ReentrantLock lock = getNodeLock(nodeIdConnection);
-                lock.lock();
-                try
-                {
-                    return (List<String>) nodeConnection
-                            .getMBeanServerConnection()
-                            .getAttribute(myStorageServiceObject,
-                                    LIVE_NODES_ATTRIBUTE);
-                }
-                finally
-                {
-                    lock.unlock();
-                }
-            }
-            catch (InstanceNotFoundException
-                   | MBeanException
-                   | ReflectionException
-                   | IOException
-                   | AttributeNotFoundException
-                   | UncheckedJmxAdapterException e)
-            {
-                rethrowIfOutOfMemory(e);
-                invalidateIfConnectionStale(nodeIdConnection, e);
-                LOG.error("Unable to get live nodes for node {}", nodeID, e);
-            }
-        }
-        else
+        return getNodeListAttribute(nodeID, LIVE_NODES_ATTRIBUTE, "live nodes");
+    }
+
+    @Override
+    public List<String> getUnreachableNodes(final UUID nodeID)
+    {
+        return getNodeListAttribute(nodeID, UNREACHABLE_NODES_ATTRIBUTE, "unreachable nodes");
+    }
+
+    /**
+     * Read a {@code List<String>} StorageService attribute for a node. If the node is not managed by this instance,
+     * any available JMX connection is used as a fallback (the attribute is a cluster-wide view). Shared by
+     * {@link #getLiveNodes(UUID)} and {@link #getUnreachableNodes(UUID)}.
+     *
+     * @param nodeID the node to query.
+     * @param attribute the StorageService attribute name to read.
+     * @param description a short description for log messages (for example "live nodes").
+     * @return the attribute value, or an empty list if unavailable or the query failed.
+     */
+    @SuppressWarnings("unchecked")
+    private List<String> getNodeListAttribute(final UUID nodeID, final String attribute, final String description)
+    {
+        UUID nodeIdConnection = resolveConnectionNodeId(nodeID, description);
+        JMXConnector nodeConnection = myDistributedJmxConnectionProvider.getJmxConnector(nodeIdConnection);
+        if (!validateJmxConnection(nodeConnection))
         {
             markNodeAsUnavailable(nodeIdConnection);
+            return Collections.emptyList();
+        }
+        try
+        {
+            ReentrantLock lock = getNodeLock(nodeIdConnection);
+            lock.lock();
+            try
+            {
+                return (List<String>) nodeConnection
+                        .getMBeanServerConnection()
+                        .getAttribute(myStorageServiceObject, attribute);
+            }
+            finally
+            {
+                lock.unlock();
+            }
+        }
+        catch (InstanceNotFoundException
+               | MBeanException
+               | ReflectionException
+               | IOException
+               | AttributeNotFoundException
+               | UncheckedJmxAdapterException e)
+        {
+            rethrowIfOutOfMemory(e);
+            invalidateIfConnectionStale(nodeIdConnection, e);
+            LOG.error("Unable to get {} for node {}", description, nodeID, e);
         }
         return Collections.emptyList();
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public List<String> getUnreachableNodes(final UUID nodeID)
+    /**
+     * Resolve the node whose JMX connection should serve a cluster-wide attribute query. For a managed node this is
+     * the node itself; for an unmanaged node any available connection is used (throwing if none exist).
+     *
+     * @param nodeID the requested node.
+     * @param description a short description for log messages.
+     * @return the node id whose connection to use.
+     */
+    private UUID resolveConnectionNodeId(final UUID nodeID, final String description)
     {
-        JMXConnector nodeConnection;
-        UUID nodeIdConnection = nodeID;
-        if (!myNodesMap.containsKey(nodeID))
+        if (myNodesMap.containsKey(nodeID))
         {
-            LOG.debug("Node {} is not managed by local instance, using random connection to get unreachable nodes", nodeID);
-            Optional<UUID> firstNode = myDistributedJmxConnectionProvider.getJmxConnections().keySet().stream().findFirst();
-            if (firstNode.isEmpty())
-            {
-                LOG.warn("No JMX connections available, cannot get unreachable nodes for {}", nodeID);
-                throw new IllegalStateException("No JMX connections available to query unreachable nodes for node " + nodeID);
-            }
-            nodeIdConnection = firstNode.get();
-            nodeConnection = myDistributedJmxConnectionProvider.getJmxConnector(nodeIdConnection);
+            return nodeID;
         }
-        else
+        LOG.debug("Node {} is not managed by local instance, using random connection to get {}", nodeID, description);
+        Optional<UUID> firstNode = myDistributedJmxConnectionProvider.getJmxConnections().keySet().stream().findFirst();
+        if (firstNode.isEmpty())
         {
-            nodeConnection = myDistributedJmxConnectionProvider.getJmxConnector(nodeID);
+            LOG.warn("No JMX connections available, cannot get {} for {}", description, nodeID);
+            throw new IllegalStateException("No JMX connections available to query " + description + " for node "
+                    + nodeID);
         }
-
-        boolean isConnectionAvailable = validateJmxConnection(nodeConnection);
-        if (isConnectionAvailable)
-        {
-            try
-            {
-                ReentrantLock lock = getNodeLock(nodeIdConnection);
-                lock.lock();
-                try
-                {
-                    return (List<String>) nodeConnection
-                            .getMBeanServerConnection()
-                            .getAttribute(myStorageServiceObject,
-                                    UNREACHABLE_NODES_ATTRIBUTE);
-                }
-                finally
-                {
-                    lock.unlock();
-                }
-            }
-            catch (InstanceNotFoundException
-                   | MBeanException
-                   | ReflectionException
-                   | IOException
-                   | AttributeNotFoundException
-                   | UncheckedJmxAdapterException e)
-            {
-                rethrowIfOutOfMemory(e);
-                invalidateIfConnectionStale(nodeIdConnection, e);
-                LOG.error("Unable to get unreachable nodes for node {}", nodeID, e);
-            }
-        }
-        else
-        {
-            markNodeAsUnavailable(nodeIdConnection);
-        }
-        return Collections.emptyList();
+        return firstNode.get();
     }
 
     @Override
@@ -563,14 +524,10 @@ abstract class AbstractDistributedJmxProxy implements DistributedJmxProxy
                 {
                     lock.unlock();
                 }
-                // Handle different numeric types that Jolokia might return
+                // Handle different numeric types that Jolokia might return (Double, Integer, etc. are all Number).
                 if (result instanceof Number)
                 {
                     return ((Number) result).doubleValue();
-                }
-                else if (result instanceof Double)
-                {
-                    return (Double) result;
                 }
                 else
                 {
