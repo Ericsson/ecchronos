@@ -27,6 +27,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairStatus;
+import com.google.common.annotations.VisibleForTesting;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ScheduledJobException;
 import java.util.Set;
 import java.util.UUID;
@@ -35,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Class used to run Incremental Repairs in Cassandra.
@@ -56,7 +58,21 @@ public class IncrementalRepairTask extends RepairTask
     private static final long METRIC_UNAVAILABLE = 0L;
     private static final double PERCENT_UNAVAILABLE = 0.0d;
 
+    // Terminal ConsistentSession.State handling for adopted sessions lives in RepairSessionAdopter (#1892).
+    /** Default poll interval while awaiting the adopted session's terminal state. */
+    private static final long DEFAULT_ADOPTION_POLL_INTERVAL_MS = TimeUnit.SECONDS.toMillis(5);
+    /** Fallback wait window for awaiting an adopted session when no max wait time is configured. */
+    private static final long DEFAULT_ADOPTION_WAIT_MS = TimeUnit.MINUTES.toMillis(30);
+    /** Default window to keep retrying discovery of the just-started session before giving up (safe retry). */
+    private static final long DEFAULT_DISCOVERY_WAIT_MS = TimeUnit.SECONDS.toMillis(30);
+    /** Clock-skew tolerance (seconds) subtracted from the request time when excluding older sessions. */
+    private static final long CLOCK_SKEW_TOLERANCE_SECONDS = 60L;
+
     private final RepairHistory.RepairSession myRepairSession;
+    private final long myAdoptionWaitMs;
+    // Overridable (test-only) adoption timings; default to the constants above.
+    private long myAdoptionPollIntervalMs = DEFAULT_ADOPTION_POLL_INTERVAL_MS;
+    private long myDiscoveryWaitMs = DEFAULT_DISCOVERY_WAIT_MS;
 
     // Optional Layer A confirmation (issue #1812): when set, after a repair reports success the task confirms
     // that the repaired state actually advanced. Left null preserves the previous behavior.
@@ -89,6 +105,7 @@ public class IncrementalRepairTask extends RepairTask
                 Set.of(), repairConfiguration.getRepairType());
         myCassandraMetrics = null;
         myMetricsNodeId = null;
+        myAdoptionWaitMs = adoptionWaitMs(jmxProxyFactory.getMaxWaitTimeInMinutes());
     }
 
     /**
@@ -124,6 +141,16 @@ public class IncrementalRepairTask extends RepairTask
                 repairConfiguration.getRepairType());
         myCassandraMetrics = cassandraMetrics;
         myMetricsNodeId = currentNode;
+        myAdoptionWaitMs = adoptionWaitMs(jmxProxyFactory.getMaxWaitTimeInMinutes());
+    }
+
+    private static long adoptionWaitMs(final Integer maxWaitTimeInMinutes)
+    {
+        if (maxWaitTimeInMinutes == null || maxWaitTimeInMinutes <= 0)
+        {
+            return DEFAULT_ADOPTION_WAIT_MS;
+        }
+        return TimeUnit.MINUTES.toMillis(maxWaitTimeInMinutes);
     }
 
     @Override
@@ -225,6 +252,50 @@ public class IncrementalRepairTask extends RepairTask
             LOG.warn("Unable to repair '{}', affected ranges: '{}'", this, getFailedRanges());
         }
         myRepairSession.finish(repairStatus);
+    }
+
+    /**
+     * Adopt an already-started incremental repair after a lost {@code repairAsync} response (issue #1892). The
+     * command id was lost, so the JMX notification handler cannot correlate the running repair; instead a
+     * {@link RepairSessionAdopter} discovers the consistent session Cassandra started (via {@code getRepairSessions})
+     * and awaits its terminal state. Only a session started at/after the request time is adopted, so a retained
+     * older session for the same table is never credited as this request's success. Vnode repairs are not listed by
+     * {@code getSessions} and so cannot be adopted (the base class treats them as transient).
+     *
+     * @param proxy the JMX proxy.
+     * @param requestEpochSeconds epoch-seconds captured just before the repairAsync call.
+     * @return the adoption outcome.
+     */
+    @Override
+    protected final LostResponseOutcome onLostRepairResponse(final DistributedJmxProxy proxy,
+            final long requestEpochSeconds)
+    {
+        String qualifiedTable = getTableReference().getKeyspace() + "." + getTableReference().getTable();
+        RepairSessionAdopter adopter = new RepairSessionAdopter(proxy, getNodeID(), qualifiedTable,
+                requestEpochSeconds - CLOCK_SKEW_TOLERANCE_SECONDS, myAdoptionWaitMs, myDiscoveryWaitMs,
+                myAdoptionPollIntervalMs);
+        switch (adopter.adopt())
+        {
+        case ADOPTED_SUCCESS:
+            return LostResponseOutcome.ADOPTED_SUCCESS;
+        case ADOPTED_FAILED:
+            return LostResponseOutcome.ADOPTED_FAILED;
+        default:
+            return LostResponseOutcome.NOT_ADOPTED;
+        }
+    }
+
+    /**
+     * Override the adoption timings so tests do not wait for the real poll/discovery windows.
+     *
+     * @param pollIntervalMs the poll interval in milliseconds.
+     * @param discoveryWaitMs the discovery retry window in milliseconds.
+     */
+    @VisibleForTesting
+    void setAdoptionTimings(final long pollIntervalMs, final long discoveryWaitMs)
+    {
+        myAdoptionPollIntervalMs = pollIntervalMs;
+        myDiscoveryWaitMs = discoveryWaitMs;
     }
 
     @Override

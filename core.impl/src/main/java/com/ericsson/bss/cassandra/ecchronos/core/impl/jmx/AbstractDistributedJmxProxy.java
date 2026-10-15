@@ -20,7 +20,9 @@ import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxy;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.sync.NodeStatus;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.RepairAsyncTransportException;
 
+import org.jolokia.client.exception.JolokiaHttpException;
 import org.jolokia.client.jmxadapter.UncheckedJmxAdapterException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +53,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * Abstract base class for distributed JMX proxy implementations.
  * Contains all transport-agnostic method implementations.
  */
+// This class is a large transport-agnostic JMX wrapper whose total cyclomatic complexity sits at the default PMD
+// class threshold; adding the lost-repairAsync-response handling (#1892) requires one extra branch. Individual
+// methods remain well within the per-method limit.
+@SuppressWarnings("PMD.CyclomaticComplexity")
 abstract class AbstractDistributedJmxProxy implements DistributedJmxProxy
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractDistributedJmxProxy.class);
@@ -279,6 +285,18 @@ abstract class AbstractDistributedJmxProxy implements DistributedJmxProxy
                     LOG.warn("Unexpected return type from repairAsync: {}", result.getClass().getSimpleName());
                     return 0;
                 }
+            }
+            catch (RuntimeMBeanException | JolokiaHttpException e)
+            {
+                // The response to repairAsync may have been lost in transit (for example HTTP 100 Continue
+                // surfacing as an error, possibly wrapped in a RuntimeMBeanException). Cassandra may already have
+                // started the repair, so we have no command id but the repair is not necessarily failed. Signal
+                // this distinctly so RepairTask can adopt the started session (incremental) or treat it as
+                // transient (vnode / no session). See issue #1892.
+                throwIfLostRepairResponse(nodeID, keyspace, e);
+                rethrowIfOutOfMemory(e);
+                invalidateIfConnectionStale(nodeID, e);
+                LOG.error("Unable to repair node {}", nodeID, e);
             }
             catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException | UncheckedJmxAdapterException e)
             {
@@ -762,6 +780,32 @@ abstract class AbstractDistributedJmxProxy implements DistributedJmxProxy
             {
                 LOG.error("Rethrowing OutOfMemoryError", t);
                 throw (OutOfMemoryError) cause;
+            }
+            cause = cause.getCause();
+        }
+    }
+
+    /**
+     * If the throwable (or any of its causes) is a Jolokia transport failure on the {@code repairAsync} response
+     * path — the lost-response case where Cassandra may already have started the repair but no command id was
+     * returned — invalidate a stale connection and throw a {@link RepairAsyncTransportException}. Otherwise returns
+     * normally so the caller can apply its default handling. See issue #1892.
+     *
+     * @param nodeID the node the repair was requested on.
+     * @param keyspace the keyspace being repaired.
+     * @param t the throwable to inspect.
+     */
+    protected void throwIfLostRepairResponse(final UUID nodeID, final String keyspace, final Throwable t)
+    {
+        Throwable cause = t;
+        while (cause != null)
+        {
+            if (cause instanceof JolokiaHttpException)
+            {
+                invalidateIfConnectionStale(nodeID, t);
+                throw new RepairAsyncTransportException(
+                        "Lost response to repairAsync for " + keyspace + " on node " + nodeID
+                                + " (HTTP status " + ((JolokiaHttpException) cause).getHttpStatus() + ")", t);
             }
             cause = cause.getCause();
         }

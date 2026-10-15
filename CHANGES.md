@@ -2,6 +2,7 @@
 
 ## Version 1.1.2
 
+* Do not report a false repair-task failure when the repairAsync response is lost in transit (for example a Jolokia HTTP 100): classify the transport glitch as transient, and for incremental repairs discover and await the already-started session instead of re-triggering an overlapping repair - Issue #1892
 * Retry on-demand repair tasks that fail transiently (for example a JMX request failure) instead of failing the whole job, with configurable attempts and backoff (on_demand_retry, default 3 attempts) - Issue #1848
 * Add configurable request timeout to ecctool (default 30s, overridable via --timeout or ECCTOOL_TIMEOUT_SECONDS) - Issue #1804
 * Add ecctool metrics subcommand - Issue #1864
