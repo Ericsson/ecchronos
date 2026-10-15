@@ -154,15 +154,27 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
     /**
      * Create a ScheduledFuture for each of the nodes in the nodeIDList.
+     * <p>
+     * The first run of each node's {@code JobRunTask} is staggered across {@code [interval, 2*interval)} so that all
+     * managed nodes do not fire their first scheduler pass at the same instant (which would concentrate the per-pass
+     * repair-state refresh and CAS-lock load into a startup spike). Node 0 keeps the historical "first tick after one
+     * interval" behaviour; later nodes are offset evenly. The multiplication is done before the division so the
+     * per-node step does not truncate to zero with many nodes and a short interval. See issue #1897.
+     *
      * @param nodeIDList the collection of node identifiers to create schedule futures for.
      */
     @Override
     public void createScheduleFutureForNodeIDList(final Collection<UUID> nodeIDList)
     {
-        LOG.debug("Total nodes found: {}", nodeIDList.size());
+        int nodeCount = nodeIDList.size();
+        LOG.debug("Total nodes found: {}", nodeCount);
+        int nodeIndex = 0;
         for (UUID nodeID : nodeIDList)
         {
-            createScheduleFutureForNode(nodeID);
+            // nodeCount is >= 1 inside the loop, so the division is safe.
+            long stagger = (long) nodeIndex * myRunIntervalInMs / nodeCount;
+            scheduleRunTask(nodeID, myRunIntervalInMs + stagger);
+            nodeIndex++;
         }
     }
 
@@ -173,6 +185,17 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     @Override
     public void createScheduleFutureForNode(final UUID nodeID)
     {
+        scheduleRunTask(nodeID, myRunIntervalInMs);
+    }
+
+    /**
+     * Schedule a node's {@link JobRunTask} with the given initial delay, growing the executor pool as needed.
+     *
+     * @param nodeID the node identifier.
+     * @param initialDelayMs the initial delay before the first run, in milliseconds.
+     */
+    private void scheduleRunTask(final UUID nodeID, final long initialDelayMs)
+    {
         myRunTasks.computeIfAbsent(nodeID, id ->
         {
             JobRunTask runTask = new JobRunTask(id);
@@ -182,10 +205,10 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 myExecutor.setCorePoolSize(requiredSize);
             }
             ScheduledFuture<?> scheduledFuture = myExecutor.schedule(runTask,
-                    myRunIntervalInMs,
+                    initialDelayMs,
                     TimeUnit.MILLISECONDS);
             myRunFuture.put(id, scheduledFuture);
-            LOG.debug("JobRunTask created for node {}", id);
+            LOG.debug("JobRunTask created for node {} with initial delay {} ms", id, initialDelayMs);
             return runTask;
         });
     }
