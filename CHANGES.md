@@ -2,6 +2,7 @@
 
 ## Version 1.1.2
 
+* session-scoped distributed locks serialize repairs - Issue #1890
 * Stagger each managed node's first scheduler pass at startup across one run interval so all nodes do not refresh repair state and contend for locks simultaneously (startup only; runtime-added nodes unchanged) - Issue #1897
 * Do not report a false repair-task failure when the repairAsync response is lost in transit (for example a Jolokia HTTP 100): classify the transport glitch as transient, and for incremental repairs discover and await the already-started session instead of re-triggering an overlapping repair - Issue #1892
 * Retry on-demand repair tasks that fail transiently (for example a JMX request failure) instead of failing the whole job, with configurable attempts and backoff (on_demand_retry, default 3 attempts) - Issue #1848
