@@ -21,6 +21,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.state.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairStatus;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.RepairAsyncTransportException;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ScheduledJobException;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.TransientRepairException;
 import com.google.common.annotations.VisibleForTesting;
@@ -155,7 +156,19 @@ public abstract class RepairTask
         try
         {
             myNotificationHandler.prepareForCommand();
-            int command = proxy.repairAsync(nodeID, myTableReference.getKeyspace(), getOptions());
+            int command;
+            // Captured just before the call so the lost-response handler can exclude older (e.g. retained
+            // FINALIZED) sessions for the same table and only adopt one started by this request. See issue #1892.
+            long requestEpochSeconds = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+            try
+            {
+                command = proxy.repairAsync(nodeID, myTableReference.getKeyspace(), getOptions());
+            }
+            catch (RepairAsyncTransportException e)
+            {
+                handleLostRepairResponse(proxy, e, requestEpochSeconds);
+                return;
+            }
             if (command > 0)
             {
                 myNotificationHandler.setCommand(command);
@@ -177,6 +190,79 @@ public abstract class RepairTask
         {
             proxy.removeStorageServiceListener(nodeID, myNotificationHandler);
         }
+    }
+
+    /**
+     * Handle a lost {@code repairAsync} response: the request reached Cassandra and may have started a repair, but
+     * the response (and command id) was lost in transit, so the JMX notification handler cannot correlate the
+     * running repair (notifications are keyed by the command id we never received). See issue #1892.
+     * <p>
+     * Subclasses that can discover the already-started session (incremental repairs, via {@code getRepairSessions})
+     * may override {@link #onLostRepairResponse(DistributedJmxProxy, long)} to adopt and await it. When the session cannot
+     * be discovered or adopted (vnode repairs are not listed by {@code getSessions}), the task is classified as a
+     * transient, retryable failure rather than a terminal one — the ranges are re-attempted on a later cycle, and no
+     * misleading repair-failure error is logged.
+     *
+     * @param proxy the JMX proxy.
+     * @param cause the transport failure.
+     * @param requestEpochSeconds epoch-seconds captured just before the repairAsync call, used to exclude older
+     *        sessions when discovering the one this request started.
+     * @throws ScheduledJobException {@link TransientRepairException} when not adopted, or a terminal
+     *         {@link ScheduledJobException} when an adopted session ended in failure.
+     */
+    private void handleLostRepairResponse(final DistributedJmxProxy proxy, final RepairAsyncTransportException cause,
+            final long requestEpochSeconds)
+            throws ScheduledJobException
+    {
+        LostResponseOutcome outcome = onLostRepairResponse(proxy, requestEpochSeconds);
+        if (outcome == LostResponseOutcome.ADOPTED_SUCCESS)
+        {
+            LOG.info("Adopted and awaited the already-started repair of {} on node {} after a lost repairAsync "
+                    + "response", myTableReference, nodeID);
+            return;
+        }
+        if (outcome == LostResponseOutcome.ADOPTED_FAILED)
+        {
+            throw new ScheduledJobException("Adopted repair session of " + myTableReference + " on node " + nodeID
+                    + " ended in failure after a lost repairAsync response");
+        }
+        // NOT_ADOPTED: the repair may have started on Cassandra but could not be adopted (for example a vnode
+        // repair, which getSessions does not list). Treat it as transient and retryable rather than a terminal
+        // failure, and log it distinctly so it is not mistaken for a real repair failure.
+        LOG.warn("Lost the repairAsync response for {} on node {}; the repair may have started on Cassandra but "
+                + "could not be adopted. Treating as transient and retryable.",
+                myTableReference, nodeID, cause);
+        throw new TransientRepairException(
+                "Lost repairAsync response for " + myTableReference + " on node " + nodeID, cause);
+    }
+
+    /**
+     * Outcome of attempting to adopt an already-started repair after a lost {@code repairAsync} response.
+     */
+    protected enum LostResponseOutcome
+    {
+        /** A matching session was found and awaited to successful completion. */
+        ADOPTED_SUCCESS,
+        /** A matching session was found and awaited, but it ended in failure. */
+        ADOPTED_FAILED,
+        /** No matching session could be found/adopted (for example vnode repairs, not listed by getSessions). */
+        NOT_ADOPTED
+    }
+
+    /**
+     * Attempt to discover and await an already-started repair session after a lost {@code repairAsync} response. The
+     * default implementation cannot discover a session (vnode repairs are not listed by {@code getSessions}) and
+     * returns {@link LostResponseOutcome#NOT_ADOPTED}. Incremental repairs override this.
+     *
+     * @param proxy the JMX proxy.
+     * @param requestEpochSeconds epoch-seconds captured just before the repairAsync call; implementations must only
+     *        adopt a session started at/after this time (minus a small clock-skew tolerance) so a retained older
+     *        session for the same table is not mistaken for the one this request started.
+     * @return the adoption outcome.
+     */
+    protected LostResponseOutcome onLostRepairResponse(final DistributedJmxProxy proxy, final long requestEpochSeconds)
+    {
+        return LostResponseOutcome.NOT_ADOPTED;
     }
 
     private void awaitAndVerifyRepair(final DistributedJmxProxy proxy, final int command)
