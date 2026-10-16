@@ -22,6 +22,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import java.io.Closeable;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -35,6 +36,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
@@ -84,6 +86,9 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     private volatile long mySessionWindowInMs;
     private volatile long myCooldownInMs;
     private volatile boolean myLockSessionEnabled;
+    // Time source for session-window and cooldown calculations. Defaults to the system clock in production
+    // (see Builder.withClock); swappable in tests so timing-dependent behaviour can be driven deterministically.
+    private final AtomicReference<Clock> myClock;
 
     private ScheduleManagerImpl(final Builder builder)
     {
@@ -103,6 +108,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         mySessionWindowInMs = builder.mySessionWindowInMs;
         myCooldownInMs = builder.myCooldownInMs;
         myLockSessionEnabled = builder.myLockSessionEnabled;
+        myClock = new AtomicReference<>(builder.myClock);
         myLockFailureBackoff = new LockFailureBackoff(myRunIntervalInMs, builder.myMeterRegistry);
         mySchedulerMetrics = new SchedulerMetrics(builder.myMeterRegistry);
     }
@@ -495,7 +501,8 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                     myLockFailureBackoff,
                     mySchedulerMetrics,
                     myConsecutiveFailures,
-                    ScheduleManagerImpl.this::validateJob);
+                    ScheduleManagerImpl.this::validateJob,
+                    myClock);
         }
 
         @Override
@@ -511,7 +518,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             try
             {
                 LOG.debug("In JobRunTask.run for Node {}", nodeID);
-                if (System.currentTimeMillis() < myCooldownUntil)
+                if (myClock.get().millis() < myCooldownUntil)
                 {
                     LOG.debug("Node {} in cooldown until {}", nodeID, myCooldownUntil);
                     return false;
@@ -535,9 +542,9 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         private void reschedule(final boolean hadWork)
         {
             long delay;
-            if (System.currentTimeMillis() < myCooldownUntil)
+            if (myClock.get().millis() < myCooldownUntil)
             {
-                delay = myCooldownUntil - System.currentTimeMillis();
+                delay = myCooldownUntil - myClock.get().millis();
             }
             else if (hadWork)
             {
@@ -561,7 +568,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         private boolean tryRunNext()
         {
             LOG.debug("Looking for Job for Node {}", nodeID);
-            long tickStart = System.currentTimeMillis();
+            long tickStart = myClock.get().millis();
             boolean hadWork = false;
 
             List<ScheduledJob> candidates = new ArrayList<>();
@@ -589,7 +596,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                     hadWork = runSession(next, candidates);
                     break;
                 }
-                if (System.currentTimeMillis() - tickStart > myRunIntervalInMs)
+                if (myClock.get().millis() - tickStart > myRunIntervalInMs)
                 {
                     break;
                 }
@@ -613,7 +620,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
         private boolean runSession(final ScheduledJob firstJob, final List<ScheduledJob> candidates)
         {
-            long sessionStart = System.currentTimeMillis();
+            long sessionStart = myClock.get().millis();
             boolean batched = myLockSessionEnabled;
             LOG.info("Session started for node {}, window={}ms, lockBatching={}",
                     nodeID, mySessionWindowInMs, batched);
@@ -631,7 +638,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             }
 
             LOG.info("Session ended for node {}, executed {} tasks in {}ms",
-                    nodeID, tasksExecuted, System.currentTimeMillis() - sessionStart);
+                    nodeID, tasksExecuted, myClock.get().millis() - sessionStart);
             mySchedulerMetrics.recordPass(withinSessionWindow(sessionStart));
             applyCooldown(tasksExecuted);
             return tasksExecuted > 0;
@@ -700,14 +707,14 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         {
             if (tasksExecuted > 0 && myCooldownInMs > 0)
             {
-                myCooldownUntil = System.currentTimeMillis() + myCooldownInMs;
+                myCooldownUntil = myClock.get().millis() + myCooldownInMs;
                 LOG.debug("Node {} entering cooldown for {}ms", nodeID, myCooldownInMs);
             }
         }
 
         private boolean withinSessionWindow(final long sessionStart)
         {
-            return JobRunExecutor.withinSessionWindow(sessionStart, mySessionWindowInMs);
+            return myJobExecutor.withinSessionWindow(sessionStart, mySessionWindowInMs);
         }
     }
 
@@ -738,6 +745,9 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         // Batched lock sessions are enabled by default to preserve the historical behaviour; the application wires
         // this from scheduler.lock_session.enabled (default true). Disable for per-task locking.
         private boolean myLockSessionEnabled = true;
+        // Time source for session-window and cooldown calculations. Defaults to the system clock; tests inject a
+        // controllable clock via withClock to drive timing deterministically.
+        private Clock myClock = Clock.systemDefaultZone();
 
         /**
          * Default constructor.
@@ -850,6 +860,20 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         public Builder withNativeConnectionProvider(final DistributedNativeConnectionProvider nativeConnectionProvider)
         {
             myNativeConnectionProvider = nativeConnectionProvider;
+            return this;
+        }
+
+        /**
+         * Build ScheduleManager with a specific time source for session-window and cooldown calculations.
+         * Testing only; production uses the default system clock.
+         *
+         * @param clock the clock to use.
+         * @return Builder with the clock set.
+         */
+        @VisibleForTesting
+        Builder withClock(final Clock clock)
+        {
+            myClock = clock;
             return this;
         }
 
