@@ -119,6 +119,28 @@
                 <version>3.5.0</version>
                 <executions>
                     <execution>
+                        <!-- Bake ${project.version} into the Python package. The template
+                             _version.py.in is filtered to _version.py, which the assembly
+                             places into pylib/ecchronoslib/ so ecctool can report its version. -->
+                        <id>generate-python-version</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/generated-python/ecchronoslib</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/src/pylib/ecchronoslib</directory>
+                                    <filtering>true</filtering>
+                                    <includes>
+                                        <include>_version.py.in</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>copy-config-resources</id>
                         <phase>prepare-package</phase>
                         <goals>

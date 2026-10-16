@@ -527,3 +527,20 @@ class RepairSessionsRequest(RestRequest):
             result = result.transform_with_data(new_data=[RepairSession(x) for x in result.data])
 
         return result
+
+
+class VersionRequest(RestRequest):
+    VERSION = "repair-management/version"
+
+    def __init__(self, base_url=None, timeout=None):
+        RestRequest.__init__(self, base_url, timeout=timeout)
+
+    def get_version(self):
+        """Fetch the connected ecChronos agent version.
+
+        Returns a RequestResult whose data is the parsed JSON object
+        ({"version": "..."}) on success, or carries the failure details
+        (e.g. 404 on an older agent without this endpoint, or a connection
+        error/timeout) so the caller can degrade gracefully.
+        """
+        return self.request(VersionRequest.VERSION)

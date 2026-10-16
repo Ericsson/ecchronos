@@ -17,9 +17,31 @@
 
 from distutils.core import setup
 
+try:
+    from ecchronoslib.version import get_client_version
+
+    _RAW_VERSION = get_client_version()
+except ImportError:
+    _RAW_VERSION = "unknown"
+
+
+def _to_pep440(raw):
+    """Map a Maven version to a PEP 440 version setuptools will accept.
+
+    Maven uses a '-SNAPSHOT' suffix (e.g. '1.1.2-SNAPSHOT') which is not a
+    valid PEP 440 version. Map it to a development release ('1.1.2.dev0').
+    The sentinel 'unknown' is replaced with '0.0.0' so packaging never fails.
+    """
+    if not raw or raw == "unknown":
+        return "0.0.0"
+    if raw.endswith("-SNAPSHOT"):
+        return raw[: -len("-SNAPSHOT")] + ".dev0"
+    return raw
+
+
 setup(
     name="ecChronos library",
-    version="1.0",
+    version=_to_pep440(_RAW_VERSION),
     description="ecChronos REST library",
     author="Victor Cavichioli",
     author_email="victor.cavichioli@ericsson.com",
