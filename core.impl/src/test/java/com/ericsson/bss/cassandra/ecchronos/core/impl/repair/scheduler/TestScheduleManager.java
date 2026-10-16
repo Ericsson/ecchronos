@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -404,8 +405,14 @@ public class TestScheduleManager
                 latch);
         myScheduler.schedule(nodeID1, job1);
         new Thread(() -> myScheduler.run(nodeID1)).start();
-        Thread.sleep(50);
-        assertThat(myScheduler.getCurrentJobStatus()).isEqualTo(jobId + " on node " + nodeID1 + ", ");
+        // Poll until the job is picked up and reported as the current running job, rather than sleeping a
+        // fixed amount and hoping it has started by then. The time between starting the scheduler thread and
+        // the job becoming "current" (thread scheduling + queue iteration + lock acquisition + task start)
+        // is not bounded by any fixed delay, so a sleep-then-assert is timing-dependent and flaky under load.
+        String expectedStatus = jobId + " on node " + nodeID1 + ", ";
+        await().atMost(10, TimeUnit.SECONDS)
+                .until(() -> expectedStatus.equals(myScheduler.getCurrentJobStatus()));
+        assertThat(myScheduler.getCurrentJobStatus()).isEqualTo(expectedStatus);
         latch.countDown();
     }
 
@@ -479,20 +486,16 @@ public class TestScheduleManager
         verify(myLockFactory, times(1)).tryLock(any(), anyString(), anyInt(), anyMap(), any());
     }
 
-    private void waitForJobStarted(TestJob job) throws InterruptedException
+    private void waitForJobStarted(TestJob job)
     {
-        while(!job.hasStarted())
-        {
-            Thread.sleep(10);
-        }
+        // Bounded wait: fail fast with a clear timeout if the job never starts, instead of spinning in an
+        // unbounded loop that would only be stopped by the method-level @Test(timeout).
+        await().atMost(10, TimeUnit.SECONDS).until(job::hasStarted);
     }
 
-    private void waitForJobFinished(TestJob job) throws InterruptedException
+    private void waitForJobFinished(TestJob job)
     {
-        while(!job.hasRun())
-        {
-            Thread.sleep(10);
-        }
+        await().atMost(10, TimeUnit.SECONDS).until(job::hasRun);
     }
 
     private class RefreshCountingJob extends DummyJob

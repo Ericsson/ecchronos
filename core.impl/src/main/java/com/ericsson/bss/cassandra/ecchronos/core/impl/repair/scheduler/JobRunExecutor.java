@@ -21,11 +21,13 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionR
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 
 /**
@@ -42,6 +44,9 @@ final class JobRunExecutor
     private final SchedulerMetrics mySchedulerMetrics;
     private final ConcurrentHashMap<UUID, AtomicInteger> myConsecutiveFailures;
     private final BiFunction<ScheduledJob, Node, Long> jobValidator;
+    // Shared time source owned by ScheduleManagerImpl. Session-window checks read from this so that tests
+    // can drive timing deterministically by swapping the clock; defaults to the system clock in production.
+    private final AtomicReference<Clock> myClock;
 
     JobRunExecutor(
             final UUID currentNodeID,
@@ -49,7 +54,8 @@ final class JobRunExecutor
             final LockFailureBackoff lockFailureBackoff,
             final SchedulerMetrics schedulerMetrics,
             final ConcurrentHashMap<UUID, AtomicInteger> consecutiveFailures,
-            final BiFunction<ScheduledJob, Node, Long> validator)
+            final BiFunction<ScheduledJob, Node, Long> validator,
+            final AtomicReference<Clock> clock)
     {
         this.nodeID = currentNodeID;
         this.myNode = node;
@@ -57,6 +63,7 @@ final class JobRunExecutor
         this.mySchedulerMetrics = schedulerMetrics;
         this.myConsecutiveFailures = consecutiveFailures;
         this.jobValidator = validator;
+        this.myClock = clock;
     }
 
     int executeJobTasks(
@@ -168,8 +175,8 @@ final class JobRunExecutor
         return TaskExecutionResult.TERMINAL;
     }
 
-    static boolean withinSessionWindow(final long sessionStart, final long sessionWindowInMs)
+    boolean withinSessionWindow(final long sessionStart, final long sessionWindowInMs)
     {
-        return (System.currentTimeMillis() - sessionStart) < sessionWindowInMs;
+        return (myClock.get().millis() - sessionStart) < sessionWindowInMs;
     }
 }

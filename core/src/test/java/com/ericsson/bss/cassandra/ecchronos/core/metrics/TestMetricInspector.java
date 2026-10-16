@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.metrics.MockTableReferenceFactory.tableReference;
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 
 import ch.qos.logback.classic.Level;
@@ -43,6 +44,7 @@ public class TestMetricInspector
 {
     private static final String TEST_KEYSPACE = "test_keyspace";
     private static final String TEST_TABLE1 = "test_table1";
+    private static final long SHORT_TRIGGER_INTERVAL_MS = 50L;
 
     private MeterRegistry myMeterRegistry;
     private TableRepairMetricsImpl myTableRepairMetricsImpl;
@@ -63,7 +65,8 @@ public class TestMetricInspector
         myTableRepairMetricsImpl = TableRepairMetricsImpl.builder()
                 .withMeterRegistry(myMeterRegistry)
                 .build();
-        myMetricInspector = new MetricInspector(myMeterRegistry, 1,  1, 5000);    }
+        myMetricInspector = new MetricInspector(myMeterRegistry, 1, 1, 5000);
+    }
 
     @Test
     public void testInspectMeterRegistryForRepairFailuresWhenFailureThresholdIsBroken()
@@ -95,23 +98,40 @@ public class TestMetricInspector
     }
 
     @Test
-    public void testStartInspectionMethod() throws InterruptedException
+    public void testStartInspectionMethod()
     {
-        assertEquals(0, myMetricInspector.getTotalRecordFailures());
+        // Use a short inspection interval so the background task fires promptly, and poll for the
+        // resulting state instead of sleeping for a fixed duration. Sleeping a fixed amount and then
+        // asserting an exact log/fire count is timing-dependent: on a loaded machine the scheduled
+        // task may fire a different number of times before the sleep elapses, making the test flaky.
+        MetricInspector inspector = new MetricInspector(myMeterRegistry, 1, 1, SHORT_TRIGGER_INTERVAL_MS);
+        assertEquals(0, inspector.getTotalRecordFailures());
+
         TableReference tableReference1 = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         long expectedRepairTime = 12345L;
         myTableRepairMetricsImpl.repairSession(tableReference1, expectedRepairTime, TimeUnit.MILLISECONDS, false);
         myTableRepairMetricsImpl.repairSession(tableReference1, expectedRepairTime, TimeUnit.MILLISECONDS, false);
         List<ILoggingEvent> logsList = listAppender.list;
-        myMetricInspector.startInspection();
-        Thread.sleep(5000);
-        long count = logsList.stream().count();
-        String logMessage = logsList.get(0).getFormattedMessage();
-        Level logLevel = logsList.get(0).getLevel();
-        assertEquals("Total repair failures in node till now is: 2", logMessage);
-        assertEquals(Level.DEBUG, logLevel);
-        assertEquals(4, count);
-        assertEquals(2, myMetricInspector.getTotalRecordFailures());
-        myMetricInspector.stopInspection();
+
+        inspector.startInspection();
+        try
+        {
+            // Wait until the background inspection has observed both failures and emitted the status log.
+            await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(() ->
+                    {
+                        assertEquals(2, inspector.getTotalRecordFailures());
+                        assertEquals(false, logsList.isEmpty());
+                    });
+        }
+        finally
+        {
+            inspector.stopInspection();
+        }
+
+        // The first emitted status log reflects the two recorded failures.
+        assertEquals("Total repair failures in node till now is: 2", logsList.get(0).getFormattedMessage());
+        assertEquals(Level.DEBUG, logsList.get(0).getLevel());
+        assertEquals(2, inspector.getTotalRecordFailures());
     }
 }

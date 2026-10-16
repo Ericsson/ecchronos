@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -37,6 +38,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -432,9 +434,16 @@ public class TestRepairLockFactoryImpl
 
         t2.start();
         t2Started.await();
-        Thread.sleep(20); // Give t2 time to hit the resource gate
 
-        // t2 should be blocked (not yet acquired)
+        // Deterministically wait until t2 is actually parked on the resource-gate semaphore, rather than
+        // sleeping a fixed amount and hoping t2 has reached the gate by then. The resource gate is a
+        // Semaphore acquired via acquireUninterruptibly(), so a thread blocked on it reports state WAITING.
+        // t2Started only signals that t2's runnable began, not that it has reached the gate - so without
+        // this wait the "was blocked" observation would be timing-dependent and flaky under load.
+        await().atMost(5, TimeUnit.SECONDS)
+                .until(() -> t2.getState() == Thread.State.WAITING);
+
+        // t2 is provably blocked at the gate: it has not acquired the lock while t1 holds the gate.
         t2WasBlocked.set(t2Acquired.getCount() == 1);
 
         // Release t1
