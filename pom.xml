@@ -772,6 +772,7 @@ limitations under the License.
                         </inlineHeader>
                         <mapping>
                             <java>SLASHSTAR_STYLE</java>
+                            <in>SCRIPT_STYLE</in>
                         </mapping>
                         <strictCheck>true</strictCheck>
                         <failIfUnknown>true</failIfUnknown>

@@ -511,6 +511,50 @@ ecctool stop
 Terminated ecc with pid 12345.
 ```
 
+## version
+
+The *version* subcommand shows the version of ecctool itself (the CLI client) and the version of the ecChronos node it
+connects to. This is useful to confirm client/agent versions match, or that an upgrade took effect.
+
+```cmd
+ecctool version
+```
+```text
+ecctool version:   1.1.2
+Connected node:    http://localhost:8080
+Node version:      1.1.2
+```
+
+With JSON output format selected:
+
+```cmd
+ecctool version --output json
+```
+```json
+{
+    "timestamp": "2026-10-16 09:30:00",
+    "version": {
+        "ecctool_version": "1.1.2",
+        "connected_node": "http://localhost:8080",
+        "node_version": "1.1.2"
+    }
+}
+```
+
+The client version is always printed, even when the node cannot be reached. If the node is unavailable, or runs an
+older agent without the `/version` endpoint, the node version is shown as `unavailable` (and the connection detail is
+included) rather than failing the whole command:
+
+```cmd
+ecctool version -u http://localhost:8080
+```
+```text
+ecctool version:   1.1.2
+Connected node:    http://localhost:8080
+Node version:      unavailable
+Note: could not retrieve node version (Encountered issue (404) 'Unable to connect to http://localhost:8080/repair-management/version').
+```
+
 ## optionals
 
 For some of the commands you have the option to control the content and format of the response. This is done using the

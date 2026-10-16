@@ -30,6 +30,12 @@
             <outputDirectory>bin</outputDirectory>
             <destName>ecctool</destName>
         </file>
+        <file>
+            <!-- Build-time generated version (from _version.py.in filtering). -->
+            <source>${project.build.directory}/generated-python/ecchronoslib/_version.py.in</source>
+            <outputDirectory>pylib/ecchronoslib</outputDirectory>
+            <destName>_version.py</destName>
+        </file>
     </files>
     <fileSets>
         <fileSet>
@@ -57,6 +63,7 @@
             <excludes>
                 <exclude>**/__pycache__/**</exclude>
                 <exclude>**/*.pyc</exclude>
+                <exclude>**/*.in</exclude>
             </excludes>
         </fileSet>
         <fileSet>
