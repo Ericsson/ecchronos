@@ -2,6 +2,7 @@
 
 ## Version 1.1.2
 
+* Fix a latent scheduler crash where the job sort could throw "Comparison method violates its general contract" (TimSort) because the comparator read wall-clock time during the sort; the per-node pass now freezes each job's time-dependent priority once and sorts on the stable key - Issue #1904
 * Add 'ecctool version' subcommand showing the ecctool client version and the connected ecChronos node's version, with graceful degradation when the node is unavailable - Issue #1900
 * session-scoped distributed locks serialize repairs - Issue #1890
 * Stagger each managed node's first scheduler pass at startup across one run interval so all nodes do not refresh repair state and contend for locks simultaneously (startup only; runtime-added nodes unchanged) - Issue #1897
