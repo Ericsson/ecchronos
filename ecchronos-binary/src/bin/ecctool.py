@@ -970,5 +970,25 @@ def main():
     run_subcommand(args)
 
 
+def _exit_on_broken_pipe():
+    """Exit cleanly when a downstream reader closed the pipe early.
+
+    When output is piped to a reader that stops early (head, grep -q, less
+    quit before the end), the pipe's read end closes and the next write
+    raises BrokenPipeError. Redirect stdout to devnull so the interpreter's
+    final flush does not raise a second BrokenPipeError during shutdown,
+    then exit with the conventional 128 + SIGPIPE(13) status.
+    """
+    try:
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, sys.stdout.fileno())
+    except (OSError, ValueError):
+        pass
+    sys.exit(141)
+
+
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except BrokenPipeError:
+        _exit_on_broken_pipe()
