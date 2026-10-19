@@ -23,6 +23,7 @@ import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ScheduledJobExcepti
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -212,6 +213,82 @@ public class TestScheduledJobQueue
 
         assertThat(iterator).toIterable().containsExactly(refreshed, skipped);
         assertThat(skipped.refreshCount).isEqualTo(0);
+    }
+
+    @Test
+    public void testIteratorDoesNotThrowWhenRealPriorityChangesDuringSort()
+    {
+        // Regression for issue #1904: getRealPriority() reads wall-clock time, so with the old live comparator the
+        // sort key could change between comparisons within a single sort, making the comparator non-transitive and
+        // causing List.sort (TimSort) to throw "Comparison method violates its general contract". Enough jobs are
+        // added that TimSort performs its contract validation. The per-pass frozen key must make this safe, and the
+        // returned order must be stable.
+        final int nJobs = 500;
+        for (int i = 0; i < nJobs; i++)
+        {
+            queue.add(new MutatingPriorityJob(ScheduledJob.Priority.LOW));
+        }
+
+        List<ScheduledJob> first = new ArrayList<>();
+        queue.iterator().forEachRemaining(first::add); // must not throw
+
+        assertThat(first).hasSize(nJobs);
+    }
+
+    @Test
+    public void testIteratorOrderIsStableWhenRealPriorityChanges()
+    {
+        // Issue #1904: getRealPriority() reads wall-clock time. The pass must freeze each job's real priority once
+        // and sort on the frozen key, so the order within a pass is well-defined even though the live value keeps
+        // changing. With the old live comparator the sort reads the ever-changing value during comparison, which is
+        // non-transitive (and can make TimSort throw); here we assert the selection is deterministic and complete.
+        MutatingPriorityJob high = new MutatingPriorityJob(ScheduledJob.Priority.HIGH);
+        MutatingPriorityJob low = new MutatingPriorityJob(ScheduledJob.Priority.LOW);
+        queue.add(high);
+        queue.add(low);
+
+        // The configured-priority tie-break (time-independent) must order HIGH before LOW regardless of the
+        // ever-changing real priority.
+        List<ScheduledJob> order = new ArrayList<>();
+        queue.iterator().forEachRemaining(order::add);
+
+        assertThat(order).containsExactly(high, low);
+    }
+
+    @Test
+    public void testIteratorHandlesManyJobsWithChangingRealPriority()
+    {
+        // A larger set whose real priority changes on every read: the frozen-key sort must complete without throwing
+        // and return every job. See issue #1904.
+        final int nJobs = 500;
+        for (int i = 0; i < nJobs; i++)
+        {
+            queue.add(new MutatingPriorityJob(ScheduledJob.Priority.LOW));
+        }
+
+        List<ScheduledJob> selected = new ArrayList<>();
+        queue.iterator().forEachRemaining(selected::add); // must not throw
+
+        assertThat(selected).hasSize(nJobs);
+    }
+
+    private class MutatingPriorityJob extends DummyJob
+    {
+        private int myReads;
+
+        MutatingPriorityJob(Priority priority)
+        {
+            super(priority, nodeId);
+        }
+
+        @Override
+        public int getRealPriority()
+        {
+            // Each read returns a different value, as if wall-clock-derived priority changed between comparisons.
+            // A live comparator reading this during the sort is non-transitive; the per-pass frozen key reads it
+            // once per job and is stable.
+            return myReads++;
+        }
     }
 
     private class Comp implements Comparator<ScheduledJob>

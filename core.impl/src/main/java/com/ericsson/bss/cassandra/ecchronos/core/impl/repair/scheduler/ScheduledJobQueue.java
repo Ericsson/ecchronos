@@ -20,8 +20,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -43,8 +45,6 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
 {
     private static final Logger LOG = LoggerFactory.getLogger(ScheduledJobQueue.class);
 
-    private final Comparator<ScheduledJob> myComparator;
-
     private final EnumMap<ScheduledJob.Priority, PriorityQueue<ScheduledJob>> myJobQueues
             = new EnumMap<>(ScheduledJob.Priority.class);
 
@@ -56,8 +56,6 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
      */
     public ScheduledJobQueue(final Comparator<ScheduledJob> comparator)
     {
-        this.myComparator = comparator;
-
         for (ScheduledJob.Priority priority : ScheduledJob.Priority.values())
         {
             myJobQueues.put(priority, new PriorityQueue<>(1, comparator));
@@ -165,9 +163,46 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
             List<PriorityQueue<ScheduledJob>> snapshots = myJobQueues.values().stream()
                     .map(PriorityQueue::new)
                     .collect(Collectors.toList());
-            Iterator<ScheduledJob> baseIterator = new ManyToOneIterator<>(snapshots, myComparator);
+            // Freeze each job's time-dependent real priority once for this pass. getRealPriority() reads
+            // System.currentTimeMillis() on every call, so sorting on it live can become non-transitive if the clock
+            // crosses a granularity boundary mid-sort, making List.sort (TimSort) throw "Comparison method violates
+            // its general contract". Sorting on the frozen key is contract-safe and preserves selection order for
+            // equivalent inputs. See issue #1904.
+            Comparator<ScheduledJob> frozenComparator = frozenPriorityComparator(snapshots);
+            Iterator<ScheduledJob> baseIterator = new ManyToOneIterator<>(snapshots, frozenComparator);
             return new RunnableJobIterator(baseIterator);
         }
+    }
+
+    /**
+     * Build a comparator over a per-pass-stable priority key: each job's {@link ScheduledJob#getRealPriority()} is
+     * read exactly once here and frozen, so no wall-clock reads occur during the subsequent sort. The tie-break on
+     * configured {@link ScheduledJob#getPriority() priority} is time-independent and read live, matching the
+     * ordering of {@link DefaultJobComparator}. See issue #1904.
+     *
+     * @param jobQueues the per-priority job collections to be merged and sorted this pass.
+     * @return a comparator backed by the frozen real-priority values.
+     */
+    private static Comparator<ScheduledJob> frozenPriorityComparator(
+            final Collection<? extends Collection<ScheduledJob>> jobQueues)
+    {
+        Map<ScheduledJob, Integer> frozenRealPriority = new IdentityHashMap<>();
+        for (Collection<ScheduledJob> queue : jobQueues)
+        {
+            for (ScheduledJob job : queue)
+            {
+                frozenRealPriority.computeIfAbsent(job, ScheduledJob::getRealPriority);
+            }
+        }
+        return (j1, j2) ->
+        {
+            int result = Integer.compare(frozenRealPriority.get(j2), frozenRealPriority.get(j1));
+            if (result == 0)
+            {
+                result = Integer.compare(j2.getPriority().getValue(), j1.getPriority().getValue());
+            }
+            return result;
+        };
     }
 
     private void purgeFinishedJobs()
