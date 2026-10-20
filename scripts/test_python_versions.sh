@@ -13,12 +13,51 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# -----------------------------------------------------------------------------
+# USAGE
+#
+#   Run all default versions:
+#     ./test_python_versions.sh
+#
+#   Run one or more specific versions (overrides the default list):
+#     ./test_python_versions.sh 3.15.0
+#     ./test_python_versions.sh 3.14.6 3.15.0
+#
+#   Same thing via env var instead of arguments:
+#     PY_VERSIONS="3.15.0" ./test_python_versions.sh
+#
+# -----------------------------------------------------------------------------
+# GETTING NEW PYTHON VERSIONS (pyenv)
+#
+#   pyenv only knows about versions shipped with its local python-build plugin,
+#   so a freshly released Python won't appear until you update pyenv itself:
+#     cd ~/.pyenv && git pull      # or: pyenv update  (if the plugin is installed)
+#
+#   List versions pyenv can install (filter to e.g. 3.15):
+#     pyenv install --list | grep 3.15
+#
+#   Install a version, then add it to the VERSIONS list below:
+#     pyenv install 3.15.0
+#
+#   Note: a brand-new Python may lack prebuilt wheels for cassandra-driver,
+#   forcing a source build that needs libev headers (sudo apt-get install libev-dev).
+#   Prefer a version that already has prebuilt wheels when possible.
+# -----------------------------------------------------------------------------
+#
 
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init -)"
 
-VERSIONS=("system" "3.9.20" "3.13.0" "3.14.6")
+# Versions to test (see USAGE above for how to override).
+if [ "$#" -gt 0 ]; then
+  VERSIONS=("$@")
+elif [ -n "$PY_VERSIONS" ]; then
+  # shellcheck disable=SC2206
+  VERSIONS=($PY_VERSIONS)
+else
+  VERSIONS=("system" "3.9.20" "3.13.0" "3.14.6" "3.15.0")
+fi
 declare -A RESULTS
 
 for ver in "${VERSIONS[@]}"; do
