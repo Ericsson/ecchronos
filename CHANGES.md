@@ -2,6 +2,7 @@
 
 ## Version 1.1.2
 
+* Exit ecctool quietly instead of printing a BrokenPipeError traceback when its output is piped to a reader that closes early (e.g. head, grep, less) - Issue #1906
 * Fix a latent scheduler crash where the job sort could throw "Comparison method violates its general contract" (TimSort) because the comparator read wall-clock time during the sort; the per-node pass now freezes each job's time-dependent priority once and sorts on the stable key - Issue #1904
 * Add 'ecctool version' subcommand showing the ecctool client version and the connected ecChronos node's version, with graceful degradation when the node is unavailable - Issue #1900
 * session-scoped distributed locks serialize repairs - Issue #1890
