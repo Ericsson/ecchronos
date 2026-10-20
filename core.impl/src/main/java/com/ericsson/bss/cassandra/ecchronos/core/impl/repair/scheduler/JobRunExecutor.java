@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 /**
  * Handles the per-task execution logic for a single node's repair session.
@@ -39,7 +40,10 @@ final class JobRunExecutor
     private static final Logger LOG = LoggerFactory.getLogger(JobRunExecutor.class);
 
     private final UUID nodeID;
-    private final Node myNode;
+    // Resolve the node lazily on each use instead of capturing it once at construction. The node may not yet be
+    // registered in the native connection provider when this executor is created (see issue #1754), and a node's
+    // endpoint can change across its lifetime; reading it on demand avoids holding a stale or null reference.
+    private final Supplier<Node> myNodeSupplier;
     private final LockFailureBackoff myLockFailureBackoff;
     private final SchedulerMetrics mySchedulerMetrics;
     private final ConcurrentHashMap<UUID, AtomicInteger> myConsecutiveFailures;
@@ -50,7 +54,7 @@ final class JobRunExecutor
 
     JobRunExecutor(
             final UUID currentNodeID,
-            final Node node,
+            final Supplier<Node> nodeSupplier,
             final LockFailureBackoff lockFailureBackoff,
             final SchedulerMetrics schedulerMetrics,
             final ConcurrentHashMap<UUID, AtomicInteger> consecutiveFailures,
@@ -58,7 +62,7 @@ final class JobRunExecutor
             final AtomicReference<Clock> clock)
     {
         this.nodeID = currentNodeID;
-        this.myNode = node;
+        this.myNodeSupplier = nodeSupplier;
         this.myLockFailureBackoff = lockFailureBackoff;
         this.mySchedulerMetrics = schedulerMetrics;
         this.myConsecutiveFailures = consecutiveFailures;
@@ -137,7 +141,7 @@ final class JobRunExecutor
 
     boolean handleUnsuccessfulTask(final ScheduledJob job, final AtomicInteger failureCounter)
     {
-        long rejectDelay = jobValidator.apply(job, myNode);
+        long rejectDelay = jobValidator.apply(job, myNodeSupplier.get());
         if (rejectDelay != -1L)
         {
             job.setRunnableIn(rejectDelay);
