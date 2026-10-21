@@ -21,12 +21,15 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionR
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 /**
  * Handles the per-task execution logic for a single node's repair session.
@@ -37,26 +40,34 @@ final class JobRunExecutor
     private static final Logger LOG = LoggerFactory.getLogger(JobRunExecutor.class);
 
     private final UUID nodeID;
-    private final Node myNode;
+    // Resolve the node lazily on each use instead of capturing it once at construction. The node may not yet be
+    // registered in the native connection provider when this executor is created (see issue #1754), and a node's
+    // endpoint can change across its lifetime; reading it on demand avoids holding a stale or null reference.
+    private final Supplier<Node> myNodeSupplier;
     private final LockFailureBackoff myLockFailureBackoff;
     private final SchedulerMetrics mySchedulerMetrics;
     private final ConcurrentHashMap<UUID, AtomicInteger> myConsecutiveFailures;
     private final BiFunction<ScheduledJob, Node, Long> jobValidator;
+    // Shared time source owned by ScheduleManagerImpl. Session-window checks read from this so that tests
+    // can drive timing deterministically by swapping the clock; defaults to the system clock in production.
+    private final AtomicReference<Clock> myClock;
 
     JobRunExecutor(
             final UUID currentNodeID,
-            final Node node,
+            final Supplier<Node> nodeSupplier,
             final LockFailureBackoff lockFailureBackoff,
             final SchedulerMetrics schedulerMetrics,
             final ConcurrentHashMap<UUID, AtomicInteger> consecutiveFailures,
-            final BiFunction<ScheduledJob, Node, Long> validator)
+            final BiFunction<ScheduledJob, Node, Long> validator,
+            final AtomicReference<Clock> clock)
     {
         this.nodeID = currentNodeID;
-        this.myNode = node;
+        this.myNodeSupplier = nodeSupplier;
         this.myLockFailureBackoff = lockFailureBackoff;
         this.mySchedulerMetrics = schedulerMetrics;
         this.myConsecutiveFailures = consecutiveFailures;
         this.jobValidator = validator;
+        this.myClock = clock;
     }
 
     int executeJobTasks(
@@ -71,8 +82,6 @@ final class JobRunExecutor
 
         if (!forceRefresh)
         {
-            // Backward-compatible behaviour (default): drain the job's current snapshot once, then do a single
-            // throttled refresh if work was done so the next tick sees up-to-date state.
             int executed = drainTaskSnapshot(job, sessionStart, lockPool, failureCounter, sessionWindowInMs)
                     .tasksExecuted();
             if (executed > 0)
@@ -81,19 +90,17 @@ final class JobRunExecutor
             }
             return executed;
         }
+        return executeJobTasksWithForceRefresh(job, sessionStart, lockPool, failureCounter, sessionWindowInMs);
+    }
 
+    private int executeJobTasksWithForceRefresh(
+            final ScheduledJob job,
+            final long sessionStart,
+            final SessionLockPool lockPool,
+            final AtomicInteger failureCounter,
+            final long sessionWindowInMs)
+    {
         int totalExecuted = 0;
-        // Force-refresh re-drive (opt-in via scheduler.lock_session.force_refresh). Drain the job's current task
-        // snapshot; if the whole snapshot was drained within the session window and work was done, force a
-        // repair-state refresh and re-drive the job while it still reports repairable work. This avoids leaving the
-        // node idle until the next (throttled, ~14 min for a 24h interval) refresh when there is more work to do
-        // now. The forced refresh happens at most once per drained snapshot - roughly once per ~tens of tasks, not
-        // per task - so the O(ranges) recompute cost stays amortised.
-        //
-        // The loop is bounded by a fixed iteration count (MAX_SESSION_REFRESH_REDRIVES + 1 passes) so it can never
-        // spin indefinitely; it also stops early as soon as the window closes, a drain is cut short by the window,
-        // no task runs, or the job reports no repairable work (empty snapshot). The first pass is the initial
-        // drain; each subsequent pass is a force-refresh re-drive.
         boolean forcedRefreshed = false;
         for (int pass = 0; pass <= ScheduleManagerImpl.MAX_SESSION_REFRESH_REDRIVES; pass++)
         {
@@ -105,20 +112,12 @@ final class JobRunExecutor
                     || !withinSessionWindow(sessionStart, sessionWindowInMs);
             if (!stop)
             {
-                // Snapshot fully drained within the window and work was done: force a refresh and continue only if
-                // there are more repairable ranges to pick up this session.
                 job.refreshState(true);
                 forcedRefreshed = true;
-                if (!job.hasRepairableWork())
-                {
-                    stop = true;
-                }
+                stop = !job.hasRepairableWork();
             }
             if (stop)
             {
-                // If we never forced a refresh this call, do a final throttled refresh (when work was done) so the
-                // next tick sees up-to-date state, matching the prior behaviour. A forced refresh already updated
-                // the state, so no extra refresh is needed in that case.
                 if (!forcedRefreshed && totalExecuted > 0)
                 {
                     job.refreshState();
@@ -197,7 +196,7 @@ final class JobRunExecutor
 
     boolean handleUnsuccessfulTask(final ScheduledJob job, final AtomicInteger failureCounter)
     {
-        long rejectDelay = jobValidator.apply(job, myNode);
+        long rejectDelay = jobValidator.apply(job, myNodeSupplier.get());
         if (rejectDelay != -1L)
         {
             job.setRunnableIn(rejectDelay);
@@ -235,8 +234,8 @@ final class JobRunExecutor
         return TaskExecutionResult.TERMINAL;
     }
 
-    static boolean withinSessionWindow(final long sessionStart, final long sessionWindowInMs)
+    boolean withinSessionWindow(final long sessionStart, final long sessionWindowInMs)
     {
-        return (System.currentTimeMillis() - sessionStart) < sessionWindowInMs;
+        return (myClock.get().millis() - sessionStart) < sessionWindowInMs;
     }
 }

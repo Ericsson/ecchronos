@@ -93,6 +93,9 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     private volatile long myCooldownInMs;
     private volatile boolean myLockSessionEnabled;
     private volatile boolean myForceRefreshEnabled;
+    // Time source for session-window and cooldown calculations. Defaults to the system clock in production
+    // (see Builder.withClock); swappable in tests so timing-dependent behaviour can be driven deterministically.
+    private final AtomicReference<Clock> myClock;
 
     private ScheduleManagerImpl(final Builder builder)
     {
@@ -113,6 +116,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         myCooldownInMs = builder.myCooldownInMs;
         myLockSessionEnabled = builder.myLockSessionEnabled;
         myForceRefreshEnabled = builder.myForceRefreshEnabled;
+        myClock = new AtomicReference<>(builder.myClock);
         myLockFailureBackoff = new LockFailureBackoff(myRunIntervalInMs, builder.myMeterRegistry);
         mySchedulerMetrics = new SchedulerMetrics(builder.myMeterRegistry);
     }
@@ -498,14 +502,14 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         private JobRunTask(final UUID currentNodeID)
         {
             nodeID = currentNodeID;
-            Node node = myNativeConnectionProvider.getNodes().get(nodeID);
             myJobExecutor = new JobRunExecutor(
                     nodeID,
-                    node,
+                    () -> myNativeConnectionProvider.getNodes().get(nodeID),
                     myLockFailureBackoff,
                     mySchedulerMetrics,
                     myConsecutiveFailures,
-                    ScheduleManagerImpl.this::validateJob);
+                    ScheduleManagerImpl.this::validateJob,
+                    myClock);
         }
 
         @Override
@@ -623,7 +627,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
         private boolean runSession(final ScheduledJob firstJob, final List<ScheduledJob> candidates)
         {
-            long sessionStart = System.currentTimeMillis();
+            long sessionStart = myClock.get().millis();
             boolean batched = myLockSessionEnabled;
             LOG.info("Session started for node {}, window={}ms, lockBatching={}",
                     nodeID, mySessionWindowInMs, batched);
@@ -719,7 +723,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
         private boolean withinSessionWindow(final long sessionStart)
         {
-            return JobRunExecutor.withinSessionWindow(sessionStart, mySessionWindowInMs);
+            return myJobExecutor.withinSessionWindow(sessionStart, mySessionWindowInMs);
         }
     }
 
@@ -753,6 +757,9 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         // Force-refresh re-drive within a session; wired from scheduler.lock_session.force_refresh. Disabled by
         // default to preserve the historical behaviour.
         private boolean myForceRefreshEnabled = false;
+        // Time source for session-window and cooldown calculations. Defaults to the system clock; tests inject a
+        // controllable clock via withClock to drive timing deterministically.
+        private Clock myClock = Clock.systemDefaultZone();
 
         /**
          * Default constructor.
@@ -884,6 +891,20 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         public final Builder withLockSessionEnabled(final boolean lockSessionEnabled)
         {
             myLockSessionEnabled = lockSessionEnabled;
+            return this;
+        }
+
+        /**
+         * Build ScheduleManager with a specific time source for session-window and cooldown calculations.
+         * Testing only; production uses the default system clock.
+         *
+         * @param clock the clock to use.
+         * @return Builder with the clock set.
+         */
+        @VisibleForTesting
+        Builder withClock(final Clock clock)
+        {
+            myClock = clock;
             return this;
         }
 
