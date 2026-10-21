@@ -37,6 +37,7 @@ except ImportError:
 from ecchronoslib.metrics_filter import filter_metrics_text
 from ecchronoslib.argparse_types import comma_separated_ints, parse_duration_ms
 from ecchronoslib.rejections import rejections
+from ecchronoslib.version import get_client_version
 
 DEFAULT_PID_FILE = "ecc.pid"
 SPRINGBOOT_MAIN_CLASS = "com.ericsson.bss.cassandra.ecchronos.application.SpringBooter"
@@ -193,6 +194,7 @@ def get_parser():
     add_state_subcommand(sub_parsers)
     add_status_subcommand(sub_parsers)
     add_stop_subcommand(sub_parsers)
+    add_version_subcommand(sub_parsers)
 
     return parser
 
@@ -393,6 +395,16 @@ def add_stop_subcommand(sub_parsers):
     )
     add_common_arg(parser_stop, ARG_OUTPUT_JSON)
     add_common_arg(parser_stop, ARG_PIDFILE_READ)
+
+
+def add_version_subcommand(sub_parsers):
+    parser_version = sub_parsers.add_parser(
+        "version",
+        description="Show the ecctool client version and the connected ecChronos node's version.",
+    )
+    add_common_arg(parser_version, ARG_URL)
+    add_common_arg(parser_version, ARG_TIMEOUT)
+    add_common_arg(parser_version, ARG_OUTPUT_JSON)
 
 
 def add_state_subcommand(sub_parsers):
@@ -880,6 +892,37 @@ def metrics(arguments):
     sys.stdout.write(filter_metrics_text(result, names=arguments.name, include_comments=not arguments.raw))
 
 
+def version(arguments):
+    client_version = get_client_version()
+    request = rest.VersionRequest(base_url=arguments.url, timeout=arguments.timeout)
+    connected_url = request.base_url
+    result = request.get_version()
+
+    node_version = "unavailable"
+    node_error = None
+    if result.is_successful() and isinstance(result.data, dict):
+        node_version = result.data.get("version", "unknown")
+    else:
+        node_error = result.format_exception()
+
+    if arguments.output == "json":
+        payload = {
+            "ecctool_version": client_version,
+            "connected_node": connected_url,
+            "node_version": node_version,
+        }
+        if node_error is not None:
+            payload["node_error"] = node_error
+        table_printer.output_json({"version": payload})
+        return
+
+    print("ecctool version:   {0}".format(client_version))
+    print("Connected node:    {0}".format(connected_url))
+    print("Node version:      {0}".format(node_version))
+    if node_error is not None:
+        print("Note: could not retrieve node version ({0}).".format(node_error))
+
+
 def _with_status(handler):
     """Wrap a handler so the status preflight runs before it."""
 
@@ -906,6 +949,7 @@ SUBCOMMANDS = {
     "state": _with_status(state),
     "status": lambda arguments: status(arguments, print_running=True),
     "stop": stop,
+    "version": version,
 }
 
 
@@ -926,5 +970,25 @@ def main():
     run_subcommand(args)
 
 
+def _exit_on_broken_pipe():
+    """Exit cleanly when a downstream reader closed the pipe early.
+
+    When output is piped to a reader that stops early (head, grep -q, less
+    quit before the end), the pipe's read end closes and the next write
+    raises BrokenPipeError. Redirect stdout to devnull so the interpreter's
+    final flush does not raise a second BrokenPipeError during shutdown,
+    then exit with the conventional 128 + SIGPIPE(13) status.
+    """
+    try:
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, sys.stdout.fileno())
+    except (OSError, ValueError):
+        pass
+    sys.exit(141)
+
+
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except BrokenPipeError:
+        _exit_on_broken_pipe()

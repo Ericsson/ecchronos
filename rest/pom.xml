@@ -104,4 +104,25 @@
         </dependency>
     </dependencies>
 
+    <build>
+        <resources>
+            <!-- Filter version.properties so the controller can expose ${project.version}. -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>version.properties</include>
+                </includes>
+            </resource>
+            <!-- Copy any other resources without filtering to avoid corrupting binaries. -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>version.properties</exclude>
+                </excludes>
+            </resource>
+        </resources>
+    </build>
+
 </project>

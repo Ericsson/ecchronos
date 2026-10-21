@@ -22,6 +22,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import java.io.Closeable;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -35,6 +36,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
@@ -519,7 +521,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             try
             {
                 LOG.debug("In JobRunTask.run for Node {}", nodeID);
-                if (System.currentTimeMillis() < myCooldownUntil)
+                if (myClock.get().millis() < myCooldownUntil)
                 {
                     LOG.debug("Node {} in cooldown until {}", nodeID, myCooldownUntil);
                     return false;
@@ -543,9 +545,9 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         private void reschedule(final boolean hadWork)
         {
             long delay;
-            if (System.currentTimeMillis() < myCooldownUntil)
+            if (myClock.get().millis() < myCooldownUntil)
             {
-                delay = myCooldownUntil - System.currentTimeMillis();
+                delay = myCooldownUntil - myClock.get().millis();
             }
             else if (hadWork)
             {
@@ -569,7 +571,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         private boolean tryRunNext()
         {
             LOG.debug("Looking for Job for Node {}", nodeID);
-            long tickStart = System.currentTimeMillis();
+            long tickStart = myClock.get().millis();
             boolean hadWork = false;
 
             List<ScheduledJob> candidates = new ArrayList<>();
@@ -597,7 +599,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                     hadWork = runSession(next, candidates);
                     break;
                 }
-                if (System.currentTimeMillis() - tickStart > myRunIntervalInMs)
+                if (myClock.get().millis() - tickStart > myRunIntervalInMs)
                 {
                     break;
                 }
@@ -640,7 +642,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             }
 
             LOG.info("Session ended for node {}, executed {} tasks in {}ms",
-                    nodeID, tasksExecuted, System.currentTimeMillis() - sessionStart);
+                    nodeID, tasksExecuted, myClock.get().millis() - sessionStart);
             mySchedulerMetrics.recordPass(withinSessionWindow(sessionStart));
             applyCooldown(tasksExecuted);
             return tasksExecuted > 0;
@@ -710,7 +712,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         {
             if (tasksExecuted > 0 && myCooldownInMs > 0)
             {
-                myCooldownUntil = System.currentTimeMillis() + myCooldownInMs;
+                myCooldownUntil = myClock.get().millis() + myCooldownInMs;
                 LOG.debug("Node {} entering cooldown for {}ms", nodeID, myCooldownInMs);
             }
         }

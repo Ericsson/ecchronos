@@ -2,6 +2,11 @@
 
 ## Version 1.1.2
 
+* Create repair schedules for a newly added node without requiring an ecChronos restart - Issue #1754
+* Exit ecctool quietly instead of printing a BrokenPipeError traceback when its output is piped to a reader that closes early (e.g. head, grep, less) - Issue #1906
+* Fix a latent scheduler crash where the job sort could throw "Comparison method violates its general contract" (TimSort) because the comparator read wall-clock time during the sort; the per-node pass now freezes each job's time-dependent priority once and sorts on the stable key - Issue #1904
+* Add 'ecctool version' subcommand showing the ecctool client version and the connected ecChronos node's version, with graceful degradation when the node is unavailable - Issue #1900
+* session-scoped distributed locks serialize repairs - Issue #1890
 * Stagger each managed node's first scheduler pass at startup across one run interval so all nodes do not refresh repair state and contend for locks simultaneously (startup only; runtime-added nodes unchanged) - Issue #1897
 * Do not report a false repair-task failure when the repairAsync response is lost in transit (for example a Jolokia HTTP 100): classify the transport glitch as transient, and for incremental repairs discover and await the already-started session instead of re-triggering an overlapping repair - Issue #1892
 * Retry on-demand repair tasks that fail transiently (for example a JMX request failure) instead of failing the whole job, with configurable attempts and backoff (on_demand_retry, default 3 attempts) - Issue #1848

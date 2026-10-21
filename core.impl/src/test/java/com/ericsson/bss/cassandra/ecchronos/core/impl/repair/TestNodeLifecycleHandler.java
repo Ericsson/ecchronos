@@ -35,9 +35,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -215,5 +217,74 @@ public class TestNodeLifecycleHandler
         handlerWithCache.onRemove(mockNode);
 
         assertThat(cache.size()).isEqualTo(0);
+    }
+
+    /**
+     * Reproduces the race condition described in issue #1754.
+     * <p>
+     * When a node is added, the schedule for that node is created by
+     * {@link ScheduleManager#createScheduleFutureForNode(UUID)}, whose run task immediately reads the node from
+     * {@link DistributedNativeConnectionProvider#getNodes()}. If the node is only registered into the native
+     * connection provider by the asynchronously submitted {@link NodeAddedAction}, then at the moment the schedule
+     * is created the node is not yet present, the captured node is {@code null}, job validation rejects the jobs,
+     * and no schedules are created until a restart.
+     * <p>
+     * This test uses a map-backed native provider and a mock executor that captures (but does not run) the submitted
+     * action, mirroring the production window where the async action has not executed yet. It asserts the ordering
+     * contract: the node must already be registered in the native provider when the schedule is created.
+     */
+    @Test
+    public void testOnAddRegistersNodeInNativeProviderBeforeCreatingSchedule()
+    {
+        Map<UUID, Node> liveNodes = new HashMap<>();
+        when(mockNativeProvider.confirmNodeValid(mockNode)).thenReturn(true);
+        when(mockNativeProvider.getNodes()).thenReturn(liveNodes);
+        // Model production: the native provider map is only populated by addNode (what NodeAddedAction calls).
+        doAnswer(invocation ->
+        {
+            liveNodes.put(nodeId, mockNode);
+            return null;
+        }).when(mockNativeProvider).addNode(mockNode);
+
+        AtomicBoolean nodePresentWhenScheduleCreated = new AtomicBoolean(false);
+        doAnswer(invocation ->
+        {
+            // Assert via the provider, mirroring what ScheduleManagerImpl's JobRunTask reads when the
+            // schedule is created: myNativeConnectionProvider.getNodes().get(nodeID).
+            nodePresentWhenScheduleCreated.set(mockNativeProvider.getNodes().containsKey(nodeId));
+            return null;
+        }).when(mockScheduleManager).createScheduleFutureForNode(nodeId);
+
+        handler.onAdd(mockNode);
+
+        assertThat(nodePresentWhenScheduleCreated.get())
+                .as("node must be registered in the native connection provider before its schedule is created")
+                .isTrue();
+    }
+
+    /**
+     * Same race as {@link #testOnAddRegistersNodeInNativeProviderBeforeCreatingSchedule()} but for the
+     * {@code onUp} path of a node that is already known to the native provider. The refreshed schedule must
+     * still find the node registered when it is (re)created.
+     */
+    @Test
+    public void testOnUpRegistersNodeInNativeProviderBeforeCreatingSchedule()
+    {
+        Map<UUID, Node> liveNodes = new HashMap<>();
+        liveNodes.put(nodeId, mockNode);
+        when(mockNativeProvider.getNodes()).thenReturn(liveNodes);
+
+        AtomicBoolean nodePresentWhenScheduleCreated = new AtomicBoolean(false);
+        doAnswer(invocation ->
+        {
+            nodePresentWhenScheduleCreated.set(liveNodes.containsKey(nodeId));
+            return null;
+        }).when(mockScheduleManager).createScheduleFutureForNode(nodeId);
+
+        handler.onUp(mockNode);
+
+        assertThat(nodePresentWhenScheduleCreated.get())
+                .as("node must be registered in the native connection provider before its schedule is created")
+                .isTrue();
     }
 }

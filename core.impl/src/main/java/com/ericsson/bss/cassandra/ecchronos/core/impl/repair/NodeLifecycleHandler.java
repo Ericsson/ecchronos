@@ -146,6 +146,16 @@ public class NodeLifecycleHandler
             LOG.info("Node added {}", node.getHostId());
             LongTokenRange.clearCache();
             clearReplicaSetCache();
+            // Register the node in the native connection provider synchronously, before the schedule is created.
+            // The schedule's run task reads the node from the native provider as soon as it is created, so the
+            // node must already be present. NodeAddedAction (submitted below) performs the remaining, slower setup
+            // (JMX connection, node-sync bookkeeping) asynchronously and its own idempotent addNode is a no-op here.
+            // See issue #1754: previously the node was only added by the async action, creating a race where the
+            // schedule was created with a null node and all its jobs were rejected until a restart.
+            if (myAgentNativeConnectionProvider != null)
+            {
+                myAgentNativeConnectionProvider.addNode(node);
+            }
             NodeAddedAction callable = new NodeAddedAction(myEccNodesSync, myJmxConnectionProvider,
                     myAgentNativeConnectionProvider, node);
             myService.submit(callable);

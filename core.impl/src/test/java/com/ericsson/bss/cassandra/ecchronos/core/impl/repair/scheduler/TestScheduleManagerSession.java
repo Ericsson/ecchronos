@@ -32,6 +32,11 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -65,6 +70,7 @@ public class TestScheduleManagerSession
     private final Collection<UUID> myNodes = Collections.singletonList(nodeID1);
 
     private ScheduleManagerImpl myScheduler;
+    private final MutableClock myClock = new MutableClock(Instant.parse("2026-01-01T00:00:00Z"));
 
     @Before
     public void startup()
@@ -91,6 +97,9 @@ public class TestScheduleManagerSession
                 .withRunInterval(10, TimeUnit.SECONDS)
                 .withSessionWindow(sessionWindowMs, TimeUnit.MILLISECONDS)
                 .withCooldown(cooldownMs, TimeUnit.MILLISECONDS)
+                // Drive session-window and cooldown timing from a controllable clock so tests are deterministic
+                // and free of real sleeps. Virtual time only advances when a test (or a SlowTask) advances it.
+                .withClock(myClock)
                 .build();
         scheduler.createScheduleFutureForNodeIDList(myNodes);
         return scheduler;
@@ -194,13 +203,16 @@ public class TestScheduleManagerSession
     }
 
     @Test
-    public void testCooldownExpiresAndAllowsRerun() throws LockException, InterruptedException
+    public void testCooldownExpiresAndAllowsRerun() throws LockException
     {
         myScheduler = buildScheduler(TimeUnit.MINUTES.toMillis(5), 2000);
         when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap(), any()))
                 .thenReturn(new DummyLock());
 
-        ResourceJob job1 = new ResourceJob(nodeID1, 1, "dc1", "nodeA");
+        // A zero run-interval job is always immediately re-runnable, so the only thing gating a rerun is the
+        // scheduler's cooldown. This isolates the behaviour under test and removes any dependence on real time
+        // (ScheduledJob.getRealPriority compares against the real system clock, not the injected scheduler clock).
+        ResourceJob job1 = new ResourceJob(nodeID1, 1, 0L, "dc1", "nodeA");
         myScheduler.schedule(nodeID1, job1);
 
         myScheduler.run(nodeID1);
@@ -210,8 +222,8 @@ public class TestScheduleManagerSession
         myScheduler.run(nodeID1);
         assertThat(job1.getTaskRuns()).isEqualTo(1);
 
-        // Wait for cooldown to expire
-        Thread.sleep(2100);
+        // Advance virtual time past the 2000ms cooldown deterministically (no real sleeping).
+        myClock.advance(Duration.ofMillis(2001));
 
         // After cooldown, job should run again
         myScheduler.run(nodeID1);
@@ -221,30 +233,31 @@ public class TestScheduleManagerSession
     @Test
     public void testSessionWindowTimeoutMidExecution() throws LockException
     {
-        // Session window of 50ms - tasks that take 30ms each should timeout mid-job
+        // Session window of 50ms; each task consumes 30ms of virtual time. The window is checked before each
+        // task: task 1 at elapsed 0ms (<50, runs -> 30ms), task 2 at 30ms (<50, runs -> 60ms), task 3 at
+        // 60ms (>=50, break). So exactly 2 of the 5 tasks run - a deterministic outcome, not a timing race.
         myScheduler = buildScheduler(50, 0);
         when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap(), any()))
                 .thenReturn(new DummyLock());
 
-        SlowJob job = new SlowJob(nodeID1, 5, 30); // 5 tasks, 30ms each
+        SlowJob job = new SlowJob(nodeID1, 5, 30, myClock); // 5 tasks, 30ms each
         myScheduler.schedule(nodeID1, job);
 
         myScheduler.run(nodeID1);
 
-        // Should execute only 1-2 tasks before the 50ms window expires
-        assertThat(job.getTaskRuns()).isGreaterThan(0);
-        assertThat(job.getTaskRuns()).isLessThan(5);
+        assertThat(job.getTaskRuns()).isEqualTo(2);
     }
 
     @Test
     public void testSessionWindowTimeoutStopsSubsequentJobs() throws LockException
     {
-        // Short window - first job takes most of it, second shouldn't have time
+        // Window 80ms; job1's single task consumes 100ms of virtual time, overrunning the window. The
+        // between-jobs window check then fails deterministically, so job2 never runs.
         myScheduler = buildScheduler(80, 0);
         when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap(), any()))
                 .thenReturn(new DummyLock());
 
-        SlowJob job1 = new SlowJob(nodeID1, 1, 100); // 1 task, 100ms (exceeds the 80ms window)
+        SlowJob job1 = new SlowJob(nodeID1, 1, 100, myClock); // 1 task, 100ms (exceeds the 80ms window)
         ResourceJob job2 = new ResourceJob(nodeID1, 1, "dc1", "nodeB");
         myScheduler.schedule(nodeID1, job1);
         myScheduler.schedule(nodeID1, job2);
@@ -307,9 +320,15 @@ public class TestScheduleManagerSession
 
         ResourceJob(final UUID nodeId, final int numTasks, final String dc, final String... resourceNames)
         {
+            this(nodeId, numTasks, 1L, dc, resourceNames);
+        }
+
+        ResourceJob(final UUID nodeId, final int numTasks, final long runIntervalMs, final String dc,
+                final String... resourceNames)
+        {
             super(new ConfigurationBuilder()
                     .withPriority(Priority.LOW)
-                    .withRunInterval(1, TimeUnit.MILLISECONDS)
+                    .withRunInterval(runIntervalMs, TimeUnit.MILLISECONDS)
                     .build(), nodeId);
             myNumTasks = numTasks;
             myResources = new HashSet<>();
@@ -371,8 +390,9 @@ public class TestScheduleManagerSession
         private final AtomicInteger myTaskRuns = new AtomicInteger(0);
         private final int myNumTasks;
         private final long myTaskDurationMs;
+        private final MutableClock myClock;
 
-        SlowJob(final UUID nodeId, final int numTasks, final long taskDurationMs)
+        SlowJob(final UUID nodeId, final int numTasks, final long taskDurationMs, final MutableClock clock)
         {
             super(new ConfigurationBuilder()
                     .withPriority(Priority.LOW)
@@ -380,6 +400,7 @@ public class TestScheduleManagerSession
                     .build(), nodeId);
             myNumTasks = numTasks;
             myTaskDurationMs = taskDurationMs;
+            myClock = clock;
         }
 
         int getTaskRuns()
@@ -393,7 +414,7 @@ public class TestScheduleManagerSession
             List<ScheduledTask> tasks = new ArrayList<>();
             for (int i = 0; i < myNumTasks; i++)
             {
-                tasks.add(new SlowTask(myTaskDurationMs, myTaskRuns));
+                tasks.add(new SlowTask(myTaskDurationMs, myTaskRuns, myClock));
             }
             return tasks.iterator();
         }
@@ -403,27 +424,64 @@ public class TestScheduleManagerSession
     {
         private final long myDurationMs;
         private final AtomicInteger myRunCounter;
+        private final MutableClock myClock;
 
-        SlowTask(final long durationMs, final AtomicInteger runCounter)
+        SlowTask(final long durationMs, final AtomicInteger runCounter, final MutableClock clock)
         {
             myDurationMs = durationMs;
             myRunCounter = runCounter;
+            myClock = clock;
         }
 
         @Override
         public TaskExecutionResult execute(final UUID nodeID)
         {
-            try
-            {
-                Thread.sleep(myDurationMs);
-            }
-            catch (InterruptedException e)
-            {
-                Thread.currentThread().interrupt();
-                return TaskExecutionResult.SUCCESS;
-            }
+            // Simulate the task consuming wall-clock time by advancing virtual time instead of sleeping.
+            // This makes session-window expiry deterministic: the scheduler's window check reads the same
+            // clock, so the outcome depends only on arithmetic (durations vs window), not on real timing.
+            myClock.advance(Duration.ofMillis(myDurationMs));
             myRunCounter.incrementAndGet();
             return TaskExecutionResult.TERMINAL;
+        }
+    }
+
+    /**
+     * A manually advanced {@link Clock} used to drive the scheduler's timing deterministically. All timing
+     * decisions (session window, cooldown) read from this clock, so advancing it is equivalent to time passing
+     * without any real sleeping.
+     */
+    private static final class MutableClock extends Clock
+    {
+        private volatile Instant myInstant;
+        private final ZoneId myZone;
+
+        MutableClock(final Instant initial)
+        {
+            myInstant = initial;
+            myZone = ZoneOffset.UTC;
+        }
+
+        void advance(final Duration duration)
+        {
+            myInstant = myInstant.plus(duration);
+        }
+
+        @Override
+        public ZoneId getZone()
+        {
+            return myZone;
+        }
+
+        @Override
+        public Clock withZone(final ZoneId zone)
+        {
+            return this;
+        }
+
+        @Override
+        public Instant instant()
+        {
+            return myInstant;
         }
     }
 }

@@ -3,19 +3,87 @@
 ecctool is a command line utility used to perform operations toward an ecChronos instance. Run ‘ecctool &lt;subcommand&gt; –help’ to get more information about each subcommand.
 
 ```console
-usage: ecctool [-h] {config,metrics,rejections,repair-info,repair-sessions,repairs,run-repair,running-job,schedules,start,state,status,stop} ...
+usage: ecctool [-h]
+               {config,metrics,rejections,repair-info,repair-sessions,repairs,run-repair,running-job,schedules,start,state,status,stop,version}
+               ...
 ```
 
 
 ### -h, --help
 show this help message and exit
 
+## ecctool config
+
+Show or update ecChronos configuration.
+
+```console
+usage: ecctool config [-h] [--session-window SESSION_WINDOW]
+                      [--cooldown COOLDOWN]
+                      [--locks-per-resource LOCKS_PER_RESOURCE]
+                      [--max-concurrency MAX_CONCURRENCY]
+                      [--max-wait-time MAX_WAIT_TIME]
+                      [--hung-repair-recovery {on,off}]
+                      [--hung-repair-threshold HUNG_REPAIR_THRESHOLD]
+                      [--hung-repair-bypass-coordinator {on,off}]
+                      [--hung-repair-force {on,off}] [-u URL] [-T TIMEOUT]
+```
+
+
+### -h, --help
+show this help message and exit
+
+
+### --session-window &lt;session_window&gt;
+session window duration (e.g. 5m, 30s, 300000)
+
+
+### --cooldown &lt;cooldown&gt;
+cooldown duration (e.g. 5m, 30s, 300000)
+
+
+### --locks-per-resource &lt;locks_per_resource&gt;
+locks per resource
+
+
+### --max-concurrency &lt;max_concurrency&gt;
+max concurrent scheduler threads (0 = unbounded, one thread per managed node)
+
+
+### --max-wait-time &lt;max_wait_time&gt;
+max wait time in minutes for a repair (&gt; 0)
+
+
+### --hung-repair-recovery {on,off}
+enable or disable automatic recovery of hung incremental repair sessions
+
+
+### --hung-repair-threshold &lt;hung_repair_threshold&gt;
+stall threshold before a hung repair session is cancelled (e.g. 30m, 1800s, 1800000)
+
+
+### --hung-repair-bypass-coordinator {on,off}
+bypass the coordinator check and send the fail command to all managed nodes
+
+
+### --hung-repair-force {on,off}
+value of the force flag passed to failSession, used for all requests
+
+
+### -u &lt;url&gt;, --url &lt;url&gt;
+ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+
+
+### -T &lt;timeout&gt;, --timeout &lt;timeout&gt;
+request timeout in seconds (default: 30, or set ECCTOOL_TIMEOUT_SECONDS)
+
 ## ecctool metrics
 
 Fetch the agent metrics exposition text (native Prometheus/OpenMetrics passthrough).
 
 ```console
-usage: ecctool metrics [-h] [--name SUBSTR] [--format {prometheus,openmetrics}] [--raw] [-u URL]
+usage: ecctool metrics [-h] [--name SUBSTR]
+                       [--format {prometheus,openmetrics}] [--raw] [-u URL]
+                       [-T TIMEOUT]
 ```
 
 
@@ -24,26 +92,31 @@ show this help message and exit
 
 
 ### --name &lt;substr&gt;
-only show metrics whose name contains the given substring (repeatable, case-insensitive, '.' and '_' are equivalent)
+only show metrics whose name contains the given substring (repeatable, case-insensitive, ‘.’ and ‘_’ are equivalent)
 
 
-### --format &lt;{prometheus,openmetrics}&gt;
+### --format {prometheus,openmetrics}
 exposition format to request (default: prometheus)
 
 
 ### --raw
-suppress '# HELP' and '# TYPE' comment lines, showing only sample lines
+suppress ‘# HELP’ and ‘# TYPE’ comment lines, showing only sample lines
 
 
 ### -u &lt;url&gt;, --url &lt;url&gt;
 ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+
+
+### -T &lt;timeout&gt;, --timeout &lt;timeout&gt;
+request timeout in seconds (default: 30, or set ECCTOOL_TIMEOUT_SECONDS)
 
 ## ecctool rejections
 
 Manage ecchronos rejections. Use ‘ecctool rejections &lt;action&gt; –help’ for action information.
 
 ```console
-usage: ecctool rejections [-h] [-u URL] [-c COLUMNS] [-o OUTPUT] {create,delete,get,update} ...
+usage: ecctool rejections [-h] [-u URL] [-T TIMEOUT] [-c COLUMNS] [-o OUTPUT]
+                          {create,delete,get,update} ...
 ```
 
 
@@ -53,6 +126,10 @@ show this help message and exit
 
 ### -u &lt;url&gt;, --url &lt;url&gt;
 ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+
+
+### -T &lt;timeout&gt;, --timeout &lt;timeout&gt;
+request timeout in seconds (default: 30, or set ECCTOOL_TIMEOUT_SECONDS)
 
 
 ### -c &lt;columns&gt;, --columns &lt;columns&gt;
@@ -65,7 +142,10 @@ output formats: json, table (default)
 ## ecctool rejections create
 
 ```console
-usage: ecctool rejections create [-h] -k KEYSPACE -t TABLE -sh START_HOUR -sm START_MINUTE -eh END_HOUR -em END_MINUTE -dcs DC_EXCLUSIONS [DC_EXCLUSIONS ...] [-u URL]
+usage: ecctool rejections create [-h] -k KEYSPACE -t TABLE -sh START_HOUR -sm
+                                 START_MINUTE -eh END_HOUR -em END_MINUTE -dcs
+                                 DC_EXCLUSIONS [DC_EXCLUSIONS ...] [-u URL]
+                                 [-T TIMEOUT]
 ```
 
 
@@ -104,10 +184,17 @@ datacenters to exclude (format: &lt;dc1&gt; &lt;dc2&gt; … &lt;dcN&gt;)
 ### -u &lt;url&gt;, --url &lt;url&gt;
 ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
 
+
+### -T &lt;timeout&gt;, --timeout &lt;timeout&gt;
+request timeout in seconds (default: 30, or set ECCTOOL_TIMEOUT_SECONDS)
+
 ## ecctool rejections delete
 
 ```console
-usage: ecctool rejections delete [-h] [-a ALL] [-k KEYSPACE] [-t TABLE] [-sh START_HOUR] [-sm START_MINUTE] [-dcs DC_EXCLUSIONS [DC_EXCLUSIONS ...]] [-u URL]
+usage: ecctool rejections delete [-h] [-a ALL] [-k KEYSPACE] [-t TABLE]
+                                 [-sh START_HOUR] [-sm START_MINUTE]
+                                 [-dcs DC_EXCLUSIONS [DC_EXCLUSIONS ...]]
+                                 [-u URL] [-T TIMEOUT]
 ```
 
 
@@ -142,10 +229,15 @@ datacenters to exclude (format: &lt;dc1&gt; &lt;dc2&gt; … &lt;dcN&gt;)
 ### -u &lt;url&gt;, --url &lt;url&gt;
 ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
 
+
+### -T &lt;timeout&gt;, --timeout &lt;timeout&gt;
+request timeout in seconds (default: 30, or set ECCTOOL_TIMEOUT_SECONDS)
+
 ## ecctool rejections get
 
 ```console
 usage: ecctool rejections get [-h] [-k KEYSPACE] [-t TABLE] [-u URL]
+                              [-T TIMEOUT]
 ```
 
 
@@ -164,10 +256,17 @@ table
 ### -u &lt;url&gt;, --url &lt;url&gt;
 ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
 
+
+### -T &lt;timeout&gt;, --timeout &lt;timeout&gt;
+request timeout in seconds (default: 30, or set ECCTOOL_TIMEOUT_SECONDS)
+
 ## ecctool rejections update
 
 ```console
-usage: ecctool rejections update [-h] -k KEYSPACE -t TABLE -sh START_HOUR -sm START_MINUTE [-dcs DC_EXCLUSIONS [DC_EXCLUSIONS ...]] [-u URL]
+usage: ecctool rejections update [-h] -k KEYSPACE -t TABLE -sh START_HOUR -sm
+                                 START_MINUTE
+                                 [-dcs DC_EXCLUSIONS [DC_EXCLUSIONS ...]]
+                                 [-u URL] [-T TIMEOUT]
 ```
 
 
@@ -198,12 +297,18 @@ datacenters to exclude (format: &lt;dc1&gt; &lt;dc2&gt; … &lt;dcN&gt;)
 ### -u &lt;url&gt;, --url &lt;url&gt;
 ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
 
+
+### -T &lt;timeout&gt;, --timeout &lt;timeout&gt;
+request timeout in seconds (default: 30, or set ECCTOOL_TIMEOUT_SECONDS)
+
 ## ecctool repair-info
 
 Get information about repairs for tables. The repair information is based on repair history, meaning both manual and scheduled repairs will be a part of the repair information. This subcommand requires the user to provide either –since or –duration if –keyspace and –table is not provided. If repair info is fetched for a specific table using –keyspace and –table, the duration will default to the table’s GC_GRACE_SECONDS.
 
 ```console
-usage: ecctool repair-info [-h] [-c COLUMNS] [-n NODE] [-k KEYSPACE] [-t TABLE] [-s SINCE] [-d DURATION] [-u URL] [-l LIMIT] [-o OUTPUT]
+usage: ecctool repair-info [-h] [-c COLUMNS] [-n NODE] [-k KEYSPACE]
+                           [-t TABLE] [-s SINCE] [-d DURATION] [-u URL]
+                           [-T TIMEOUT] [-l LIMIT] [-o OUTPUT]
 ```
 
 
@@ -239,6 +344,10 @@ repair information for specified duration (ISO8601 or simple format: 5s, 5m, 5h,
 ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
 
 
+### -T &lt;timeout&gt;, --timeout &lt;timeout&gt;
+request timeout in seconds (default: 30, or set ECCTOOL_TIMEOUT_SECONDS)
+
+
 ### -l &lt;limit&gt;, --limit &lt;limit&gt;
 limit output rows (use -1 for no limit)
 
@@ -251,7 +360,9 @@ output formats: json, table (default)
 List and fail incremental repair sessions. Use ‘ecctool repair-sessions &lt;action&gt; –help’ for action information.
 
 ```console
-usage: ecctool repair-sessions [-h] [-u URL] [-c COLUMNS] [-o OUTPUT] {list,fail} ...
+usage: ecctool repair-sessions [-h] [-u URL] [-T TIMEOUT] [-c COLUMNS]
+                               [-o OUTPUT]
+                               {list,fail} ...
 ```
 
 
@@ -261,6 +372,10 @@ show this help message and exit
 
 ### -u &lt;url&gt;, --url &lt;url&gt;
 ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+
+
+### -T &lt;timeout&gt;, --timeout &lt;timeout&gt;
+request timeout in seconds (default: 30, or set ECCTOOL_TIMEOUT_SECONDS)
 
 
 ### -c &lt;columns&gt;, --columns &lt;columns&gt;
@@ -270,36 +385,11 @@ table columns to display (format: 0,1,2,…,N)
 ### -o &lt;output&gt;, --output &lt;output&gt;
 output formats: json, table (default)
 
-## ecctool repair-sessions list
-
-List incremental repair sessions across all managed nodes. Prints a table with Node, Session Id, State, Coordinator, Last Update (rendered as an age), Participants and Tables.
-
-```console
-usage: ecctool repair-sessions list [-h] [-n NODE] [-u URL] [-c COLUMNS] [-o OUTPUT]
-```
-
-
-### -h, --help
-show this help message and exit
-
-
-### -n &lt;node&gt;, --node &lt;node&gt;
-only list sessions reported by this managed node
-
-
-### -u &lt;url&gt;, --url &lt;url&gt;
-ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
-
-
-### -o &lt;output&gt;, --output &lt;output&gt;
-output formats: json, table (default)
-
 ## ecctool repair-sessions fail
 
-Fail (cancel) an incremental repair session. By default the session is cancelled on its coordinator (force=false); with `--force` it is force-failed on every managed node that reports it. Prompts for confirmation unless `--yes` is given.
-
 ```console
-usage: ecctool repair-sessions fail [-h] -s SESSION [-f] [-n NODE] [-y] [-u URL] [-o OUTPUT]
+usage: ecctool repair-sessions fail [-h] -s SESSION [-f] [-n NODE] [-y]
+                                    [-u URL] [-T TIMEOUT] [-o OUTPUT]
 ```
 
 
@@ -316,7 +406,7 @@ force-fail the session on all managed nodes that report it, not only the coordin
 
 
 ### -n &lt;node&gt;, --node &lt;node&gt;
-restrict the operation to a single managed node
+only matching node id
 
 
 ### -y, --yes
@@ -327,6 +417,41 @@ skip the confirmation prompt
 ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
 
 
+### -T &lt;timeout&gt;, --timeout &lt;timeout&gt;
+request timeout in seconds (default: 30, or set ECCTOOL_TIMEOUT_SECONDS)
+
+
+### -o &lt;output&gt;, --output &lt;output&gt;
+output formats: json, table (default)
+
+## ecctool repair-sessions list
+
+```console
+usage: ecctool repair-sessions list [-h] [-n NODE] [-u URL] [-T TIMEOUT]
+                                    [-c COLUMNS] [-o OUTPUT]
+```
+
+
+### -h, --help
+show this help message and exit
+
+
+### -n &lt;node&gt;, --node &lt;node&gt;
+only matching node id
+
+
+### -u &lt;url&gt;, --url &lt;url&gt;
+ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+
+
+### -T &lt;timeout&gt;, --timeout &lt;timeout&gt;
+request timeout in seconds (default: 30, or set ECCTOOL_TIMEOUT_SECONDS)
+
+
+### -c &lt;columns&gt;, --columns &lt;columns&gt;
+table columns to display (format: 0,1,2,…,N)
+
+
 ### -o &lt;output&gt;, --output &lt;output&gt;
 output formats: json, table (default)
 
@@ -335,7 +460,8 @@ output formats: json, table (default)
 Show the status of all manual repairs.
 
 ```console
-usage: ecctool repairs [-h] [-c COLUMNS] [-k KEYSPACE] [-t TABLE] [-u URL] [-n NODE] [-i ID] [-l LIMIT] [-o OUTPUT]
+usage: ecctool repairs [-h] [-c COLUMNS] [-k KEYSPACE] [-t TABLE] [-u URL]
+                       [-T TIMEOUT] [-n NODE] [-i ID] [-l LIMIT] [-o OUTPUT]
 ```
 
 
@@ -359,6 +485,10 @@ table (requires -k/–keyspace and is mutually exclusive with -n/–node)
 ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
 
 
+### -T &lt;timeout&gt;, --timeout &lt;timeout&gt;
+request timeout in seconds (default: 30, or set ECCTOOL_TIMEOUT_SECONDS)
+
+
 ### -n &lt;node&gt;, --node &lt;node&gt;
 only matching node id (mutually exclusive with -k/–keyspace and -t/–table)
 
@@ -379,7 +509,9 @@ output formats: json, table (default)
 Triggers a manual repair in ecChronos. This will be done through the Cassandra JMX interface.
 
 ```console
-usage: ecctool run-repair [-h] [-c COLUMNS] [-n NODE] [-u URL] [-o OUTPUT] [-r REPAIR_TYPE] [-f] [-e] [-a] [-k KEYSPACE] [-t TABLE]
+usage: ecctool run-repair [-h] [-c COLUMNS] [-n NODE] [-u URL] [-T TIMEOUT]
+                          [-o OUTPUT] [-r REPAIR_TYPE] [-f] [-e] [-a]
+                          [-k KEYSPACE] [-t TABLE]
 ```
 
 
@@ -397,6 +529,10 @@ only matching node id (mutually exclusive with -k/–keyspace and -t/–table)
 
 ### -u &lt;url&gt;, --url &lt;url&gt;
 ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+
+
+### -T &lt;timeout&gt;, --timeout &lt;timeout&gt;
+request timeout in seconds (default: 30, or set ECCTOOL_TIMEOUT_SECONDS)
 
 
 ### -o &lt;output&gt;, --output &lt;output&gt;
@@ -431,7 +567,7 @@ table (requires -k/–keyspace)
 Show which (if any) job is currently running.
 
 ```console
-usage: ecctool running-job [-h] [-o OUTPUT] [-u URL]
+usage: ecctool running-job [-h] [-o OUTPUT] [-u URL] [-T TIMEOUT]
 ```
 
 
@@ -446,12 +582,18 @@ output formats: json (defaults to no format)
 ### -u &lt;url&gt;, --url &lt;url&gt;
 ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
 
+
+### -T &lt;timeout&gt;, --timeout &lt;timeout&gt;
+request timeout in seconds (default: 30, or set ECCTOOL_TIMEOUT_SECONDS)
+
 ## ecctool schedules
 
 Show the status of schedules.
 
 ```console
-usage: ecctool schedules [-h] [-c COLUMNS] [-f] [-n NODE] [-i ID] [-k KEYSPACE] [-l LIMIT] [-o OUTPUT] [-t TABLE] [-u URL]
+usage: ecctool schedules [-h] [-c COLUMNS] [-f] [-n NODE] [-i ID]
+                         [-k KEYSPACE] [-l LIMIT] [-o OUTPUT] [-t TABLE]
+                         [-u URL] [-T TIMEOUT]
 ```
 
 
@@ -494,6 +636,10 @@ table (requires -k/–keyspace and is mutually exclusive with -n/–node)
 ### -u &lt;url&gt;, --url &lt;url&gt;
 ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
 
+
+### -T &lt;timeout&gt;, --timeout &lt;timeout&gt;
+request timeout in seconds (default: 30, or set ECCTOOL_TIMEOUT_SECONDS)
+
 ## ecctool start
 
 Start the ecChronos service.
@@ -523,7 +669,8 @@ file for storing process id
 Get information of ecChronos internal state.
 
 ```console
-usage: ecctool state [-h] [-c COLUMNS] [-o OUTPUT] [-u URL] {nodes} ...
+usage: ecctool state [-h] [-c COLUMNS] [-o OUTPUT] [-u URL] [-T TIMEOUT]
+                     {nodes} ...
 ```
 
 
@@ -542,10 +689,14 @@ output formats: json (defaults to no format)
 ### -u &lt;url&gt;, --url &lt;url&gt;
 ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
 
+
+### -T &lt;timeout&gt;, --timeout &lt;timeout&gt;
+request timeout in seconds (default: 30, or set ECCTOOL_TIMEOUT_SECONDS)
+
 ## ecctool state nodes
 
 ```console
-usage: ecctool state nodes [-h] [-u URL]
+usage: ecctool state nodes [-h] [-u URL] [-T TIMEOUT]
 ```
 
 
@@ -555,13 +706,17 @@ show this help message and exit
 
 ### -u &lt;url&gt;, --url &lt;url&gt;
 ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+
+
+### -T &lt;timeout&gt;, --timeout &lt;timeout&gt;
+request timeout in seconds (default: 30, or set ECCTOOL_TIMEOUT_SECONDS)
 
 ## ecctool status
 
 View status of the ecChronos instance.
 
 ```console
-usage: ecctool status [-h] [-u URL] [-o OUTPUT]
+usage: ecctool status [-h] [-u URL] [-T TIMEOUT] [-o OUTPUT]
 ```
 
 
@@ -571,6 +726,10 @@ show this help message and exit
 
 ### -u &lt;url&gt;, --url &lt;url&gt;
 ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+
+
+### -T &lt;timeout&gt;, --timeout &lt;timeout&gt;
+request timeout in seconds (default: 30, or set ECCTOOL_TIMEOUT_SECONDS)
 
 
 ### -o &lt;output&gt;, --output &lt;output&gt;
@@ -596,45 +755,29 @@ output formats: json (defaults to no format)
 ### -p &lt;pidfile&gt;, --pidfile &lt;pidfile&gt;
 file containing process id
 
-## ecctool config
+## ecctool version
 
-Show or update ecChronos runtime configuration. Changes are in-memory only — restarting ecChronos restores values from `ecc.yml`.
+Show the ecctool client version and the connected ecChronos node’s version.
 
 ```console
-usage: ecctool config [-h] [--session-window SESSION_WINDOW] [--cooldown COOLDOWN] [--locks-per-resource LOCKS_PER_RESOURCE] [--max-concurrency MAX_CONCURRENCY] [--max-wait-time MAX_WAIT_TIME] [--hung-repair-recovery {on,off}] [--hung-repair-threshold HUNG_REPAIR_THRESHOLD] [--hung-repair-bypass-coordinator {on,off}] [--hung-repair-force {on,off}] [-u URL]
+usage: ecctool version [-h] [-u URL] [-T TIMEOUT] [-o OUTPUT]
 ```
 
-When called without arguments, displays the current configuration. When called with one or more parameters, updates the specified values.
 
-### --session-window &lt;duration&gt;
-Time window for batched lock sessions. Accepts duration format: `5m`, `30s`, `2h`, `500ms`, or raw milliseconds.
+### -h, --help
+show this help message and exit
 
-### --cooldown &lt;duration&gt;
-Cooldown period after a session completes. Accepts same duration format as `--session-window`.
-
-### --locks-per-resource &lt;int&gt;
-Number of concurrent locks per datacenter resource. Must be >= 1.
-
-### --max-concurrency &lt;int&gt;
-Maximum number of concurrent CPU-bound scheduler threads. `0` means unbounded (one thread per managed node). On CPU-constrained deployments a lower value avoids oversubscribing the CPU quota. Applied live: raising the cap takes effect for subsequently scheduled tasks; lowering it shrinks the pool as in-flight tasks complete.
-
-### --max-wait-time &lt;int&gt;
-Maximum time in minutes ecChronos waits for a repair to complete before terminating and rescheduling it. Must be > 0. New repairs pick up the value immediately; in-flight repairs keep their original timeout.
-
-### --hung-repair-recovery &lt;on|off&gt;
-Enable or disable automatic recovery of hung incremental repair sessions. When enabled, ecChronos periodically scans each managed node's own repair sessions and cancels (coordinator-only) any session that has been stalled longer than `--hung-repair-threshold`. Disabled by default.
-
-### --hung-repair-threshold &lt;duration&gt;
-Stall threshold before a hung repair session is cancelled. A `REPAIRING` session with no activity for at least this duration is considered hung. Accepts the same duration format as `--session-window`. Must be > 0.
-
-### --hung-repair-bypass-coordinator &lt;on|off&gt;
-Bypass the coordinator check. By default a hung session is only cancelled on its own coordinator (session-scoped). When set to `on`, the coordinator check is skipped and the `failSession` command is sent to every managed node. Expected faults from nodes that do not own the session are caught and logged at debug level. Off by default.
-
-### --hung-repair-force &lt;on|off&gt;
-Value of the `force` flag passed to the Cassandra `failSession` operation. The same value is used for every request, regardless of whether it targets the session coordinator. When `off` (default), a session is only cancelled on its coordinator; when `on`, it is force-failed on the targeted node.
 
 ### -u &lt;url&gt;, --url &lt;url&gt;
 ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+
+
+### -T &lt;timeout&gt;, --timeout &lt;timeout&gt;
+request timeout in seconds (default: 30, or set ECCTOOL_TIMEOUT_SECONDS)
+
+
+### -o &lt;output&gt;, --output &lt;output&gt;
+output formats: json (defaults to no format)
 
 # Examples
 
