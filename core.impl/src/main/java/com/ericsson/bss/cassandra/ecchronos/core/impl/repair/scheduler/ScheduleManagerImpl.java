@@ -494,10 +494,9 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         private JobRunTask(final UUID currentNodeID)
         {
             nodeID = currentNodeID;
-            Node node = myNativeConnectionProvider.getNodes().get(nodeID);
             myJobExecutor = new JobRunExecutor(
                     nodeID,
-                    node,
+                    () -> myNativeConnectionProvider.getNodes().get(nodeID),
                     myLockFailureBackoff,
                     mySchedulerMetrics,
                     myConsecutiveFailures,
