@@ -74,19 +74,61 @@ final class JobRunExecutor
             final ScheduledJob job,
             final long sessionStart,
             final SessionLockPool lockPool,
-            final long sessionWindowInMs)
+            final long sessionWindowInMs,
+            final boolean forceRefresh)
     {
         AtomicInteger failureCounter = myConsecutiveFailures.computeIfAbsent(
                 job.getJobId(), k -> new AtomicInteger(0));
-        int tasksExecuted = drainTaskSnapshot(job, sessionStart, lockPool, failureCounter, sessionWindowInMs);
-        if (tasksExecuted > 0)
+
+        if (!forceRefresh)
         {
-            job.refreshState();
+            int executed = drainTaskSnapshot(job, sessionStart, lockPool, failureCounter, sessionWindowInMs)
+                    .tasksExecuted();
+            if (executed > 0)
+            {
+                job.refreshState();
+            }
+            return executed;
         }
-        return tasksExecuted;
+        return executeJobTasksWithForceRefresh(job, sessionStart, lockPool, failureCounter, sessionWindowInMs);
     }
 
-    private int drainTaskSnapshot(
+    private int executeJobTasksWithForceRefresh(
+            final ScheduledJob job,
+            final long sessionStart,
+            final SessionLockPool lockPool,
+            final AtomicInteger failureCounter,
+            final long sessionWindowInMs)
+    {
+        int totalExecuted = 0;
+        boolean forcedRefreshed = false;
+        for (int pass = 0; pass <= ScheduleManagerImpl.MAX_SESSION_REFRESH_REDRIVES; pass++)
+        {
+            DrainResult result = drainTaskSnapshot(job, sessionStart, lockPool, failureCounter, sessionWindowInMs);
+            totalExecuted += result.tasksExecuted();
+
+            boolean stop = result.tasksExecuted() == 0
+                    || result.windowTruncated()
+                    || !withinSessionWindow(sessionStart, sessionWindowInMs);
+            if (!stop)
+            {
+                job.refreshState(true);
+                forcedRefreshed = true;
+                stop = !job.hasRepairableWork();
+            }
+            if (stop)
+            {
+                if (!forcedRefreshed && totalExecuted > 0)
+                {
+                    job.refreshState();
+                }
+                break;
+            }
+        }
+        return totalExecuted;
+    }
+
+    private DrainResult drainTaskSnapshot(
             final ScheduledJob job,
             final long sessionStart,
             final SessionLockPool lockPool,
@@ -95,12 +137,15 @@ final class JobRunExecutor
     {
         int tasksExecuted = 0;
         int index = 0;
+        boolean windowTruncated = false;
         List<ScheduledTask> tasksForSession = new ArrayList<>();
         job.iterator().forEachRemaining(tasksForSession::add);
         for (ScheduledTask task : tasksForSession)
         {
             if (!withinSessionWindow(sessionStart, sessionWindowInMs))
             {
+                // Stopped before consuming the whole snapshot: there is more backlog but no time left this pass.
+                windowTruncated = true;
                 break;
             }
             index++;
@@ -136,7 +181,17 @@ final class JobRunExecutor
                 lockPool.releaseTaskLocks();
             }
         }
-        return tasksExecuted;
+        return new DrainResult(tasksExecuted, windowTruncated);
+    }
+
+    /**
+     * Outcome of draining one task snapshot.
+     *
+     * @param tasksExecuted number of tasks executed successfully.
+     * @param windowTruncated whether the pass stopped because the session window elapsed with tasks still pending.
+     */
+    private record DrainResult(int tasksExecuted, boolean windowTruncated)
+    {
     }
 
     boolean handleUnsuccessfulTask(final ScheduledJob job, final AtomicInteger failureCounter)

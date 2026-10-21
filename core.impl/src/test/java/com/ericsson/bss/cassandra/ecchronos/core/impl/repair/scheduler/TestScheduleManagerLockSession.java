@@ -87,6 +87,11 @@ public class TestScheduleManagerLockSession
 
     private ScheduleManagerImpl buildScheduler(final boolean lockSessionEnabled)
     {
+        return buildScheduler(lockSessionEnabled, false);
+    }
+
+    private ScheduleManagerImpl buildScheduler(final boolean lockSessionEnabled, final boolean forceRefresh)
+    {
         ScheduleManagerImpl scheduler = ScheduleManagerImpl.builder()
                 .withNodeIDList(myNodes)
                 .withNativeConnectionProvider(myNativeConnectionProvider)
@@ -95,6 +100,7 @@ public class TestScheduleManagerLockSession
                 .withSessionWindow(TimeUnit.MINUTES.toMillis(5), TimeUnit.MILLISECONDS)
                 .withCooldown(0, TimeUnit.MILLISECONDS)
                 .withLockSessionEnabled(lockSessionEnabled)
+                .withForceRefreshEnabled(forceRefresh)
                 .build();
         scheduler.createScheduleFutureForNodeIDList(myNodes);
         return scheduler;
@@ -237,6 +243,70 @@ public class TestScheduleManagerLockSession
         assertThat(job.getRefreshCount()).isLessThan(5);
     }
 
+    /**
+     * Force-refresh re-drive: a job that exposes its backlog in waves (each forced refresh reveals the next wave)
+     * is fully drained within a single session instead of stopping after the first wave and waiting for the next
+     * throttled refresh (~14 min with a 24h interval). The forced refresh happens once per drained wave, not per
+     * task, keeping the recompute cost amortised.
+     */
+    @Test
+    public void testForceRefreshRedrivesJobUntilNoRepairableWork() throws LockException
+    {
+        myScheduler = buildScheduler(true, true);
+        when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap(), any()))
+                .thenReturn(new DummyLock());
+
+        // 3 waves of 4 tasks each = 12 tasks total, all drained in one session via force-refresh re-drive.
+        WaveJob job = new WaveJob(nodeID1, 3, 4, "dc1", "nodeA");
+        myScheduler.schedule(nodeID1, job);
+
+        myScheduler.run(nodeID1);
+
+        assertThat(job.getTaskRuns()).isEqualTo(12);
+        // One forced refresh per fully-drained wave (3), not one per task (12).
+        assertThat(job.getForcedRefreshCount()).isLessThanOrEqualTo(3);
+    }
+
+    /**
+     * Backward compatibility: with force-refresh disabled (the default), a job that reveals work in waves is
+     * drained only once per session (one wave), not re-driven - matching the historical behaviour.
+     */
+    @Test
+    public void testForceRefreshDisabledDrainsOnlyOnce() throws LockException
+    {
+        myScheduler = buildScheduler(true, false);
+        when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap(), any()))
+                .thenReturn(new DummyLock());
+
+        WaveJob job = new WaveJob(nodeID1, 3, 4, "dc1", "nodeA");
+        myScheduler.schedule(nodeID1, job);
+
+        myScheduler.run(nodeID1);
+
+        // Only the first wave (4 tasks) runs; no force-refresh re-drive happens.
+        assertThat(job.getTaskRuns()).isEqualTo(4);
+        assertThat(job.getForcedRefreshCount()).isEqualTo(0);
+    }
+
+    /**
+     * A job that does not opt in (default {@link ScheduledJob#hasRepairableWork()} = false) is drained once per
+     * session and not re-driven, even though its iterator would keep yielding tasks.
+     */
+    @Test
+    public void testJobWithoutRepairableWorkNotRedriven() throws LockException
+    {
+        myScheduler = buildScheduler(true);
+        when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap(), any()))
+                .thenReturn(new DummyLock());
+
+        CountingRefreshJob job = new CountingRefreshJob(nodeID1, 4, "dc1", "nodeA");
+        myScheduler.schedule(nodeID1, job);
+
+        myScheduler.run(nodeID1);
+
+        assertThat(job.getTaskRuns()).isEqualTo(4);
+    }
+
     private static class ResourceJob extends ScheduledJob
     {
         private final AtomicInteger myTaskRuns = new AtomicInteger(0);
@@ -345,6 +415,79 @@ public class TestScheduleManagerLockSession
             for (int i = 0; i < myNumTasks; i++)
             {
                 tasks.add(new ResourceTask(myResources, myTaskRuns));
+            }
+            return tasks.iterator();
+        }
+    }
+
+    /**
+     * A job that exposes its backlog in waves: each snapshot ({@link #iterator()}) yields the current wave's
+     * tasks; a forced {@link #refreshState(boolean)} advances to the next wave. {@link #hasRepairableWork()}
+     * returns true while waves remain, so the scheduler re-drives the job within one session until all waves are
+     * drained. Models a repair job whose next ranges become repairable only after a repair-state refresh.
+     */
+    private static class WaveJob extends ScheduledJob
+    {
+        private final AtomicInteger myTaskRuns = new AtomicInteger(0);
+        private final AtomicInteger myForcedRefreshCount = new AtomicInteger(0);
+        private final int myTotalWaves;
+        private final int myTasksPerWave;
+        private final Set<RepairResource> myResources;
+        private int myCurrentWave = 0;
+
+        WaveJob(final UUID nodeId, final int totalWaves, final int tasksPerWave, final String dc,
+                final String resourceName)
+        {
+            super(new ConfigurationBuilder()
+                    .withPriority(Priority.LOW)
+                    .withRunInterval(1, TimeUnit.MILLISECONDS)
+                    .build(), nodeId);
+            myTotalWaves = totalWaves;
+            myTasksPerWave = tasksPerWave;
+            myResources = new HashSet<>();
+            myResources.add(new RepairResource(dc, resourceName));
+        }
+
+        int getTaskRuns()
+        {
+            return myTaskRuns.get();
+        }
+
+        int getForcedRefreshCount()
+        {
+            return myForcedRefreshCount.get();
+        }
+
+        @Override
+        public void refreshState(final boolean force)
+        {
+            if (force)
+            {
+                myForcedRefreshCount.incrementAndGet();
+                // Advance to the next wave (the current wave was just drained).
+                if (myCurrentWave < myTotalWaves)
+                {
+                    myCurrentWave++;
+                }
+            }
+        }
+
+        @Override
+        public boolean hasRepairableWork()
+        {
+            return myCurrentWave < myTotalWaves;
+        }
+
+        @Override
+        public Iterator<ScheduledTask> iterator()
+        {
+            List<ScheduledTask> tasks = new ArrayList<>();
+            if (myCurrentWave < myTotalWaves)
+            {
+                for (int i = 0; i < myTasksPerWave; i++)
+                {
+                    tasks.add(new ResourceTask(myResources, myTaskRuns));
+                }
             }
             return tasks.iterator();
         }

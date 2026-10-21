@@ -231,7 +231,7 @@ public abstract class RepairTask
         // failure, and log it distinctly so it is not mistaken for a real repair failure.
         LOG.warn("Lost the repairAsync response for {} on node {}; the repair may have started on Cassandra but "
                 + "could not be adopted. Treating as transient and retryable.",
-                myTableReference, nodeID, cause);
+                myTableReference, nodeID);
         throw new TransientRepairException(
                 "Lost repairAsync response for " + myTableReference + " on node " + nodeID, cause);
     }

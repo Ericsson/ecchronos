@@ -1,5 +1,109 @@
 # Upgrade to 1.1.x
 
+## scheduler.session_window: new structure, per-task lock mode, and force_refresh
+
+`scheduler.session_window` has been extended from a bare interval into an object with two fields:
+
+- `enabled` (boolean, default `true`) — selects how distributed (CAS) repair locks are scoped:
+  - `true` (default, unchanged behaviour): "batched" lock-session mode. When a node starts a
+    repair session it acquires the distributed locks for the replica resources it touches and
+    holds them for the whole window, reusing shared locks across tasks. Note that, for a single
+    agent managing many nodes, holding the locks for the whole window can serialize work across
+    those nodes (one node's session holds the shared replica-set locks the others need).
+  - `false`: per-task mode. The lock is acquired for a task, the task runs, and the
+    lock is released immediately, so a replica-set lock is held only for the duration of a single
+    repair task. This maximises cross-node repair concurrency for an agent managing many nodes, at
+    the cost of more frequent lock acquisitions. It mirrors the lock scope of the old sidecar
+    architecture.
+- `interval` (`{time, unit}`, default `5 MINUTES`) — the previous session-window duration, now
+  nested under `interval`.
+
+New form:
+
+```yaml
+scheduler:
+  session_window:
+    enabled: true
+    interval:
+      time: 5
+      unit: MINUTES
+```
+
+### Backward compatibility
+
+The old flat form is still accepted, so existing configuration files keep their configured window
+and are **not** silently reset to the default:
+
+```yaml
+scheduler:
+  session_window:        # legacy form, still honoured
+    time: 10
+    unit: MINUTES
+```
+
+A legacy file is read as `enabled: true` (the historical behaviour) with the configured
+`time`/`unit` used as the window. If both the legacy `time`/`unit` and the new `interval` are
+present, `interval` takes precedence. No action is required to upgrade; set `enabled: false` only
+if you want the per-task lock mode.
+
+### `force_refresh` (new, default `false`)
+
+`scheduler.session_window` gains a third field, `force_refresh` (boolean, default `false`):
+
+```yaml
+scheduler:
+  session_window:
+    enabled: true
+    interval:
+      time: 5
+      unit: MINUTES
+    force_refresh: false   # new; opt-in
+```
+
+- `false` (default, unchanged behaviour): within a session a job's current task snapshot is
+  drained once, and the repair state is refreshed at most once afterwards (subject to the normal
+  refresh throttle). After the snapshot is drained the node waits for the next (throttled) refresh
+  before it can "see" more work. With a 24h repair interval that throttle is ~14 minutes, so a node
+  can sit idle for several minutes between bursts even when there is more work to do and the
+  distributed locks are free.
+- `true`: when a session drains a job's current task snapshot **within the window** and executed
+  work, the scheduler immediately forces a repair-state refresh (bypassing the throttle) and keeps
+  draining the **same** job in the same session while it still reports repairable ranges. This
+  removes the idle wait between bursts and markedly improves scheduler utilization for an agent
+  managing many nodes. The forced refresh happens at most **once per drained snapshot** (roughly
+  once per session, not once per task), so the extra repair-state recompute cost stays amortised.
+
+#### Relationship with `enabled`
+
+`force_refresh` and `enabled` are **independent** and control different things:
+
+- `enabled` controls the **lock scope** (how long a distributed lock is held): batched for the
+  whole window (`true`) vs per task (`false`).
+- `force_refresh` controls **when the repair state is refreshed** so the session can pick up more
+  work (throttled only, `false`; or forced once a snapshot is drained, `true`).
+
+Because they are orthogonal, `force_refresh: true` works with **either** `enabled: true` **or**
+`enabled: false` — it does not require batched sessions. All four combinations are valid:
+
+| `enabled` | `force_refresh` | Behaviour |
+| --- | --- | --- |
+| `true`  | `false` | Default. Batched locks, single drain per session, throttled refresh. |
+| `false` | `false` | Per-task locks, single drain per session, throttled refresh. |
+| `true`  | `true`  | Batched locks, re-drive the job after a forced refresh while work remains. |
+| `false` | `true`  | Per-task locks, re-drive after a forced refresh — highest cross-node throughput for a many-node agent. |
+
+Note that `force_refresh` lives under `session_window` purely for grouping; it is not gated by
+`enabled`. The `interval` still bounds how long a single session (including any force-refresh
+re-drives) may run, regardless of `enabled` or `force_refresh`.
+
+#### Recommendation
+
+Leave `force_refresh: false` on upgrade (no behaviour change). Enable it (ideally together with
+`enabled: false`) for a standalone agent managing many nodes whose repairs lag because nodes sit
+idle between refreshes. When enabling it, watch the agent CPU and Cassandra load (pending
+compactions, read latency): sustaining higher repair concurrency puts more continuous load on
+Cassandra, and the forced refresh adds an amortised (once-per-session) repair-state recompute.
+
 ## nodes_sync self-healing (heartbeat + TTL)
 
 From this version, each ecChronos instance periodically renews (heartbeats) its own rows in

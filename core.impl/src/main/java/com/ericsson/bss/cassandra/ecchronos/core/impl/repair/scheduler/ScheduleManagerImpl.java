@@ -60,6 +60,12 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     public static final int DEFAULT_TIMEOUT = 5;
     /** Maximum consecutive task failures before a job is marked as FAILED. */
     static final int MAX_CONSECUTIVE_TASK_FAILURES = 5;
+    /**
+     * Upper bound on how many times a job may be force-refreshed and re-driven within a single session. This caps
+     * the amortised refresh cost per session and guarantees the drain loop terminates even if a job keeps
+     * reporting repairable work; real jobs stop earlier when their snapshot becomes empty.
+     */
+    static final int MAX_SESSION_REFRESH_REDRIVES = 50;
     /** No concurrency cap: the scheduler uses one thread per managed node. */
     public static final int UNBOUNDED_CONCURRENCY = Integer.MAX_VALUE;
     /**
@@ -86,6 +92,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     private volatile long mySessionWindowInMs;
     private volatile long myCooldownInMs;
     private volatile boolean myLockSessionEnabled;
+    private volatile boolean myForceRefreshEnabled;
     // Time source for session-window and cooldown calculations. Defaults to the system clock in production
     // (see Builder.withClock); swappable in tests so timing-dependent behaviour can be driven deterministically.
     private final AtomicReference<Clock> myClock;
@@ -108,6 +115,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         mySessionWindowInMs = builder.mySessionWindowInMs;
         myCooldownInMs = builder.myCooldownInMs;
         myLockSessionEnabled = builder.myLockSessionEnabled;
+        myForceRefreshEnabled = builder.myForceRefreshEnabled;
         myClock = new AtomicReference<>(builder.myClock);
         myLockFailureBackoff = new LockFailureBackoff(myRunIntervalInMs, builder.myMeterRegistry);
         mySchedulerMetrics = new SchedulerMetrics(builder.myMeterRegistry);
@@ -628,7 +636,8 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             try (SessionLockPool lockPool =
                     new SessionLockPool(myLockFactory, myRepairLockFactory, nodeID, batched))
             {
-                tasksExecuted = myJobExecutor.executeJobTasks(firstJob, sessionStart, lockPool, mySessionWindowInMs);
+                tasksExecuted = myJobExecutor.executeJobTasks(
+                        firstJob, sessionStart, lockPool, mySessionWindowInMs, myForceRefreshEnabled);
 
                 if (withinSessionWindow(sessionStart))
                 {
@@ -661,7 +670,8 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                     continue;
                 }
                 currentExecutingJobs.put(nodeID, job);
-                tasksExecuted += myJobExecutor.executeJobTasks(job, sessionStart, lockPool, mySessionWindowInMs);
+                tasksExecuted += myJobExecutor.executeJobTasks(
+                        job, sessionStart, lockPool, mySessionWindowInMs, myForceRefreshEnabled);
             }
             return tasksExecuted;
         }
@@ -744,6 +754,9 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         // Batched lock sessions are enabled by default to preserve the historical behaviour; the application wires
         // this from scheduler.lock_session.enabled (default true). Disable for per-task locking.
         private boolean myLockSessionEnabled = true;
+        // Force-refresh re-drive within a session; wired from scheduler.lock_session.force_refresh. Disabled by
+        // default to preserve the historical behaviour.
+        private boolean myForceRefreshEnabled = false;
         // Time source for session-window and cooldown calculations. Defaults to the system clock; tests inject a
         // controllable clock via withClock to drive timing deterministically.
         private Clock myClock = Clock.systemDefaultZone();
@@ -863,20 +876,6 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         }
 
         /**
-         * Build ScheduleManager with a specific time source for session-window and cooldown calculations.
-         * Testing only; production uses the default system clock.
-         *
-         * @param clock the clock to use.
-         * @return Builder with the clock set.
-         */
-        @VisibleForTesting
-        Builder withClock(final Clock clock)
-        {
-            myClock = clock;
-            return this;
-        }
-
-        /**
          * Build ScheduleManager with batched lock sessions enabled or disabled.
          * <p>
          * When enabled (the default), a repair session holds the distributed locks for the replica resources it
@@ -892,6 +891,38 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         public final Builder withLockSessionEnabled(final boolean lockSessionEnabled)
         {
             myLockSessionEnabled = lockSessionEnabled;
+            return this;
+        }
+
+        /**
+         * Build ScheduleManager with a specific time source for session-window and cooldown calculations.
+         * Testing only; production uses the default system clock.
+         *
+         * @param clock the clock to use.
+         * @return Builder with the clock set.
+         */
+        @VisibleForTesting
+        Builder withClock(final Clock clock)
+        {
+            myClock = clock;
+            return this;
+        }
+
+        /**
+         * Build ScheduleManager with the force-refresh re-drive enabled or disabled.
+         * <p>
+         * When enabled, a repair session that drains a job's current task snapshot within the window forces a
+         * repair-state refresh and continues the job in the same session (while it still reports repairable work),
+         * instead of leaving the node idle until the next throttled refresh. Disabled by default for backward
+         * compatibility.
+         *
+         * @param forceRefreshEnabled {@code true} to enable force-refresh re-drive; {@code false} for the
+         *                            historical behaviour.
+         * @return Builder with the force-refresh mode set.
+         */
+        public final Builder withForceRefreshEnabled(final boolean forceRefreshEnabled)
+        {
+            myForceRefreshEnabled = forceRefreshEnabled;
             return this;
         }
 

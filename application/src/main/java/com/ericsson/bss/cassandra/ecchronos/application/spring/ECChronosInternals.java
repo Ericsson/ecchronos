@@ -185,6 +185,7 @@ public class ECChronosInternals implements Closeable
                 .withLockFactory(myLockFactory)
                 .withMaxConcurrency(configuration.getSchedulerConfig().getMaxConcurrency())
                 .withLockSessionEnabled(configuration.getSchedulerConfig().getLockSession().isEnabled())
+                .withForceRefreshEnabled(configuration.getSchedulerConfig().getLockSession().isForceRefresh())
                 .withMeterRegistry(meterRegistry)
                 .build();
     }
