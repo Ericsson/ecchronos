@@ -2,6 +2,7 @@
 
 ## Version 1.1.2
 
+* Log a warning for unknown properties in configuration files (ecc.yml, security.yml, schedule.yml) instead of silently ignoring them, helping operators catch typos and obsolete options; parsing still succeeds so there is no behavior change at startup - Issue #1916
 * Create repair schedules for a newly added node without requiring an ecChronos restart - Issue #1754
 * Exit ecctool quietly instead of printing a BrokenPipeError traceback when its output is piped to a reader that closes early (e.g. head, grep, less) - Issue #1906
 * Fix a latent scheduler crash where the job sort could throw "Comparison method violates its general contract" (TimSort) because the comparator read wall-clock time during the sort; the per-node pass now freezes each job's time-dependent priority once and sorts on the stable key - Issue #1904

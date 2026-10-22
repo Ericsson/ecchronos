@@ -21,14 +21,51 @@ import java.io.InputStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.deser.DeserializationProblemHandler;
 import tools.jackson.dataformat.yaml.YAMLMapper;
 import tools.jackson.core.JacksonException;
 
 /** Helper for loading and parsing YAML configuration files. */
 public class ConfigurationHelper
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ConfigurationHelper.class);
+
     private static final String CONFIGURATION_DIRECTORY_PATH = "ecchronos.config";
+
+    /**
+     * Shared, immutable YAML mapper used for all configuration parsing. A {@link DeserializationProblemHandler}
+     * is registered to log a warning for unknown properties instead of silently ignoring them, while still
+     * allowing parsing to continue (no hard failure). Jackson 3 mappers are immutable and thread-safe, so a single
+     * shared instance is reused for every configuration file.
+     */
+    private static final ObjectMapper YAML_MAPPER = YAMLMapper.builder()
+            .addHandler(new DeserializationProblemHandler()
+            {
+                @Override
+                public boolean handleUnknownProperty(final DeserializationContext ctxt,
+                                                     final JsonParser parser,
+                                                     final ValueDeserializer<?> deserializer,
+                                                     final Object beanOrClass,
+                                                     final String propertyName)
+                {
+                    String targetClass = beanOrClass instanceof Class
+                            ? ((Class<?>) beanOrClass).getName()
+                            : beanOrClass.getClass().getName();
+                    LOG.warn("Unknown configuration property '{}' (in {}) - ignoring. "
+                            + "Check for a typo or an obsolete option in the configuration file.",
+                            propertyName, targetClass);
+                    // Returning true marks the property as handled so parsing continues instead of failing.
+                    return true;
+                }
+            })
+            .build();
 
     /** The default configuration helper instance. */
     public static final ConfigurationHelper DEFAULT_INSTANCE = new ConfigurationHelper(CONFIGURATION_DIRECTORY_PATH);
@@ -106,9 +143,7 @@ public class ConfigurationHelper
     {
         try
         {
-            ObjectMapper objectMapper = new YAMLMapper();
-
-            T config = objectMapper.readValue(configurationFile, clazz);
+            T config = YAML_MAPPER.readValue(configurationFile, clazz);
             if (config == null)
             {
                 throw new IOException("parsed config is null");
@@ -126,9 +161,7 @@ public class ConfigurationHelper
     {
         try
         {
-            ObjectMapper objectMapper = new YAMLMapper();
-
-            T config = objectMapper.readValue(configurationFile, clazz);
+            T config = YAML_MAPPER.readValue(configurationFile, clazz);
             if (config == null)
             {
                 throw new IOException("parsed config is null");
