@@ -22,6 +22,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
 import com.ericsson.bss.cassandra.ecchronos.core.state.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairStateSnapshot;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicaRepairGroup;
@@ -284,9 +285,9 @@ public class UnifiedTableRepairJob extends ScheduledRepairJob
 
     @Override
     @SuppressWarnings("CPD-START")
-    public final void postExecute(final boolean successful, final ScheduledTask task)
+    public final void postExecute(final TaskExecutionResult result, final ScheduledTask task)
     {
-        super.postExecute(successful, task);
+        super.postExecute(result, task);
         for (NodeRepairState nodeRepairState : myNodeRepairStates.values())
         {
             nodeRepairState.resetRefreshThrottle();

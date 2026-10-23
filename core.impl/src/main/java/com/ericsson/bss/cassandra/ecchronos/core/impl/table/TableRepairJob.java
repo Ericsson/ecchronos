@@ -229,7 +229,7 @@ public class TableRepairJob extends ScheduledRepairJob
 
     @Override
     @SuppressWarnings("CPD-START")
-    public final void postExecute(final boolean successful, final ScheduledTask task)
+    public final void postExecute(final TaskExecutionResult result, final ScheduledTask task)
     {
         super.postExecute(result, task);
         myLastRefreshTime = 0;

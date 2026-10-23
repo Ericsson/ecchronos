@@ -32,6 +32,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairResource;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 
 import java.util.ArrayList;
@@ -221,10 +222,10 @@ public class TestUnifiedScheduleManager
             }
 
             @Override
-            public boolean execute(final UUID nodeID)
+            public TaskExecutionResult execute(final UUID nodeID)
             {
                 taskRuns.incrementAndGet();
-                return true;
+                return TaskExecutionResult.SUCCESS;
             }
         }
     }

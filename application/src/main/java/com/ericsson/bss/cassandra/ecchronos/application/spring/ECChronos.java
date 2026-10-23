@@ -167,7 +167,7 @@ public class ECChronos implements Closeable
                             configuration.getSchedulerConfig().getFrequency().getInterval(TimeUnit.MILLISECONDS),
                             TimeUnit.MILLISECONDS)
                     .withSessionWindow(
-                            configuration.getSchedulerConfig().getSessionWindow().getInterval(TimeUnit.MILLISECONDS),
+                            configuration.getSchedulerConfig().getLockSession().getSessionWindow().getInterval(TimeUnit.MILLISECONDS),
                             TimeUnit.MILLISECONDS)
                     .withCooldown(configuration.getSchedulerConfig().getCooldown().getInterval(TimeUnit.MILLISECONDS),
                             TimeUnit.MILLISECONDS)
@@ -420,6 +420,8 @@ public class ECChronos implements Closeable
                 .withRepairConfigurationFunction(repairConfigurationProvider::get)
                 .withOnDemandStatus(new OnDemandStatus(nativeConnectionProvider))
                 .withCassandraMetrics(myECChronosInternals.getCassandraMetrics())
+                .withRetryAttempts(configuration.getRepairConfig().getOnDemandRetry().getAttempts())
+                .withRetryBackoffMs(configuration.getRepairConfig().getOnDemandRetry().getBackoffInMs())
                 .build();
     }
 

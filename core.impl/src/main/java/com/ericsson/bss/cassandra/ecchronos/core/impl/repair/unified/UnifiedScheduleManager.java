@@ -25,6 +25,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
@@ -577,10 +578,11 @@ public final class UnifiedScheduleManager implements ScheduleManager, Closeable
                 try
                 {
                     lockPool.acquireForTask(task);
-                    boolean successful = runTask(task, index);
+                    TaskExecutionResult result = runTask(task, index);
+                    boolean successful = TaskExecutionResult.SUCCESS.equals(result);
                     synchronized (myJob)
                     {
-                        myJob.postExecute(successful, task);
+                        myJob.postExecute(result, task);
                     }
                     if (successful)
                     {
@@ -642,7 +644,7 @@ public final class UnifiedScheduleManager implements ScheduleManager, Closeable
             myContentionBackoff.put(myKey, System.currentTimeMillis() + backoff);
         }
 
-        private boolean runTask(final ScheduledTask task, final int index)
+        private TaskExecutionResult runTask(final ScheduledTask task, final int index)
         {
             try
             {
@@ -653,7 +655,7 @@ public final class UnifiedScheduleManager implements ScheduleManager, Closeable
             {
                 LOG.warn("Unable to run unified task: {} in node: {}", task, myNodeId, e);
             }
-            return false;
+            return TaskExecutionResult.RETRYABLE;
         }
     }
 
