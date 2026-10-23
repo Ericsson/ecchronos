@@ -257,7 +257,7 @@ public class RepairStateImpl implements RepairState
         long runIntervalInMs = myRepairConfiguration.getRepairIntervalInMs();
         long initialDelayInMs = myRepairConfiguration.getInitialDelayInMs();
         long assumedRepairedAt = System.currentTimeMillis() - runIntervalInMs + initialDelayInMs;
-        LOG.info("Assuming the table {} is new. Next repair will occur at {}.",
+        LOG.debug("Assuming the table {} is new. Next repair will occur at {}.",
                 myTableReference,
                 LocalDateTime.ofEpochSecond(TimeUnit.MILLISECONDS.toSeconds(assumedRepairedAt + runIntervalInMs), 0,
                         ZoneOffset.ofHours(0)).format(MY_DATE_FORMAT));

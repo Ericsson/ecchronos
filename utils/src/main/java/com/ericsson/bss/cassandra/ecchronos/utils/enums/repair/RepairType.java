@@ -24,5 +24,22 @@ public enum RepairType
     /** Parallel vnode-based repair, repairing multiple vnode ranges concurrently. */
     PARALLEL_VNODE,
     /** Incremental repair, repairing only data that has changed since last repair. */
-    INCREMENTAL
+    INCREMENTAL,
+    /**
+     * Unified vnode-based repair. Functionally equivalent to {@link #VNODE} at the repair level, but managed
+     * by the consolidated multi-node scheduling subsystem: a single repair job per table coordinates all of
+     * its nodes, replacing the per-node job/thread model. Opt-in, side by side with {@link #VNODE}.
+     */
+    UNIFIED_VNODE;
+
+    /**
+     * Whether this repair type belongs to the consolidated {@code unified_*} family, which is handled by the
+     * multi-node scheduling subsystem rather than the legacy per-node subsystem.
+     *
+     * @return {@code true} if this is a unified repair type.
+     */
+    public boolean isUnified()
+    {
+        return this == UNIFIED_VNODE;
+    }
 }

@@ -18,6 +18,7 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.SchemaRefresher;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.SchemaChangeHandler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.KeyspaceCreatedEvent;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.RepairEvent;
 import com.google.common.annotations.VisibleForTesting;
@@ -36,7 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Manages a pool of {@link NodeWorker} instances, one per Cassandra node.
  * Handles adding/removing nodes dynamically and broadcasting repair events to all workers.
  */
-public class NodeWorkerManager
+public class NodeWorkerManager implements SchemaChangeHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger(NodeWorkerManager.class);
     private final Map<UUID, NodeWorker> myWorkers = new ConcurrentHashMap<>();
@@ -118,6 +119,7 @@ public class NodeWorkerManager
      *
      * @param node the Cassandra node to add.
      */
+    @Override
     public final synchronized void addNode(final Node node)
     {
         LOG.debug("addNode Node {}", node.getHostId());
@@ -140,6 +142,7 @@ public class NodeWorkerManager
      *
      * @param node the Cassandra node to remove.
      */
+    @Override
     public final synchronized void removeNode(final Node node)
     {
         synchronized (myLock)
@@ -162,6 +165,7 @@ public class NodeWorkerManager
      *
      * @param event the repair event to broadcast.
      */
+    @Override
     public final void broadcastEvent(final RepairEvent event)
     {
         myWorkers.values().parallelStream()
@@ -171,6 +175,7 @@ public class NodeWorkerManager
     /**
      * Shuts down the worker manager and its thread pool.
      */
+    @Override
     public final void shutdown()
     {
         myWorkers.clear();
