@@ -220,52 +220,24 @@ public class TestNodeLifecycleHandler
     }
 
     /**
-     * Reproduces the race condition described in issue #1754.
-     * <p>
-     * When a node is added, the schedule for that node is created by
-     * {@link ScheduleManager#createScheduleFutureForNode(UUID)}, whose run task immediately reads the node from
-     * {@link DistributedNativeConnectionProvider#getNodes()}. If the node is only registered into the native
-     * connection provider by the asynchronously submitted {@link NodeAddedAction}, then at the moment the schedule
-     * is created the node is not yet present, the captured node is {@code null}, job validation rejects the jobs,
-     * and no schedules are created until a restart.
-     * <p>
-     * This test uses a map-backed native provider and a mock executor that captures (but does not run) the submitted
-     * action, mirroring the production window where the async action has not executed yet. It asserts the ordering
-     * contract: the node must already be registered in the native provider when the schedule is created.
+     * onAdd must not register the node in the native provider before JMX is up (that would break
+     * Cassandra 6.0); NodeAddedAction does it after JMX. The schedule is still created and resolves
+     * the node lazily. See #1754.
      */
     @Test
-    public void testOnAddRegistersNodeInNativeProviderBeforeCreatingSchedule()
+    public void testOnAddDefersNativeProviderRegistrationToAfterJmx()
     {
-        Map<UUID, Node> liveNodes = new HashMap<>();
         when(mockNativeProvider.confirmNodeValid(mockNode)).thenReturn(true);
-        when(mockNativeProvider.getNodes()).thenReturn(liveNodes);
-        // Model production: the native provider map is only populated by addNode (what NodeAddedAction calls).
-        doAnswer(invocation ->
-        {
-            liveNodes.put(nodeId, mockNode);
-            return null;
-        }).when(mockNativeProvider).addNode(mockNode);
-
-        AtomicBoolean nodePresentWhenScheduleCreated = new AtomicBoolean(false);
-        doAnswer(invocation ->
-        {
-            // Assert via the provider, mirroring what ScheduleManagerImpl's JobRunTask reads when the
-            // schedule is created: myNativeConnectionProvider.getNodes().get(nodeID).
-            nodePresentWhenScheduleCreated.set(mockNativeProvider.getNodes().containsKey(nodeId));
-            return null;
-        }).when(mockScheduleManager).createScheduleFutureForNode(nodeId);
 
         handler.onAdd(mockNode);
 
-        assertThat(nodePresentWhenScheduleCreated.get())
-                .as("node must be registered in the native connection provider before its schedule is created")
-                .isTrue();
+        verify(mockNativeProvider, never()).addNode(any());
+        verify(mockExecutor).submit(any(Callable.class));
+        verify(mockScheduleManager).createScheduleFutureForNode(nodeId);
     }
 
     /**
-     * Same race as {@link #testOnAddRegistersNodeInNativeProviderBeforeCreatingSchedule()} but for the
-     * {@code onUp} path of a node that is already known to the native provider. The refreshed schedule must
-     * still find the node registered when it is (re)created.
+     * onUp for an already-known node recreates the schedule; the node is already present.
      */
     @Test
     public void testOnUpRegistersNodeInNativeProviderBeforeCreatingSchedule()
@@ -284,7 +256,7 @@ public class TestNodeLifecycleHandler
         handler.onUp(mockNode);
 
         assertThat(nodePresentWhenScheduleCreated.get())
-                .as("node must be registered in the native connection provider before its schedule is created")
+                .as("an already-known node must still be present when its schedule is recreated on onUp")
                 .isTrue();
     }
 }

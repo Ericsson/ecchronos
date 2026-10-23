@@ -21,11 +21,16 @@ from conftest import (
     run_ecctool_schedules,
     assert_nodes_size_is_equal,
     assert_schedules_size_is_equal,
+    wait_for_ecctool_row_count,
 )
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_WAIT_TIME_IN_SECS = 120
+
+# Max time to wait for ecChronos's view to catch up with a topology change.
+# Only delays a failing run, not a passing one.
+ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS = 180
 
 
 @pytest.mark.dependency(name="test_install_cassandra_cluster")
@@ -37,9 +42,9 @@ def test_install_cassandra_cluster(install_cassandra_cluster):
 def test_install_ecchronos(install_cassandra_cluster, test_environment):
     test_environment.start_ecchronos(cassandra_network=install_cassandra_cluster.network)
     test_environment.wait_for_ecchronos_ready()
-    out, _ = run_ecctool_state_nodes()
+    out = wait_for_ecctool_row_count(run_ecctool_state_nodes, 4, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS)
     assert_nodes_size_is_equal(out, 4)
-    out, _ = run_ecctool_schedules()
+    out = wait_for_ecctool_row_count(run_ecctool_schedules, 42, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS)
     assert_schedules_size_is_equal(out, 42)
 
 
@@ -48,9 +53,9 @@ def test_add_node(install_cassandra_cluster, test_environment):
     install_cassandra_cluster.add_node()
     install_cassandra_cluster._wait_for_nodes_to_be_up(5, DEFAULT_WAIT_TIME_IN_SECS * 1000)
     assert install_cassandra_cluster.verify_node_count(5)
-    out, _ = run_ecctool_state_nodes()
+    out = wait_for_ecctool_row_count(run_ecctool_state_nodes, 5, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS)
     assert_nodes_size_is_equal(out, 5)
-    out, _ = run_ecctool_schedules()
+    out = wait_for_ecctool_row_count(run_ecctool_schedules, 52, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS)
     assert_schedules_size_is_equal(out, 52)
 
 
@@ -59,7 +64,7 @@ def test_remove_node(install_cassandra_cluster, test_environment):
     install_cassandra_cluster.stop_extra_node()
     install_cassandra_cluster._wait_for_nodes_to_be_up(4, DEFAULT_WAIT_TIME_IN_SECS * 1000)
     assert install_cassandra_cluster.verify_node_count(4)
-    out, _ = run_ecctool_state_nodes()
+    out = wait_for_ecctool_row_count(run_ecctool_state_nodes, 4, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS)
     assert_nodes_size_is_equal(out, 4)
-    out, _ = run_ecctool_schedules()
+    out = wait_for_ecctool_row_count(run_ecctool_schedules, 42, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS)
     assert_schedules_size_is_equal(out, 42)

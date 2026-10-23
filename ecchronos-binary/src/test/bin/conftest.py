@@ -272,13 +272,41 @@ def run_ecctool(params, container_name="ecchronos-agent-cluster-wide"):
     return output, exit_code
 
 
-def assert_nodes_size_is_equal(out, expected_nodes):
+def _ecctool_row_count(out):
+    """Number of data rows in an ecctool table output (header + border lines stripped)."""
     output_data = out.decode("ascii").lstrip().rstrip().split("\n")
-    rows = output_data[3:-1]
-    assert len(rows) == expected_nodes, f"Expected {expected_nodes} nodes, but found {len(rows)}"
+    return len(output_data[3:-1])
+
+
+def assert_nodes_size_is_equal(out, expected_nodes):
+    rows = _ecctool_row_count(out)
+    assert rows == expected_nodes, f"Expected {expected_nodes} nodes, but found {rows}"
 
 
 def assert_schedules_size_is_equal(out, expected_schedules):
-    output_data = out.decode("ascii").lstrip().rstrip().split("\n")
-    rows = output_data[3:-1]
-    assert len(rows) == expected_schedules, f"Expected {expected_schedules} schedules, but found {len(rows)}"
+    rows = _ecctool_row_count(out)
+    assert rows == expected_schedules, f"Expected {expected_schedules} schedules, but found {rows}"
+
+
+def wait_for_ecctool_row_count(ecctool_fn, expected, timeout_in_secs=120, poll_interval_in_secs=5):
+    """Poll an ecctool command until its table has 'expected' rows, or time out.
+
+    ecChronos reacts to topology changes asynchronously, so it lags the Cassandra ring;
+    asserting the count immediately races. Returns the final output (logs on timeout).
+    """
+    deadline = time.time() + timeout_in_secs
+    last_rows = None
+    out = None
+    while time.time() < deadline:
+        out, _ = ecctool_fn()
+        last_rows = _ecctool_row_count(out)
+        if last_rows == expected:
+            return out
+        time.sleep(poll_interval_in_secs)
+    logger.error(
+        "ecChronos view did not converge to %s rows within %ss; last observed %s rows.",
+        expected,
+        timeout_in_secs,
+        last_rows,
+    )
+    return out
