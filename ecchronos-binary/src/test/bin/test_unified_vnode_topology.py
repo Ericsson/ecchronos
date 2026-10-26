@@ -57,8 +57,7 @@ class UnifiedVnodeConfig(EcchronosConfig):
         keyspaces = super()._default_test_schedule_keyspaces()
         for keyspace in keyspaces:
             for table in keyspace.get("tables") or []:
-                if "repair_type" in table:
-                    table["repair_type"] = "unified_vnode"
+                table["repair_type"] = "unified_vnode"
         return keyspaces
 
 
