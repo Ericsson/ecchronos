@@ -221,7 +221,7 @@ class EcchronosConfig:
                 self.schedule_interval_unit,
                 self.schedule_initial_delay_time,
                 self.schedule_initial_delay_unit,
-                self.schedule_repair_type
+                self.schedule_repair_type,
             )
         )
 
