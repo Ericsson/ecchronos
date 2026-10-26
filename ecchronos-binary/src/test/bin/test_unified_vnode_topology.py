@@ -53,6 +53,15 @@ class UnifiedVnodeConfig(EcchronosConfig):
         data.setdefault("repair", {})["repair_type"] = "unified_vnode"
         return data
 
+    def _default_test_schedule_keyspaces(self):
+        # Strip all per-table repair_type overrides: unified_vnode mode requires
+        # every per-table override to also be unified_vnode (or absent).
+        keyspaces = super()._default_test_schedule_keyspaces()
+        for keyspace in keyspaces:
+            for table in keyspace.get("tables") or []:
+                table.pop("repair_type", None)
+        return keyspaces
+
 
 def _get_first_unified_job_id():
     """Return the job ID of the first unified schedule, or None."""
