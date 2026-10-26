@@ -82,9 +82,7 @@ def test_unified_install_cassandra_cluster(install_cassandra_cluster):
     assert install_cassandra_cluster.verify_node_count(4)
 
 
-@pytest.mark.dependency(
-    name="test_unified_install_ecchronos", depends=["test_unified_install_cassandra_cluster"]
-)
+@pytest.mark.dependency(name="test_unified_install_ecchronos", depends=["test_unified_install_cassandra_cluster"])
 def test_unified_install_ecchronos(install_cassandra_cluster, test_environment):
     ecchronos_config = UnifiedVnodeConfig()
     test_environment.start_ecchronos(
@@ -93,9 +91,7 @@ def test_unified_install_ecchronos(install_cassandra_cluster, test_environment):
     )
     test_environment.wait_for_ecchronos_ready()
 
-    out = wait_for_ecctool_row_count(
-        run_ecctool_state_nodes, 4, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS
-    )
+    out = wait_for_ecctool_row_count(run_ecctool_state_nodes, 4, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS)
     assert_nodes_size_is_equal(out, 4)
 
     # unified-schedules: one job per table regardless of node count
@@ -117,17 +113,13 @@ def test_unified_install_ecchronos(install_cassandra_cluster, test_environment):
     assert node_rows == 4, f"Expected 4 per-node rows for job {job_id}, got {node_rows}"
 
 
-@pytest.mark.dependency(
-    name="test_unified_add_node", depends=["test_unified_install_ecchronos"]
-)
+@pytest.mark.dependency(name="test_unified_add_node", depends=["test_unified_install_ecchronos"])
 def test_unified_add_node(install_cassandra_cluster, test_environment):
     install_cassandra_cluster.add_node()
     install_cassandra_cluster._wait_for_nodes_to_be_up(5, DEFAULT_WAIT_TIME_IN_SECS * 1000)
     assert install_cassandra_cluster.verify_node_count(5)
 
-    out = wait_for_ecctool_row_count(
-        run_ecctool_state_nodes, 5, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS
-    )
+    out = wait_for_ecctool_row_count(run_ecctool_state_nodes, 5, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS)
     assert_nodes_size_is_equal(out, 5)
 
     # unified-schedules count must stay the same after adding a node —
@@ -147,23 +139,17 @@ def test_unified_add_node(install_cassandra_cluster, test_environment):
         out_inner, _ = run_ecctool(["unified-schedules", "-i", job_id])
         return out_inner
 
-    node_out = wait_for_ecctool_row_count(
-        _poll_node_count, 5, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS
-    )
+    node_out = wait_for_ecctool_row_count(_poll_node_count, 5, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS)
     assert _ecctool_row_count(node_out) == 5, "Expected 5 per-node rows after adding a node"
 
 
-@pytest.mark.dependency(
-    name="test_unified_remove_node", depends=["test_unified_add_node"]
-)
+@pytest.mark.dependency(name="test_unified_remove_node", depends=["test_unified_add_node"])
 def test_unified_remove_node(install_cassandra_cluster, test_environment):
     install_cassandra_cluster.stop_extra_node()
     install_cassandra_cluster._wait_for_nodes_to_be_up(4, DEFAULT_WAIT_TIME_IN_SECS * 1000)
     assert install_cassandra_cluster.verify_node_count(4)
 
-    out = wait_for_ecctool_row_count(
-        run_ecctool_state_nodes, 4, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS
-    )
+    out = wait_for_ecctool_row_count(run_ecctool_state_nodes, 4, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS)
     assert_nodes_size_is_equal(out, 4)
 
     # unified-schedules count must stay the same after removing a node.
@@ -182,7 +168,5 @@ def test_unified_remove_node(install_cassandra_cluster, test_environment):
         out_inner, _ = run_ecctool(["unified-schedules", "-i", job_id])
         return out_inner
 
-    node_out = wait_for_ecctool_row_count(
-        _poll_node_count, 4, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS
-    )
+    node_out = wait_for_ecctool_row_count(_poll_node_count, 4, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS)
     assert _ecctool_row_count(node_out) == 4, "Expected 4 per-node rows after removing a node"
