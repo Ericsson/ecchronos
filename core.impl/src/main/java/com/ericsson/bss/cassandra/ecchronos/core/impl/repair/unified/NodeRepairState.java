@@ -111,7 +111,7 @@ public final class NodeRepairState
     /**
      * Attempt to claim a refresh for this node, respecting the minimum refresh interval.
      * <p>
-     * If at least {@value #MIN_REFRESH_INTERVAL_MS} ms have elapsed since the last claimed refresh, the
+     * If at least 30000 ms have elapsed since the last claimed refresh, the
      * throttle timestamp is advanced to {@code now} and {@code true} is returned, indicating the caller
      * should perform the (potentially expensive) {@link RepairState#update()}. Otherwise {@code false} is
      * returned and the caller should skip the update.

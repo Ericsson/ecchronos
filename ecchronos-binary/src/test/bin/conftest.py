@@ -257,6 +257,10 @@ def run_ecctool_schedules(container_name="ecchronos-agent-cluster-wide"):
     return run_ecctool(["schedules"], container_name)
 
 
+def run_ecctool_unified_schedules(container_name="ecchronos-agent-cluster-wide"):
+    return run_ecctool(["unified-schedules"], container_name)
+
+
 def run_ecctool(params, container_name="ecchronos-agent-cluster-wide"):
     cmd = [f"{global_vars.CONTAINER_BASE_DIR}/bin/ecctool"] + params
     try:

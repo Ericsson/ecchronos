@@ -70,7 +70,9 @@ public final class UnifiedScheduleManager implements ScheduleManager, Closeable
     private static final Logger LOG = LoggerFactory.getLogger(UnifiedScheduleManager.class);
 
     static final long DEFAULT_RUN_DELAY_IN_MS = TimeUnit.SECONDS.toMillis(30);
+    /** Keep-alive time in seconds for the executor and worker pool threads. */
     public static final int DEFAULT_KEEP_ALIVE_TIME = 60;
+    /** Timeout in minutes to wait for executor termination on close. */
     public static final int DEFAULT_TIMEOUT = 5;
     static final int MAX_CONSECUTIVE_TASK_FAILURES = 5;
     /** Worker-pool safety cap (repair concurrency is bounded by the CAS lock, not this). */

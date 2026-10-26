@@ -224,6 +224,8 @@ public final class UnifiedRepairScheduler implements RepairScheduler, Closeable
 
         /**
          * Build with repair lock type.
+         *
+         * @param repairLockType the repair lock type.
          * @return Builder
          */
         public Builder withRepairLockType(final RepairLockType repairLockType)
