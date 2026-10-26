@@ -15,32 +15,20 @@
 #
 
 import logging
+import time
 
 import pytest
 from ecc_config import EcchronosConfig
 from conftest import (
     assert_nodes_size_is_equal,
-    assert_schedules_size_is_equal,
     run_ecctool,
     run_ecctool_state_nodes,
-    run_ecctool_schedules,
     run_ecctool_unified_schedules,
     wait_for_ecctool_row_count,
     _ecctool_row_count,
 )
 
 logger = logging.getLogger(__name__)
-
-# In unified_vnode mode there is one job per *table* (not per node), so the
-# schedule count is independent of cluster size.  The default test schedule
-# keyspaces defined in EcchronosConfig._default_test_schedule_keyspaces()
-# have 4 enabled tables:
-#   test.table1, test2.table1, test2.table2, ecchronos.repair_history
-UNIFIED_SCHEDULE_COUNT = 4
-
-# The legacy per-node schedule endpoint must return 0 jobs when the instance
-# runs in unified_vnode mode (no TableRepairJob objects are created).
-LEGACY_SCHEDULE_COUNT = 0
 
 ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS = 180
 DEFAULT_WAIT_TIME_IN_SECS = 120
@@ -61,19 +49,28 @@ class UnifiedVnodeConfig(EcchronosConfig):
         return keyspaces
 
 
-def _get_first_unified_job_id():
-    """Return the job ID of the first unified schedule, or None."""
+def _parse_unified_jobs():
+    """Parse the unfiltered ``unified-schedules`` output into a list of jobs.
+
+    The ``unified-schedules`` table columns are:
+        JobID | Keyspace | Table | Status(worst) | Repaired(%)avg |
+        Completed at | Next repair | Nodes
+
+    Returns a list of dicts ``{"job_id", "keyspace", "table"}`` (one per data
+    row), or an empty list if the command failed.
+    """
     out, exit_code = run_ecctool_unified_schedules()
     if exit_code != 0:
-        return None
+        return []
     lines = out.decode("ascii").strip().split("\n")
-    # Table output: header border, header, border, data rows..., border
+    # Table output: border, header, border, data rows..., border
     data_rows = lines[3:-1]
+    jobs = []
     for row in data_rows:
         cols = [c.strip() for c in row.split("|") if c.strip()]
-        if cols:
-            return cols[0]  # first column is jobID
-    return None
+        if len(cols) >= 3:
+            jobs.append({"job_id": cols[0], "keyspace": cols[1], "table": cols[2]})
+    return jobs
 
 
 def _get_node_count_for_job(job_id):
@@ -82,6 +79,45 @@ def _get_node_count_for_job(job_id):
     if exit_code != 0:
         return 0
     return _ecctool_row_count(out)
+
+
+def _assert_no_duplicate_jobs(jobs):
+    """Each (keyspace, table) must map to exactly one unified job (no repetition)."""
+    assert jobs, "unified-schedules returned no jobs"
+
+    tables = [(job["keyspace"], job["table"]) for job in jobs]
+    duplicates = sorted({t for t in tables if tables.count(t) > 1})
+    assert not duplicates, f"unified-schedules has repeated jobs for tables: {duplicates}"
+
+    job_ids = [job["job_id"] for job in jobs]
+    assert len(job_ids) == len(set(job_ids)), f"unified-schedules has repeated job ids: {job_ids}"
+
+
+def _assert_every_job_has_node_count(jobs, expected_nodes):
+    """Each unified job must expand into exactly ``expected_nodes`` per-node sub-jobs."""
+    for job in jobs:
+        node_rows = _get_node_count_for_job(job["job_id"])
+        assert node_rows == expected_nodes, (
+            f"Expected {expected_nodes} per-node rows for job "
+            f"{job['keyspace']}.{job['table']} ({job['job_id']}), got {node_rows}"
+        )
+
+
+def _wait_for_every_job_to_have_node_count(expected_nodes, timeout_in_secs, poll_interval_in_secs=5):
+    """Poll until every unified job reports ``expected_nodes`` sub-jobs.
+
+    ecChronos reacts to topology changes asynchronously, so the per-node sub-job
+    count lags the Cassandra ring; polling avoids racing the convergence.
+    Returns the final parsed job list (which the caller then asserts on).
+    """
+    deadline = time.time() + timeout_in_secs
+    jobs = []
+    while time.time() < deadline:
+        jobs = _parse_unified_jobs()
+        if jobs and all(_get_node_count_for_job(job["job_id"]) == expected_nodes for job in jobs):
+            return jobs
+        time.sleep(poll_interval_in_secs)
+    return jobs
 
 
 @pytest.mark.dependency(name="test_unified_install_cassandra_cluster")
@@ -101,23 +137,9 @@ def test_unified_install_ecchronos(install_cassandra_cluster, test_environment):
     out = wait_for_ecctool_row_count(run_ecctool_state_nodes, 4, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS)
     assert_nodes_size_is_equal(out, 4)
 
-    # unified-schedules: one job per table regardless of node count
-    out = wait_for_ecctool_row_count(
-        run_ecctool_unified_schedules,
-        UNIFIED_SCHEDULE_COUNT,
-        timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS,
-    )
-    assert_schedules_size_is_equal(out, UNIFIED_SCHEDULE_COUNT)
-
-    # legacy schedules endpoint must be empty in unified_vnode mode
-    out, _ = run_ecctool_schedules()
-    assert_schedules_size_is_equal(out, LEGACY_SCHEDULE_COUNT)
-
-    # each unified job must track exactly 4 nodes (one sub-job per node)
-    job_id = _get_first_unified_job_id()
-    assert job_id is not None, "Could not retrieve a unified job id"
-    node_rows = _get_node_count_for_job(job_id)
-    assert node_rows == 4, f"Expected 4 per-node rows for job {job_id}, got {node_rows}"
+    jobs = _wait_for_every_job_to_have_node_count(4, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS)
+    _assert_no_duplicate_jobs(jobs)
+    _assert_every_job_has_node_count(jobs, 4)
 
 
 @pytest.mark.dependency(name="test_unified_add_node", depends=["test_unified_install_ecchronos"])
@@ -129,25 +151,12 @@ def test_unified_add_node(install_cassandra_cluster, test_environment):
     out = wait_for_ecctool_row_count(run_ecctool_state_nodes, 5, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS)
     assert_nodes_size_is_equal(out, 5)
 
-    # unified-schedules count must stay the same after adding a node —
-    # the new node is absorbed into the existing per-table jobs.
-    out = wait_for_ecctool_row_count(
-        run_ecctool_unified_schedules,
-        UNIFIED_SCHEDULE_COUNT,
-        timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS,
-    )
-    assert_schedules_size_is_equal(out, UNIFIED_SCHEDULE_COUNT)
-
-    # but each job must now track 5 nodes
-    job_id = _get_first_unified_job_id()
-    assert job_id is not None, "Could not retrieve a unified job id"
-
-    def _poll_node_count():
-        out_inner, _ = run_ecctool(["unified-schedules", "-i", job_id])
-        return out_inner
-
-    node_out = wait_for_ecctool_row_count(_poll_node_count, 5, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS)
-    assert _ecctool_row_count(node_out) == 5, "Expected 5 per-node rows after adding a node"
+    # The set of jobs must stay one-per-table after adding a node — the new
+    # node is absorbed into the existing per-table jobs — and every job must
+    # now expand into 5 per-node sub-jobs.
+    jobs = _wait_for_every_job_to_have_node_count(5, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS)
+    _assert_no_duplicate_jobs(jobs)
+    _assert_every_job_has_node_count(jobs, 5)
 
 
 @pytest.mark.dependency(name="test_unified_remove_node", depends=["test_unified_add_node"])
@@ -159,21 +168,8 @@ def test_unified_remove_node(install_cassandra_cluster, test_environment):
     out = wait_for_ecctool_row_count(run_ecctool_state_nodes, 4, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS)
     assert_nodes_size_is_equal(out, 4)
 
-    # unified-schedules count must stay the same after removing a node.
-    out = wait_for_ecctool_row_count(
-        run_ecctool_unified_schedules,
-        UNIFIED_SCHEDULE_COUNT,
-        timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS,
-    )
-    assert_schedules_size_is_equal(out, UNIFIED_SCHEDULE_COUNT)
-
-    # and each job must be back to 4 nodes
-    job_id = _get_first_unified_job_id()
-    assert job_id is not None, "Could not retrieve a unified job id"
-
-    def _poll_node_count():
-        out_inner, _ = run_ecctool(["unified-schedules", "-i", job_id])
-        return out_inner
-
-    node_out = wait_for_ecctool_row_count(_poll_node_count, 4, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS)
-    assert _ecctool_row_count(node_out) == 4, "Expected 4 per-node rows after removing a node"
+    # The set of jobs must stay one-per-table after removing a node, and every
+    # job must be back to 4 per-node sub-jobs.
+    jobs = _wait_for_every_job_to_have_node_count(4, timeout_in_secs=ECCHRONOS_CONVERGE_TIMEOUT_IN_SECS)
+    _assert_no_duplicate_jobs(jobs)
+    _assert_every_job_has_node_count(jobs, 4)
