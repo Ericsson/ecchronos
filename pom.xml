@@ -116,7 +116,7 @@
         <swagger-annotations.version>2.2.55</swagger-annotations.version>
 
         <!-- Metrics -->
-        <io.micrometer.version>1.17.1</io.micrometer.version>
+        <io.micrometer.version>1.17.2</io.micrometer.version>
         <io.prometheus.simpleclient.version>0.16.0</io.prometheus.simpleclient.version>
         <io.prometheus.prometheus-metrics.version>1.10.0</io.prometheus.prometheus-metrics.version>
 
