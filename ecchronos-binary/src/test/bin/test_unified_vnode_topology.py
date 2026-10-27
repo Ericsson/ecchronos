@@ -77,6 +77,7 @@ def _assert_every_job_has_node_count(jobs, expected_nodes):
             f"{job['keyspace']}.{job['table']} ({job['job_id']}), got {node_rows}"
         )
 
+
 def _get_unified_jobs_in_json():
     """Return the list of unified jobs in json format (as returned by ``unified-schedules``)."""
     out, exit_code = run_ecctool_unified_schedules(params=["-o", "json"])
