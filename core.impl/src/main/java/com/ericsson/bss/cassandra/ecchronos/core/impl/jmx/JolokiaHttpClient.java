@@ -56,6 +56,8 @@ final class JolokiaHttpClient implements java.io.Closeable
     private static final int HTTP_OK = 200;
     private static final int HTTP_MULTI_CHOICES = 300;
     private static final String CLIENT_ID_PROPERTY = "clientID";
+    private static final String CONTENT_TYPE_HEADER = "Content-Type";
+    private static final String APPLICATION_JSON = "application/json";
     private static final String SS_OBJ_NAME = "org.apache.cassandra.db:type=StorageService";
     public static final String NO_BROADCAST_ADDRESS = "0.0.0.0"; //NOPMD AvoidUsingHardCodedIP
 
@@ -166,6 +168,7 @@ final class JolokiaHttpClient implements java.io.Closeable
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .timeout(java.time.Duration.ofSeconds(HTTP_REQUEST_TIMEOUT_SECONDS))
+                .header(CONTENT_TYPE_HEADER, APPLICATION_JSON)
                 .POST(HttpRequest.BodyPublishers.ofString(jolokiaCreateNotificationOptions(nodeID)))
                 .build();
         HttpResponse<String> response = getHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
@@ -182,6 +185,7 @@ final class JolokiaHttpClient implements java.io.Closeable
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .timeout(java.time.Duration.ofSeconds(HTTP_REQUEST_TIMEOUT_SECONDS))
+                .header(CONTENT_TYPE_HEADER, APPLICATION_JSON)
                 .POST(HttpRequest.BodyPublishers.ofString(
                         jolokiaRemoveNotificationOptions(nodeID, notificationID)))
                 .build();

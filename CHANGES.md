@@ -2,6 +2,7 @@
 
 ## Version 1.1.2
 
+* Set the Content-Type: application/json header on Jolokia notification register/remove POST requests so JMX notification registration keeps working with Jolokia 2.6.4+, which only parses request bodies when a proper Content-Type is present; without this repairs hang because the progress listener can never be registered - Issue #1927
 * Log a warning for unknown properties in configuration files (ecc.yml, security.yml, schedule.yml) instead of silently ignoring them, helping operators catch typos and obsolete options; parsing still succeeds so there is no behavior change at startup - Issue #1916
 * Create repair schedules for a newly added node without requiring an ecChronos restart - Issue #1754
 * Exit ecctool quietly instead of printing a BrokenPipeError traceback when its output is piped to a reader that closes early (e.g. head, grep, less) - Issue #1906
