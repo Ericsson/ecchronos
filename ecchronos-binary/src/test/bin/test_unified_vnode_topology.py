@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+import json
 import logging
 import time
 
@@ -21,11 +22,9 @@ import pytest
 from ecc_config import EcchronosConfig
 from conftest import (
     assert_nodes_size_is_equal,
-    run_ecctool,
     run_ecctool_state_nodes,
     run_ecctool_unified_schedules,
     wait_for_ecctool_row_count,
-    _ecctool_row_count,
 )
 
 logger = logging.getLogger(__name__)
@@ -49,36 +48,12 @@ class UnifiedVnodeConfig(EcchronosConfig):
         return keyspaces
 
 
-def _parse_unified_jobs():
-    """Parse the unfiltered ``unified-schedules`` output into a list of jobs.
-
-    The ``unified-schedules`` table columns are:
-        JobID | Keyspace | Table | Status(worst) | Repaired(%)avg |
-        Completed at | Next repair | Nodes
-
-    Returns a list of dicts ``{"job_id", "keyspace", "table"}`` (one per data
-    row), or an empty list if the command failed.
-    """
-    out, exit_code = run_ecctool_unified_schedules()
-    if exit_code != 0:
-        return []
-    lines = out.decode("ascii").strip().split("\n")
-    # Table output: border, header, border, data rows..., border
-    data_rows = lines[3:-1]
-    jobs = []
-    for row in data_rows:
-        cols = [c.strip() for c in row.split("|") if c.strip()]
-        if len(cols) >= 3:
-            jobs.append({"job_id": cols[0], "keyspace": cols[1], "table": cols[2]})
-    return jobs
-
-
 def _get_node_count_for_job(job_id):
     """Return the number of per-node rows for a given unified job id."""
-    out, exit_code = run_ecctool(["unified-schedules", "-i", job_id])
+    out, exit_code = run_ecctool_unified_schedules(params=["-i", job_id, "-o", "json"])
     if exit_code != 0:
         return 0
-    return _ecctool_row_count(out)
+    return len(json.loads(out.decode("utf-8")).get("schedules", []))
 
 
 def _assert_no_duplicate_jobs(jobs):
@@ -102,6 +77,12 @@ def _assert_every_job_has_node_count(jobs, expected_nodes):
             f"{job['keyspace']}.{job['table']} ({job['job_id']}), got {node_rows}"
         )
 
+def _get_unified_jobs_in_json():
+    """Return the list of unified jobs in json format (as returned by ``unified-schedules``)."""
+    out, exit_code = run_ecctool_unified_schedules(params=["-o", "json"])
+    assert exit_code == 0, f"unified-schedules failed with exit code {exit_code}"
+    return json.loads(out.decode("utf-8"))["unifiedSchedules"]
+
 
 def _wait_for_every_job_to_have_node_count(expected_nodes, timeout_in_secs, poll_interval_in_secs=5):
     """Poll until every unified job reports ``expected_nodes`` sub-jobs.
@@ -113,7 +94,7 @@ def _wait_for_every_job_to_have_node_count(expected_nodes, timeout_in_secs, poll
     deadline = time.time() + timeout_in_secs
     jobs = []
     while time.time() < deadline:
-        jobs = _parse_unified_jobs()
+        jobs = _get_unified_jobs_in_json()
         if jobs and all(_get_node_count_for_job(job["job_id"]) == expected_nodes for job in jobs):
             return jobs
         time.sleep(poll_interval_in_secs)
