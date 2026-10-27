@@ -31,11 +31,6 @@
             <destName>ecctool</destName>
         </file>
         <file>
-            <source>${project.basedir}/src/bin/ecctool_argparse.py</source>
-            <outputDirectory>bin</outputDirectory>
-            <destName>ecctool_argparse.py</destName>
-        </file>
-        <file>
             <!-- Build-time generated version (from _version.py.in filtering). -->
             <source>${project.build.directory}/generated-python/ecchronoslib/_version.py.in</source>
             <outputDirectory>pylib/ecchronoslib</outputDirectory>

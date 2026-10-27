@@ -27,18 +27,21 @@ from argparse import ArgumentParser
 from io import open
 from urllib.error import HTTPError
 
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+LIB_DIR = os.path.join(SCRIPT_DIR, "..", "pylib")
+if LIB_DIR not in sys.path:
+    sys.path.insert(0, LIB_DIR)
+
 try:
     from ecchronoslib import rest, table_printer
 except ImportError:
-    SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
-    LIB_DIR = os.path.join(SCRIPT_DIR, "..", "pylib")
     sys.path.append(LIB_DIR)
     from ecchronoslib import rest, table_printer
 from ecchronoslib.metrics_filter import filter_metrics_text
 from ecchronoslib.argparse_types import parse_duration_ms
 from ecchronoslib.rejections import rejections
 from ecchronoslib.version import get_client_version
-from ecctool_argparse import (
+from ecchronoslib.ecctool_argparse import (
     add_config_subcommand,
     add_metrics_subcommand,
     add_rejections_subcommand,
