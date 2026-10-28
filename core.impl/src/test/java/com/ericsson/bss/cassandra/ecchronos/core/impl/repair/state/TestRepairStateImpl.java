@@ -109,7 +109,7 @@ public class TestRepairStateImpl
         long lastRepairedAt = System.currentTimeMillis() - repairIntervalMs - 1;
         VnodeRepairStates vnodeRepairStates = createVnodeRepairStates(lastRepairedAt);
 
-        when(myVnodeRepairStateFactory.calculateNewState(any(), eq(TABLE_REFERENCE), any(), anyLong()))
+        when(myVnodeRepairStateFactory.calculateNewState(any(), eq(TABLE_REFERENCE), any(), anyLong(), anyLong()))
                 .thenReturn(vnodeRepairStates)
                 .thenThrow(new RuntimeException("No node was available to execute the query"));
         when(myReplicaRepairGroupFactory.generateReplicaRepairGroups(any()))
@@ -145,7 +145,7 @@ public class TestRepairStateImpl
         long now = System.currentTimeMillis();
         VnodeRepairStates vnodeRepairStates = createVnodeRepairStates(now);
 
-        when(myVnodeRepairStateFactory.calculateNewState(any(), eq(TABLE_REFERENCE), any(), anyLong()))
+        when(myVnodeRepairStateFactory.calculateNewState(any(), eq(TABLE_REFERENCE), any(), anyLong(), anyLong()))
                 .thenReturn(vnodeRepairStates);
         when(myReplicaRepairGroupFactory.generateReplicaRepairGroups(any()))
                 .thenReturn(Collections.emptyList());
@@ -171,7 +171,7 @@ public class TestRepairStateImpl
         long now = System.currentTimeMillis();
         VnodeRepairStates vnodeRepairStates = createVnodeRepairStates(now);
 
-        when(myVnodeRepairStateFactory.calculateNewState(any(), eq(TABLE_REFERENCE), any(), anyLong()))
+        when(myVnodeRepairStateFactory.calculateNewState(any(), eq(TABLE_REFERENCE), any(), anyLong(), anyLong()))
                 .thenReturn(vnodeRepairStates);
         when(myReplicaRepairGroupFactory.generateReplicaRepairGroups(any()))
                 .thenReturn(Collections.emptyList());
@@ -184,7 +184,7 @@ public class TestRepairStateImpl
         repairState.update();
 
         // verify - factory only called once (during constructor)
-        verify(myVnodeRepairStateFactory, times(1)).calculateNewState(any(), any(), any(), anyLong());
+        verify(myVnodeRepairStateFactory, times(1)).calculateNewState(any(), any(), any(), anyLong(), anyLong());
     }
 
     private void setupSuccessfulStateFactory()
@@ -192,7 +192,7 @@ public class TestRepairStateImpl
         long now = System.currentTimeMillis();
         VnodeRepairStates vnodeRepairStates = createVnodeRepairStates(now);
 
-        when(myVnodeRepairStateFactory.calculateNewState(any(), eq(TABLE_REFERENCE), any(), anyLong()))
+        when(myVnodeRepairStateFactory.calculateNewState(any(), eq(TABLE_REFERENCE), any(), anyLong(), anyLong()))
                 .thenReturn(vnodeRepairStates);
         when(myReplicaRepairGroupFactory.generateReplicaRepairGroups(any()))
                 .thenReturn(Collections.emptyList());

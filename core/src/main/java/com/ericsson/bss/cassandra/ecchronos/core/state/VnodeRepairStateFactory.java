@@ -31,12 +31,17 @@ public interface VnodeRepairStateFactory
      * @param tableReference The table to calculate the new repair state for vnodes.
      * @param previous The previous repair state or null if non exists.
      * @param iterateToTime The time to iterate repair entries to.
+     * @param iterationLookbackMs When a previous snapshot exists, how far below its creation time to extend the
+     *                            repair-history iteration lower bound, so a repair that started before the snapshot
+     *                            but finished after it is still observed (issue #1930). Typically derived from the
+     *                            repair interval. Must be &gt;= 0.
      * @return The calculated repair state.
      */
     VnodeRepairStates calculateNewState(
             Node node,
             TableReference tableReference, RepairStateSnapshot previous,
-            long iterateToTime);
+            long iterateToTime,
+            long iterationLookbackMs);
 
     /**
      * Calculate the repair state for a time window.
