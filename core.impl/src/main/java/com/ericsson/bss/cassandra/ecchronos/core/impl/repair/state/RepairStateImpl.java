@@ -55,6 +55,13 @@ public class RepairStateImpl implements RepairState
     /** Milliseconds per second, used for log formatting. */
     public static final int MILLISECONDS = 1000;
 
+    /** Lower clamp for the repair-history iteration lookback (issue #1930): tolerate a short-interval repair
+     * overrunning its interval by up to this margin. */
+    private static final long MIN_ITERATION_LOOKBACK_MS = TimeUnit.HOURS.toMillis(1);
+    /** Upper clamp for the repair-history iteration lookback (issue #1930): bound the per-pass re-scan for long
+     * repair intervals so a recompute never re-scans more than this window of history. */
+    private static final long MAX_ITERATION_LOOKBACK_MS = TimeUnit.DAYS.toMillis(1);
+
     private final AtomicReference<RepairStateSnapshot> myRepairStateSnapshot = new AtomicReference<>();
 
     private final TableReference myTableReference;
@@ -159,9 +166,28 @@ public class RepairStateImpl implements RepairState
 
     private RepairStateSnapshot generateNewRepairState(final Node node, final RepairStateSnapshot old, final long now)
     {
-        VnodeRepairStates vnodeRepairStates = myVnodeRepairStateFactory.calculateNewState(node, myTableReference, old, now);
+        VnodeRepairStates vnodeRepairStates = myVnodeRepairStateFactory.calculateNewState(node, myTableReference, old,
+                now, iterationLookbackMs());
 
         return generateSnapshotForVnode(vnodeRepairStates, old, now);
+    }
+
+    /**
+     * How far below a previous snapshot's creation time to extend the repair-history iteration lower bound so a
+     * repair that was in flight when the snapshot was created (started before it, finished after it) is still
+     * observed on the next recompute (issue #1930).
+     * <p>
+     * Sized to the repair interval rather than a fixed absolute: a repair should not take longer than its own
+     * interval, so one interval back is sufficient, and the re-scan cost stays proportional to the interval
+     * (a short interval re-scans a short window, not a fixed 24h). Clamped to a sane range so a very short interval
+     * still tolerates a repair slightly overrunning, and a very long interval does not re-scan excessively.
+     *
+     * @return the lookback margin in milliseconds.
+     */
+    private long iterationLookbackMs()
+    {
+        long interval = myRepairConfiguration.getRepairIntervalInMs();
+        return Math.min(MAX_ITERATION_LOOKBACK_MS, Math.max(MIN_ITERATION_LOOKBACK_MS, interval));
     }
 
     private RepairStateSnapshot generateSnapshotForVnode(final VnodeRepairStates vnodeRepairStates,
