@@ -64,6 +64,8 @@ public class RepairHangMonitor
     private final TimeUnit myHealthCheckTimeUnit;
 
     private volatile ScheduledFuture<?> myHangPreventFuture;
+    private final Object myScheduleLock = new Object();
+    private boolean myCancelled;
 
     /**
      * Constructs a RepairHangMonitor with default health check interval.
@@ -119,25 +121,54 @@ public class RepairHangMonitor
 
     /**
      * Reschedule the hang prevention check. Should be called whenever progress is made.
+     * <p>
+     * Synchronised with {@link #cancel()} and guarded by a cancelled flag so that a progress notification
+     * arriving concurrently with (or just after) completion cannot leave an orphaned check scheduled on the
+     * shared executor. Such an orphan would fire a minute later for an already-finished repair command and
+     * emit a spurious "no longer active, notification may have been lost" warning.
      */
     public void reschedule()
     {
-        if (myHangPreventFuture != null)
+        synchronized (myScheduleLock)
         {
-            myHangPreventFuture.cancel(false);
+            if (myCancelled)
+            {
+                return;
+            }
+            if (myHangPreventFuture != null)
+            {
+                myHangPreventFuture.cancel(false);
+            }
+            myHangPreventFuture = myExecutor.schedule(new HangPreventingTask(),
+                    myHealthCheckInterval, myHealthCheckTimeUnit);
         }
-        myHangPreventFuture = myExecutor.schedule(new HangPreventingTask(),
-                myHealthCheckInterval, myHealthCheckTimeUnit);
     }
 
     /**
-     * Cancel any pending checks. Since the executor is shared, only the future is cancelled.
+     * Cancel any pending checks and prevent any further rescheduling. Since the executor is shared, only the
+     * future is cancelled.
      */
     public void cancel()
     {
-        if (myHangPreventFuture != null)
+        synchronized (myScheduleLock)
         {
-            myHangPreventFuture.cancel(false);
+            myCancelled = true;
+            if (myHangPreventFuture != null)
+            {
+                myHangPreventFuture.cancel(false);
+            }
+        }
+    }
+
+    private void rescheduleFromTask(final HangPreventingTask task)
+    {
+        synchronized (myScheduleLock)
+        {
+            if (myCancelled)
+            {
+                return;
+            }
+            myHangPreventFuture = myExecutor.schedule(task, myHealthCheckInterval, myHealthCheckTimeUnit);
         }
     }
 
@@ -152,6 +183,7 @@ public class RepairHangMonitor
             try (DistributedJmxProxy proxy = myJmxProxyFactory.connect())
             {
                 String nodeStatus = proxy.getNodeStatus(myNodeID);
+                boolean repairActive = NORMAL_STATUS.equals(nodeStatus) && proxy.isRepairActive(myNodeID, command);
                 if (!NORMAL_STATUS.equals(nodeStatus))
                 {
                     LOG.error("Cassandra node {} is down, aborting repair task.", myNodeID);
@@ -160,7 +192,7 @@ public class RepairHangMonitor
                     proxy.forceTerminateAllRepairSessionsInSpecificNode(myNodeID);
                     myNotificationHandler.countDown();
                 }
-                else if (!proxy.isRepairActive(myNodeID, command))
+                else if (!repairActive)
                 {
                     LOG.warn("Repair-{} of {} is no longer active on node {}, notification may have been lost",
                             command, myTableReference, myNodeID);
@@ -178,8 +210,7 @@ public class RepairHangMonitor
                 {
                     LOG.debug("Repair-{} still in status {}. Will recheck in {} {}",
                             command, nodeStatus, myHealthCheckInterval, myHealthCheckTimeUnit);
-                    myHangPreventFuture = myExecutor.schedule(this,
-                            myHealthCheckInterval, myHealthCheckTimeUnit);
+                    rescheduleFromTask(this);
                 }
             }
             catch (IOException e)

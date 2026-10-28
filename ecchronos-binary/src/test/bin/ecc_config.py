@@ -34,6 +34,7 @@ class EcchronosConfig:
         schedule_interval_unit=None,
         schedule_initial_delay_time=None,
         schedule_initial_delay_unit=None,
+        schedule_repair_type=None,
     ):
         self.container_mounts = {}
         self.datacenter_aware = (
@@ -48,6 +49,7 @@ class EcchronosConfig:
         self.schedule_interval_unit = schedule_interval_unit
         self.schedule_initial_delay_time = schedule_initial_delay_time
         self.schedule_initial_delay_unit = schedule_initial_delay_unit
+        self.schedule_repair_type = schedule_repair_type
 
     def modify_configuration(self):
         self._modify_ecc_yaml_file()
@@ -219,6 +221,7 @@ class EcchronosConfig:
                 self.schedule_interval_unit,
                 self.schedule_initial_delay_time,
                 self.schedule_initial_delay_unit,
+                self.schedule_repair_type,
             )
         )
 
@@ -291,6 +294,8 @@ class EcchronosConfig:
                         table.setdefault("initial_delay", {})["time"] = self.schedule_initial_delay_time
                     if self.schedule_initial_delay_unit is not None:
                         table.setdefault("initial_delay", {})["unit"] = self.schedule_initial_delay_unit
+                    if self.schedule_repair_type is not None:
+                        table["repair_type"] = self.schedule_repair_type
 
                     break
 

@@ -32,8 +32,6 @@ import com.google.common.collect.AbstractIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.annotations.VisibleForTesting;
-
 /**
  * Dynamic priority queue for scheduled jobs.
  * <p>
@@ -111,8 +109,12 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
         LOG.debug("Size of {} Queue for Node: {} is {}", job.getPriority(), job.getNodeId(), queue.size());
     }
 
-    @VisibleForTesting
-    final int size()
+    /**
+     * Get the total number of jobs across all priorities.
+     *
+     * @return the queue size.
+     */
+    public final int size()
     {
         int size = 0;
 

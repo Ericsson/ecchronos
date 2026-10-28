@@ -1,5 +1,14 @@
 # Changes
 
+## Version 2.0.0 (Not decided yet)
+
+* Introduce an Opt-In Consolidated Multi-Node Repair Mechanism (unified_vnode) - Issue #1865
+* Abstract Schema-Change Delivery Behind SchemaChangeHandler for the Unified Path - Issue #1866
+* Reject Mixed Legacy and Unified Repair Types Between ecc.yml and schedule.yml - Issue #1867
+* Add REST unified-schedules Endpoints and the UnifiedSchedule Aggregate Type - Issue #1868
+* Add the ecctool unified-schedules Command - Issue #1869
+* Fix the RepairHangMonitor Reschedule/Cancel Race Causing Spurious Lost-Notification Warnings - Issue #1870
+
 ## Version 1.1.2
 
 * Set the Content-Type: application/json header on Jolokia notification register/remove POST requests so JMX notification registration keeps working with Jolokia 2.6.4+, which only parses request bodies when a proper Content-Type is present; without this repairs hang because the progress listener can never be registered - Issue #1927
