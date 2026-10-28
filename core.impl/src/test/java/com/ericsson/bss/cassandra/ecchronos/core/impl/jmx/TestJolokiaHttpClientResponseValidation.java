@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.datastax.oss.driver.api.core.metadata.EndPoint;
 import com.datastax.oss.driver.api.core.metadata.Node;
@@ -208,6 +209,27 @@ public class TestJolokiaHttpClientResponseValidation
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(200);
         assertThat(callCount.get()).isEqualTo(3);
+    }
+
+    @Test
+    public void testRegisterNotificationSendsJsonContentTypeHeader() throws IOException, InterruptedException
+    {
+        AtomicReference<String> capturedContentType = new AtomicReference<>();
+        String registerResponse = "{\"request\":{},\"value\":\"handle-1\",\"status\":200,\"timestamp\":1234567890}";
+        httpServer.createContext("/jolokia/notification", exchange ->
+        {
+            capturedContentType.set(exchange.getRequestHeaders().getFirst("Content-Type"));
+            exchange.sendResponseHeaders(200, registerResponse.length());
+            try (OutputStream os = exchange.getResponseBody())
+            {
+                os.write(registerResponse.getBytes());
+            }
+        });
+
+        String handle = jolokiaHttpClient.registerJolokiaNotification(nodeID);
+
+        assertThat(handle).isEqualTo("handle-1");
+        assertThat(capturedContentType.get()).isEqualTo("application/json");
     }
 
     @Test
