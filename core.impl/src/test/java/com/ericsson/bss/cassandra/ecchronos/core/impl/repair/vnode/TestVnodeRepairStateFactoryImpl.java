@@ -478,7 +478,9 @@ public class TestVnodeRepairStateFactoryImpl
                 newState(range(2, 3), range2RepairedAt, range2RepairedAt));
         List<RepairEntry> secondIterateRepairEntries = new ArrayList<>();
 
-        when(repairHistoryProvider.iterate(eq(myMockNode), eq(TABLE_REFERENCE), any(long.class), eq(firstSnapshotCreatedAt),
+        // After #1930 the iteration lower bound is previous.getCreatedAt() minus a lookback margin, clamped at 0.
+        // With these tiny createdAt values the bound clamps to 0.
+        when(repairHistoryProvider.iterate(eq(myMockNode), eq(TABLE_REFERENCE), any(long.class), eq(0L),
                 any(Predicate.class))).thenReturn(secondIterateRepairEntries.iterator());
 
         assertNewVnodeStates(firstRepairStateSnapshot, newState(range(1, 2), range1RepairedAt, range1RepairedAt),
@@ -494,10 +496,54 @@ public class TestVnodeRepairStateFactoryImpl
         List<RepairEntry> thirdIterateRepairEntries = new ArrayList<>();
         thirdIterateRepairEntries.add(repairEntry3);
 
-        when(repairHistoryProvider.iterate(eq(myMockNode), eq(TABLE_REFERENCE), any(long.class), eq(secondSnapshotCreatedAt),
+        when(repairHistoryProvider.iterate(eq(myMockNode), eq(TABLE_REFERENCE), any(long.class), eq(0L),
                 any(Predicate.class))).thenReturn(thirdIterateRepairEntries.iterator());
         assertNewVnodeStates(secondRepairStateSnapshot, newState(range(1, 2), updateRange1RepairedAt, updateRange1RepairedAt),
                 newState(range(2, 3), range2RepairedAt, range2RepairedAt));
+    }
+
+    /**
+     * Reproduction (and regression guard) for the standalone empty-table re-repair loop. Fixed by #1930.
+     *
+     * A repair of range(2,3) STARTS at t=10 but the SUCCESS history entry is only visible on a later
+     * recompute. The previous snapshot was created at t=20 (AFTER the repair started) and still carries the
+     * STALE repaired-at for range(2,3). Before the fix, calculateNewState iterated history from
+     * previous.getCreatedAt() = 20, which (by the started-at &gt;= from rule) EXCLUDED the repair entry whose
+     * startedAt = 10, so the fresh repair was never read and range(2,3) kept the stale value -> the table was
+     * re-selected every pass.
+     *
+     * With the #1930 fix the iteration lower bound is extended by a lookback margin below the snapshot creation
+     * time, so the in-flight-at-snapshot repair is observed and range(2,3) advances to the completed repair
+     * (startedAt=10, finishedAt=15). This test asserts that fixed behaviour; it fails against the old
+     * createdAt-only bound.
+     */
+    @Test
+    public void testRepairStartedBeforePreviousSnapshotIsExcludedFromIterationWindow() throws UnknownHostException
+    {
+        DriverNode node1 = withNode("127.0.0.1");
+        DriverNode node2 = withNode("127.0.0.2");
+
+        withRange(range(1, 2), node1, node2);
+        withRange(range(2, 3), node1, node2);
+
+        // A successful repair of range(2,3): started at t=10, finished at t=15.
+        long repairStartedAt = 10L;
+        long repairFinishedAt = 15L;
+        withSuccessfulRepairHistory(range(2, 3), repairStartedAt, repairFinishedAt);
+
+        // Previous snapshot was created at t=20 (AFTER the repair started at t=10) and still holds the STALE
+        // state for range(2,3): a much older repaired-at of 1L. range(1,2) is up to date.
+        long staleRepairedAt = 1L;
+        long previousCreatedAt = 20L;
+        RepairStateSnapshot previousSnapshot = snapshot(staleRepairedAt, previousCreatedAt,
+                newState(range(1, 2), 5L, 6L),
+                newState(range(2, 3), staleRepairedAt, staleRepairedAt));
+
+        // The repair that finished at 15 should be reflected. If the iteration window (from=20) drops it,
+        // range(2,3) will instead remain at the stale (1L,1L) -> this assertion fails, demonstrating the bug.
+        assertNewVnodeStates(previousSnapshot,
+                newState(range(1, 2), 5L, 6L),
+                newState(range(2, 3), repairStartedAt, repairFinishedAt));
     }
 
     private RepairStateSnapshot snapshot(long repairedAt, VnodeRepairState... states)
@@ -660,7 +706,8 @@ public class TestVnodeRepairStateFactoryImpl
 
     private void assertNewState(VnodeRepairStateFactory factory, RepairStateSnapshot previous, Class<? extends VnodeRepairStates> expectedClass, Collection<VnodeRepairState> expectedStates)
     {
-        VnodeRepairStates newStates = factory.calculateNewState(myMockNode, TABLE_REFERENCE, previous, System.currentTimeMillis());
+        VnodeRepairStates newStates = factory.calculateNewState(myMockNode, TABLE_REFERENCE, previous,
+                System.currentTimeMillis(), TimeUnit.DAYS.toMillis(1));
         assertThat(newStates).isInstanceOf(expectedClass);
 
         Collection<VnodeRepairState> vnodeRepairStates = newStates.getVnodeRepairStates();
