@@ -79,8 +79,11 @@ public class TestJolokiaNotificationControllerUnavailableCallback
             }
         });
 
-        // Notification registration endpoint
-        httpServer.createContext("/jolokia/notification", exchange ->
+        // Notification registration endpoint.
+        // Jolokia notification commands are POSTed to the base /jolokia endpoint (no path info),
+        // so the mock handler is registered there. The more specific /jolokia/notification/register
+        // and /jolokia/exec/... contexts above take precedence for their GET requests.
+        httpServer.createContext("/jolokia", exchange ->
         {
             String body = "{\"value\":\"notif-1\"}";
             exchange.sendResponseHeaders(200, body.length());

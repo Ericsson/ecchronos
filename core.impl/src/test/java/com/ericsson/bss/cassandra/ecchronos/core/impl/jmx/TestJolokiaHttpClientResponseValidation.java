@@ -212,13 +212,18 @@ public class TestJolokiaHttpClientResponseValidation
     }
 
     @Test
-    public void testRegisterNotificationSendsJsonContentTypeHeader() throws IOException, InterruptedException
+    public void testRegisterNotificationPostsToBaseEndpointWithJsonContentType() throws IOException, InterruptedException
     {
         AtomicReference<String> capturedContentType = new AtomicReference<>();
+        AtomicReference<String> capturedPath = new AtomicReference<>();
+        AtomicReference<String> capturedMethod = new AtomicReference<>();
         String registerResponse = "{\"request\":{},\"value\":\"handle-1\",\"status\":200,\"timestamp\":1234567890}";
-        httpServer.createContext("/jolokia/notification", exchange ->
+        // Jolokia notification commands must be POSTed to the base /jolokia endpoint (no path info).
+        httpServer.createContext("/jolokia", exchange ->
         {
             capturedContentType.set(exchange.getRequestHeaders().getFirst("Content-Type"));
+            capturedPath.set(exchange.getRequestURI().getPath());
+            capturedMethod.set(exchange.getRequestMethod());
             exchange.sendResponseHeaders(200, registerResponse.length());
             try (OutputStream os = exchange.getResponseBody())
             {
@@ -229,7 +234,12 @@ public class TestJolokiaHttpClientResponseValidation
         String handle = jolokiaHttpClient.registerJolokiaNotification(nodeID);
 
         assertThat(handle).isEqualTo("handle-1");
+        assertThat(capturedMethod.get()).isEqualTo("POST");
         assertThat(capturedContentType.get()).isEqualTo("application/json");
+        // Must target the base endpoint with a trailing slash, not /jolokia/notification
+        // (POST with path info is rejected with HTTP 400 by Jolokia 2.6.4+; the trailing slash
+        // also keeps reverse proxies with a "/jolokia/" location prefix working).
+        assertThat(capturedPath.get()).isEqualTo("/jolokia/");
     }
 
     @Test
