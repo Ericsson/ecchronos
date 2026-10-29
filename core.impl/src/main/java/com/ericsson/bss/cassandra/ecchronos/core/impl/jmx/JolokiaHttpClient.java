@@ -163,7 +163,10 @@ final class JolokiaHttpClient implements java.io.Closeable
 
     public String registerJolokiaNotification(final UUID nodeID) throws IOException, InterruptedException
     {
-        String url = mountJolokiaBaseURL(nodeID) + "/notification";
+        // Jolokia notification commands must be POSTed to the base /jolokia endpoint with the command
+        // ("type":"notification","command":"add") in the request body. Jolokia 2.6.4+ rejects POST requests
+        // that carry any path info (e.g. /jolokia/notification) with HTTP 400 and an empty body (see Jolokia #1067).
+        String url = mountJolokiaBaseURL(nodeID);
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
@@ -181,7 +184,9 @@ final class JolokiaHttpClient implements java.io.Closeable
 
     public void removeJolokiaNotification(final UUID nodeID, final String notificationID) throws UnknownHostException
     {
-        String url = mountJolokiaBaseURL(nodeID) + "/notification";
+        // POST to the base /jolokia endpoint; the command ("type":"notification","command":"remove") is in the body.
+        // Jolokia 2.6.4+ rejects POST requests with path info (see Jolokia #1067).
+        String url = mountJolokiaBaseURL(nodeID);
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .timeout(java.time.Duration.ofSeconds(HTTP_REQUEST_TIMEOUT_SECONDS))
