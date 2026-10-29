@@ -236,8 +236,10 @@ public class TestJolokiaHttpClientResponseValidation
         assertThat(handle).isEqualTo("handle-1");
         assertThat(capturedMethod.get()).isEqualTo("POST");
         assertThat(capturedContentType.get()).isEqualTo("application/json");
-        // Must target the base endpoint, not /jolokia/notification (rejected with HTTP 400 by Jolokia 2.6.4+).
-        assertThat(capturedPath.get()).isEqualTo("/jolokia");
+        // Must target the base endpoint with a trailing slash, not /jolokia/notification
+        // (POST with path info is rejected with HTTP 400 by Jolokia 2.6.4+; the trailing slash
+        // also keeps reverse proxies with a "/jolokia/" location prefix working).
+        assertThat(capturedPath.get()).isEqualTo("/jolokia/");
     }
 
     @Test
