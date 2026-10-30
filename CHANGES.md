@@ -2,6 +2,7 @@
 
 ## Version 1.1.2
 
+* Enable DEBUG logging for ecChronos by default, written to ecc.debug.log; third-party libraries and the console/ecc.log output remain at INFO. Also add a disabled-by-default TRACE file appender (ecc.trace.log) with inline instructions for enabling it when investigating issues
 * POST Jolokia notification register/remove commands to the base Jolokia endpoint (/jolokia/) instead of /jolokia/notification so JMX notification registration keeps working with Jolokia 2.6.4+, which rejects POST requests carrying any path info with HTTP 400 and an empty body; the trailing slash keeps nginx-fronted (PEM/TLS) setups with a /jolokia/ location prefix working too. Without this repairs hang because the progress listener can never be registered - Issue #1927
 * Set the Content-Type: application/json header on Jolokia notification register/remove POST requests so JMX notification registration keeps working with Jolokia 2.6.4+, which only parses request bodies when a proper Content-Type is present; without this repairs hang because the progress listener can never be registered - Issue #1927
 * Log a warning for unknown properties in configuration files (ecc.yml, security.yml, schedule.yml) instead of silently ignoring them, helping operators catch typos and obsolete options; parsing still succeeds so there is no behavior change at startup - Issue #1916
