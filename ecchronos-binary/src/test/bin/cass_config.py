@@ -36,6 +36,16 @@ CLUSTER_STARTUP_WAIT_TIME_IN_SECS = 180
 
 COMPOSE_FILE_NAME = "docker-compose.yml"
 CASSANDRA_SEED_DC1_RC1_ND1 = "cassandra-seed-dc1-rack1-node1"
+
+# All Cassandra node container names used by docker-compose, plus the optionally added
+# extra node. Used when collecting per-node logs as test artifacts.
+CASSANDRA_NODE_NAMES = [
+    "cassandra-seed-dc1-rack1-node1",
+    "cassandra-seed-dc2-rack1-node1",
+    "cassandra-node-dc1-rack1-node2",
+    "cassandra-node-dc2-rack1-node2",
+]
+CASSANDRA_EXTRA_NODE_NAME = "cassandra-node-dc1-rack1-node3"
 ALTER_SYSTEM_AUTH_CQL = "ALTER KEYSPACE system_auth WITH REPLICATION = {'class': 'NetworkTopologyStrategy', 'datacenter1': 1, 'datacenter2': 2};"
 
 logging.basicConfig(level=logging.INFO)
@@ -549,6 +559,69 @@ class CassandraCluster:
             "The system_auth replication change may not have propagated (repair did not "
             "reconcile the superuser credentials) before the integration test continued."
         )
+
+    def _nodes_for_log_collection(self):
+        """Return [(label, container_ref), ...] for every live Cassandra node.
+
+        Resolves the actual compose container IDs (compose prefixes service names with the
+        project, so the bare service names are not valid 'docker cp' targets). Falls back to
+        the known service names if the compose object cannot enumerate containers. Includes
+        the extra node (by its container ID) when present.
+        """
+        nodes = []
+        try:
+            for container in self.cassandra_compose.get_containers():
+                # Prefer the service name as the artifact label, the container ID as the ref.
+                label = getattr(container, "Service", None) or getattr(container, "Name", None) or container.ID
+                nodes.append((label, container.ID))
+        except Exception as exc:  # noqa: BLE001  # pylint: disable=broad-except
+            # Fall back to service names on any failure enumerating compose containers.
+            logger.warning("Could not enumerate compose containers (%s); falling back to names.", exc)
+            nodes = [(name, name) for name in CASSANDRA_NODE_NAMES]
+
+        if self._extra_node is not None:
+            nodes.append((CASSANDRA_EXTRA_NODE_NAME, self._extra_node))
+        return nodes
+
+    def collect_node_logs(self, destination_dir):
+        """Copy the whole /var/log/cassandra directory from every node to the host.
+
+        The Cassandra containers do not bind-mount their log directory, so the logs are
+        lost on teardown. Over a long run Cassandra rotates system.log / debug.log into
+        additional (and possibly compressed) segments such as system.log.1 or
+        system.log.<date>.N.zip. Rather than assume rotation names, this copies the entire
+        log directory per node so the live logs AND all rotated/archived segments are kept
+        as artifacts. Best-effort: never raises; a node that is gone is skipped with a
+        warning.
+
+        Produces destination_dir/<service>/cassandra/<all log files>.
+        """
+        os.makedirs(destination_dir, exist_ok=True)
+        for label, container_ref in self._nodes_for_log_collection():
+            node_dir = os.path.join(destination_dir, label)
+            dst = os.path.join(node_dir, "cassandra")
+            os.makedirs(dst, exist_ok=True)
+            # Trailing '/.' copies the directory contents into dst.
+            src = f"{container_ref}:/var/log/cassandra/."
+            result = subprocess.run(
+                ["docker", "cp", src, dst],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if result.returncode == 0:
+                collected = sorted(os.listdir(dst)) if os.path.isdir(dst) else []
+                logger.info("Collected log dir from %s -> %s (%s files)", label, dst, len(collected))
+                if collected:
+                    logger.info("  %s: %s", label, collected)
+            else:
+                logger.warning(
+                    "Could not collect log dir from %s (%s) (rc=%s): %s",
+                    label,
+                    container_ref,
+                    result.returncode,
+                    result.stderr.strip(),
+                )
 
     def stop_cluster(self):
         # Tear down using the same compose command prefix the wrapper used for 'up'

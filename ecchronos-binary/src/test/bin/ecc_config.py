@@ -34,6 +34,8 @@ class EcchronosConfig:
         schedule_interval_unit=None,
         schedule_initial_delay_time=None,
         schedule_initial_delay_unit=None,
+        soak_keyspaces=None,
+        debug_logging=False,
     ):
         self.container_mounts = {}
         self.datacenter_aware = (
@@ -48,6 +50,16 @@ class EcchronosConfig:
         self.schedule_interval_unit = schedule_interval_unit
         self.schedule_initial_delay_time = schedule_initial_delay_time
         self.schedule_initial_delay_unit = schedule_initial_delay_unit
+
+        # Soak-test support: a list of keyspace schedule definitions (same shape as the
+        # entries returned by _default_test_schedule_keyspaces) that are appended to the
+        # schedule configuration. Used to give a dedicated soak keyspace a short repair
+        # interval so many repair cycles run within a multi-hour soak window.
+        self.soak_keyspaces = soak_keyspaces
+
+        # When True, run the agent at DEBUG log level and ensure the debug log file is
+        # written into the mounted log directory so it is captured as a host artifact.
+        self.debug_logging = debug_logging
 
     def modify_configuration(self):
         self._modify_ecc_yaml_file()
@@ -206,10 +218,53 @@ class EcchronosConfig:
             else:
                 result.append(line)
 
+        if self.debug_logging:
+            result = self._apply_debug_logging(result)
+
         self.container_mounts["logback"] = {
             "host": self.write_tmp(result, ".xml"),
             "container": global_vars.CONTAINER_LOGBACK_FILE_PATH,
         }
+
+    # Base package for ecChronos's own code. DEBUG is enabled only for this logger so
+    # dependency libraries (Cassandra driver, Netty, Spring, Caffeine, ...) stay at the
+    # root INFO level.
+    ECCHRONOS_LOGGER = "com.ericsson.bss.cassandra.ecchronos"
+
+    @staticmethod
+    def _apply_debug_logging(lines):
+        """Enable DEBUG logging for ecChronos only, captured as a host artifact.
+
+        - Redirect the FILE_DEBUG appender's file (and rolling pattern) into the mounted
+          container log directory, so ecc.debug.log lands on the host alongside ecc.log.
+        - Add a dedicated logger for the ecChronos package at DEBUG that writes to the
+          FILE_DEBUG appender. The root logger stays at INFO, so dependency libraries are
+          NOT switched to DEBUG. (The default config defines FILE_DEBUG but never
+          references it; this is the only reference, scoped to ecChronos.)
+        """
+        debug_file = f"{global_vars.CONTAINER_LOGS_PATH}/ecc.debug.log"
+        text = "".join(lines)
+
+        # Point the debug appender at the mounted log dir (file + rolling pattern).
+        text = text.replace("<file>ecc.debug.log</file>", f"<file>{debug_file}</file>")
+        text = text.replace(
+            "<fileNamePattern>ecc.debug.log.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>",
+            f"<fileNamePattern>{debug_file}.%d{{yyyy-MM-dd}}.%i.gz</fileNamePattern>",
+        )
+
+        # Add a package-scoped DEBUG logger wired to FILE_DEBUG, just before <root>.
+        # additivity="false" keeps ecChronos DEBUG lines out of the INFO appenders.
+        ecc_logger = (
+            f'    <logger name="{EcchronosConfig.ECCHRONOS_LOGGER}" level="DEBUG" additivity="false">\n'
+            f'        <appender-ref ref="FILE_DEBUG" />\n'
+            f'        <appender-ref ref="FILE_INFO" />\n'
+            f"    </logger>\n\n"
+        )
+        text = text.replace("    <root ", ecc_logger + "    <root ", 1)
+
+        # Return as a single-element list; write_tmp writelines() this verbatim, preserving
+        # the full document (including the closing </configuration> tag).
+        return [text]
 
     def _has_schedule_overrides(self):
         return any(
@@ -294,6 +349,9 @@ class EcchronosConfig:
 
                     break
 
+        if self.soak_keyspaces:
+            data["keyspaces"].extend(self.soak_keyspaces)
+
         self.container_mounts["schedule"] = {
             "host": self.write_tmp(data),
             "container": global_vars.CONTAINER_SCHEDULE_YAML_PATH,
@@ -311,3 +369,50 @@ class EcchronosConfig:
             tmp.writelines(data)
         tmp.close()
         return tmp.name
+
+
+# --- Soak-test schedule support -------------------------------------------------
+
+# ecChronos is designed to repair on the order of days. For a soak test we want the
+# scheduler to fire many times within a multi-hour window, but the interval must stay
+# long enough that each schedule can actually run (acquire locks, repair every vnode on
+# every node) and complete before the next cycle is due. Going too low produces false
+# "falling behind" signals rather than exercising the steady-state loop.
+#
+# The DEFAULT interval is 10 minutes, which is comfortably safe on slower/larger
+# environments. The hard FLOOR is 2 minutes: empirically a cycle completes in well under
+# a minute on the standard 4-node / 16-vnode test cluster, so 2 minutes still allows a
+# cycle to finish and is useful for fast local smoke tests. Anything below the floor is
+# clamped up. Keep the default at 10m; only lower towards the floor deliberately (e.g.
+# -Dsoak.repair.interval.minutes=2) when iterating locally.
+SOAK_DEFAULT_INTERVAL_MINUTES = 10
+SOAK_MIN_INTERVAL_MINUTES = 2
+
+# Dedicated soak keyspace and its tables. 'table_empty' is intentionally left without
+# any rows to verify that an empty table is still scheduled and progresses (its
+# lastRepaired must advance just like the populated tables).
+SOAK_KEYSPACE = "soak"
+SOAK_POPULATED_TABLES = ["table_a", "table_b"]
+SOAK_EMPTY_TABLE = "table_empty"
+SOAK_TABLES = SOAK_POPULATED_TABLES + [SOAK_EMPTY_TABLE]
+
+
+def build_soak_schedule_keyspaces(interval_minutes=SOAK_DEFAULT_INTERVAL_MINUTES):
+    """Build the schedule.yml 'keyspaces' entry for the soak keyspace.
+
+    All soak tables (populated and the intentionally empty one) get the same short
+    interval and a zero initial delay so repairs begin promptly once the agent starts.
+    The interval is clamped up to SOAK_MIN_INTERVAL_MINUTES (the hard floor) to keep each
+    cycle completable.
+    """
+    interval_minutes = max(int(interval_minutes), SOAK_MIN_INTERVAL_MINUTES)
+    tables = [
+        {
+            "name": table,
+            "interval": {"time": interval_minutes, "unit": "minutes"},
+            "initial_delay": {"time": 0, "unit": "minutes"},
+            "unwind_ratio": 0.0,
+        }
+        for table in SOAK_TABLES
+    ]
+    return [{"name": SOAK_KEYSPACE, "tables": tables}]

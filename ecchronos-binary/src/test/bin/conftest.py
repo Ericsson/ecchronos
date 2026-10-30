@@ -16,6 +16,7 @@
 
 import pytest
 import os
+import contextlib
 import global_variables as global_vars
 import subprocess
 from cass_config import CassandraCluster
@@ -310,3 +311,130 @@ def wait_for_ecctool_row_count(ecctool_fn, expected, timeout_in_secs=120, poll_i
         last_rows,
     )
     return out
+
+
+# --- Soak-test REST / telemetry helpers -----------------------------------------
+#
+# These reach the agent's REST API from the host (not from inside the container like
+# ecctool does), so they build their own base URL against the published port and,
+# when TLS is enabled, point the ecchronoslib SSL context at the *host* certificate
+# paths. ecchronoslib.rest reads ECCTOOL_CERT_FILE/KEY_FILE/CA_FILE to build a mutual
+# -TLS context; start_ecchronos sets those to in-container paths for ecctool, so we
+# override them with host paths for the duration of each host-side request.
+
+
+def _host_base_url(bind_port=8080):
+    scheme = "http" if global_vars.LOCAL == "true" else "https"
+    return f"{scheme}://localhost:{bind_port}"
+
+
+def _host_tls_env():
+    """Return the env overrides needed for a host-side mutual-TLS REST call.
+
+    Empty when running in LOCAL (plaintext) mode.
+    """
+    if global_vars.LOCAL == "true":
+        return {}
+    return {
+        "ECCTOOL_CERT_FILE": f"{global_vars.CERTIFICATE_DIRECTORY}/clientcert.crt",
+        "ECCTOOL_KEY_FILE": f"{global_vars.CERTIFICATE_DIRECTORY}/clientkey.pem",
+        "ECCTOOL_CA_FILE": f"{global_vars.CERTIFICATE_DIRECTORY}/serverca.crt",
+    }
+
+
+@contextlib.contextmanager
+def _host_tls_context():
+    """Temporarily point ecchronoslib at the host certificate paths.
+
+    The in-container ecctool cert paths set by start_ecchronos do not exist on the
+    host, so restore the previous values afterwards to avoid leaking across calls.
+    """
+    overrides = _host_tls_env()
+    if not overrides:
+        yield
+        return
+    previous = {k: os.environ.get(k) for k in overrides}
+    os.environ.update(overrides)
+    try:
+        yield
+    finally:
+        for key, value in previous.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+
+def list_schedules_via_rest(bind_port=8080):
+    """Return the list of Schedule objects from the agent's REST /schedules endpoint.
+
+    Raises RuntimeError if the request is not successful so callers fail loudly rather
+    than silently asserting over an empty list.
+    """
+    from ecchronoslib import rest  # pylint: disable=import-outside-toplevel
+
+    with _host_tls_context():
+        request = rest.RepairSchedulerRequest(base_url=_host_base_url(bind_port))
+        result = request.list_schedules()
+    if not result.is_successful():
+        raise RuntimeError(f"Failed to list schedules via REST: {result.format_exception()}")
+    return result.data
+
+
+def soak_schedules_by_table(bind_port=8080, keyspace=None):
+    """Map (keyspace, table) -> list of Schedule objects (one per node), optionally
+    filtered to a single keyspace. ecChronos exposes one schedule per node per table,
+    so values are lists."""
+    schedules = {}
+    for schedule in list_schedules_via_rest(bind_port):
+        if keyspace is not None and schedule.keyspace != keyspace:
+            continue
+        schedules.setdefault((schedule.keyspace, schedule.table), []).append(schedule)
+    return schedules
+
+
+def get_metrics_text(bind_port=8080):
+    """Return the raw Prometheus metrics exposition text from the agent (telemetry).
+
+    Returns None if metrics are unavailable (e.g. statistics disabled) so a soak run
+    can treat metrics as best-effort supporting signal rather than a hard dependency.
+    """
+    from ecchronoslib import rest  # pylint: disable=import-outside-toplevel
+
+    with _host_tls_context():
+        request = rest.MetricsRequest(base_url=_host_base_url(bind_port))
+        result = request.get_metrics()
+    # On success get_metrics returns the scrape text; on failure a RequestResult.
+    if isinstance(result, str):
+        return result
+    logger.warning("Metrics endpoint unavailable: %s", result.format_exception())
+    return None
+
+
+def parse_metric_samples(metrics_text, metric_name):
+    """Extract {labels_string: float_value} samples for a metric from scrape text.
+
+    A minimal Prometheus text parser sufficient for soak telemetry assertions; ignores
+    HELP/TYPE/EOF comment lines and tolerates samples with or without labels.
+    """
+    samples = {}
+    if not metrics_text:
+        return samples
+    for line in metrics_text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        name_part, _, value_part = line.rpartition(" ")
+        if not name_part:
+            continue
+        base_name = name_part.split("{", 1)[0]
+        if base_name != metric_name:
+            continue
+        labels = ""
+        if "{" in name_part:
+            labels = name_part[name_part.index("{") + 1 : name_part.rindex("}")]
+        try:
+            samples[labels] = float(value_part)
+        except ValueError:
+            continue
+    return samples
