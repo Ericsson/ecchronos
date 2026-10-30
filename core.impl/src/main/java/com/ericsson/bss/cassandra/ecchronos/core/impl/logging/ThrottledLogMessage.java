@@ -61,13 +61,13 @@ public class ThrottledLogMessage
      * Logs an informational message if the logging is allowed based on the throttling interval.
      *
      * @param logger the logger to log the message to. Must not be {@code null}.
-     * @param timeInMs the current time in milliseconds.
+     * @param timeInNanos the current time in nanoseconds.
      * @param objects optional parameters to be included in the log message.
      * @throws NullPointerException if {@code logger} is {@code null}.
      */
-    public final void info(final Logger logger, final long timeInMs, final Object... objects)
+    public final void info(final Logger logger, final long timeInNanos, final Object... objects)
     {
-        if (isAllowedToLog(timeInMs))
+        if (isAllowedToLog(timeInNanos))
         {
             logger.info(myMessage, objects);
         }
@@ -77,13 +77,13 @@ public class ThrottledLogMessage
      * Logs a warning message if the logging is allowed based on the throttling interval.
      *
      * @param logger the logger to log the message to. Must not be {@code null}.
-     * @param timeInMs the current time in milliseconds.
+     * @param timeInNanos the current time in nanoseconds.
      * @param objects optional parameters to be included in the log message.
      * @throws NullPointerException if {@code logger} is {@code null}.
      */
-    public final void warn(final Logger logger, final long timeInMs, final Object... objects)
+    public final void warn(final Logger logger, final long timeInNanos, final Object... objects)
     {
-        if (isAllowedToLog(timeInMs))
+        if (isAllowedToLog(timeInNanos))
         {
             logger.warn(myMessage, objects);
         }
@@ -93,13 +93,13 @@ public class ThrottledLogMessage
      * Logs an error message if the logging is allowed based on the throttling interval.
      *
      * @param logger the logger to log the message to. Must not be {@code null}.
-     * @param timeInMs the current time in milliseconds.
+     * @param timeInNanos the current time in nanoseconds.
      * @param objects optional parameters to be included in the log message.
      * @throws NullPointerException if {@code logger} is {@code null}.
      */
-    public final void error(final Logger logger, final long timeInMs, final Object... objects)
+    public final void error(final Logger logger, final long timeInNanos, final Object... objects)
     {
-        if (isAllowedToLog(timeInMs))
+        if (isAllowedToLog(timeInNanos))
         {
             logger.error(myMessage, objects);
         }

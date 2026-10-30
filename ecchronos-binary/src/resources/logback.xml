@@ -33,6 +33,28 @@
         </encoder>
     </appender>
 
+    <!--
+      TRACE log appender. Writes to ecc.trace.log and captures TRACE and above.
+      The appender is defined but does nothing until a logger is pointed at it
+      (see the commented-out TRACE logger further down). Leaving it defined here
+      has no runtime cost while disabled.
+    -->
+    <appender name="FILE_TRACE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>ecc.trace.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>ecc.trace.log.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+            <maxHistory>10</maxHistory>
+            <maxFileSize>10MB</maxFileSize>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>TRACE</level>
+        </filter>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
     <appender name="FILE_INFO" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>ecc.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
@@ -63,9 +85,35 @@
     <logger name="io.netty" level="WARN" />
     <logger name="org.springframework.boot.autoconfigure.logging" level="INFO" />
 
+    <!-- Enable DEBUG logging for ecChronos only; third-party libs remain at root level -->
+    <logger name="com.ericsson.bss.cassandra.ecchronos" level="DEBUG" />
+
+    <!--
+      ============================================================================
+      TRACE logging for ecChronos (DISABLED by default)
+      ============================================================================
+      TRACE is very verbose: ecChronos emits it from hot paths such as repair-state
+      transitions and lock contention, so enable it only while investigating.
+
+      TO ENABLE:
+        Replace the single <logger ... level="DEBUG" /> line directly above with
+        the block below (delete the DEBUG line, uncomment this block). This both
+        raises the ecChronos level to TRACE and routes TRACE output to ecc.trace.log.
+        DEBUG and INFO continue to flow to ecc.debug.log / ecc.log / stdout as before.
+
+      <logger name="com.ericsson.bss.cassandra.ecchronos" level="TRACE">
+          <appender-ref ref="FILE_TRACE" />
+      </logger>
+
+      TO DISABLE AGAIN:
+        Re-comment the block above and restore the <logger ... level="DEBUG" /> line.
+      ============================================================================
+    -->
+
     <root level="INFO">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="FILE_INFO" />
+        <appender-ref ref="FILE_DEBUG" />
     </root>
 
 </configuration>
