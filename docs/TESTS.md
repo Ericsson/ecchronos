@@ -321,12 +321,68 @@ Example (auth, tls), run specific tests (feature)
 behave --define ecctool=/usr/bin/ecctool --define cassandra_address="127.0.0.1" --define cql_user="cassandra" --define cql_password="cassandra" --include features/ecc-spring.feature
 ```
 
+### Soak test (long-running multi-interval repair)
+
+The soak test runs a Cassandra cluster and a single ecChronos agent with a dedicated
+`soak` keyspace on a short repair interval for a configurable duration (default one hour),
+so the repair scheduler is exercised across many successive intervals rather than a single
+window. It is opt-in and is **not** part of the normal CI build.
+
+The `soak` keyspace contains two populated tables (`table_a`, `table_b`) and one
+intentionally empty table (`table_empty`), to verify that an empty table is still
+scheduled and repaired like the populated ones.
+
+**What it asserts**
+
+* Primary (authoritative): the REST `/schedules` endpoint reports a `lastRepaired`
+  timestamp that advances for every soak table (including the empty one) across
+  successive intervals, and no schedule gets stuck in an `ERROR`/`BLOCKED` state.
+* Supporting (best-effort): the Prometheus `/metrics` endpoint is scraped each interval
+  and logged as telemetry (`repaired_ratio`, `repair_sessions_seconds_count`,
+  `ecc_scheduler_*`, etc.).
+
+**Running it**
+
+The test lives in `ecchronos-binary/src/test/bin/test_soak.py` and is wired to the
+`local-soak-tests` Maven profile, activated by its own dedicated `soak.tests` property so
+it is decoupled from the `localprecommit.tests` pre-commit property and never runs as part
+of a normal pre-commit/CI build. Build the binary/test jar first, then run the profile:
+
+```bash
+mvn package -Dbuild-cassandra-test-jar -DskipTests
+mvn verify -P local-soak-tests -Dsoak.tests -Dit.cassandra.version=5.0.4
+```
+
+The run is tunable via Maven properties (see the table below), for example a short smoke
+run spanning two intervals:
+
+```bash
+mvn verify -P local-soak-tests -Dsoak.tests -Dit.cassandra.version=5.0.4 \
+    -Dsoak.duration.minutes=4 -Dsoak.repair.interval.minutes=2
+```
+
+The repair interval defaults to 10 minutes and is clamped up to a hard floor of 2 minutes
+(the interval must stay long enough for a cycle to repair every vnode on every node before
+the next cycle is due).
+
+**Debug logging and collected logs**
+
+The agent runs with DEBUG logging enabled for the `com.ericsson.bss.cassandra.ecchronos`
+package only (dependency libraries stay at `INFO`). On completion (and on failure), the
+test collects each Cassandra node's `/var/log/cassandra` directory — `system.log`,
+`debug.log` and `gc.log`, including any rotated/compressed segments — into
+`ecchronos-binary/target/test/soak-logs/cassandra/<node>/`. The agent's own logs are
+written to the mounted log directory as `ecc.log` and `ecc.debug.log`.
+
 ### Maven configuration properties
 
 | Property                   | Default    | Description                                              |
 |----------------------------|------------|----------------------------------------------------------|
 | it.cassandra.memory        | 1073741824 | Memory limit for the docker instance                     |
 | it.cassandra.heap          | 256M       | Amount of heap memory Cassandra should use at most       |
+| soak.duration.minutes      | 60         | Soak test total run time, in minutes                     |
+| soak.repair.interval.minutes | 10       | Soak repair interval, in minutes (clamped to a 2m floor) |
+| soak.churn.rows.per.cycle  | 500        | Rows written to each populated soak table per cycle      |
 
 ### Running within IDEA/Eclipse
 

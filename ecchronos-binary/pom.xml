@@ -30,6 +30,13 @@
     <properties>
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- Soak-test defaults (local-soak-tests profile). Override on the command line, e.g.
+             -Dsoak.duration.minutes=180 -Dsoak.repair.interval.minutes=2. The repair interval
+             defaults to 10 minutes and is clamped up to a hard floor of 2 minutes in the test. -->
+        <soak.duration.minutes>60</soak.duration.minutes>
+        <soak.repair.interval.minutes>10</soak.repair.interval.minutes>
+        <soak.churn.rows.per.cycle>500</soak.churn.rows.per.cycle>
     </properties>
 
     <dependencies>
@@ -643,6 +650,104 @@
                                 </configuration>
                             </execution>
 
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <activation>
+                <property>
+                    <name>soak.tests</name>
+                </property>
+            </activation>
+            <id>local-soak-tests</id>
+            <build>
+                <plugins>
+                    <!-- Long-running multi-interval soak test (opt-in, not part of normal CI) -->
+                    <plugin>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>unpack-ecc-binary</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>unpack</goal>
+                                </goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
+                                            <artifactId>ecchronos-binary-agent</artifactId>
+                                            <version>${project.version}</version>
+                                            <type>tar.gz</type>
+                                            <outputDirectory>${project.build.directory}/test</outputDirectory>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>install-python-dependencies</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>bash</executable>
+                                    <arguments>
+                                        <argument>install_dependencies.sh</argument>
+                                    </arguments>
+                                    <workingDirectory>${project.build.directory}/test</workingDirectory>
+                                    <environmentVariables>
+                                        <PROJECT_VERSION>${project.version}</PROJECT_VERSION>
+                                        <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
+                                        <BASE_DIR>${project.basedir}</BASE_DIR>
+                                        <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
+                                        <JOLOKIA_VERSION>${jolokia.adapter.version}</JOLOKIA_VERSION>
+                                        <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
+                                        <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
+                                        <JAVA_VERSION>${java.version}</JAVA_VERSION>
+                                    </environmentVariables>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>local-soak-tests</id>
+                                <phase>integration-test</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>bash</executable>
+                                    <arguments>
+                                        <argument>-c</argument>
+                                        <argument>if [ -f venv/bin/activate ]; then source venv/bin/activate; fi &amp;&amp; python -m pytest test_soak.py -s -v --tb=short</argument>
+                                    </arguments>
+                                    <workingDirectory>${project.build.directory}/test</workingDirectory>
+                                    <environmentVariables>
+                                        <LOCAL>true</LOCAL>
+                                        <SOAK_ENABLED>true</SOAK_ENABLED>
+                                        <SOAK_DURATION_MINUTES>${soak.duration.minutes}</SOAK_DURATION_MINUTES>
+                                        <SOAK_REPAIR_INTERVAL_MINUTES>${soak.repair.interval.minutes}</SOAK_REPAIR_INTERVAL_MINUTES>
+                                        <SOAK_CHURN_ROWS_PER_CYCLE>${soak.churn.rows.per.cycle}</SOAK_CHURN_ROWS_PER_CYCLE>
+                                        <PROJECT_VERSION>${project.version}</PROJECT_VERSION>
+                                        <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
+                                        <BASE_DIR>${project.basedir}</BASE_DIR>
+                                        <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
+                                        <JOLOKIA_VERSION>${jolokia.adapter.version}</JOLOKIA_VERSION>
+                                        <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
+                                        <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
+                                        <JAVA_VERSION>${java.version}</JAVA_VERSION>
+                                    </environmentVariables>
+                                    <redirectOutput>true</redirectOutput>
+                                    <redirectErrorStream>true</redirectErrorStream>
+                                </configuration>
+                            </execution>
                         </executions>
                     </plugin>
                 </plugins>
