@@ -103,7 +103,8 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
     public VnodeRepairStates calculateNewState(
             final Node node,
             final TableReference tableReference, final RepairStateSnapshot previous,
-            final long iterateToTime)
+            final long iterateToTime,
+            final long iterationLookbackMs)
     {
         Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicaMap
                 = myReplicationState.getTokenRangeToReplicas(tableReference, node);
@@ -119,10 +120,18 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         }
         else
         {
-            LOG.debug("Table {} snapshot created at {}, iterating repair entries until that time", tableReference,
-                    previous.getCreatedAt());
+            // Widen the lower bound below the snapshot's creation time. The history iteration is bounded on the
+            // repair's start time (the native repair_history clusters on a start-time TimeUUID), so a repair that
+            // STARTED before the snapshot was created but FINISHED after it would otherwise be silently dropped from
+            // every recompute — its finished_at never advances the vnode and the table stays perpetually overdue and
+            // is re-repaired below the interval. Re-scanning a bounded margin captures such in-flight-at-snapshot
+            // repairs; re-seeing an already-applied entry is idempotent (it re-sets the same vnode state), and the
+            // read stays cheap because quiet history returns nothing. See issue #1930.
+            long from = Math.max(0L, previous.getCreatedAt() - Math.max(0L, iterationLookbackMs));
+            LOG.debug("Table {} snapshot created at {}, iterating repair entries from {}", tableReference,
+                    previous.getCreatedAt(), from);
             repairEntryIterator = myRepairHistoryProvider.iterate(node, tableReference, iterateToTime,
-                    previous.getCreatedAt(), (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
+                    from, (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
         }
 
         return generateVnodeRepairStates(lastRepairedAt, previous, repairEntryIterator, tokenRangeToReplicaMap);
