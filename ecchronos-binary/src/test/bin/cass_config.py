@@ -673,6 +673,48 @@ class CassandraCluster:
             raise RuntimeError(f"CQL query failed: {result.stderr}")
         return result.stdout
 
+    def _nodetool_command(self, container_ref, args):
+        """Build a 'docker exec <node> nodetool ...' command, honouring the TLS/auth mode.
+
+        Mirrors the connection handling used by _run_full_repair so flushes work in the
+        same environments (plaintext local, PEM, and SSL+auth).
+        """
+        if global_vars.LOCAL != "true" and global_vars.PEM_ENABLED != "true":
+            nodetool = f"nodetool --ssl -u cassandra -pw cassandra {args}"
+        else:
+            nodetool = f"nodetool -u cassandra -pw cassandra {args}"
+        return ["docker", "exec", container_ref, "bash", "-c", nodetool]
+
+    def flush_all_nodes(self, keyspace=None):
+        """Run 'nodetool flush' on every Cassandra node so memtables hit disk as SSTables.
+
+        Incremental repair operates on SSTables, so data written via CQL must be flushed
+        before a repair can mark it repaired. Flushes every node in the cluster (and the
+        extra node if present). Scoped to a keyspace when provided. Best-effort per node:
+        a flush failure is logged but does not abort the others.
+        """
+        args = "flush" + (f" {keyspace}" if keyspace else "")
+        refs = [container.ID for container in self.cassandra_compose.get_containers()]
+        if self._extra_node is not None:
+            refs.append(self._extra_node)
+        for ref in refs:
+            result = subprocess.run(
+                self._nodetool_command(ref, args),
+                timeout=DEFAULT_WAIT_TIME_IN_SECS * 3,
+                encoding="utf-8",
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            if result.returncode != 0:
+                logger.warning(
+                    "nodetool flush on %s exited with %s. stdout: %s. stderr: %s",
+                    ref,
+                    result.returncode,
+                    result.stdout.strip(),
+                    result.stderr.strip(),
+                )
+        logger.info("Flushed %s node(s)%s", len(refs), f" (keyspace {keyspace})" if keyspace else "")
+
     def stop_extra_node(self):
         try:
             if self._extra_node != None:
