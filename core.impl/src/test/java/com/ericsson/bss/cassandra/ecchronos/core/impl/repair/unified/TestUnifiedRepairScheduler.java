@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.TestUtils;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.VnodeRepairStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
@@ -37,6 +38,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledRepai
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairStateFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairStateSnapshot;
+import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
@@ -62,6 +64,8 @@ public class TestUnifiedRepairScheduler
     private static final TableReference TABLE_REFERENCE = tableReference("keyspace", "table1");
     private static final RepairConfiguration UNIFIED_CONFIG = RepairConfiguration.newBuilder()
             .withRepairType(RepairType.UNIFIED_VNODE).build();
+    private static final RepairConfiguration UNIFIED_INCREMENTAL_CONFIG = RepairConfiguration.newBuilder()
+            .withRepairType(RepairType.UNIFIED_INCREMENTAL).build();
     private static final VnodeRepairState VNODE_REPAIR_STATE =
             TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), System.currentTimeMillis());
 
@@ -73,6 +77,10 @@ public class TestUnifiedRepairScheduler
     private TableRepairMetrics myTableRepairMetrics;
     @Mock
     private RepairStateFactory myRepairStateFactory;
+    @Mock
+    private ReplicationState myReplicationState;
+    @Mock
+    private CassandraMetrics myCassandraMetrics;
     @Mock
     private RepairState myRepairState;
     @Mock
@@ -190,6 +198,51 @@ public class TestUnifiedRepairScheduler
         scheduler.close();
     }
 
+    @Test
+    public void testIncrementalConfigSchedulesUnifiedIncrementalJob()
+    {
+        UnifiedRepairScheduler scheduler = defaultBuilder().build();
+
+        scheduler.putConfigurations(myNode1, TABLE_REFERENCE,
+                Collections.singleton(UNIFIED_INCREMENTAL_CONFIG));
+
+        verify(myScheduleManager, timeout(1000)).schedule(eq(myNodeId1), any(ScheduledJob.class));
+        // The incremental path does not build a RepairState via the RepairStateFactory.
+        verify(myRepairStateFactory, never()).create(any(), any(), any(), any());
+
+        List<ScheduledRepairJobView> views = scheduler.getCurrentRepairJobs();
+        assertThat(views).hasSize(1);
+        assertThat(views.get(0).getTableReference()).isEqualTo(TABLE_REFERENCE);
+        assertThat(views.get(0).getRepairType()).isEqualTo(RepairType.UNIFIED_INCREMENTAL);
+        assertThat(views.get(0).getNodeId()).isEqualTo(myNodeId1);
+
+        scheduler.close();
+    }
+
+    @Test
+    public void testTwoNodesConsolidateIntoOneIncrementalJobWithTwoViews()
+    {
+        UnifiedRepairScheduler scheduler = defaultBuilder().build();
+
+        scheduler.putConfigurations(myNode1, TABLE_REFERENCE,
+                Collections.singleton(UNIFIED_INCREMENTAL_CONFIG));
+        verify(myScheduleManager, timeout(1000)).schedule(any(UUID.class), any(ScheduledJob.class));
+
+        scheduler.putConfigurations(myNode2, TABLE_REFERENCE,
+                Collections.singleton(UNIFIED_INCREMENTAL_CONFIG));
+        verify(myScheduleManager, timeout(1000)).deschedule(any(UUID.class), any(ScheduledJob.class));
+        verify(myScheduleManager, timeout(1000).times(2)).schedule(any(UUID.class), any(ScheduledJob.class));
+
+        List<ScheduledRepairJobView> views = scheduler.getCurrentRepairJobs();
+        assertThat(views).hasSize(2);
+        assertThat(views).extracting(ScheduledRepairJobView::getNodeId)
+                .containsExactlyInAnyOrder(myNodeId1, myNodeId2);
+        assertThat(views).extracting(ScheduledRepairJobView::getRepairType)
+                .containsOnly(RepairType.UNIFIED_INCREMENTAL);
+
+        scheduler.close();
+    }
+
     private UnifiedRepairScheduler.Builder defaultBuilder()
     {
         return UnifiedRepairScheduler.builder()
@@ -197,6 +250,8 @@ public class TestUnifiedRepairScheduler
                 .withScheduleManager(myScheduleManager)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withRepairStateFactory(myRepairStateFactory)
+                .withReplicationState(myReplicationState)
+                .withCassandraMetrics(myCassandraMetrics)
                 .withTableStorageStates(myTableStorageStates)
                 .withRepairHistory(myRepairHistory)
                 .withRepairLockType(RepairLockType.VNODE)

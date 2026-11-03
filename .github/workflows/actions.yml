@@ -78,6 +78,15 @@ jobs:
           - name: "Jolokia Unified vnode topology integration - PEM"
             goals: 'verify -P unified-vnode-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
+          - name: "Unified incremental topology integration"
+            goals: 'verify -P unified-incremental-integration-tests -Dit.cassandra.version=5.0 -DskipUTs'
+            artifacts_dir: "ecchronos-binary/target"
+          - name: "Jolokia Unified incremental topology integration"
+            goals: 'verify -P unified-incremental-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -DskipUTs'
+            artifacts_dir: "ecchronos-binary/target"
+          - name: "Jolokia Unified incremental topology integration - PEM"
+            goals: 'verify -P unified-incremental-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
+            artifacts_dir: "ecchronos-binary/target"
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -112,7 +121,7 @@ jobs:
         run: mvn install -Pbuild-cassandra-test-jar -DskipTests=true
 
       - name: Set Cassandra memory limits for topology tests
-        if: contains(matrix.suite.name, 'Topology') || contains(matrix.suite.name, 'Unified vnode')
+        if: contains(matrix.suite.name, 'Topology') || contains(matrix.suite.name, 'Unified vnode') || contains(matrix.suite.name, 'Unified incremental')
         run: |
           echo "MAX_HEAP_SIZE=1536M" >> $GITHUB_ENV
           echo "HEAP_NEWSIZE=200M" >> $GITHUB_ENV

@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.unified;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
@@ -33,13 +34,20 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Owns the mapping from a table to its single consolidated multi-node {@link UnifiedTableRepairJob}s and
- * encapsulates how per-node configuration events are consolidated into jobs on the {@code UNIFIED_VNODE} path.
+ * Owns the mapping from a table to its single consolidated multi-node unified jobs and encapsulates how
+ * per-node configuration events are consolidated into jobs on the {@code unified_*} path.
  * <p>
- * Every enabled (vnode) configuration for a table is consolidated into a single multi-node job spanning all
- * reporting nodes. Because schema events arrive per node, the set of managed nodes for a table is accumulated
- * as each node reports it, and the single multi-node job is rebuilt whenever that node set (or the
- * configuration set) changes.
+ * Every enabled unified configuration for a table is consolidated into a single multi-node job spanning all
+ * reporting nodes. The job type is selected per configuration from
+ * {@link RepairConfiguration#getRepairType()}:
+ * {@link com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType#UNIFIED_INCREMENTAL} builds a
+ * {@link UnifiedIncrementalRepairJob}, everything else in the unified family builds a
+ * {@link UnifiedTableRepairJob}. Both consolidate per-node work under one logical job, so the registry's
+ * accumulation and rebuild logic is identical regardless of type.
+ * <p>
+ * Because schema events arrive per node, the set of managed nodes for a table is accumulated as each node
+ * reports it, and the single multi-node job is rebuilt whenever that node set (or the configuration set)
+ * changes.
  * <p>
  * This type is not thread-safe; callers must serialise access (the owning {@link UnifiedRepairScheduler} does
  * so under a write lock).
@@ -58,15 +66,28 @@ final class UnifiedTableScheduleRegistry
         myScheduleManager = scheduleManager;
     }
 
+    /** A consolidated multi-node job paired with the {@link UnifiedJob} view of it for observability. */
+    private static final class JobEntry
+    {
+        private final ScheduledRepairJob job;
+        private final UnifiedJob unifiedView;
+
+        private JobEntry(final ScheduledRepairJob theJob, final UnifiedJob theUnifiedView)
+        {
+            this.job = theJob;
+            this.unifiedView = theUnifiedView;
+        }
+    }
+
     /** Per-table scheduling holder. */
     private static final class TableSchedule
     {
         private final Map<UUID, Node> nodes = new LinkedHashMap<>();
-        private final Map<RepairConfiguration, UnifiedTableRepairJob> vnodeJobs = new HashMap<>();
+        private final Map<RepairConfiguration, JobEntry> jobs = new HashMap<>();
 
         private boolean isEmpty()
         {
-            return vnodeJobs.isEmpty() && nodes.isEmpty();
+            return jobs.isEmpty() && nodes.isEmpty();
         }
     }
 
@@ -76,7 +97,7 @@ final class UnifiedTableScheduleRegistry
      *
      * @param node the node reporting the configuration.
      * @param tableReference the table.
-     * @param repairConfigurations the enabled (vnode) configurations for the table.
+     * @param repairConfigurations the enabled unified configurations for the table.
      */
     void applyConfiguration(
             final Node node,
@@ -87,14 +108,14 @@ final class UnifiedTableScheduleRegistry
         boolean newNode = !schedule.nodes.containsKey(node.getHostId());
         schedule.nodes.put(node.getHostId(), node);
 
-        Set<RepairConfiguration> vnodeConfigs = new HashSet<>(repairConfigurations);
+        Set<RepairConfiguration> configs = new HashSet<>(repairConfigurations);
 
         // Only rebuild the multi-node jobs when the node set grew or the configuration set changed; a
         // repeated event from an already-known node with the same configs is a no-op (avoids re-reading
-        // RepairState on every schema event).
-        if (newNode || !schedule.vnodeJobs.keySet().equals(vnodeConfigs))
+        // state on every schema event).
+        if (newNode || !schedule.jobs.keySet().equals(configs))
         {
-            rebuildVnodeJobs(schedule, tableReference, vnodeConfigs);
+            rebuildJobs(schedule, tableReference, configs);
         }
 
         removeIfEmpty(tableReference, schedule);
@@ -136,16 +157,19 @@ final class UnifiedTableScheduleRegistry
     }
 
     /**
-     * All consolidated jobs across all tables.
+     * All consolidated jobs across all tables, exposed through the per-node observability contract.
      *
-     * @return the list of jobs.
+     * @return the list of unified jobs.
      */
-    List<UnifiedTableRepairJob> allJobs()
+    List<UnifiedJob> allJobs()
     {
-        List<UnifiedTableRepairJob> jobs = new ArrayList<>();
+        List<UnifiedJob> jobs = new ArrayList<>();
         for (TableSchedule schedule : myTableJobs.values())
         {
-            jobs.addAll(schedule.vnodeJobs.values());
+            for (JobEntry entry : schedule.jobs.values())
+            {
+                jobs.add(entry.unifiedView);
+            }
         }
         return jobs;
     }
@@ -157,21 +181,21 @@ final class UnifiedTableScheduleRegistry
     {
         for (TableSchedule schedule : myTableJobs.values())
         {
-            schedule.vnodeJobs.values().forEach(this::descheduleJob);
+            schedule.jobs.values().forEach(entry -> descheduleJob(entry.job));
         }
         myTableJobs.clear();
     }
 
-    private void rebuildVnodeJobs(
+    private void rebuildJobs(
             final TableSchedule schedule,
             final TableReference tableReference,
-            final Set<RepairConfiguration> vnodeConfigs)
+            final Set<RepairConfiguration> configs)
     {
-        schedule.vnodeJobs.keySet().removeIf(config ->
+        schedule.jobs.keySet().removeIf(config ->
         {
-            if (!vnodeConfigs.contains(config))
+            if (!configs.contains(config))
             {
-                descheduleJob(schedule.vnodeJobs.get(config));
+                descheduleJob(schedule.jobs.get(config).job);
                 return true;
             }
             return false;
@@ -183,18 +207,18 @@ final class UnifiedTableScheduleRegistry
         }
 
         Collection<Node> nodes = schedule.nodes.values();
-        for (RepairConfiguration config : vnodeConfigs)
+        for (RepairConfiguration config : configs)
         {
-            UnifiedTableRepairJob previous = schedule.vnodeJobs.remove(config);
+            JobEntry previous = schedule.jobs.remove(config);
             if (previous != null)
             {
-                descheduleJob(previous);
+                descheduleJob(previous.job);
             }
-            UnifiedTableRepairJob job = myJobFactory.createMultiNode(nodes, tableReference, config);
-            schedule.vnodeJobs.put(config, job);
-            myScheduleManager.schedule(anyNode(nodes), job);
-            LOG.debug("Scheduled unified vnode repair job for table {} across {} nodes",
-                    tableReference, nodes.size());
+            JobEntry entry = buildJob(nodes, tableReference, config);
+            schedule.jobs.put(config, entry);
+            myScheduleManager.schedule(anyNode(nodes), entry.job);
+            LOG.debug("Scheduled unified {} repair job for table {} across {} nodes",
+                    config.getRepairType(), tableReference, nodes.size());
         }
     }
 
@@ -207,30 +231,50 @@ final class UnifiedTableScheduleRegistry
 
         if (schedule.nodes.isEmpty())
         {
-            schedule.vnodeJobs.values().forEach(this::descheduleJob);
-            schedule.vnodeJobs.clear();
+            schedule.jobs.values().forEach(entry -> descheduleJob(entry.job));
+            schedule.jobs.clear();
         }
         else
         {
-            rebuildAllVnodeJobs(schedule, tableReference);
+            rebuildAllJobs(schedule, tableReference);
         }
 
         removeIfEmpty(tableReference, schedule);
     }
 
-    private void rebuildAllVnodeJobs(final TableSchedule schedule, final TableReference tableReference)
+    private void rebuildAllJobs(final TableSchedule schedule, final TableReference tableReference)
     {
         Collection<Node> nodes = schedule.nodes.values();
-        Map<RepairConfiguration, UnifiedTableRepairJob> rebuilt = new HashMap<>();
-        for (Map.Entry<RepairConfiguration, UnifiedTableRepairJob> entry : schedule.vnodeJobs.entrySet())
+        Map<RepairConfiguration, JobEntry> rebuilt = new HashMap<>();
+        for (Map.Entry<RepairConfiguration, JobEntry> entry : schedule.jobs.entrySet())
         {
-            descheduleJob(entry.getValue());
-            UnifiedTableRepairJob job = myJobFactory.createMultiNode(nodes, tableReference, entry.getKey());
-            rebuilt.put(entry.getKey(), job);
-            myScheduleManager.schedule(anyNode(nodes), job);
+            descheduleJob(entry.getValue().job);
+            JobEntry newEntry = buildJob(nodes, tableReference, entry.getKey());
+            rebuilt.put(entry.getKey(), newEntry);
+            myScheduleManager.schedule(anyNode(nodes), newEntry.job);
         }
-        schedule.vnodeJobs.clear();
-        schedule.vnodeJobs.putAll(rebuilt);
+        schedule.jobs.clear();
+        schedule.jobs.putAll(rebuilt);
+    }
+
+    /**
+     * Build the consolidated job for a configuration, selecting incremental or vnode based on the
+     * configuration's repair type.
+     */
+    private JobEntry buildJob(
+            final Collection<Node> nodes,
+            final TableReference tableReference,
+            final RepairConfiguration config)
+    {
+        if (config.getRepairType() == com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType
+                .UNIFIED_INCREMENTAL)
+        {
+            UnifiedIncrementalRepairJob job =
+                    myJobFactory.createIncrementalMultiNode(nodes, tableReference, config);
+            return new JobEntry(job, job);
+        }
+        UnifiedTableRepairJob job = myJobFactory.createMultiNode(nodes, tableReference, config);
+        return new JobEntry(job, job);
     }
 
     private void removeIfEmpty(final TableReference tableReference, final TableSchedule schedule)

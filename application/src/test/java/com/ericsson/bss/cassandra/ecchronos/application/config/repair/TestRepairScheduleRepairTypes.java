@@ -61,6 +61,7 @@ public class TestRepairScheduleRepairTypes
     public void testRepairTypeFamilyClassification()
     {
         assertThat(RepairType.UNIFIED_VNODE.isUnified()).isTrue();
+        assertThat(RepairType.UNIFIED_INCREMENTAL.isUnified()).isTrue();
         assertThat(RepairType.VNODE.isUnified()).isFalse();
         assertThat(RepairType.PARALLEL_VNODE.isUnified()).isFalse();
         assertThat(RepairType.INCREMENTAL.isUnified()).isFalse();
