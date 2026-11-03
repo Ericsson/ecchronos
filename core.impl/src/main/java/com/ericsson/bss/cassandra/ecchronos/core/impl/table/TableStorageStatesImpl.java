@@ -25,10 +25,10 @@ import java.io.Closeable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
@@ -47,7 +47,7 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
 
     private static final long DEFAULT_UPDATE_DELAY_IN_MS = TimeUnit.SECONDS.toMillis(60);
 
-    private final AtomicReference<Map<UUID, ImmutableMap<TableReference, Long>>> myTableSizes = new AtomicReference<>();
+    private final Map<UUID, ImmutableMap<TableReference, Long>> myTableSizes = new ConcurrentHashMap<>();
     private final ScheduledExecutorService myScheduledExecutorService;
 
     private final ReplicatedTableProvider myReplicatedTableProvider;
@@ -81,48 +81,29 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
 
     private void initializeEmptyNodeMap(final UUID nodeID)
     {
-        Map<UUID, ImmutableMap<TableReference, Long>> emptyNewEntry = new HashMap<>();
-        Map<TableReference, Long> emptyDataSizes = new HashMap<>();
-        ImmutableMap<TableReference, Long> emptyTableSize = ImmutableMap.copyOf(emptyDataSizes);
-        emptyNewEntry.put(nodeID, emptyTableSize);
-        myTableSizes.set(emptyNewEntry);
+        myTableSizes.put(nodeID, ImmutableMap.of());
     }
 
     @Override
     public long getDataSize(final UUID nodeID, final TableReference tableReference)
     {
-        Map<UUID, ImmutableMap<TableReference, Long>> dataSizes = myTableSizes.get();
-
-        if (!dataSizes.containsKey(nodeID))
+        ImmutableMap<TableReference, Long> dataSizes = myTableSizes.get(nodeID);
+        if (dataSizes == null)
         {
-            initializeEmptyNodeMap(nodeID);
+            return 0;
         }
-
-        if (dataSizes.get(nodeID).containsKey(tableReference))
-        {
-                return dataSizes.get(nodeID).get(tableReference);
-        }
-        return 0;
+        return dataSizes.getOrDefault(tableReference, 0L);
     }
 
     @Override
     public long getDataSize(final UUID nodeID)
     {
-        Map<UUID, ImmutableMap<TableReference, Long>> dataSizesMap = myTableSizes.get();
-
-        if (!dataSizesMap.containsKey(nodeID))
+        ImmutableMap<TableReference, Long> dataSizes = myTableSizes.get(nodeID);
+        if (dataSizes == null || dataSizes.isEmpty())
         {
-            initializeEmptyNodeMap(nodeID);
+            return 0;
         }
-
-        ImmutableMap<TableReference, Long> dataSizes = dataSizesMap.get(nodeID);
-
-        if (dataSizes != null && !dataSizes.isEmpty())
-        {
-            return dataSizes.values().stream().mapToLong(e -> e).sum();
-        }
-
-        return 0;
+        return dataSizes.values().stream().mapToLong(e -> e).sum();
     }
 
     @Override
@@ -130,7 +111,7 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
     {
         myScheduledExecutorService.shutdown();
 
-        myTableSizes.set(null);
+        myTableSizes.clear();
     }
 
     /**
@@ -265,12 +246,7 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
             {
                 return;
             }
-            Map<UUID, ImmutableMap<TableReference, Long>> currentSizes = myTableSizes.get();
-            if (currentSizes == null)
-            {
-                return;
-            }
-            for (UUID nodeID : currentSizes.keySet())
+            for (UUID nodeID : myTableSizes.keySet())
             {
                 updateTableStatesForNode(nodeID);
             }
@@ -285,11 +261,9 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
     {
         try (DistributedJmxProxy jmxProxy = myJmxProxyFactory.connect())
         {
-            Map<UUID, ImmutableMap<TableReference, Long>> newEntry = new HashMap<>();
-            ImmutableMap<TableReference, Long> tableSize = getTableSizes(nodeID, jmxProxy);
-            newEntry.put(nodeID, tableSize);
-
-            myTableSizes.set(newEntry);
+            // Update only this node's entry; do not replace the whole per-node map (that dropped every other node,
+            // see issue #1941).
+            myTableSizes.put(nodeID, getTableSizes(nodeID, jmxProxy));
         }
         // Broadened from IOException: a transient failure for one node (JMX connect error, or an unchecked exception
         // from driver metadata / table-reference resolution during schema churn) must skip only this node this cycle
