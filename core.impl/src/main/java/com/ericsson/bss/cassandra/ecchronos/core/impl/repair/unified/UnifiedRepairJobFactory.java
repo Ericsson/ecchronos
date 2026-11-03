@@ -16,6 +16,8 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.unified;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.AlarmPostUpdateHook;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
@@ -23,6 +25,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfigurati
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairStateFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairPolicy;
@@ -53,11 +56,15 @@ public final class UnifiedRepairJobFactory
     private final RepairFaultReporter myFaultReporter;
     private final DistributedJmxProxyFactory myJmxProxyFactory;
     private final RepairStateFactory myRepairStateFactory;
+    private final ReplicationState myReplicationState;
+    private final CassandraMetrics myCassandraMetrics;
     private final List<TableRepairPolicy> myRepairPolicies;
     private final TableStorageStates myTableStorageStates;
     private final RepairLockType myRepairLockType;
     private final TimeBasedRunPolicy myTimeBasedRunPolicy;
 
+    // CPD-OFF: constructor and builder are intentionally near-identical to ScheduledRepairJobFactory; the
+    // consolidated unified factory deliberately mirrors the legacy factory's dependency scaffolding.
     private UnifiedRepairJobFactory(final Builder builder)
     {
         myTableRepairMetrics = builder.myTableRepairMetrics;
@@ -65,6 +72,8 @@ public final class UnifiedRepairJobFactory
         myFaultReporter = builder.myFaultReporter;
         myJmxProxyFactory = builder.myJmxProxyFactory;
         myRepairStateFactory = builder.myRepairStateFactory;
+        myReplicationState = builder.myReplicationState;
+        myCassandraMetrics = builder.myCassandraMetrics;
         myRepairPolicies = new ArrayList<>(builder.myRepairPolicies);
         myTableStorageStates = builder.myTableStorageStates;
         myRepairLockType = builder.myRepairLockType;
@@ -121,6 +130,67 @@ public final class UnifiedRepairJobFactory
     }
 
     /**
+     * Create a consolidated multi-node incremental repair job for the given nodes, table, and configuration.
+     * <p>
+     * One {@link IncrementalRepairJob} delegate is built per node (identical to the legacy per-node path), and
+     * the delegates are assembled into a single {@link UnifiedIncrementalRepairJob} so one logical job
+     * coordinates every node while incremental semantics are preserved verbatim per node.
+     *
+     * @param nodes the nodes that replicate the table.
+     * @param tableReference the table.
+     * @param repairConfiguration the (incremental) repair configuration.
+     * @return a new {@link UnifiedIncrementalRepairJob}.
+     */
+    @SuppressWarnings("CPD-START")
+    public UnifiedIncrementalRepairJob createIncrementalMultiNode(
+            final Collection<Node> nodes,
+            final TableReference tableReference,
+            final RepairConfiguration repairConfiguration)
+    {
+        ScheduledJob.Configuration configuration = new ScheduledJob.ConfigurationBuilder()
+                .withPriority(ScheduledJob.Priority.LOW)
+                .withRunInterval(repairConfiguration.getRepairIntervalInMs(), TimeUnit.MILLISECONDS)
+                .withBackoff(repairConfiguration.getBackoffInMs(), TimeUnit.MILLISECONDS)
+                .withPriorityGranularity(repairConfiguration.getPriorityGranularityUnit())
+                .build();
+
+        UnifiedIncrementalRepairJob.Builder builder = new UnifiedIncrementalRepairJob.Builder()
+                .withConfiguration(configuration)
+                .withJmxProxyFactory(myJmxProxyFactory)
+                .withTableReference(tableReference)
+                .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairConfiguration(repairConfiguration)
+                .withRepairPolices(myRepairPolicies)
+                .withRepairLockType(myRepairLockType);
+
+        for (Node node : nodes)
+        {
+            IncrementalRepairJob delegate = new IncrementalRepairJob.Builder()
+                    .withConfiguration(configuration)
+                    .withNode(node)
+                    .withJmxProxyFactory(myJmxProxyFactory)
+                    .withTableReference(tableReference)
+                    .withRepairConfiguration(repairConfiguration)
+                    .withTableRepairMetrics(myTableRepairMetrics)
+                    .withCassandraMetrics(myCassandraMetrics)
+                    .withReplicationState(myReplicationState)
+                    .withRepairPolices(myRepairPolicies)
+                    .withRepairLockType(myRepairLockType)
+                    .withRepairHistory(myRepairHistoryService)
+                    .withRepairHistoryProvider(myRepairHistoryService)
+                    .withFaultReporter(myFaultReporter)
+                    .build();
+            builder.withNodeState(new IncrementalNodeState(node, delegate));
+        }
+
+        LOG.debug("Creating UnifiedIncrementalRepairJob for table {}.{} across {} nodes",
+                tableReference.getKeyspace(), tableReference.getTable(), nodes.size());
+        UnifiedIncrementalRepairJob job = builder.build();
+        job.refreshState();
+        return job;
+    }
+
+    /**
      * Create a new Builder instance.
      *
      * @return Builder
@@ -141,12 +211,12 @@ public final class UnifiedRepairJobFactory
         private RepairFaultReporter myFaultReporter;
         private DistributedJmxProxyFactory myJmxProxyFactory;
         private RepairStateFactory myRepairStateFactory;
-        // CPD-OFF: builder field declarations are intentionally near-identical to ScheduledRepairJobFactory.Builder
+        private ReplicationState myReplicationState;
+        private CassandraMetrics myCassandraMetrics;
         private final List<TableRepairPolicy> myRepairPolicies = new ArrayList<>();
         private TableStorageStates myTableStorageStates;
         private RepairLockType myRepairLockType;
         private TimeBasedRunPolicy myTimeBasedRunPolicy;
-        // CPD-ON
 
         /**
          * Default constructor.
@@ -217,6 +287,30 @@ public final class UnifiedRepairJobFactory
         }
 
         /**
+         * Set the replication state (used by the incremental path to resolve replicas).
+         *
+         * @param replicationState the replication state.
+         * @return this builder.
+         */
+        public Builder withReplicationState(final ReplicationState replicationState)
+        {
+            myReplicationState = replicationState;
+            return this;
+        }
+
+        /**
+         * Set the Cassandra metrics (used by the incremental path for repaired-state signals).
+         *
+         * @param cassandraMetrics the Cassandra metrics.
+         * @return this builder.
+         */
+        public Builder withCassandraMetrics(final CassandraMetrics cassandraMetrics)
+        {
+            myCassandraMetrics = cassandraMetrics;
+            return this;
+        }
+
+        /**
          * Set the repair policies.
          *
          * @param repairPolicies the collection of repair policies.
@@ -273,5 +367,6 @@ public final class UnifiedRepairJobFactory
         {
             return new UnifiedRepairJobFactory(this);
         }
+        // CPD-ON
     }
 }

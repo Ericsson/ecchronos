@@ -30,7 +30,14 @@ public enum RepairType
      * by the consolidated multi-node scheduling subsystem: a single repair job per table coordinates all of
      * its nodes, replacing the per-node job/thread model. Opt-in, side by side with {@link #VNODE}.
      */
-    UNIFIED_VNODE;
+    UNIFIED_VNODE,
+    /**
+     * Unified incremental repair. Functionally equivalent to {@link #INCREMENTAL} at the repair level
+     * (one incremental session per node, SSTable anticompaction preserved), but managed by the consolidated
+     * multi-node scheduling subsystem: a single repair job per table coordinates all of its nodes, replacing
+     * the per-node job/thread model. Opt-in, side by side with {@link #INCREMENTAL}.
+     */
+    UNIFIED_INCREMENTAL;
 
     /**
      * Whether this repair type belongs to the consolidated {@code unified_*} family, which is handled by the
@@ -40,6 +47,6 @@ public enum RepairType
      */
     public boolean isUnified()
     {
-        return this == UNIFIED_VNODE;
+        return this == UNIFIED_VNODE || this == UNIFIED_INCREMENTAL;
     }
 }

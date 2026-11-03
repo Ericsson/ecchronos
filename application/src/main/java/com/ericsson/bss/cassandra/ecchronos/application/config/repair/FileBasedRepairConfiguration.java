@@ -91,8 +91,9 @@ public class FileBasedRepairConfiguration extends AbstractRepairConfigurationPro
             String message = String.format(
                     "Mixed repair-type configuration is not supported: global repair_type is '%s' but "
                             + "schedule.yml overrides a conflicting family for: %s. A unified_* global type "
-                            + "requires all per-table overrides to be unified_*, and a legacy global type "
-                            + "requires all per-table overrides to be legacy (vnode/parallel_vnode/incremental).",
+                            + "(unified_vnode/unified_incremental) requires all per-table overrides to be "
+                            + "unified_*, and a legacy global type requires all per-table overrides to be "
+                            + "legacy (vnode/parallel_vnode/incremental).",
                     globalType, String.join(", ", conflicts));
             LOG.error(message);
             throw new ConfigurationException(message);

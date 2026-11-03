@@ -70,7 +70,7 @@ import java.util.concurrent.TimeUnit;
  *     <li>{@link #getViews()} projects one {@link ScheduledRepairJobView} per node for observability.</li>
  * </ul>
  */
-public class UnifiedTableRepairJob extends ScheduledRepairJob
+public class UnifiedTableRepairJob extends ScheduledRepairJob implements UnifiedJob
 {
     private static final Logger LOG = LoggerFactory.getLogger(UnifiedTableRepairJob.class);
     private static final int DAYS_IN_A_WEEK = 7;
@@ -133,6 +133,7 @@ public class UnifiedTableRepairJob extends ScheduledRepairJob
      *
      * @return an immutable set of node host ids.
      */
+    @Override
     public Set<UUID> getNodeIds()
     {
         return Collections.unmodifiableSet(myNodeRepairStates.keySet());
@@ -156,6 +157,7 @@ public class UnifiedTableRepairJob extends ScheduledRepairJob
      *
      * @return an immutable list of per-node views, in managed-node (insertion) order.
      */
+    @Override
     public List<ScheduledRepairJobView> getViews()
     {
         List<ScheduledRepairJobView> views = new ArrayList<>(myNodeRepairStates.size());
@@ -172,6 +174,7 @@ public class UnifiedTableRepairJob extends ScheduledRepairJob
      * @param nodeId the node host id.
      * @return the node's view, or {@code null} if the node is not managed by this job.
      */
+    @Override
     public ScheduledRepairJobView getViewForNode(final UUID nodeId)
     {
         NodeRepairState nodeRepairState = myNodeRepairStates.get(nodeId);

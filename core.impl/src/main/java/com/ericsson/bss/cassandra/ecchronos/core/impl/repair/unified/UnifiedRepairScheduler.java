@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.unified;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
@@ -23,6 +24,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RepairSchedule
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairStateFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairPolicy;
@@ -77,6 +79,8 @@ public final class UnifiedRepairScheduler implements RepairScheduler, Closeable
                 .withFaultReporter(builder.myFaultReporter)
                 .withJmxProxyFactory(builder.myJmxProxyFactory)
                 .withRepairStateFactory(builder.myRepairStateFactory)
+                .withReplicationState(builder.myReplicationState)
+                .withCassandraMetrics(builder.myCassandraMetrics)
                 .withRepairPolicies(builder.myRepairPolicies)
                 .withTableStorageStates(builder.myTableStorageStates)
                 .withRepairLockType(builder.myRepairLockType)
@@ -203,6 +207,8 @@ public final class UnifiedRepairScheduler implements RepairScheduler, Closeable
         private DistributedJmxProxyFactory myJmxProxyFactory;
         private RepairFaultReporter myFaultReporter;
         private RepairStateFactory myRepairStateFactory;
+        private ReplicationState myReplicationState;
+        private CassandraMetrics myCassandraMetrics;
         private ScheduleManager myScheduleManager;
         // CPD-OFF: builder field declarations are intentionally near-identical to RepairSchedulerImpl.Builder
         private final List<TableRepairPolicy> myRepairPolicies = new ArrayList<>();
@@ -303,6 +309,30 @@ public final class UnifiedRepairScheduler implements RepairScheduler, Closeable
         public Builder withRepairStateFactory(final RepairStateFactory repairStateFactory)
         {
             myRepairStateFactory = repairStateFactory;
+            return this;
+        }
+
+        /**
+         * Build with replication state (used by the incremental unified path to resolve replicas).
+         *
+         * @param replicationState Replication state.
+         * @return Builder
+         */
+        public Builder withReplicationState(final ReplicationState replicationState)
+        {
+            myReplicationState = replicationState;
+            return this;
+        }
+
+        /**
+         * Build with Cassandra metrics (used by the incremental unified path for repaired-state signals).
+         *
+         * @param cassandraMetrics Cassandra metrics.
+         * @return Builder
+         */
+        public Builder withCassandraMetrics(final CassandraMetrics cassandraMetrics)
+        {
+            myCassandraMetrics = cassandraMetrics;
             return this;
         }
 

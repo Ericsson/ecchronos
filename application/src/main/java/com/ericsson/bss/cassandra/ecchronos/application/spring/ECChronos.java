@@ -53,7 +53,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.RepairSch
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.unified.SchemaChangeCoordinator;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.unified.UnifiedRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.unified.UnifiedScheduleManager;
-import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.RepairStateFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.VnodeRepairStateFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
@@ -156,7 +155,7 @@ public class ECChronos implements Closeable
         AbstractRepairConfigurationProvider repairConfigurationProvider =
                 new FileBasedRepairConfiguration(applicationContext);
 
-        myUnifiedMode = RepairType.UNIFIED_VNODE.equals(configuration.getRepairConfig().getRepairType());
+        myUnifiedMode = configuration.getRepairConfig().getRepairType().isUnified();
 
         if (myUnifiedMode)
         {
@@ -181,6 +180,8 @@ public class ECChronos implements Closeable
                     .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
                     .withRepairPolicies(Collections.singletonList(myTimeBasedRunPolicy))
                     .withRepairStateFactory(repairStateFactoryImpl)
+                    .withReplicationState(replicationState)
+                    .withCassandraMetrics(myECChronosInternals.getCassandraMetrics())
                     .withRepairHistory(repairHistoryService)
                     .withFaultReporter(repairFaultReporter)
                     .withTableStorageStates(myECChronosInternals.getTableStorageStates())
