@@ -22,13 +22,14 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableStorageStates;
 import java.io.Closeable;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
@@ -47,7 +48,7 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
 
     private static final long DEFAULT_UPDATE_DELAY_IN_MS = TimeUnit.SECONDS.toMillis(60);
 
-    private final Map<UUID, ImmutableMap<TableReference, Long>> myTableSizes = new ConcurrentHashMap<>();
+    private final AtomicReference<Map<UUID, ImmutableMap<TableReference, Long>>> myTableSizes = new AtomicReference<>();
     private final ScheduledExecutorService myScheduledExecutorService;
 
     private final ReplicatedTableProvider myReplicatedTableProvider;
@@ -81,29 +82,48 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
 
     private void initializeEmptyNodeMap(final UUID nodeID)
     {
-        myTableSizes.put(nodeID, ImmutableMap.of());
+        Map<UUID, ImmutableMap<TableReference, Long>> emptyNewEntry = new HashMap<>();
+        Map<TableReference, Long> emptyDataSizes = new HashMap<>();
+        ImmutableMap<TableReference, Long> emptyTableSize = ImmutableMap.copyOf(emptyDataSizes);
+        emptyNewEntry.put(nodeID, emptyTableSize);
+        myTableSizes.set(emptyNewEntry);
     }
 
     @Override
     public long getDataSize(final UUID nodeID, final TableReference tableReference)
     {
-        ImmutableMap<TableReference, Long> dataSizes = myTableSizes.get(nodeID);
-        if (dataSizes == null)
+        Map<UUID, ImmutableMap<TableReference, Long>> dataSizes = myTableSizes.get();
+
+        if (!dataSizes.containsKey(nodeID))
         {
-            return 0;
+            initializeEmptyNodeMap(nodeID);
         }
-        return dataSizes.getOrDefault(tableReference, 0L);
+
+        if (dataSizes.get(nodeID).containsKey(tableReference))
+        {
+                return dataSizes.get(nodeID).get(tableReference);
+        }
+        return 0;
     }
 
     @Override
     public long getDataSize(final UUID nodeID)
     {
-        ImmutableMap<TableReference, Long> dataSizes = myTableSizes.get(nodeID);
-        if (dataSizes == null || dataSizes.isEmpty())
+        Map<UUID, ImmutableMap<TableReference, Long>> dataSizesMap = myTableSizes.get();
+
+        if (!dataSizesMap.containsKey(nodeID))
         {
-            return 0;
+            initializeEmptyNodeMap(nodeID);
         }
-        return dataSizes.values().stream().mapToLong(e -> e).sum();
+
+        ImmutableMap<TableReference, Long> dataSizes = dataSizesMap.get(nodeID);
+
+        if (dataSizes != null && !dataSizes.isEmpty())
+        {
+            return dataSizes.values().stream().mapToLong(e -> e).sum();
+        }
+
+        return 0;
     }
 
     @Override
@@ -111,7 +131,7 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
     {
         myScheduledExecutorService.shutdown();
 
-        myTableSizes.clear();
+        myTableSizes.set(null);
     }
 
     /**
@@ -236,41 +256,23 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
     @VisibleForTesting
     void updateTableStates()
     {
-        // A task submitted to scheduleAtFixedRate that throws has all its future executions permanently suppressed
-        // (per the JDK contract), silently freezing table-size tracking for the process lifetime. Guard the whole
-        // body so every 60s tick always runs. Catch Exception (not Throwable) so a fatal Error such as
-        // OutOfMemoryError still propagates and is not masked, matching the sibling scheduled tasks. See issue #1940.
-        try
+        if (myJmxProxyFactory != null)
         {
-            if (myJmxProxyFactory == null)
+            for (UUID nodeID : myTableSizes.get().keySet())
             {
-                return;
-            }
-            for (UUID nodeID : myTableSizes.keySet())
-            {
-                updateTableStatesForNode(nodeID);
-            }
-        }
-        catch (Exception e)
-        {
-            LOG.error("Unexpected error updating table sizes; future metrics might contain stale data", e);
-        }
-    }
+                try (DistributedJmxProxy jmxProxy = myJmxProxyFactory.connect())
+                {
+                    Map<UUID, ImmutableMap<TableReference, Long>> newEntry = new HashMap<>();
+                    ImmutableMap<TableReference, Long> tableSize = getTableSizes(nodeID, jmxProxy);
+                    newEntry.put(nodeID, tableSize);
 
-    private void updateTableStatesForNode(final UUID nodeID)
-    {
-        try (DistributedJmxProxy jmxProxy = myJmxProxyFactory.connect())
-        {
-            // Update only this node's entry; do not replace the whole per-node map (that dropped every other node,
-            // see issue #1941).
-            myTableSizes.put(nodeID, getTableSizes(nodeID, jmxProxy));
-        }
-        // Broadened from IOException: a transient failure for one node (JMX connect error, or an unchecked exception
-        // from driver metadata / table-reference resolution during schema churn) must skip only this node this cycle
-        // and let the next tick retry, not kill the whole updater. See issue #1940.
-        catch (Exception e)
-        {
-            LOG.error("Unable to update table sizes for node {}, future metrics might contain stale data", nodeID, e);
+                    myTableSizes.set(newEntry);
+                }
+                catch (IOException e)
+                {
+                    LOG.error("Unable to update table sizes, future metrics might contain stale data", e);
+                }
+            }
         }
     }
 
