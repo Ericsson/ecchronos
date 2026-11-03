@@ -65,6 +65,7 @@ public class TestTableStorageStatesImpl
     private DistributedJmxProxy myJmxProxy;
 
     private final UUID myNodeId1 = UUID.randomUUID();
+    private final UUID myNodeId2 = UUID.randomUUID();
 
     private TableStorageStatesImpl myTableStorageStates;
 
@@ -127,11 +128,47 @@ public class TestTableStorageStatesImpl
     {
         myTableStorageStates = build(myNodeId1);
 
-        // close() sets the internal table-size map to null; a subsequent tick must not NPE.
+        // close() clears the internal table-size map; a subsequent tick must not throw.
         myTableStorageStates.close();
 
         assertThatCode(myTableStorageStates::updateTableStates).doesNotThrowAnyException();
         myTableStorageStates = null; // already closed
+    }
+
+    @Test
+    public void testMultipleNodesRetainIndependentSizes() throws IOException
+    {
+        // Issue #1941: updating one node's sizes must not clear another node's sizes.
+        myTableStorageStates = build(myNodeId1, myNodeId2);
+
+        when(myReplicatedTableProvider.getAll()).thenReturn(java.util.Collections.singleton(TABLE));
+        when(myJmxProxy.liveDiskSpaceUsed(eq(myNodeId1), eq(TABLE))).thenReturn(111L);
+        when(myJmxProxy.liveDiskSpaceUsed(eq(myNodeId2), eq(TABLE))).thenReturn(222L);
+
+        myTableStorageStates.updateTableStates();
+
+        // Both nodes retain their own size after a full pass (previously only the last-updated node survived).
+        assertThat(myTableStorageStates.getDataSize(myNodeId1, TABLE)).isEqualTo(111L);
+        assertThat(myTableStorageStates.getDataSize(myNodeId2, TABLE)).isEqualTo(222L);
+    }
+
+    @Test
+    public void testGetDataSizeMissIsSideEffectFree() throws IOException
+    {
+        // Issue #1941: a getDataSize for an unknown node must return 0 without evicting known nodes (the old read
+        // path replaced the whole map as a side effect).
+        myTableStorageStates = build(myNodeId1);
+
+        when(myReplicatedTableProvider.getAll()).thenReturn(java.util.Collections.singleton(TABLE));
+        when(myJmxProxy.liveDiskSpaceUsed(eq(myNodeId1), eq(TABLE))).thenReturn(321L);
+        myTableStorageStates.updateTableStates();
+
+        UUID unknownNode = UUID.randomUUID();
+        assertThat(myTableStorageStates.getDataSize(unknownNode, TABLE)).isEqualTo(0L);
+        assertThat(myTableStorageStates.getDataSize(unknownNode)).isEqualTo(0L);
+
+        // The known node's size is intact after the misses.
+        assertThat(myTableStorageStates.getDataSize(myNodeId1, TABLE)).isEqualTo(321L);
     }
 
     @Test
