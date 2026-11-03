@@ -22,7 +22,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableStorageStates;
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -256,23 +255,48 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
     @VisibleForTesting
     void updateTableStates()
     {
-        if (myJmxProxyFactory != null)
+        // A task submitted to scheduleAtFixedRate that throws has all its future executions permanently suppressed
+        // (per the JDK contract), silently freezing table-size tracking for the process lifetime. Guard the whole
+        // body so every 60s tick always runs. Catch Exception (not Throwable) so a fatal Error such as
+        // OutOfMemoryError still propagates and is not masked, matching the sibling scheduled tasks. See issue #1940.
+        try
         {
-            for (UUID nodeID : myTableSizes.get().keySet())
+            if (myJmxProxyFactory == null)
             {
-                try (DistributedJmxProxy jmxProxy = myJmxProxyFactory.connect())
-                {
-                    Map<UUID, ImmutableMap<TableReference, Long>> newEntry = new HashMap<>();
-                    ImmutableMap<TableReference, Long> tableSize = getTableSizes(nodeID, jmxProxy);
-                    newEntry.put(nodeID, tableSize);
-
-                    myTableSizes.set(newEntry);
-                }
-                catch (IOException e)
-                {
-                    LOG.error("Unable to update table sizes, future metrics might contain stale data", e);
-                }
+                return;
             }
+            Map<UUID, ImmutableMap<TableReference, Long>> currentSizes = myTableSizes.get();
+            if (currentSizes == null)
+            {
+                return;
+            }
+            for (UUID nodeID : currentSizes.keySet())
+            {
+                updateTableStatesForNode(nodeID);
+            }
+        }
+        catch (Exception e)
+        {
+            LOG.error("Unexpected error updating table sizes; future metrics might contain stale data", e);
+        }
+    }
+
+    private void updateTableStatesForNode(final UUID nodeID)
+    {
+        try (DistributedJmxProxy jmxProxy = myJmxProxyFactory.connect())
+        {
+            Map<UUID, ImmutableMap<TableReference, Long>> newEntry = new HashMap<>();
+            ImmutableMap<TableReference, Long> tableSize = getTableSizes(nodeID, jmxProxy);
+            newEntry.put(nodeID, tableSize);
+
+            myTableSizes.set(newEntry);
+        }
+        // Broadened from IOException: a transient failure for one node (JMX connect error, or an unchecked exception
+        // from driver metadata / table-reference resolution during schema churn) must skip only this node this cycle
+        // and let the next tick retry, not kill the whole updater. See issue #1940.
+        catch (Exception e)
+        {
+            LOG.error("Unable to update table sizes for node {}, future metrics might contain stale data", nodeID, e);
         }
     }
 
