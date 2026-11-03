@@ -56,10 +56,23 @@ def _config_for(repair_type):
 
 
 def _schedules():
-    return lib.schedules_for(KEYSPACE, TABLE)
+    return lib.schedules_for(KEYSPACE, TABLE, container_name=_current_container_name())
 
 
 # --- agent lifecycle ------------------------------------------------------------
+
+# Name of the agent container the current phase is querying. start_ecchronos names the
+# container "ecchronos-agent-<suffix>", and ecctool must run inside that specific container
+# (the shared helpers otherwise default to the 'cluster-wide' agent, which this suite does
+# not run). _recreate_agent updates this for each phase.
+_CURRENT_SUFFIX = {"value": None}
+
+
+def _current_container_name():
+    suffix = _CURRENT_SUFFIX["value"]
+    if suffix is None:
+        raise RuntimeError("No migration agent has been started yet.")
+    return f"ecchronos-agent-{suffix}"
 
 
 def _stop_all_agents(test_environment):
@@ -88,6 +101,7 @@ def _recreate_agent(install_cassandra_cluster, test_environment, suffix, repair_
 
     This is the migration/rollback primitive: a restart with changed configuration on the
     same IP/port. Each phase calls it to move the whole instance to the next repair type.
+    Records the new container name so subsequent ecctool queries target this agent.
     """
     _stop_all_agents(test_environment)
     test_environment.start_ecchronos(
@@ -97,6 +111,7 @@ def _recreate_agent(install_cassandra_cluster, test_environment, suffix, repair_
         bind_port=AGENT_BIND_PORT,
         fixed_ipv4_address=AGENT_IP,
     )
+    _CURRENT_SUFFIX["value"] = suffix
     test_environment.wait_for_ecchronos_ready(fixed_ipv4_address=AGENT_IP, bind_port=AGENT_BIND_PORT)
 
 

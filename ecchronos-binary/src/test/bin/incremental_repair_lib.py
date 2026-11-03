@@ -74,9 +74,17 @@ def write_data(cluster, keyspace, table, rows=1000, offset=0):
     logger.info("Inserted %s rows into %s.%s (offset %s)", rows, keyspace, table, offset)
 
 
-def schedules_for(keyspace, table):
-    """Schedules for keyspace.table from 'ecctool schedules -o json' (one dict per node)."""
-    return get_schedules_json(["--keyspace", keyspace, "--table", table])
+def schedules_for(keyspace, table, container_name=None):
+    """Schedules for keyspace.table from 'ecctool schedules -o json' (one dict per node).
+
+    container_name selects which agent container to run ecctool in; when omitted it uses
+    the get_schedules_json default (the single 'cluster-wide' agent). Suites that run a
+    differently named agent (e.g. the migration suite) pass their current container name.
+    """
+    params = ["--keyspace", keyspace, "--table", table]
+    if container_name is not None:
+        return get_schedules_json(params, container_name=container_name)
+    return get_schedules_json(params)
 
 
 def max_last_repaired(schedules):
