@@ -116,15 +116,17 @@ def test_incremental_cycle_advances_repaired_at(install_cassandra_cluster):
     cycle and confirm lastRepaired advanced and repaired_ratio reached 100%.
 
     Incremental repair reconciles SSTables, so the written data is flushed to disk first.
-    Starting from lastRepaired == -1 ("never repaired") and observing it move to a real
-    timestamp is the direct evidence that an incremental cycle actually ran for the table.
+    Incremental repair reconciles SSTables, so the written data is flushed to disk first.
+    Capturing the current lastRepaired as a baseline and observing it advance after writing
+    fresh data is the direct evidence that a new incremental cycle actually ran for the
+    table (a freshly started agent may already have completed an initial cycle, so we must
+    not assume lastRepaired starts unset).
     """
-    # Baseline: a freshly scheduled table has never been repaired.
+    # Baseline: whatever lastRepaired currently is (may already be set by an initial cycle).
     schedules = _schedules()
     lib.assert_all_repair_type(schedules, lib.REPAIR_TYPE_INCREMENTAL, "schedule", KEYSPACE, TABLE)
-    assert lib.max_last_repaired(schedules) == lib.NEVER_REPAIRED, (
-        f"Expected {KEYSPACE}.{TABLE} to start with lastRepaired unset (-1), got " f"{lib.max_last_repaired(schedules)}"
-    )
+    baseline = lib.max_last_repaired(schedules)
+    logger.info("Baseline lastRepaired for %s.%s: %s", KEYSPACE, TABLE, baseline)
 
     # Write data and flush every node so incremental repair has on-disk SSTables to process.
     lib.write_data(install_cassandra_cluster, KEYSPACE, TABLE, rows=1000)
@@ -150,8 +152,9 @@ def test_incremental_cycle_advances_repaired_at(install_cassandra_cluster):
             ratio,
             statuses,
         )
-        # Cycle has run once lastRepaired is a real timestamp and the table is fully repaired.
-        return last_repaired > lib.NEVER_REPAIRED and ratio >= 1.0
+        # A new cycle has completed once lastRepaired advanced past the baseline and the
+        # table is fully repaired.
+        return last_repaired > baseline and ratio >= 1.0
 
     assert _cycle_completed(), (
         f"Incremental repair cycle for {KEYSPACE}.{TABLE} did not advance lastRepaired to "

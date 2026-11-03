@@ -38,8 +38,11 @@ CYCLE_TIMEOUT_SECONDS = 900
 POLL_INTERVAL_SECONDS = 10
 SCHEDULE_DISCOVERY_TIMEOUT_SECONDS = 300
 
-# The migration agent runs on its own container/port/IP so it is independent of any default
-# agent and is cleaned up by the session fixture.
+# The migration agent always runs on one fixed slot; each phase just stops the previous
+# container and recreates it here with the new repair_type (that is the whole point of the
+# migration - a restart with changed config on the same address). We reuse the default
+# 8080/172.29.0.7 slot and, in phase 1, first stop any agent another suite left running in
+# the same pytest session (test_environment is session-scoped) so this slot is free.
 AGENT_BIND_PORT = 8080
 AGENT_IP = "172.29.0.7"
 
@@ -59,13 +62,14 @@ def _schedules():
 # --- agent lifecycle ------------------------------------------------------------
 
 
-def _stop_any_agent(test_environment):
-    """Stop and remove every tracked agent so the next phase starts from a clean slate.
+def _stop_all_agents(test_environment):
+    """Stop and remove every tracked agent so the fixed slot (IP/port) is free to reuse.
 
-    Repair-type reconfiguration is applied by restarting the agent; retiring the previous
-    phase's container frees the shared IP/port and ensures the schedules we query belong to
-    the newly configured agent only.
+    Called before (re)creating the migration agent. It clears any agent still tracked in the
+    session-scoped fixture - including one a previous suite left running - so recreating on
+    the same address does not hit "port already allocated".
     """
+    stopped = False
     for container in list(test_environment.instances):
         try:
             container.stop()
@@ -73,11 +77,19 @@ def _stop_any_agent(test_environment):
         except Exception as exc:  # noqa: BLE001  # pylint: disable=broad-except
             logger.warning("Could not stop agent %s: %s", getattr(container, "name", "?"), exc)
         test_environment.instances.remove(container)
+        stopped = True
     # Let the ring drop the retired heartbeat before a new agent reuses the IP.
-    time.sleep(5)
+    if stopped:
+        time.sleep(5)
 
 
-def _start_agent(install_cassandra_cluster, test_environment, suffix, repair_type):
+def _recreate_agent(install_cassandra_cluster, test_environment, suffix, repair_type):
+    """Stop the previous agent(s) and recreate one with repair_type on the fixed slot.
+
+    This is the migration/rollback primitive: a restart with changed configuration on the
+    same IP/port. Each phase calls it to move the whole instance to the next repair type.
+    """
+    _stop_all_agents(test_environment)
     test_environment.start_ecchronos(
         suffix=suffix,
         cassandra_network=install_cassandra_cluster.network,
@@ -167,7 +179,8 @@ def test_install_cassandra_cluster(install_cassandra_cluster):
 
 @pytest.mark.dependency(name="mig_phase_vnode", depends=["mig_install_cluster"])
 def test_phase1_vnode_cycle_completes(install_cassandra_cluster, test_environment):
-    _start_agent(install_cassandra_cluster, test_environment, "migration-vnode", lib.REPAIR_TYPE_VNODE)
+    # Phase 1 also clears any agent a prior suite left on the fixed slot in this session.
+    _recreate_agent(install_cassandra_cluster, test_environment, "migration-vnode", lib.REPAIR_TYPE_VNODE)
     assert _wait_for_schedules_discovered(lib.REPAIR_TYPE_VNODE), "Agent did not come up as VNODE"
     _run_cycle_to_completion(install_cassandra_cluster, offset=0, expected_type=lib.REPAIR_TYPE_VNODE)
 
@@ -179,8 +192,7 @@ def test_phase1_vnode_cycle_completes(install_cassandra_cluster, test_environmen
 
 @pytest.mark.dependency(name="mig_phase_incremental", depends=["mig_phase_vnode"])
 def test_phase2_switch_to_incremental_cycle_completes(install_cassandra_cluster, test_environment):
-    _stop_any_agent(test_environment)
-    _start_agent(install_cassandra_cluster, test_environment, "migration-incremental", lib.REPAIR_TYPE_INCREMENTAL)
+    _recreate_agent(install_cassandra_cluster, test_environment, "migration-incremental", lib.REPAIR_TYPE_INCREMENTAL)
     assert _wait_for_schedules_discovered(
         lib.REPAIR_TYPE_INCREMENTAL
     ), "ecChronos did not come up as INCREMENTAL after the switch (UC1)"
@@ -194,8 +206,7 @@ def test_phase2_switch_to_incremental_cycle_completes(install_cassandra_cluster,
 
 @pytest.mark.dependency(name="mig_phase_rollback", depends=["mig_phase_incremental"])
 def test_phase3_rollback_to_vnode_cycle_completes(install_cassandra_cluster, test_environment):
-    _stop_any_agent(test_environment)
-    _start_agent(install_cassandra_cluster, test_environment, "migration-rollback", lib.REPAIR_TYPE_VNODE)
+    _recreate_agent(install_cassandra_cluster, test_environment, "migration-rollback", lib.REPAIR_TYPE_VNODE)
     assert _wait_for_schedules_discovered(
         lib.REPAIR_TYPE_VNODE
     ), "ecChronos did not roll back to VNODE after the switch (UC2)"
