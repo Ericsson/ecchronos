@@ -34,6 +34,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.session.Session;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
+import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +52,7 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
     private CqlSession mySession;
     private final ExecutorService myService;
     private NodeLifecycleHandler myNodeLifecycleHandler;
+    private ReplicatedTableProvider myReplicatedTableProvider;
 
     /**
      * Default constructor.
@@ -64,6 +66,7 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
     {
         mySession = builder.mySession;
         myWorkerManager = builder.myNodeWorkerManager;
+        myReplicatedTableProvider = builder.myReplicatedTableProvider;
         myService = Executors.newFixedThreadPool(NO_OF_THREADS);
         myNodeLifecycleHandler = new NodeLifecycleHandler(
                 builder.myEccNodesSync,
@@ -85,6 +88,7 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
     {
         mySession = builder.mySession;
         myWorkerManager = builder.myNodeWorkerManager;
+        myReplicatedTableProvider = builder.myReplicatedTableProvider;
         myNodeLifecycleHandler = new NodeLifecycleHandler(
                 builder.myEccNodesSync,
                 builder.myJmxConnectionProvider,
@@ -97,6 +101,18 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
     }
 
     /**
+     * Invalidate the cached replicated-table set (if a provider is wired in) so it is recomputed on the next read.
+     * Called on schema and topology changes. See issue #1944.
+     */
+    private void invalidateReplicatedTables()
+    {
+        if (myReplicatedTableProvider != null)
+        {
+            myReplicatedTableProvider.invalidate();
+        }
+    }
+
+    /**
      * Called when keyspace is created.
      *
      * @param keyspace Keyspace metadata
@@ -104,6 +120,7 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
     @Override
     public void onKeyspaceCreated(final KeyspaceMetadata keyspace)
     {
+        invalidateReplicatedTables();
         if (myWorkerManager != null)
         {
             LOG.debug("Keyspace creation being processed {}", keyspace.describe(true));
@@ -136,6 +153,7 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
     @Override
     public void onKeyspaceDropped(final KeyspaceMetadata keyspace)
     {
+        invalidateReplicatedTables();
         keyspace.getTables().values().forEach(this::onTableDropped);
     }
 
@@ -147,6 +165,7 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
     @Override
     public void onTableCreated(final TableMetadata table)
     {
+        invalidateReplicatedTables();
         if (myWorkerManager != null)
         {
             LOG.debug("Table creation being processed {}", table.describe(false));
@@ -166,6 +185,7 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
     @Override
     public void onTableDropped(final TableMetadata table)
     {
+        invalidateReplicatedTables();
         if (myWorkerManager != null)
         {
             myWorkerManager.broadcastEvent(new TableDroppedEvent(table));
@@ -218,6 +238,7 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
     @Override
     public final void onUp(final Node node)
     {
+        invalidateReplicatedTables();
         if (myNodeLifecycleHandler != null)
         {
             myNodeLifecycleHandler.onUp(node);
@@ -228,6 +249,7 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
     @Override
     public final void onDown(final Node node)
     {
+        invalidateReplicatedTables();
         if (myNodeLifecycleHandler != null)
         {
             myNodeLifecycleHandler.onDown(node);
@@ -238,6 +260,7 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
     @Override
     public final void onAdd(final Node node)
     {
+        invalidateReplicatedTables();
         if (myNodeLifecycleHandler != null)
         {
             myNodeLifecycleHandler.onAdd(node);
@@ -247,6 +270,7 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
     @Override
     public final void onRemove(final Node node)
     {
+        invalidateReplicatedTables();
         if (myNodeLifecycleHandler != null)
         {
             myNodeLifecycleHandler.onRemove(node);
@@ -289,6 +313,7 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
         private NodeWorkerManager myNodeWorkerManager;
         private ScheduleManager myScheduleManager;
         private ReplicaSetCache myReplicaSetCache;
+        private ReplicatedTableProvider myReplicatedTableProvider;
 
         /**
          * Default constructor.
@@ -374,6 +399,18 @@ public class DefaultRepairConfigurationProvider extends SchemaChangeListenerBase
         public Builder withReplicaSetCache(final ReplicaSetCache replicaSetCache)
         {
             myReplicaSetCache = replicaSetCache;
+            return this;
+        }
+
+        /**
+         * Build with ReplicatedTableProvider, whose cached accepted-table set is invalidated on schema/topology
+         * changes (issue #1944).
+         * @param replicatedTableProvider the replicated table provider to invalidate on changes.
+         * @return Builder
+         */
+        public Builder withReplicatedTableProvider(final ReplicatedTableProvider replicatedTableProvider)
+        {
+            myReplicatedTableProvider = replicatedTableProvider;
             return this;
         }
 
