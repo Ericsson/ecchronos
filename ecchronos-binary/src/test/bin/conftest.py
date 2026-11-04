@@ -19,6 +19,7 @@ import os
 import contextlib
 import global_variables as global_vars
 import subprocess
+import json
 from cass_config import CassandraCluster
 from ecc_config import EcchronosConfig
 import time
@@ -256,6 +257,51 @@ def run_ecctool_repairs(params, container_name="ecchronos-agent-cluster-wide"):
 
 def run_ecctool_schedules(container_name="ecchronos-agent-cluster-wide"):
     return run_ecctool(["schedules"], container_name)
+
+
+def _run_ecctool_json(params, section, container_name="ecchronos-agent-cluster-wide"):
+    """Run an ecctool subcommand with '-o json' and return the parsed 'section' list.
+
+    Using ecctool's own '-o json' output avoids brittle parsing of the human-readable
+    pipe tables: every row becomes a dict keyed by the ecchronoslib type's to_dict()
+    fields (node_id, keyspace, table, status, repaired_ratio, repair_type,
+    last_repaired_at_in_ms, completed_at, ...). Raises on a non-zero exit or unparseable
+    output so callers fail loudly.
+    """
+    output, exit_code = run_ecctool(params + ["-o", "json"], container_name)
+    text = output.decode("ascii") if isinstance(output, (bytes, bytearray)) else output
+    if exit_code != 0:
+        raise RuntimeError(f"ecctool {params} -o json failed (exit {exit_code}): {text!r}")
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"ecctool {params} -o json produced non-JSON output: {text!r}") from exc
+    return data.get(section, [])
+
+
+def get_repairs_json(params=None, container_name="ecchronos-agent-cluster-wide"):
+    """Return the list of repair dicts from 'ecctool repairs -o json'.
+
+    'params' are extra ecctool repairs flags (e.g. ['--keyspace', 'k', '--table', 't',
+    '-c', '50']). Each dict carries at least: keyspace, table, status, repaired_ratio,
+    repair_type, job_id, completed_at.
+    """
+    return _run_ecctool_json(["repairs"] + (params or []), "repairs", container_name)
+
+
+def get_schedules_json(params=None, container_name="ecchronos-agent-cluster-wide"):
+    """Return the list of schedule dicts from 'ecctool schedules -o json'.
+
+    Each dict carries at least: keyspace, table, status, repaired_ratio, repair_type,
+    last_repaired_at_in_ms, next_repair_in_ms.
+    """
+    return _run_ecctool_json(["schedules"] + (params or []), "schedules", container_name)
+
+
+def run_repair_json(params, container_name="ecchronos-agent-cluster-wide"):
+    """Trigger an on-demand repair with 'ecctool run-repair ... -o json' and return the
+    list of created repair job dicts (same shape as get_repairs_json entries)."""
+    return _run_ecctool_json(["run-repair"] + params, "repairs", container_name)
 
 
 def run_ecctool(params, container_name="ecchronos-agent-cluster-wide"):

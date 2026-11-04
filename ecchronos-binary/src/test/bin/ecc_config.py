@@ -36,6 +36,8 @@ class EcchronosConfig:
         schedule_initial_delay_unit=None,
         soak_keyspaces=None,
         debug_logging=False,
+        repair_type=None,
+        schedule_keyspaces=None,
     ):
         self.container_mounts = {}
         self.datacenter_aware = (
@@ -60,6 +62,16 @@ class EcchronosConfig:
         # When True, run the agent at DEBUG log level and ensure the debug log file is
         # written into the mounted log directory so it is captured as a host artifact.
         self.debug_logging = debug_logging
+
+        # Global default repair type written into ecc.yml (repair.repair_type). When set,
+        # every table without an explicit per-table repair_type inherits this type. Used
+        # by the incremental-repair tests to make incremental the instance-wide default.
+        self.repair_type = repair_type
+
+        # When provided, fully replaces the schedule.yml 'keyspaces' list instead of using
+        # the mixed default from _default_test_schedule_keyspaces. Lets a test declare its
+        # own set of keyspaces/tables (e.g. all tables with repair_type incremental).
+        self.schedule_keyspaces = schedule_keyspaces
 
     def modify_configuration(self):
         self._modify_ecc_yaml_file()
@@ -105,6 +117,10 @@ class EcchronosConfig:
 
     def _modify_twcs_configuration(self, data):
         data["repair"]["ignore_twcs_tables"] = True
+        if self.repair_type is not None:
+            # Global default repair type (ecc.yml repair.repair_type); tables inherit it
+            # unless they override repair_type in schedule.yml.
+            data["repair"]["repair_type"] = self.repair_type
         return data
 
     def _modify_jolokia_configuration(self, data):
@@ -326,7 +342,10 @@ class EcchronosConfig:
         if data is None:
             data = {}
 
-        data["keyspaces"] = self._default_test_schedule_keyspaces()
+        # Use an explicit schedule override when provided, otherwise the mixed default.
+        data["keyspaces"] = (
+            self.schedule_keyspaces if self.schedule_keyspaces is not None else self._default_test_schedule_keyspaces()
+        )
 
         if self._has_schedule_overrides():
             for keyspace in data["keyspaces"]:
