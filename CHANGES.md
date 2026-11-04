@@ -2,6 +2,7 @@
 
 ## Version 1.1.2
 
+* Cache the set of replicated tables in ReplicatedTableProvider and refresh it only on schema/topology changes instead of recomputing on every call: this stops the per-60s node x keyspace recomputation on the table-size updater's hot path and the repeating "Keyspace ... not replicated by node" WARN flood (now a single consolidated line at most once per refresh, at a lower level) - Issue #1944
 * Fix per-node table sizes clobbering each other on a multi-node instance: TableStorageStatesImpl replaced its entire per-node size map on every update, so only the last-updated node was retained and getDataSize returned 0 for all others; it now stores sizes per node independently and getDataSize is side-effect free - Issue #1941
 * Fix the periodic table-size updater permanently dying on any non-IOException: the fixed-rate task now guards its whole body (and each per-node update) so a single unexpected exception no longer suppresses all future runs and silently freezes table-size tracking until restart - Issue #1940
 * Fix the standalone agent re-repairing already-repaired tables far below the configured interval: a repair that started before the current repair-state snapshot but finished after it was dropped from the history iteration window (bounded on the repair start time), so its vnode repairedAt never advanced; the window lower bound now includes a lookback margin so such completions are observed - Issue #1930
