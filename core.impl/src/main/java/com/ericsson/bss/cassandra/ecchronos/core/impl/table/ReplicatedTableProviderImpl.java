@@ -27,6 +27,9 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,6 +82,20 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
     private final TableReferenceFactory myTableReferenceFactory;
 
     /**
+     * Cached accepted-table snapshot. The accepted set only changes on schema/topology changes, so it is computed
+     * lazily and reused until {@link #invalidate()} clears it (called from the driver schema/topology event path).
+     * This stops the per-60s recompute and "not replicated" log flood on the hot path. See issue #1944.
+     */
+    private final AtomicReference<Set<TableReference>> myCachedTables = new AtomicReference<>();
+
+    /**
+     * Monotonic generation bumped by every {@link #invalidate()}. {@link #getAll()} captures it before recomputing
+     * and only publishes the result if it has not changed since, so a schema/topology change landing during a
+     * recompute is never masked by publishing the pre-change snapshot (the next call recomputes instead). See #1944.
+     */
+    private final AtomicLong myGeneration = new AtomicLong();
+
+    /**
      * Constructs a ReplicatedTableProviderImpl to manage table references in a replicated environment.
      *
      * @param session the {@link CqlSession} used to connect to the Cassandra cluster. Must not be {@code null}.
@@ -97,17 +114,71 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
 
     /**
      * {@inheritDoc}
+     * <p>
+     * Returns a cached snapshot of the accepted tables. The snapshot is (re)computed lazily only after
+     * {@link #invalidate()} is called on a schema/topology change, so a steady-state call does no node x keyspace
+     * recomputation and emits no logging.
      */
     @Override
     public final Set<TableReference> getAll()
     {
-        return myNativeConnectionProvider.getNodes().values().stream()
+        Set<TableReference> snapshot = myCachedTables.get();
+        if (snapshot != null)
+        {
+            return snapshot;
+        }
+
+        // Capture the generation before reading the driver metadata so a concurrent invalidate() during the compute
+        // can be detected. Only publish the result if no invalidate happened meanwhile; otherwise the snapshot may
+        // reflect pre-change metadata and must not become the cached value (the next call recomputes). See #1944.
+        long generation = myGeneration.get();
+        Set<TableReference> computed = computeReplicatedTables();
+        if (myGeneration.get() == generation)
+        {
+            // compareAndSet(null, ...) also avoids clobbering a snapshot another thread already published.
+            myCachedTables.compareAndSet(null, computed);
+        }
+        return computed;
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Drops the cached accepted-table snapshot and bumps the generation so a recompute already in flight does not
+     * publish a now-stale snapshot; the next {@link #getAll()} recomputes. Called from the driver schema/topology
+     * event path. See issue #1944.
+     */
+    @Override
+    public final void invalidate()
+    {
+        myGeneration.incrementAndGet();
+        myCachedTables.set(null);
+    }
+
+    /**
+     * Recompute the accepted tables across all managed nodes, collecting (once per recompute) the keyspaces that were
+     * not accepted because they are not replicated to a node's local data center, and logging them as a single
+     * consolidated line rather than one WARN per keyspace per call. See issue #1944.
+     *
+     * @return an immutable snapshot of the accepted tables.
+     */
+    private Set<TableReference> computeReplicatedTables()
+    {
+        Set<String> notReplicated = new TreeSet<>();
+        Set<TableReference> tables = myNativeConnectionProvider.getNodes().values().stream()
                 .flatMap(node -> mySession.getMetadata().getKeyspaces().values().stream()
-                        .filter(k -> accept(node, k.getName().asInternal()))
+                        .filter(k -> accept(node, k.getName().asInternal(), notReplicated))
                         .flatMap(k -> k.getTables().values().stream())
                         .map(myTableReferenceFactory::forTable)
                 )
                 .collect(Collectors.toSet());
+
+        if (!notReplicated.isEmpty())
+        {
+            LOG.info("Ignoring {} keyspace(s) not replicated to the local data center: {}",
+                    notReplicated.size(), notReplicated);
+        }
+        return ImmutableSet.copyOf(tables);
     }
 
     /**
@@ -118,6 +189,21 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
             final Node node,
             final String keyspace
     )
+    {
+        return accept(node, keyspace, null);
+    }
+
+    /**
+     * Acceptance check with optional collection of keyspaces skipped because they are not replicated to the node's
+     * local data center. When {@code notReplicated} is non-null, such keyspaces are added to it (for a single
+     * consolidated log line) instead of being logged per-keyspace here. See issue #1944.
+     *
+     * @param node the node to check the keyspace against.
+     * @param keyspace the keyspace to check.
+     * @param notReplicated optional sink for not-replicated keyspace names, or {@code null} to log per-keyspace.
+     * @return true if the keyspace should be repaired.
+     */
+    private boolean accept(final Node node, final String keyspace, final Set<String> notReplicated)
     {
         if (IGNORED_SYSTEM_KEYSPACES.contains(keyspace))
         {
@@ -136,7 +222,7 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
             case SIMPLE_STRATEGY:
                 return validateSimpleStrategy(replication);
             case NETWORK_TOPOLOGY_STRATEGY:
-                return validateNetworkTopologyStrategy(node, keyspace, replication);
+                return validateNetworkTopologyStrategy(node, keyspace, replication, notReplicated);
             default:
                 LOG.warn("Replication strategy of type {} is not supported", replicationClass);
                 break;
@@ -156,7 +242,8 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
     private boolean validateNetworkTopologyStrategy(
             final Node currentNode,
             final String keyspace, final Map<String,
-            String> replication)
+            String> replication,
+            final Set<String> notReplicated)
     {
         String localDc = currentNode.getDatacenter();
 
@@ -168,7 +255,15 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
 
         if (!replication.containsKey(localDc))
         {
-            LOG.warn("Keyspace {} not replicated by node, ignoring.", keyspace);
+            if (notReplicated != null)
+            {
+                // Collect for a single consolidated log line per recompute instead of a per-keyspace WARN flood.
+                notReplicated.add(keyspace);
+            }
+            else
+            {
+                LOG.debug("Keyspace {} not replicated by node, ignoring.", keyspace);
+            }
             return false;
         }
 

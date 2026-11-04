@@ -39,4 +39,14 @@ public interface ReplicatedTableProvider
      * @return True if the provided keyspace should be repaired.
      */
     boolean accept(Node node, String keyspace);
+
+    /**
+     * Invalidate any cached accepted-table set so the next {@link #getAll()} recomputes it. Intended to be called on
+     * schema or topology changes (keyspace/table create/update/drop, node add/remove/up/down). The default
+     * implementation is a no-op for providers that do not cache.
+     */
+    default void invalidate()
+    {
+        // No-op by default; caching implementations override this.
+    }
 }
