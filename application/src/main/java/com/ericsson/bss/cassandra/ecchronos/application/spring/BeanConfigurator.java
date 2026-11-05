@@ -22,6 +22,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.security.Reloadin
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.JolokiaNotificationController;
+import com.google.common.annotations.VisibleForTesting;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metadata.NodeResolverImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.ReplicationStateImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.NodeResolver;
@@ -561,13 +562,26 @@ public class BeanConfigurator
             final Config config
     )
     {
-        long interval = config.getRepairConfig().getRepairHistoryLookback().getInterval(TimeUnit.MILLISECONDS);
-        long repairHistoryLookBack = TimeUnit.MILLISECONDS.convert(interval, config.getRepairConfig().getRepairHistoryLookback().getUnit());
+        long repairHistoryLookBack = resolveRepairHistoryLookbackMs(config);
         return new RepairHistoryService(
                 distributedNativeConnectionProvider.getCqlSession(),
                 replicationState,
                 nodeResolver,
                 repairHistoryLookBack
         );
+    }
+
+    /**
+     * Resolve the configured repair-history lookback in milliseconds. {@link Interval#getInterval(TimeUnit)} already
+     * returns the duration in the requested unit, so it must not be converted again (a double conversion previously
+     * produced an astronomically large, window-emptying value). See issue #1950.
+     *
+     * @param config the configuration.
+     * @return the repair-history lookback in milliseconds.
+     */
+    @VisibleForTesting
+    static long resolveRepairHistoryLookbackMs(final Config config)
+    {
+        return config.getRepairConfig().getRepairHistoryLookback().getInterval(TimeUnit.MILLISECONDS);
     }
 }
