@@ -17,10 +17,14 @@
 set -e
 
 sed -i "s/authenticator: .*/authenticator: PasswordAuthenticator/g" "$CASSANDRA_CONF"/cassandra.yaml
-# Start of for 5.X
-sed -i "/^authenticator:/{n;s/class_name : .*/class_name : PasswordAuthenticator/}" "$CASSANDRA_CONF"/cassandra.yaml
-# End of for 5.X
+# Nested-format authenticator (Cassandra 5.x and later). The value is on the line after
+# 'authenticator:'. The colon spacing differs between versions (5.x wrote 'class_name : ',
+# 6.0 writes 'class_name:'), so match optional spaces around the colon.
+sed -i "/^authenticator:/{n;s/class_name *: *.*/class_name: PasswordAuthenticator/}" "$CASSANDRA_CONF"/cassandra.yaml
 sed -i "s/^authorizer: .*/authorizer: CassandraAuthorizer/g" "$CASSANDRA_CONF"/cassandra.yaml
+# Nested-format authorizer (Cassandra 5.x and later), mirroring the authenticator handling
+# above so authentication and authorization stay consistent across versions.
+sed -i "/^authorizer:/{n;s/class_name *: *.*/class_name: CassandraAuthorizer/}" "$CASSANDRA_CONF"/cassandra.yaml
 
 sed -i "s/num_tokens: .*/num_tokens: 16/g" "$CASSANDRA_CONF"/cassandra.yaml
 sed -i "s/auto_snapshot: .*/auto_snapshot: false/g" "$CASSANDRA_CONF"/cassandra.yaml
