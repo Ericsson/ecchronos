@@ -263,7 +263,9 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
     {
         long currentTimeInMillis = System.currentTimeMillis();
         long lookBackTimeInMillis = repairHistoryData.getLookBackTimeInMilliseconds();
-        long lookBackStartTime = currentTimeInMillis - lookBackTimeInMillis;
+        // Clamp at 0 so a very large configured lookback cannot underflow to a negative epoch and silently empty the
+        // query window. See #1950.
+        long lookBackStartTime = Math.max(0L, currentTimeInMillis - lookBackTimeInMillis);
 
         Instant from = Instant.ofEpochMilli(lookBackStartTime);
         Instant to = Instant.ofEpochMilli(currentTimeInMillis);
@@ -355,7 +357,9 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
             final long to,
             final Predicate<RepairEntry> predicate)
     {
-        long from = System.currentTimeMillis() - myLookbackTimeInMs;
+        // Clamp at 0 so a very large configured lookback cannot underflow to a negative epoch and silently empty the
+        // query window. See #1950.
+        long from = Math.max(0L, System.currentTimeMillis() - myLookbackTimeInMs);
         return iterate(node, tableReference, to, from, predicate);
     }
 

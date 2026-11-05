@@ -2,6 +2,8 @@
 
 ## Version 1.1.3
 
+* Fix repair-history lookback being double unit-converted at startup, which produced an astronomically large window that underflowed to a negative start time and matched no rows; ecChronos then treated every table as never-repaired and waited out initial_delay instead of resuming from history. The lookback is now used as-is (milliseconds), and the query start time is clamped to >= 0 as a safeguard - Issue #1950
+
 ## Version 1.1.2
 
 * Cache the set of replicated tables in ReplicatedTableProvider and refresh it only on schema/topology changes instead of recomputing on every call: this stops the per-60s node x keyspace recomputation on the table-size updater's hot path and the repeating "Keyspace ... not replicated by node" WARN flood (now a single consolidated line at most once per refresh, at a lower level) - Issue #1944
