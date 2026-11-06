@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -104,7 +105,8 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
             final Node node,
             final TableReference tableReference, final RepairStateSnapshot previous,
             final long iterateToTime,
-            final long iterationLookbackMs)
+            final long iterationLookbackMs,
+            final long coldStartLookbackMs)
     {
         Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicaMap
                 = myReplicationState.getTokenRangeToReplicas(tableReference, node);
@@ -114,9 +116,22 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
 
         if (lastRepairedAt == VnodeRepairState.UNREPAIRED)
         {
-            LOG.debug("No last repaired at found for {}, iterating over all repair entries", tableReference);
-            repairEntryIterator = myRepairHistoryProvider.iterate(node, tableReference, iterateToTime,
-                    (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
+            // Cold start: bound the history readback to coldStartLookbackMs (N repair intervals) instead of the full
+            // 30-day retention lookback. The priming logic only keeps the latest SUCCESS per range, so a deep read is
+            // wasteful. coldStartLookbackMs == 0 disables history-based priming entirely (the table appears
+            // never-repaired and honors the initial delay). See issue #1952.
+            if (coldStartLookbackMs <= 0)
+            {
+                LOG.debug("History-based priming disabled for {} (coldStartLookbackMs=0)", tableReference);
+                repairEntryIterator = Collections.emptyIterator();
+            }
+            else
+            {
+                long from = Math.max(0L, iterateToTime - coldStartLookbackMs);
+                LOG.debug("No last repaired at found for {}, iterating repair entries from {}", tableReference, from);
+                repairEntryIterator = myRepairHistoryProvider.iterate(node, tableReference, iterateToTime,
+                        from, (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
+            }
         }
         else
         {

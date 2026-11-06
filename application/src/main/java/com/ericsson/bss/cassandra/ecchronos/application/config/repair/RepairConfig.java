@@ -34,6 +34,8 @@ public class RepairConfig
     private static final int DAYS_INITIAL_DELAY = 1;
     private static final int DAYS_WARNING = 8;
     private static final int DAYS_ERROR = 10;
+    /** Default cold-start history lookback in repair intervals; only GlobalRepairConfig overrides it (#1952). */
+    private static final int DEFAULT_HISTORY_LOOKBACK_INTERVALS = 2;
 
     private Interval myRepairInterval = new Interval(DAYS_INTERVAL, TimeUnit.DAYS);
     private Alarm myAlarm = new Alarm(new Interval(DAYS_WARNING, TimeUnit.DAYS),
@@ -324,7 +326,20 @@ public class RepairConfig
                 .withRepairType(myRepairType)
                 .withPriorityGranularityUnit(myPriority.getPriorityGranularityUnit())
                 .withInitialDelay(myInitialDelay.getInterval(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
+                .withHistoryLookbackIntervals(getHistoryLookbackIntervals())
                 .build();
+    }
+
+    /**
+     * The number of repair intervals of history to read back when priming repair state at cold start. Only the
+     * global config carries this knob (it has no per-table override), so the base returns the default; see
+     * {@code GlobalRepairConfig}. See issue #1952.
+     *
+     * @return the history lookback, in repair intervals.
+     */
+    public int getHistoryLookbackIntervals()
+    {
+        return DEFAULT_HISTORY_LOOKBACK_INTERVALS;
     }
 }
 

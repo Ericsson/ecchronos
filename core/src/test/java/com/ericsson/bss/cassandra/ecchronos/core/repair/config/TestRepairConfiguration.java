@@ -52,6 +52,50 @@ public class TestRepairConfiguration
     }
 
     @Test
+    public void testDefaultHistoryLookbackIntervalsIsTwo()
+    {
+        RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder().build();
+        assertThat(repairConfiguration.getHistoryLookbackIntervals()).isEqualTo(2);
+    }
+
+    @Test
+    public void testColdStartLookbackIsIntervalsTimesRepairInterval()
+    {
+        RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
+                .withRepairInterval(7, TimeUnit.DAYS)
+                .withHistoryLookbackIntervals(2)
+                .build();
+        assertThat(repairConfiguration.getColdStartLookbackInMs())
+                .isEqualTo(2L * TimeUnit.DAYS.toMillis(7));
+
+        RepairConfiguration custom = RepairConfiguration.newBuilder()
+                .withRepairInterval(1, TimeUnit.HOURS)
+                .withHistoryLookbackIntervals(5)
+                .build();
+        assertThat(custom.getColdStartLookbackInMs()).isEqualTo(5L * TimeUnit.HOURS.toMillis(1));
+    }
+
+    @Test
+    public void testColdStartLookbackZeroWhenIntervalsZero()
+    {
+        RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
+                .withRepairInterval(7, TimeUnit.DAYS)
+                .withHistoryLookbackIntervals(0)
+                .build();
+        assertThat(repairConfiguration.getHistoryLookbackIntervals()).isZero();
+        assertThat(repairConfiguration.getColdStartLookbackInMs()).isZero();
+    }
+
+    @Test
+    public void testNegativeHistoryLookbackIntervalsClampedToZero()
+    {
+        RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
+                .withHistoryLookbackIntervals(-3)
+                .build();
+        assertThat(repairConfiguration.getHistoryLookbackIntervals()).isZero();
+    }
+
+    @Test
     public void testSetInterval()
     {
         RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()

@@ -41,7 +41,8 @@ public final class RepairConfiguration
     private static final long DEFAULT_BACKOFF_IN_MS = TimeUnit.MINUTES.toMillis(30);
     private static final boolean DEFAULT_IGNORE_TWCS_TABLES = false;
     private static final long DEFAULT_INITIAL_DELAY_IN_MS = TimeUnit.DAYS.toMillis(1);
-
+    /** Default number of repair intervals of history to read back when priming repair state at cold start (#1952). */
+    private static final int DEFAULT_HISTORY_LOOKBACK_INTERVALS = 2;
     /** The default repair configuration with standard settings. */
     public static final RepairConfiguration DEFAULT = newBuilder().build();
     /** A disabled repair configuration with a zero interval. */
@@ -62,6 +63,7 @@ public final class RepairConfiguration
     private final RepairType myRepairType;
 
     private final long myInitialDelayInMs;
+    private final int myHistoryLookbackIntervals;
 
     private RepairConfiguration(final Builder builder)
     {
@@ -76,6 +78,7 @@ public final class RepairConfiguration
         myRepairType = builder.myRepairType;
         myPriorityGranularityUnit = builder.myPriorityGranularityUnit;
         myInitialDelayInMs = builder.myInitialDelayInMs;
+        myHistoryLookbackIntervals = builder.myHistoryLookbackIntervals;
     }
 
     /**
@@ -116,6 +119,29 @@ public final class RepairConfiguration
     public long getInitialDelayInMs()
     {
         return myInitialDelayInMs;
+    }
+
+    /**
+     * Gets the number of repair intervals of history to read back when priming repair state at cold start. A value
+     * of {@code 0} disables history-based priming (an empty window), so tables appear never-repaired and honor the
+     * initial delay. See issue #1952.
+     *
+     * @return the history lookback, in repair intervals.
+     */
+    public int getHistoryLookbackIntervals()
+    {
+        return myHistoryLookbackIntervals;
+    }
+
+    /**
+     * The cold-start repair-history readback window, in milliseconds: {@code historyLookbackIntervals x
+     * repairIntervalInMs}. Returns {@code 0} when history-based priming is disabled. See issue #1952.
+     *
+     * @return the cold-start lookback window in milliseconds.
+     */
+    public long getColdStartLookbackInMs()
+    {
+        return (long) myHistoryLookbackIntervals * myRepairIntervalInMs;
     }
 
     /**
@@ -222,7 +248,8 @@ public final class RepairConfiguration
                         + "ignoreTWCS=%b,"
                         + "backoff=%dms,"
                         + "repairType=%s,"
-                        + "priorityGranularityUnit=%s))",
+                        + "priorityGranularityUnit=%s,"
+                        + "historyLookbackIntervals=%d))",
                 myRepairIntervalInMs,
                 myInitialDelayInMs,
                 myRepairWarningTimeInMs,
@@ -232,7 +259,8 @@ public final class RepairConfiguration
                 myIgnoreTWCSTables,
                 myBackoffInMs,
                 myRepairType,
-                myPriorityGranularityUnit);
+                myPriorityGranularityUnit,
+                myHistoryLookbackIntervals);
     }
 
     @Override
@@ -257,7 +285,8 @@ public final class RepairConfiguration
                 && myIgnoreTWCSTables == that.myIgnoreTWCSTables
                 && myBackoffInMs == that.myBackoffInMs
                 && myRepairType == that.myRepairType
-                && myPriorityGranularityUnit == that.myPriorityGranularityUnit;
+                && myPriorityGranularityUnit == that.myPriorityGranularityUnit
+                && myHistoryLookbackIntervals == that.myHistoryLookbackIntervals;
     }
 
     @Override
@@ -265,7 +294,7 @@ public final class RepairConfiguration
     {
         return Objects.hash(myRepairParallelism, myRepairIntervalInMs, myInitialDelayInMs, myRepairWarningTimeInMs,
                 myRepairErrorTimeInMs, myRepairUnwindRatio, myTargetRepairSizeInBytes, myIgnoreTWCSTables,
-                myBackoffInMs, myRepairType, myPriorityGranularityUnit);
+                myBackoffInMs, myRepairType, myPriorityGranularityUnit, myHistoryLookbackIntervals);
     }
 
     /**
@@ -286,6 +315,7 @@ public final class RepairConfiguration
 
 
         private long myInitialDelayInMs = DEFAULT_INITIAL_DELAY_IN_MS;
+        private int myHistoryLookbackIntervals = DEFAULT_HISTORY_LOOKBACK_INTERVALS;
 
         /**
          * Constructor.
@@ -311,6 +341,7 @@ public final class RepairConfiguration
             myRepairUnwindRatio = from.getRepairUnwindRatio();
             myBackoffInMs = from.getBackoffInMs();
             myPriorityGranularityUnit = from.getPriorityGranularityUnit();
+            myHistoryLookbackIntervals = from.getHistoryLookbackIntervals();
         }
 
         /**
@@ -360,6 +391,19 @@ public final class RepairConfiguration
         public Builder withInitialDelay(final long initialDelay, final TimeUnit timeUnit)
         {
             myInitialDelayInMs = timeUnit.toMillis(initialDelay);
+            return this;
+        }
+
+        /**
+         * Set the number of repair intervals of history to read back when priming repair state at cold start. A
+         * value of {@code 0} disables history-based priming. Negative values are treated as {@code 0}. See #1952.
+         *
+         * @param historyLookbackIntervals the history lookback, in repair intervals.
+         * @return The builder
+         */
+        public Builder withHistoryLookbackIntervals(final int historyLookbackIntervals)
+        {
+            myHistoryLookbackIntervals = Math.max(0, historyLookbackIntervals);
             return this;
         }
 
