@@ -83,10 +83,25 @@ class CassandraCluster:
             raise e
         self._set_env()
         self._wait_for_nodes_to_be_up(4, CLUSTER_STARTUP_WAIT_TIME_IN_SECS * 1000)
+        # Gate on authenticated native-transport readiness BEFORE touching schema. The gossip
+        # wait above (nodetool status) can report 4 UN while a node's native transport (CQL
+        # port 9042) is not yet serving, so running the ALTER / setup_db immediately races and
+        # fails with "Cannot achieve consistency level LOCAL_ONE/LOCAL_QUORUM, alive_replicas: 0".
+        # A successful authenticated query means native transport is up and auth is working.
+        self._wait_for_auth_ready()
         self._modify_system_auth_keyspace()
         self._run_full_repair()
+        # Re-confirm the superuser authenticates at the new (raised) replication factor.
         self._wait_for_auth_ready()
         self._setup_db()
+        # _setup_db() creates the 'eccuser' application role (users.cql). Like the default
+        # superuser, that role row is read at QUORUM during authentication, but it is written
+        # only after the system_auth repair above, so it can be missing on the newly required
+        # replicas. Reconcile system_auth again and wait until 'eccuser' can authenticate so the
+        # test does not race the role's propagation ("Provided username eccuser ... incorrect" /
+        # "Cannot achieve consistency level LOCAL_QUORUM").
+        self._repair_system_auth_on_all_nodes()
+        self._wait_for_auth_ready("eccuser", "eccpassword")
         self._set_network()
 
     def _set_env(self):
@@ -386,15 +401,18 @@ class CassandraCluster:
             stderr=subprocess.PIPE,
         )
 
-        # Surface setup_db.sh failures directly instead of letting them be masked
-        # by the downstream keyspace-verification timeout, which makes the real
-        # root cause (e.g. cqlsh auth errors) hard to diagnose.
+        # Fail fast on setup_db.sh errors instead of only warning. If it fails, the
+        # ecchronos keyspace and/or the 'eccuser' role were not created, and continuing
+        # only produces misleading downstream errors (a role that "doesn't exist" surfacing
+        # later as an eccuser "Bad credentials" auth timeout, or a keyspace-verify that
+        # passes against a keyspace left over from a reused data volume). Surface the real
+        # cqlsh errors (e.g. "Cannot achieve consistency level LOCAL_ONE, alive_replicas: 0")
+        # here, at the point they actually occur.
         if result.returncode != 0:
-            logger.warning(
-                "setup_db.sh exited with return code %s. stdout: %s. stderr: %s",
-                result.returncode,
-                result.stdout.strip(),
-                result.stderr.strip(),
+            raise RuntimeError(
+                f"setup_db.sh exited with return code {result.returncode}. "
+                f"The ecChronos keyspace and/or the 'eccuser' role were not created. "
+                f"stdout: {result.stdout.strip()}. stderr: {result.stderr.strip()}."
             )
 
         # Verify ecchronos keyspace exists before proceeding
@@ -460,26 +478,43 @@ class CassandraCluster:
                 result.stderr.strip(),
             )
 
+    def _repair_system_auth_on_all_nodes(self):
+        """Repair the system_auth keyspace on every node.
+
+        After raising the system_auth RF (ALTER to {dc1:1, dc2:2}), the default
+        'cassandra' superuser row must become consistent across all owning replicas.
+        A `nodetool repair` only reconciles ranges the invoked node is a replica for,
+        so repairing a single node (which may not even own the superuser's token range)
+        can leave the row short of QUORUM. Authentication reads the role at QUORUM, so a
+        missing/under-replicated row surfaces as a persistent
+        "[Bad credentials] Provided username cassandra and/or password are incorrect".
+        Repairing system_auth on every node guarantees the superuser row is reconciled
+        to all replicas regardless of which node originally seeded it.
+        """
+        for label, container_ref in self._nodes_for_log_collection():
+            command = self._nodetool_command(container_ref, "repair --full system_auth")
+            try:
+                result = subprocess.run(
+                    command,
+                    timeout=DEFAULT_WAIT_TIME_IN_SECS * 3,
+                    encoding="utf-8",
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+                if result.returncode != 0:
+                    logger.warning(
+                        "system_auth repair on %s exited with return code %s. stdout: %s. stderr: %s",
+                        label,
+                        result.returncode,
+                        result.stdout.strip(),
+                        result.stderr.strip(),
+                    )
+            except Exception as e:  # noqa: BLE001  # pylint: disable=broad-except
+                logger.warning("system_auth repair on %s failed: %s", label, e)
+
     def _run_full_repair(self):
         logger.info("Running Full Repair")
-        if global_vars.LOCAL != "true" and global_vars.PEM_ENABLED != "true":
-            command = [
-                "docker",
-                "exec",
-                self.container_id,
-                "bash",
-                "-c",
-                "nodetool --ssl -u cassandra -pw cassandra repair --full",
-            ]
-        else:
-            command = [
-                "docker",
-                "exec",
-                self.container_id,
-                "bash",
-                "-c",
-                "nodetool -u cassandra -pw cassandra repair --full",
-            ]
+        command = self._nodetool_command(self.container_id, "repair --full")
 
         result = subprocess.run(
             command,
@@ -496,15 +531,24 @@ class CassandraCluster:
                 result.stderr.strip(),
             )
 
-    def _wait_for_auth_ready(self):
-        """Wait until the 'cassandra' superuser can actually authenticate.
+        # Reconcile the superuser row to all system_auth replicas so the subsequent
+        # QUORUM auth read cannot miss it. See _repair_system_auth_on_all_nodes.
+        self._repair_system_auth_on_all_nodes()
 
-        After raising the system_auth replication factor, the default superuser is
-        read at QUORUM and its credentials may not yet be present on the newly
-        required replicas, causing transient "Bad credentials" failures. Poll a
-        trivial authenticated query until it succeeds so that setup_db.sh does not
-        run against a cluster that cannot yet authenticate (which otherwise surfaces
-        as a misleading "keyspace not found" timeout).
+    def _wait_for_auth_ready(self, username="cassandra", password="cassandra"):
+        """Wait until the given role can actually authenticate.
+
+        After raising the system_auth replication factor, a role row is read at QUORUM
+        and its credentials may not yet be present on the newly required replicas,
+        causing transient "Bad credentials" failures. Poll a trivial authenticated query
+        until it succeeds so that downstream steps do not run against a cluster that
+        cannot yet authenticate the role (which otherwise surfaces as a misleading
+        "keyspace not found" timeout or a failing driver session in the tests).
+
+        Called first for the default 'cassandra' superuser (before setup_db creates the
+        application role) and again for 'eccuser' after setup_db, since that role row is
+        written only after the initial system_auth repair and must likewise be reconciled
+        to quorum before the tests connect as eccuser.
 
         Note: unlike the system_auth ALTER and full repair (which only log a warning
         on failure, since a single hiccup is often self-correcting), this method
@@ -524,9 +568,9 @@ class CassandraCluster:
                     self.container_id,
                     "cqlsh",
                     "-u",
-                    "cassandra",
+                    username,
                     "-p",
-                    "cassandra",
+                    password,
                     "-e",
                     "SELECT now() FROM system.local;",
                 ]
@@ -538,26 +582,27 @@ class CassandraCluster:
                 last_stderr = result.stderr.strip()
 
                 if result.returncode == 0:
-                    logger.info("Authentication ready on attempt %s", attempt + 1)
+                    logger.info("Authentication ready for user '%s' on attempt %s", username, attempt + 1)
                     return
 
                 logger.warning(
-                    "Attempt %s to verify authentication failed with return code %s. stderr: %s",
+                    "Attempt %s to verify authentication for user '%s' failed with return code %s. stderr: %s",
                     attempt + 1,
+                    username,
                     result.returncode,
                     last_stderr,
                 )
             except Exception as e:
                 last_stderr = str(e)
-                logger.warning("Attempt %s to verify authentication failed: %s", attempt + 1, e)
+                logger.warning("Attempt %s to verify authentication for user '%s' failed: %s", attempt + 1, username, e)
 
             sleep(3)
 
         raise TimeoutError(
-            f"Authentication as user 'cassandra' not available after {max_attempts} attempts. "
+            f"Authentication as user '{username}' not available after {max_attempts} attempts. "
             f"Last return code: {last_returncode}. Last stderr: {last_stderr}. "
             "The system_auth replication change may not have propagated (repair did not "
-            "reconcile the superuser credentials) before the integration test continued."
+            "reconcile the role credentials) before the integration test continued."
         )
 
     def _nodes_for_log_collection(self):

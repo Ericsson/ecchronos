@@ -13,6 +13,7 @@ dependency-reduced-pom.xml
 .toDelete
 *.pyc
 .idea/
+ci-artifacts/
 *.iml
 .coverage
 *htmlcov

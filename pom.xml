@@ -823,6 +823,11 @@ limitations under the License.
                             <exclude>**/docker/*.yml</exclude>
 			    <exclude>**/*.csv</exclude>
                             <exclude>**/.venv/**</exclude>
+                            <!-- Local CI run artifacts (per-suite logs and collected
+                                 surefire/failsafe reports). Written by scripts/run-ci.sh and
+                                 git-ignored; the license plugin scans the filesystem (not
+                                 .gitignore), so exclude them explicitly. -->
+                            <exclude>ci-artifacts/**</exclude>
                         </excludes>
                     </configuration>
                 </plugin>

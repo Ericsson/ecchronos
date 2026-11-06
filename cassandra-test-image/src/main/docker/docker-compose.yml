@@ -30,7 +30,14 @@ services:
       - LOCAL_JMX=no
       - JOLOKIA=${JOLOKIA}
       - PEM_ENABLED=${PEM_ENABLED}
-      - JVM_EXTRA_OPTS=-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.superuser_setup_delay_ms=0 -Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.ring_delay_ms=0
+      # NOTE: superuser_setup_delay_ms is intentionally NOT set to 0. The default (10s)
+      # lets gossip/ring establish before CassandraRoleManager seeds the default
+      # 'cassandra' superuser, so exactly one node creates the role and the others read
+      # it. Forcing 0 made every node seed its own role row in isolation; after the
+      # system_auth RF increase (ALTER to {dc1:1, dc2:2}) a QUORUM read of the role could
+      # miss a majority-consistent row, surfacing as a persistent "[Bad credentials]
+      # Provided username cassandra and/or password are incorrect" during test bring-up.
+      - JVM_EXTRA_OPTS=-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.ring_delay_ms=0
     volumes:
       - cassandra-seed-dc1-rack1-node1-data:/var/lib/cassandra
       - ${CERTIFICATE_DIRECTORY}:/etc/certificates
@@ -64,7 +71,14 @@ services:
       - LOCAL_JMX=no
       - JOLOKIA=${JOLOKIA}
       - PEM_ENABLED=${PEM_ENABLED}
-      - JVM_EXTRA_OPTS=-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.superuser_setup_delay_ms=0 -Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.ring_delay_ms=0
+      # NOTE: superuser_setup_delay_ms is intentionally NOT set to 0. The default (10s)
+      # lets gossip/ring establish before CassandraRoleManager seeds the default
+      # 'cassandra' superuser, so exactly one node creates the role and the others read
+      # it. Forcing 0 made every node seed its own role row in isolation; after the
+      # system_auth RF increase (ALTER to {dc1:1, dc2:2}) a QUORUM read of the role could
+      # miss a majority-consistent row, surfacing as a persistent "[Bad credentials]
+      # Provided username cassandra and/or password are incorrect" during test bring-up.
+      - JVM_EXTRA_OPTS=-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.ring_delay_ms=0
     volumes:
       - cassandra-seed-dc2-rack1-node1-data:/var/lib/cassandra
       - ${CERTIFICATE_DIRECTORY}:/etc/certificates
@@ -98,7 +112,14 @@ services:
       - LOCAL_JMX=no
       - JOLOKIA=${JOLOKIA}
       - PEM_ENABLED=${PEM_ENABLED}
-      - JVM_EXTRA_OPTS=-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.superuser_setup_delay_ms=0 -Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.ring_delay_ms=0
+      # NOTE: superuser_setup_delay_ms is intentionally NOT set to 0. The default (10s)
+      # lets gossip/ring establish before CassandraRoleManager seeds the default
+      # 'cassandra' superuser, so exactly one node creates the role and the others read
+      # it. Forcing 0 made every node seed its own role row in isolation; after the
+      # system_auth RF increase (ALTER to {dc1:1, dc2:2}) a QUORUM read of the role could
+      # miss a majority-consistent row, surfacing as a persistent "[Bad credentials]
+      # Provided username cassandra and/or password are incorrect" during test bring-up.
+      - JVM_EXTRA_OPTS=-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.ring_delay_ms=0
     volumes:
       - cassandra-node-dc1-rack1-node2-data:/var/lib/cassandra
       - ${CERTIFICATE_DIRECTORY}:/etc/certificates
@@ -132,7 +153,14 @@ services:
       - LOCAL_JMX=no
       - JOLOKIA=${JOLOKIA}
       - PEM_ENABLED=${PEM_ENABLED}
-      - JVM_EXTRA_OPTS=-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.superuser_setup_delay_ms=0 -Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.ring_delay_ms=0
+      # NOTE: superuser_setup_delay_ms is intentionally NOT set to 0. The default (10s)
+      # lets gossip/ring establish before CassandraRoleManager seeds the default
+      # 'cassandra' superuser, so exactly one node creates the role and the others read
+      # it. Forcing 0 made every node seed its own role row in isolation; after the
+      # system_auth RF increase (ALTER to {dc1:1, dc2:2}) a QUORUM read of the role could
+      # miss a majority-consistent row, surfacing as a persistent "[Bad credentials]
+      # Provided username cassandra and/or password are incorrect" during test bring-up.
+      - JVM_EXTRA_OPTS=-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.ring_delay_ms=0
     volumes:
       - cassandra-node-dc2-rack1-node2-data:/var/lib/cassandra
       - ${CERTIFICATE_DIRECTORY}:/etc/certificates
