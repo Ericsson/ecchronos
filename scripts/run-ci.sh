@@ -136,6 +136,48 @@ echo "==> Using Java: $(java -version 2>&1 | head -1)  (target java.version=$JAV
 declare -a RESULTS
 overall_rc=0
 
+# Where per-suite console logs and (on failure) test reports are preserved so a
+# flaky failure that scrolls past in the console can still be inspected afterwards.
+ARTIFACT_DIR="$REPO_ROOT/ci-artifacts"
+RUN_STAMP="$(date +%Y%m%d-%H%M%S)"
+
+# Copy any surefire/failsafe reports produced across the reactor into the artifact
+# directory for the given suite. Reports survive the run even when console output
+# scrolls away; this gathers them in one place so the failing test + stacktrace is
+# easy to find. Best-effort: never fails the run.
+collect_reports() {
+    local key="$1"
+    local dest="$ARTIFACT_DIR/$RUN_STAMP/$key"
+    mkdir -p "$dest"
+    # failsafe-reports (ITs) and surefire-reports (UTs) live under each module's target/.
+    while IFS= read -r reports_dir; do
+        # Mirror the module path so same-named reports from different modules don't clash.
+        local rel="${reports_dir#"$REPO_ROOT"/}"
+        local module_dest="$dest/${rel%/target/*}"
+        mkdir -p "$module_dest"
+        cp -a "$reports_dir" "$module_dest/" 2>/dev/null || true
+    done < <(find "$REPO_ROOT" -type d \( -name failsafe-reports -o -name surefire-reports \) 2>/dev/null)
+    echo "==> Test reports for [$key] collected under: $dest"
+
+    # Print a short summary of which test(s) failed, straight to the console, so the
+    # failing class + exception is visible even if the full output scrolled past.
+    # Failsafe/surefire .txt reports contain a "Tests run: .. Failures: .. Errors: .."
+    # header; report any with a non-zero failure/error count.
+    local found_failure=0
+    while IFS= read -r report; do
+        if grep -qE "Failures: [1-9]|Errors: [1-9]" "$report" 2>/dev/null; then
+            found_failure=1
+            echo "  -- FAILED: $(basename "$report" .txt)"
+            # The summary line plus the first exception line give the gist.
+            grep -E "Tests run:" "$report" 2>/dev/null | head -1 | sed 's/^/       /'
+            grep -E "<<< (FAILURE|ERROR)|^[a-zA-Z0-9_.]+(Exception|Error)" "$report" 2>/dev/null | head -3 | sed 's/^/       /'
+        fi
+    done < <(find "$dest" -name "*.txt" 2>/dev/null)
+    if [[ $found_failure -eq 0 ]]; then
+        echo "  -- (no per-test failure markers found in reports; see console log)"
+    fi
+}
+
 run_step() {
     local label="$1"; shift
     echo ""
@@ -148,6 +190,36 @@ run_step() {
     else
         RESULTS+=("FAIL  $label")
         overall_rc=1
+    fi
+}
+
+# Like run_step, but for a named suite: tee the full console output to a per-suite
+# log file and, on failure, gather the test reports. This makes an intermittent
+# failure reproducible-after-the-fact instead of scrolling past unseen.
+run_suite() {
+    local key="$1"; shift
+    local label="$1"; shift
+    local log_dir="$ARTIFACT_DIR/$RUN_STAMP"
+    mkdir -p "$log_dir"
+    local logfile="$log_dir/$key.log"
+
+    echo ""
+    echo "==================================================================="
+    echo "==> $label"
+    echo "==> \$ $*"
+    echo "==> console log: $logfile"
+    echo "==================================================================="
+    # Preserve the command's exit status through the pipe to tee.
+    set +e
+    "$@" 2>&1 | tee "$logfile"
+    local rc=${PIPESTATUS[0]}
+    set -e
+    if [[ $rc -eq 0 ]]; then
+        RESULTS+=("PASS  $label")
+    else
+        RESULTS+=("FAIL  $label  (log: $logfile)")
+        overall_rc=1
+        collect_reports "$key"
     fi
 }
 
@@ -183,7 +255,7 @@ for key in "${SELECTED[@]}"; do
     fi
 
     # shellcheck disable=SC2086  # goals is intentionally word-split into maven args
-    run_step "$name [$key]" \
+    run_suite "$key" "$name [$key]" \
         mvn $goals -Djava.version="$JAVA_VERSION" -Dnet.bytebuddy.experimental=true -B
 done
 
