@@ -350,6 +350,16 @@ repair:
     time: 30
     unit: days
   ##
+  ## Number of repair intervals of history to read back when priming repair state at startup (cold start), for both
+  ## vnode and incremental repairs. With the default repair_interval this reads the last 'history_lookback_intervals'
+  ## intervals of repair_history per (table, node) instead of the full 'history_lookback' retention window, which is
+  ## usually enough to recognise recently-repaired ranges while keeping the startup read cheap.
+  ## Set to 0 to disable history-based priming entirely: tables then appear never-repaired at startup and honor
+  ## 'initial_delay' before their first repair.
+  ## This is separate from 'history_lookback' above, which still bounds the general history iteration/retention.
+  ##
+  history_lookback_intervals: 2
+  ##
   ## Specifies a target for how much data each repair session should process.
   ## This is only supported if using 'vnode' as repair_type.
   ## This is an estimation assuming uniform data distribution among partition keys.

@@ -17,8 +17,11 @@ package com.ericsson.bss.cassandra.ecchronos.application.config.repair;
 import com.ericsson.bss.cassandra.ecchronos.application.spring.AbstractRepairConfigurationProvider;
 
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Locale;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 
 import java.util.concurrent.TimeUnit;
@@ -26,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 /** Global repair configuration that applies to all tables by default. */
 public class GlobalRepairConfig extends RepairConfig
 {
+    private static final Logger LOG = LoggerFactory.getLogger(GlobalRepairConfig.class);
     private static final int THIRTY_DAYS = 30;
 
     private Class<? extends AbstractRepairConfigurationProvider> myRepairConfigurationClass =
@@ -33,6 +37,8 @@ public class GlobalRepairConfig extends RepairConfig
     private Interval myRepairHistoryLookback = new Interval(THIRTY_DAYS, TimeUnit.DAYS);
     private RepairHistory myRepairHistory = new RepairHistory();
     private RepairLockType myRepairLockType = RepairLockType.VNODE;
+    private static final int DEFAULT_HISTORY_LOOKBACK_INTERVALS = 2;
+    private int myHistoryLookbackIntervals = DEFAULT_HISTORY_LOOKBACK_INTERVALS;
 
     /** Default constructor. */
     public GlobalRepairConfig()
@@ -104,6 +110,28 @@ public class GlobalRepairConfig extends RepairConfig
     }
 
     /**
+     * Returns the number of repair intervals of history to read back when priming repair state at cold start
+     * (0 disables history-based priming). See issue #1952.
+     * @return the history lookback, in repair intervals
+     */
+    @JsonProperty("history_lookback_intervals")
+    @Override
+    public final int getHistoryLookbackIntervals()
+    {
+        return myHistoryLookbackIntervals;
+    }
+
+    /**
+     * Sets the number of repair intervals of history to read back when priming repair state at cold start.
+     * @param historyLookbackIntervals the history lookback, in repair intervals
+     */
+    @JsonProperty("history_lookback_intervals")
+    public final void setHistoryLookbackIntervals(final int historyLookbackIntervals)
+    {
+        myHistoryLookbackIntervals = historyLookbackIntervals;
+    }
+
+    /**
      * Returns the repair history.
      * @return the repair history
      */
@@ -121,6 +149,28 @@ public class GlobalRepairConfig extends RepairConfig
     public final void setRepairHistory(final RepairHistory repairHistory)
     {
         myRepairHistory = repairHistory;
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Additionally warns at startup if {@code initial_delay} is shorter than {@code repair_interval}. With a small
+     * (or {@code 0}) history_lookback_intervals, a node that cannot find recent history begins repairing almost
+     * immediately after the initial delay, so a short initial delay interacts badly with the reduced readback.
+     * See issue #1952.
+     */
+    @Override
+    public RepairConfiguration asRepairConfiguration()
+    {
+        long initialDelayMs = getInitialDelay().getInterval(TimeUnit.MILLISECONDS);
+        long repairIntervalMs = getRepairInterval().getInterval(TimeUnit.MILLISECONDS);
+        if (initialDelayMs < repairIntervalMs)
+        {
+            LOG.warn("initial_delay ({} ms) is shorter than repair_interval ({} ms); after the initial delay a node "
+                    + "with no recent repair history will begin repairing almost immediately, which may be "
+                    + "undesirable with a small history_lookback_intervals.", initialDelayMs, repairIntervalMs);
+        }
+        return super.asRepairConfiguration();
     }
 }
 

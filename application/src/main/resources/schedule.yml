@@ -27,6 +27,10 @@
 ## Multiple regular expressions matching a single table should be avoided as it will be difficult
 ## to know which value will win out.
 ##
+## Note: 'history_lookback_intervals' (how many repair intervals of history to read back when priming repair state
+## at startup; 0 disables history-based priming) is a global-only setting and is configured under 'repair' in
+## ecc.yml, not per table here.
+##
 
 keyspaces:
 #  - name: ks1

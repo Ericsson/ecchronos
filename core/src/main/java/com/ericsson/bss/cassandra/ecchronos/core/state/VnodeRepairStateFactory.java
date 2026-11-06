@@ -35,13 +35,17 @@ public interface VnodeRepairStateFactory
      *                            repair-history iteration lower bound, so a repair that started before the snapshot
      *                            but finished after it is still observed (issue #1930). Typically derived from the
      *                            repair interval. Must be &gt;= 0.
+     * @param coldStartLookbackMs When no previous snapshot exists (cold start), how far back to read repair history
+     *                            to prime the state. {@code 0} disables history-based priming (empty window), so the
+     *                            table appears never-repaired and honors the initial delay (issue #1952).
      * @return The calculated repair state.
      */
     VnodeRepairStates calculateNewState(
             Node node,
             TableReference tableReference, RepairStateSnapshot previous,
             long iterateToTime,
-            long iterationLookbackMs);
+            long iterationLookbackMs,
+            long coldStartLookbackMs);
 
     /**
      * Calculate the repair state for a time window.

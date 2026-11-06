@@ -92,10 +92,8 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         // configured, so it can always be constructed.
         myStallGuard = new IncrementalRepairStallGuard(builder.myFaultReporter, myCassandraMetrics,
                 builder.myTableReference, builder.myNodeId);
-        myLastSuccessfulRun = determineLastSuccessfulRun(
-                builder.myRepairConfiguration.getRepairIntervalInMs(),
-                builder.myRepairConfiguration.getRepairErrorTimeInMs(),
-                builder.myTableReference);
+        myLastSuccessfulRun = determineLastSuccessfulRun(builder.myTableReference,
+                builder.myRepairConfiguration.getColdStartLookbackInMs());
         LOG.debug("{} - last successful run: {}", this, myLastSuccessfulRun);
     }
 
@@ -190,10 +188,8 @@ public class IncrementalRepairJob extends ScheduledRepairJob
             myLastSuccessfulRun = System.currentTimeMillis();
             return;
         }
-        long historyLastRun = lastSuccessfulRunFromHistory(
-                getRepairConfiguration().getRepairIntervalInMs(),
-                getRepairConfiguration().getRepairErrorTimeInMs(),
-                getTableReference());
+        long historyLastRun = lastSuccessfulRunFromHistory(getTableReference(),
+                getRepairConfiguration().getColdStartLookbackInMs());
         if (historyLastRun > myLastSuccessfulRun)
         {
             LOG.info("{} - incremental repair for {} already completed at {}, skipping.",
@@ -239,10 +235,9 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         }
     }
 
-    private long determineLastSuccessfulRun(final long repairIntervalInMs, final long repairErrorTimeInMs,
-            final TableReference tableReference)
+    private long determineLastSuccessfulRun(final TableReference tableReference, final long coldStartLookbackMs)
     {
-        long historyLastRun = lastSuccessfulRunFromHistory(repairIntervalInMs, repairErrorTimeInMs, tableReference);
+        long historyLastRun = lastSuccessfulRunFromHistory(tableReference, coldStartLookbackMs);
         if (historyLastRun > 0)
         {
             return historyLastRun;
@@ -257,17 +252,24 @@ public class IncrementalRepairJob extends ScheduledRepairJob
      *
      * @return the timestamp of the last successful repair, or {@code 0} if none is found or history is unavailable.
      */
-    private long lastSuccessfulRunFromHistory(final long repairIntervalInMs, final long repairErrorTimeInMs,
-            final TableReference tableReference)
+    private long lastSuccessfulRunFromHistory(final TableReference tableReference, final long coldStartLookbackMs)
     {
         if (myRepairHistoryProvider == null)
+        {
+            return 0L;
+        }
+        // Unified with the vnode cold-start window (#1952): read back history_lookback_intervals x repairInterval,
+        // the same knob both repair types use. This replaces the former max(repairInterval, repairErrorTime) bound
+        // (dropping the repairErrorTime factor, intentionally). A value of 0 disables history-based priming entirely
+        // (zero-width window), so we skip the read and fall back to metrics / the initial delay.
+        if (coldStartLookbackMs <= 0)
         {
             return 0L;
         }
         try
         {
             long now = System.currentTimeMillis();
-            long from = now - Math.max(repairIntervalInMs, repairErrorTimeInMs);
+            long from = Math.max(0L, now - coldStartLookbackMs);
             Iterator<RepairEntry> iterator = myRepairHistoryProvider.iterate(myNode, tableReference, now,
                     from, Predicates.alwaysTrue());
             long latest = 0L;

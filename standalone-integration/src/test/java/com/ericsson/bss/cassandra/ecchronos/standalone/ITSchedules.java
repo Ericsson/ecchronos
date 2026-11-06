@@ -97,6 +97,10 @@ import static org.mockito.Mockito.verify;
 @NotThreadSafe
 public class ITSchedules extends TestBase
 {
+    // Cold-start history lookback (in repair intervals, #1952) wide enough to cover the repair history these tests
+    // inject (up to ~4 intervals in the past), so startup sees it instead of treating the table as brand new.
+    private static final int HISTORY_LOOKBACK_INTERVALS = 48;
+
     private static RepairFaultReporter mockFaultReporter;
 
     private static TableRepairMetrics mockTableRepairMetrics;
@@ -195,6 +199,9 @@ public class ITSchedules extends TestBase
 
         myRepairConfiguration = RepairConfiguration.newBuilder()
                 .withRepairInterval(60, TimeUnit.MINUTES)
+                // These tests inject repair history up to a few intervals in the past; widen the cold-start history
+                // lookback (issue #1952) so that injected history is observed at startup.
+                .withHistoryLookbackIntervals(HISTORY_LOOKBACK_INTERVALS)
                 .withTargetRepairSizeInBytes(UnitConverter.toBytes("100m")) // 100MiB
                 .build();
         myScheduleManagerImpl.createScheduleFutureForNodeIDList(getNativeConnectionProvider().getNodes().keySet());
@@ -286,6 +293,7 @@ public class ITSchedules extends TestBase
 
         RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
                 .withRepairInterval(60, TimeUnit.MINUTES)
+                .withHistoryLookbackIntervals(HISTORY_LOOKBACK_INTERVALS)
                 .withRepairType(RepairType.PARALLEL_VNODE)
                 .withParallelism(RepairParallelism.PARALLEL)
                 .build();

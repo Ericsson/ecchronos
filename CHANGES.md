@@ -2,6 +2,7 @@
 
 ## Version 1.1.3
 
+* Bound the cold-start repair-history readback to a configurable number of repair intervals (repair.history_lookback_intervals, default 2) uniformly for vnode and incremental repairs, instead of reading the full 30-day history lookback per (table, node) at startup; 0 disables history-based priming (tables honor initial_delay). A warning is logged at startup when initial_delay is shorter than repair_interval - Issue #1952
 * Fix repair-history lookback being double unit-converted at startup, which produced an astronomically large window that underflowed to a negative start time and matched no rows; ecChronos then treated every table as never-repaired and waited out initial_delay instead of resuming from history. The lookback is now used as-is (milliseconds), and the query start time is clamped to >= 0 as a safeguard - Issue #1950
 
 ## Version 1.1.2

@@ -167,7 +167,7 @@ public class RepairStateImpl implements RepairState
     private RepairStateSnapshot generateNewRepairState(final Node node, final RepairStateSnapshot old, final long now)
     {
         VnodeRepairStates vnodeRepairStates = myVnodeRepairStateFactory.calculateNewState(node, myTableReference, old,
-                now, iterationLookbackMs());
+                now, iterationLookbackMs(), myRepairConfiguration.getColdStartLookbackInMs());
 
         return generateSnapshotForVnode(vnodeRepairStates, old, now);
     }

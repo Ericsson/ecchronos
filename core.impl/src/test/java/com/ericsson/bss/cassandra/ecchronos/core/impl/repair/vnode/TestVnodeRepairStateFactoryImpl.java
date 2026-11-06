@@ -465,8 +465,9 @@ public class TestVnodeRepairStateFactoryImpl
 
         when(mockReplicationState.getTokenRangeToReplicas(eq(TABLE_REFERENCE), eq(myMockNode))).thenReturn(tokenToHostMap);
         repairHistoryProvider = mock(RepairHistoryProvider.class);
-        when(repairHistoryProvider.iterate(eq(myMockNode), eq(TABLE_REFERENCE), any(long.class), any(Predicate.class))).thenReturn(
-                firstIterateRepairEntries.iterator());
+        // Cold start now uses the bounded-from iterate (#1952); with a huge cold-start lookback the from clamps to 0.
+        when(repairHistoryProvider.iterate(eq(myMockNode), eq(TABLE_REFERENCE), any(long.class), eq(0L),
+                any(Predicate.class))).thenReturn(firstIterateRepairEntries.iterator());
 
         assertNewVnodeStates(newState(range(1, 2), range1RepairedAt, range1RepairedAt),
                 newState(range(2, 3), range2RepairedAt, range2RepairedAt));
@@ -544,6 +545,56 @@ public class TestVnodeRepairStateFactoryImpl
         assertNewVnodeStates(previousSnapshot,
                 newState(range(1, 2), 5L, 6L),
                 newState(range(2, 3), repairStartedAt, repairFinishedAt));
+    }
+
+    @Test
+    public void testColdStartUsesBoundedFromWindow() throws UnknownHostException
+    {
+        // Issue #1952: cold start (no previous snapshot) reads history from now - coldStartLookbackMs, not the full
+        // 30-day lookback. Capture the from passed to the provider and assert it is now - N*interval (within a small
+        // tolerance for the wall-clock read inside calculateNewState).
+        DriverNode node1 = withNode("127.0.0.1");
+        DriverNode node2 = withNode("127.0.0.2");
+        withRange(range(1, 2), node1, node2);
+
+        RepairHistoryProvider mockProvider = mock(RepairHistoryProvider.class);
+        when(mockProvider.iterate(eq(myMockNode), eq(TABLE_REFERENCE), any(long.class), any(long.class),
+                any(Predicate.class))).thenReturn(Collections.<RepairEntry>emptyList().iterator());
+        VnodeRepairStateFactory factory = new VnodeRepairStateFactoryImpl(mockReplicationState, mockProvider, false);
+
+        long coldStartLookbackMs = TimeUnit.DAYS.toMillis(14); // e.g. N=2 x 7-day interval
+        long now = System.currentTimeMillis();
+        factory.calculateNewState(myMockNode, TABLE_REFERENCE, null, now, TimeUnit.DAYS.toMillis(1),
+                coldStartLookbackMs);
+
+        org.mockito.ArgumentCaptor<Long> fromCaptor = org.mockito.ArgumentCaptor.forClass(Long.class);
+        org.mockito.Mockito.verify(mockProvider).iterate(eq(myMockNode), eq(TABLE_REFERENCE), any(long.class),
+                fromCaptor.capture(), any(Predicate.class));
+        assertThat(fromCaptor.getValue()).isEqualTo(now - coldStartLookbackMs);
+    }
+
+    @Test
+    public void testColdStartWithZeroLookbackDoesNotReadHistory() throws UnknownHostException
+    {
+        // Issue #1952: coldStartLookbackMs == 0 disables history-based priming entirely; the provider must not be
+        // queried and the vnode is left unrepaired.
+        DriverNode node1 = withNode("127.0.0.1");
+        DriverNode node2 = withNode("127.0.0.2");
+        withRange(range(1, 2), node1, node2);
+
+        RepairHistoryProvider mockProvider = mock(RepairHistoryProvider.class);
+        VnodeRepairStateFactory factory = new VnodeRepairStateFactoryImpl(mockReplicationState, mockProvider, false);
+
+        VnodeRepairStates states = factory.calculateNewState(myMockNode, TABLE_REFERENCE, null,
+                System.currentTimeMillis(), TimeUnit.DAYS.toMillis(1), 0L);
+
+        org.mockito.Mockito.verify(mockProvider, org.mockito.Mockito.never())
+                .iterate(any(Node.class), any(TableReference.class), any(long.class), any(long.class),
+                        any(Predicate.class));
+        org.mockito.Mockito.verify(mockProvider, org.mockito.Mockito.never())
+                .iterate(any(Node.class), any(TableReference.class), any(long.class), any(Predicate.class));
+        assertThat(states.getVnodeRepairStates())
+                .allMatch(v -> v.lastRepairedAt() == VnodeRepairState.UNREPAIRED);
     }
 
     private RepairStateSnapshot snapshot(long repairedAt, VnodeRepairState... states)
@@ -706,8 +757,10 @@ public class TestVnodeRepairStateFactoryImpl
 
     private void assertNewState(VnodeRepairStateFactory factory, RepairStateSnapshot previous, Class<? extends VnodeRepairStates> expectedClass, Collection<VnodeRepairState> expectedStates)
     {
+        // Use a very large cold-start lookback so from clamps to 0 and the existing cold-start tests (which use
+        // small absolute timestamps) still see all their history entries. #1952 adds the 6th arg.
         VnodeRepairStates newStates = factory.calculateNewState(myMockNode, TABLE_REFERENCE, previous,
-                System.currentTimeMillis(), TimeUnit.DAYS.toMillis(1));
+                System.currentTimeMillis(), TimeUnit.DAYS.toMillis(1), Long.MAX_VALUE);
         assertThat(newStates).isInstanceOf(expectedClass);
 
         Collection<VnodeRepairState> vnodeRepairStates = newStates.getVnodeRepairStates();
