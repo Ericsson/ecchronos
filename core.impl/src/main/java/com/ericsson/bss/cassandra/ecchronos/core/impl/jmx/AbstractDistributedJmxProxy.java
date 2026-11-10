@@ -37,6 +37,7 @@ import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.RuntimeMBeanException;
 import javax.management.remote.JMXConnector;
+import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.http.HttpConnectTimeoutException;
@@ -710,16 +711,31 @@ abstract class AbstractDistributedJmxProxy implements DistributedJmxProxy
     }
 
     /**
-     * Check if the exception indicates a stale connection (HTTP connect timeout)
-     * and invalidate the connection if so.
+     * Exception types (matched anywhere in the cause chain) that indicate the JMX connection is no longer usable and
+     * must be rebuilt: a dead TCP channel ({@link HttpConnectTimeoutException} / {@link ConnectException}) or a broken
+     * TLS channel ({@link SSLException}, which also covers {@code SSLHandshakeException} such as a
+     * {@code certificate_expired} after an on-disk certificate rotation). See issue #1960.
+     */
+    private static final List<Class<? extends Throwable>> STALE_CONNECTION_CAUSES = List.of(
+            HttpConnectTimeoutException.class,
+            ConnectException.class,
+            SSLException.class);
+
+    /**
+     * Check if the exception indicates a stale connection and invalidate the connection if so, forcing the next
+     * {@link DistributedJmxConnectionProvider#getJmxConnector(UUID)} to rebuild it.
+     *
+     * <p>The Jolokia connector pins its SSL context at creation time, so without invalidation a connector carrying a
+     * rotated/expired certificate would be reused indefinitely; rebuilding it picks up the current certificate. The
+     * set of causes treated as stale is {@link #STALE_CONNECTION_CAUSES}. See issue #1960.
      */
     protected void invalidateIfConnectionStale(final UUID nodeID, final Throwable t)
     {
         Throwable cause = t;
         while (cause != null)
         {
-            if (cause instanceof HttpConnectTimeoutException
-                    || cause instanceof ConnectException)
+            final Throwable current = cause;
+            if (STALE_CONNECTION_CAUSES.stream().anyMatch(type -> type.isInstance(current)))
             {
                 invalidateConnection(nodeID);
                 return;

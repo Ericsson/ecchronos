@@ -30,6 +30,9 @@ import java.net.http.HttpConnectTimeoutException;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLHandshakeException;
+
 public class TestInvalidateConnectionStale
 {
     private DistributedJmxConnectionProvider myConnectionProvider;
@@ -73,6 +76,38 @@ public class TestInvalidateConnectionStale
         myProxy.invalidateIfConnectionStale(myNodeId, wrapper);
 
         verify(myConnectionProvider, never()).close(myNodeId);
+    }
+
+    @Test
+    public void testInvalidatesOnSSLException() throws IOException
+    {
+        Exception wrapper = new RuntimeException(new SSLException("TLS error"));
+        myProxy.invalidateIfConnectionStale(myNodeId, wrapper);
+
+        verify(myConnectionProvider).close(myNodeId);
+    }
+
+    @Test
+    public void testInvalidatesOnSSLHandshakeException() throws IOException
+    {
+        // certificate_expired after an on-disk rotation surfaces as an SSLHandshakeException (an SSLException).
+        Exception wrapper = new RuntimeException(
+                new SSLHandshakeException("Received fatal alert: certificate_expired"));
+        myProxy.invalidateIfConnectionStale(myNodeId, wrapper);
+
+        verify(myConnectionProvider).close(myNodeId);
+    }
+
+    @Test
+    public void testInvalidatesOnDeeplyNestedSSLHandshakeException() throws IOException
+    {
+        // Mirrors the real repair path where the handshake failure is wrapped in an IOException.
+        Throwable cause = new SSLHandshakeException("Received fatal alert: certificate_expired");
+        Throwable wrapped = new IOException("JMX invoke failed", cause);
+        Exception wrapper = new RuntimeException(wrapped);
+        myProxy.invalidateIfConnectionStale(myNodeId, wrapper);
+
+        verify(myConnectionProvider).close(myNodeId);
     }
 
     @Test
