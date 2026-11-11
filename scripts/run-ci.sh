@@ -28,6 +28,7 @@
 #   ./run-ci.sh unit style            # run specific suites by key
 #   ./run-ci.sh --java 21 unit        # use a specific JDK (if JAVA_HOME_21_X64 or similar is set)
 #   ./run-ci.sh --skip-setup unit     # skip the black check + dependency install
+#                                     # (NOTE: also skips the clean rebuild; ensure classes/.m2 are already fresh)
 #   ./run-ci.sh --no-black unit       # skip only the black check
 #
 # Suite keys (see --list for the full command each runs):
@@ -239,8 +240,8 @@ if [[ $RUN_SETUP -eq 1 ]]; then
         fi
     fi
 
-    run_step "install dependencies (build-cassandra-test-jar, skip tests)" \
-        mvn install -Pbuild-cassandra-test-jar -DskipTests=true -B
+    run_step "install dependencies (clean build-cassandra-test-jar, skip tests)" \
+        mvn clean install -Pbuild-cassandra-test-jar -DskipTests=true -B
 fi
 
 # ---- Run selected suites ----

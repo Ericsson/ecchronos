@@ -32,6 +32,7 @@ import static org.mockito.ArgumentMatchers.any;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.DummyLock;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairTask;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.VnodeRepairTask;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
@@ -384,6 +385,80 @@ public class TestRepairGroup
         TaskExecutionResult result = repairGroup.execute(myNodeID);
 
         assertThat(result).isEqualTo(TaskExecutionResult.TERMINAL);
+    }
+
+    /**
+     * End-to-end regression for the flaky on-demand incremental CI failure: a "did not advance" verification (the
+     * node was concurrently reconciled) must be classified {@link TaskExecutionResult#RETRYABLE}, not
+     * {@link TaskExecutionResult#TERMINAL}. Feeds the genuine exception from the real
+     * {@link IncrementalRepairTask#verifyRepair} through the real {@link RepairGroup#execute} classifier. Before the
+     * fix this threw a plain {@link ScheduledJobException} (TERMINAL), failing the job immediately with status ERROR.
+     */
+    @Test
+    public void testDidNotAdvanceFromVerifyRepairIsClassifiedRetryable() throws Throwable
+    {
+        // 1) Real verifyRepair with the production metric pattern: pending before (58.39%), no advance after.
+        CassandraMetrics cassandraMetrics = mock(CassandraMetrics.class);
+        when(cassandraMetrics.getPercentRepaired(eq(myNodeID), any(TableReference.class))).thenReturn(58.39d, 58.39d);
+        when(cassandraMetrics.getMaxRepairedAt(eq(myNodeID), any(TableReference.class)))
+                .thenReturn(1793891357421L, 1793891357421L);
+
+        RepairConfiguration incrementalConfig = RepairConfiguration.newBuilder()
+                .withParallelism(RepairParallelism.PARALLEL)
+                .withRepairType(RepairType.INCREMENTAL)
+                .build();
+        IncrementalRepairTask realTask = new IncrementalRepairTask(
+                myNodeID, myJmxProxyFactory, TABLE_REFERENCE, incrementalConfig, myTableRepairMetrics,
+                myRepairHistoryService, mockNode, myJobId, ImmutableSet.of(), cassandraMetrics);
+
+        // onExecute() snapshots the pre-repair state; verifyRepair() then compares against the post reading.
+        invokeDeclared(realTask, IncrementalRepairTask.class.getSuperclass(), "onExecute");
+        Throwable verifyFailure = catchVerifyRepair(realTask);
+
+        assertThat(verifyFailure)
+                .isInstanceOf(TransientRepairException.class)
+                .hasMessageContaining("did not advance");
+
+        // 2) Feed that genuine exception through the REAL RepairGroup.execute() classifier.
+        DriverNode node = mockNode("DC1");
+        when(node.getId()).thenReturn(myNodeID);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(node),
+                ImmutableList.of(new LongTokenRange(1, 2)), System.currentTimeMillis());
+        RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).withNode(mockNode).build(PRIORITY));
+        RepairTask throwingTask = mock(RepairTask.class);
+        Collection<RepairTask> tasks = new ArrayList<>();
+        tasks.add(throwingTask);
+        doReturn(tasks).when(repairGroup).getRepairTasks(myNodeID);
+        doThrow(verifyFailure).when(throwingTask).execute();
+
+        TaskExecutionResult result = repairGroup.execute(myNodeID);
+
+        // A did-not-advance verification is retried, not failed terminally.
+        assertThat(result).isEqualTo(TaskExecutionResult.RETRYABLE);
+    }
+
+    private static void invokeDeclared(final Object target, final Class<?> declaringClass, final String method)
+            throws Exception
+    {
+        java.lang.reflect.Method m = declaringClass.getDeclaredMethod(method);
+        m.setAccessible(true);
+        m.invoke(target);
+    }
+
+    private static Throwable catchVerifyRepair(final IncrementalRepairTask task) throws Exception
+    {
+        java.lang.reflect.Method m = IncrementalRepairTask.class.getDeclaredMethod(
+                "verifyRepair", com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxy.class);
+        m.setAccessible(true);
+        try
+        {
+            m.invoke(task, mock(com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxy.class));
+        }
+        catch (java.lang.reflect.InvocationTargetException e)
+        {
+            return e.getCause();
+        }
+        throw new AssertionError("verifyRepair did not throw for the did-not-advance scenario");
     }
 
     @Test
