@@ -29,6 +29,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairStatus;
 import com.google.common.annotations.VisibleForTesting;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ScheduledJobException;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.TransientRepairException;
 import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -178,7 +179,8 @@ public class IncrementalRepairTask extends RepairTask
      * no work (for example an incremental prepare-phase abort) and must not be reported as a success.
      *
      * @param proxy the JMX proxy.
-     * @throws ScheduledJobException if the repair had failed ranges or did not advance the repaired state.
+     * @throws ScheduledJobException if the repair had failed ranges (terminal), or a {@link TransientRepairException}
+     *         if the repair looked successful but the repaired state did not advance (retryable).
      */
     @Override
     protected final void verifyRepair(final DistributedJmxProxy proxy) throws ScheduledJobException
@@ -217,11 +219,11 @@ public class IncrementalRepairTask extends RepairTask
                 postMaxRepairedAt > myPreMaxRepairedAt || postPercentRepaired > myPrePercentRepaired;
         if (!repairedStateAdvanced)
         {
-            // Do not force-terminate here: unlike the failed/unknown-range checks (where a session ran and
-            // misbehaved), "did not advance" is an inference that no work happened and does not imply our session
-            // is still running. forceTerminateAllRepairSessions() is cluster-wide and would also abort other
-            // tables' legitimately-running incremental repairs, so we only fail the task.
-            throw new ScheduledJobException(String.format(
+            // Retryable, not terminal: the repair reported success with no failed ranges, and "did not advance" can
+            // be a false negative when the node's data was concurrently reconciled (parallel/scheduled repair) so the
+            // metric stood still in this window. Let the on-demand retry budget re-confirm on a later tick.
+            // Do not force-terminate: it is cluster-wide and would abort other tables' running incremental repairs.
+            throw new TransientRepairException(String.format(
                     "Incremental repair of %s reported success but repaired state did not advance "
                             + "(percentRepaired %.2f -> %.2f, maxRepairedAt %d -> %d); no data was repaired",
                     getTableReference(), myPrePercentRepaired, postPercentRepaired,

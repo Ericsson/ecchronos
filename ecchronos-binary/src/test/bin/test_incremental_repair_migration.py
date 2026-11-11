@@ -47,10 +47,17 @@ AGENT_BIND_PORT = 8080
 AGENT_IP = "172.29.0.7"
 
 
-def _config_for(repair_type):
-    """Config that makes repair_type both the ecc.yml default and the per-table type."""
+def _config_for(repair_type, suffix):
+    """Config that makes repair_type both the ecc.yml default and the per-table type.
+
+    instance_name is tied to the agent suffix so each phase logs to its own
+    HOST_LOGS_PATH/<instance_name> directory. Otherwise all phases share the default
+    'cluster-wide' log dir and overwrite each other, leaving the uploaded artifact with a
+    single phase-ambiguous log (which made the phase2 BLOCKED triage impossible).
+    """
     return EcchronosConfig(
         repair_type=repair_type.lower(),
+        instance_name=f"ecchronos-agent-{suffix}",
         schedule_keyspaces=lib.repair_schedule_keyspaces(KEYSPACE, TABLE, repair_type, REPAIR_INTERVAL_MINUTES),
     )
 
@@ -107,7 +114,7 @@ def _recreate_agent(install_cassandra_cluster, test_environment, suffix, repair_
     test_environment.start_ecchronos(
         suffix=suffix,
         cassandra_network=install_cassandra_cluster.network,
-        ecchronos_config=_config_for(repair_type),
+        ecchronos_config=_config_for(repair_type, suffix),
         bind_port=AGENT_BIND_PORT,
         fixed_ipv4_address=AGENT_IP,
     )
