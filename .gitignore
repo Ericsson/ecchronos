@@ -1,5 +1,9 @@
 target/
 META-INF/
+!**/src/main/resources/META-INF/
+!**/src/main/resources/META-INF/**
+!**/src/test/resources/META-INF/
+!**/src/test/resources/META-INF/**
 OSGI-INF/
 build.properties
 pom.xml.versionsBackup
