@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManagerFactory;
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -129,6 +130,7 @@ public class TestSslContextFactory
         TrustManagerFactory tmf = KeyStoreFactory.createTrustManagerFactory(config);
 
         SslContext sslContext = SslContextFactory.create(config, kmf, tmf);
-        assertThat(sslContext).isNotNull();
+        SSLEngine engine = sslContext.newEngine(io.netty.buffer.ByteBufAllocator.DEFAULT);
+        assertThat(engine.getEnabledCipherSuites()).containsExactly("TLS_AES_256_GCM_SHA384");
     }
 }
