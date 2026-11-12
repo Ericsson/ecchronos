@@ -59,4 +59,15 @@ public class FileBasedRepairConfiguration extends AbstractRepairConfigurationPro
     {
         return repairSchedule.getRepairConfigurations(tableReference.getKeyspace(), tableReference.getTable());
     }
+
+    /**
+     * Returns whether any enabled per-table schedule in schedule.yml configures a non-default {@code size_target}.
+     * See issue #1968.
+     *
+     * @return {@code true} if at least one enabled per-table schedule sets a size target.
+     */
+    public final boolean isAnySizeTargetConfigured()
+    {
+        return repairSchedule.isAnySizeTargetConfigured();
+    }
 }

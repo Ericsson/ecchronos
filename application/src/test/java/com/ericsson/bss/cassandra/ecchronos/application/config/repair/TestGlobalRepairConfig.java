@@ -95,4 +95,35 @@ public class TestGlobalRepairConfig
                 .noneMatch(e -> e.getFormattedMessage().contains("initial_delay")
                         && e.getFormattedMessage().contains("repair_interval"));
     }
+
+    @Test
+    public void testNoSizeTargetByDefault()
+    {
+        GlobalRepairConfig config = new GlobalRepairConfig();
+
+        assertThat(config.getSizeTarget()).isEqualTo(RepairConfiguration.FULL_REPAIR_SIZE);
+        assertThat(config.isSizeTargetConfigured()).isFalse();
+    }
+
+    @Test
+    public void testSizeTargetConfigured()
+    {
+        GlobalRepairConfig config = new GlobalRepairConfig();
+        config.setSizeTarget("100m");
+
+        assertThat(config.getSizeTarget()).isEqualTo(100L * 1024 * 1024);
+        assertThat(config.isSizeTargetConfigured()).isTrue();
+        assertThat(config.asRepairConfiguration().getTargetRepairSizeInBytes()).isEqualTo(100L * 1024 * 1024);
+    }
+
+    @Test
+    public void testSizeTargetClearedIsNotConfigured()
+    {
+        GlobalRepairConfig config = new GlobalRepairConfig();
+        config.setSizeTarget("100m");
+        config.setSizeTarget(null);
+
+        assertThat(config.isSizeTargetConfigured()).isFalse();
+        assertThat(config.getSizeTarget()).isEqualTo(RepairConfiguration.FULL_REPAIR_SIZE);
+    }
 }

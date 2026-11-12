@@ -369,6 +369,12 @@ repair:
   ## 12m (12 MiB)
   ## 12g (12 GiB)
   ##
+  ## Configuring a size_target (here or per-table in schedule.yml) is what enables the periodic per-table on-disk
+  ## size fetch (a JMX liveDiskSpaceUsed call) used to split repairs into sub-ranges. This is independent of the
+  ## 'statistics' section below: no metric uses the table size, so leaving size_target unset means that fetch is
+  ## not performed even when statistics are enabled, and setting size_target enables splitting even when statistics
+  ## are disabled.
+  ##
   size_target:
   ##
   ## Specifies the repair history provider used to determine repair state.

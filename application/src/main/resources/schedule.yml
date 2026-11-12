@@ -79,6 +79,10 @@ keyspaces:
 ## 12m (12 MiB)
 ## 12g (12 GiB)
 ##
+## Configuring a size_target for any enabled table (here or globally in ecc.yml) enables the periodic per-table
+## on-disk size fetch (a JMX liveDiskSpaceUsed call) used to split repairs into sub-ranges. This is independent of
+## the 'statistics' setting in ecc.yml; if no size_target is configured anywhere the fetch is not performed.
+##
 #      size_target:
 ##
 ## Specifies the default repair_type.

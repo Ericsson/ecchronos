@@ -171,4 +171,36 @@ public class TestTableRepairJob
 
         verify(myRepairState, times(2)).update();
     }
+
+    @Test
+    public void testSizeTargetWithoutTableStorageStatesFallsBackToFullRange()
+    {
+        // A size target is configured but no TableStorageStates provider is wired (the #1968 case where the
+        // provider is absent). getTokensPerRepair must fall back to the full range instead of NPEing on the
+        // (null) provider. canRepair() is true with no repair groups so iterator() reaches getTokensPerRepair.
+        when(mySnapshot.canRepair()).thenReturn(true);
+        when(mySnapshot.getRepairGroups()).thenReturn(Collections.emptyList());
+
+        RepairConfiguration config = RepairConfiguration.newBuilder()
+                .withRepairInterval(RUN_INTERVAL_IN_DAYS, TimeUnit.DAYS)
+                .withTargetRepairSizeInBytes(1024L * 1024)
+                .build();
+        TableRepairJob job = new TableRepairJob.Builder()
+                .withConfiguration(new com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob
+                        .ConfigurationBuilder()
+                        .withRunInterval(RUN_INTERVAL_IN_DAYS, TimeUnit.DAYS).build())
+                .withNode(myNode)
+                .withJmxProxyFactory(myJmxProxyFactory)
+                .withTableReference(myTableReference)
+                .withRepairState(myRepairState)
+                .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairConfiguration(config)
+                .withRepairHistory(myRepairHistory)
+                .withRepairLockType(RepairLockType.VNODE)
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
+                // Intentionally no withTableStorageStates(...)
+                .build();
+
+        assertThat(job.iterator().hasNext()).isFalse();
+    }
 }

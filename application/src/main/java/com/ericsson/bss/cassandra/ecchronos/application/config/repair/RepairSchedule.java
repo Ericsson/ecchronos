@@ -62,6 +62,21 @@ public class RepairSchedule
                 keyspaceSchedule -> keyspaceSchedule.getRepairConfiguration(tableName));
     }
 
+    /**
+     * Returns whether any declared, enabled per-table schedule configures a non-default {@code size_target}.
+     *
+     * <p>Table/keyspace names in schedule.yml may be regular expressions, so they cannot be resolved against live
+     * tables at startup; this therefore scans the declared entries. Disabled tables are ignored (they resolve to
+     * {@link RepairConfiguration#DISABLED} and never repair). Used to decide whether the periodic table-size JMX
+     * fetch is needed, independently of {@code statistics.enabled}. See issue #1968.
+     *
+     * @return {@code true} if at least one enabled per-table schedule sets a size target.
+     */
+    public final boolean isAnySizeTargetConfigured()
+    {
+        return myKeyspaceSchedules.values().stream().anyMatch(KeyspaceSchedule::hasSizeTargetConfigured);
+    }
+
     static class KeyspaceSchedule
     {
         private String myKeyspaceName;
@@ -102,6 +117,13 @@ public class RepairSchedule
         {
             return findMatching(tableName, myTableConfigs, repairConfig -> repairConfig.stream()
                     .map(TableRepairConfig::asRepairConfiguration).collect(Collectors.toSet()));
+        }
+
+        boolean hasSizeTargetConfigured()
+        {
+            return myTableConfigs.values().stream()
+                    .flatMap(Set::stream)
+                    .anyMatch(config -> config.isEnabled() && config.isSizeTargetConfigured());
         }
     }
 
