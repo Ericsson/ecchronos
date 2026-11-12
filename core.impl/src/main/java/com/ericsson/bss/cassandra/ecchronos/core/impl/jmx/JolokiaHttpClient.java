@@ -114,7 +114,14 @@ final class JolokiaHttpClient implements java.io.Closeable
         ExecutorService executor = Executors.newFixedThreadPool(HTTP_EXECUTOR_POOL_SIZE,
                 new ThreadFactoryBuilder().setNameFormat("JolokiaHttp-%d").setDaemon(true).build());
         myCurrentExecutor = executor;
+        // Pin to HTTP/1.1. The JDK HttpClient defaults to HTTP/2, which it attempts to negotiate via
+        // TLS ALPN. TLS-terminating proxies placed in front of the Jolokia agent may terminate TLS
+        // without advertising ALPN (observed: ALPN not negotiated), leaving the client unable to agree
+        // on HTTP/2 and the request failing or returning no/garbled response. Jolokia's HTTP API is a
+        // simple request/response protocol that gains nothing from HTTP/2, so force HTTP/1.1 to match
+        // what such proxies forward to the backend.
         HttpClient.Builder builder = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
                 .executor(executor)
                 .connectTimeout(java.time.Duration.ofSeconds(HTTP_TIMEOUT_SECONDS));
         if (myCertificateHandler != null)

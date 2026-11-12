@@ -27,7 +27,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairParallelism;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairStatus;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
-import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ScheduledJobException;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.TransientRepairException;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Before;
 import org.junit.Test;
@@ -152,7 +152,8 @@ public class TestIncrementalRepairTask
     @Test
     public void testVerifyRepairFailsWhenPendingDataButNoAdvance() throws Exception
     {
-        // Pending data before (80%), no advance after (still 80% / same maxRepairedAt) -> failure.
+        // Pending data before (80%) but no advance after -> retryable TransientRepairException (not terminal), so
+        // the on-demand retry budget can re-confirm on a later tick instead of failing on a benign timing race.
         when(myCassandraMetrics.getPercentRepaired(myNodeId, myTableReference)).thenReturn(80.0d, 80.0d);
         when(myCassandraMetrics.getMaxRepairedAt(myNodeId, myTableReference)).thenReturn(100L, 100L);
 
@@ -160,7 +161,7 @@ public class TestIncrementalRepairTask
 
         invokeProtected(task, "onExecute");
 
-        assertThatExceptionOfType(ScheduledJobException.class)
+        assertThatExceptionOfType(TransientRepairException.class)
                 .isThrownBy(() -> invokeVerifyRepairRethrowing(task))
                 .withMessageContaining("did not advance");
         // The "did not advance" path must not trigger a cluster-wide session termination, which would abort

@@ -74,4 +74,33 @@ public class TestJolokiaHttpClientCertReload
         HttpClient client2 = client.getHttpClient();
         assertThat(client2).isSameAs(client1);
     }
+
+    @Test
+    public void testHttpClientPinnedToHttp11WithoutCertHandler()
+    {
+        DistributedNativeConnectionProvider ncp = mock(DistributedNativeConnectionProvider.class);
+        IpTranslator ipTranslator = mock(IpTranslator.class);
+
+        JolokiaHttpClient client = new JolokiaHttpClient(null, ncp, 8778, false, false, ipTranslator);
+
+        // Pinned to HTTP/1.1 so the client does not attempt HTTP/2 (which relies on TLS ALPN that
+        // TLS-terminating proxies in front of Jolokia may not negotiate).
+        assertThat(client.getHttpClient().version()).isEqualTo(HttpClient.Version.HTTP_1_1);
+    }
+
+    @Test
+    public void testHttpClientPinnedToHttp11WithCertHandler() throws Exception
+    {
+        CertificateHandler certHandler = mock(CertificateHandler.class);
+        DistributedNativeConnectionProvider ncp = mock(DistributedNativeConnectionProvider.class);
+        IpTranslator ipTranslator = mock(IpTranslator.class);
+
+        SSLContext ctx = SSLContext.getInstance("TLS");
+        ctx.init(null, null, null);
+        when(certHandler.getSSLContext()).thenReturn(ctx);
+
+        JolokiaHttpClient client = new JolokiaHttpClient(certHandler, ncp, 8778, true, false, ipTranslator);
+
+        assertThat(client.getHttpClient().version()).isEqualTo(HttpClient.Version.HTTP_1_1);
+    }
 }
