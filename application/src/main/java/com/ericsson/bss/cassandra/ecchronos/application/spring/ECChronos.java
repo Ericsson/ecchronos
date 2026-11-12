@@ -122,6 +122,12 @@ public class ECChronos implements Closeable
             final IpTranslator ipTranslator,
             @Autowired(required = false) @Nullable final JolokiaNotificationController notificationController) throws ConfigurationException
     {
+        // Build the schedule-based repair configuration up front so we can tell whether any size_target is in use
+        // (global default or a per-table override) before constructing the internals. See issue #1968.
+        FileBasedRepairConfiguration repairConfigurationProvider = new FileBasedRepairConfiguration(applicationContext);
+        boolean sizeTargetInUse = configuration.getRepairConfig().isSizeTargetConfigured()
+                || repairConfigurationProvider.isAnySizeTargetConfigured();
+
         myECChronosInternals = new ECChronosInternals(
                 configuration,
                 nativeConnectionProvider,
@@ -129,7 +135,8 @@ public class ECChronos implements Closeable
                 eccNodesSync,
                 eccCompositeMeterRegistry,
                 ipTranslator,
-                notificationController);
+                notificationController,
+                sizeTargetInUse);
 
         CqlSession session = nativeConnectionProvider.getCqlSession();
 
@@ -160,8 +167,6 @@ public class ECChronos implements Closeable
                 .withRepairLockType(configuration.getRepairConfig().getRepairLockType())
                 .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .build();
-
-        AbstractRepairConfigurationProvider repairConfigurationProvider = new FileBasedRepairConfiguration(applicationContext);
 
         myOnDemandRepairSchedulerImpl = OnDemandRepairSchedulerImpl.builder()
                 .withScheduleManager(myECChronosInternals.getScheduleManager())

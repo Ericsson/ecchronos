@@ -186,6 +186,33 @@ public class RepairConfig
     }
 
     /**
+     * Returns the configured target repair size in bytes, or {@link RepairConfiguration#FULL_REPAIR_SIZE} when no
+     * size target is configured (the default, meaning tables repair as a single full range).
+     *
+     * <p>Deliberately not annotated with {@code @JsonProperty}: the YAML property {@code size_target} is a human
+     * readable string (e.g. {@code 100m}) handled by {@link #setSizeTarget(String)}, whereas this getter returns the
+     * resolved byte count.
+     *
+     * @return the target repair size in bytes.
+     */
+    public final long getSizeTarget()
+    {
+        return mySizeTarget;
+    }
+
+    /**
+     * Returns whether a non-default {@code size_target} is configured, i.e. whether target-size sub-range splitting
+     * is in use for this configuration. This is what drives the periodic table-size (liveDiskSpaceUsed) JMX fetch,
+     * independently of {@code statistics.enabled}. See issue #1968.
+     *
+     * @return {@code true} if a size target other than {@link RepairConfiguration#FULL_REPAIR_SIZE} is configured.
+     */
+    public final boolean isSizeTargetConfigured()
+    {
+        return mySizeTarget != RepairConfiguration.FULL_REPAIR_SIZE;
+    }
+
+    /**
      * Returns the backoff.
      * @return the backoff
      */

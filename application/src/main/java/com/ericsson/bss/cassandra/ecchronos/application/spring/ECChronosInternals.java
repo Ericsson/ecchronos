@@ -91,6 +91,10 @@ public class ECChronosInternals implements Closeable
      *         the IP translator for address resolution.
      * @param notificationController
      *         the Jolokia notification controller, may be null.
+     * @param sizeTargetInUse
+     *         whether any repair configuration (the global default or a per-table schedule override) configures a
+     *         {@code size_target}; when {@code true} the periodic table-size JMX fetch is enabled regardless of
+     *         {@code statistics.enabled}. See issue #1968.
      */
     public ECChronosInternals(
             final Config configuration,
@@ -99,7 +103,8 @@ public class ECChronosInternals implements Closeable
             final EccNodesSync eccNodesSync,
             final MeterRegistry meterRegistry,
             final IpTranslator ipTranslator,
-            final JolokiaNotificationController notificationController
+            final JolokiaNotificationController notificationController,
+            final boolean sizeTargetInUse
     )
     {
         myJolokiaNotificationController = notificationController;
@@ -134,14 +139,23 @@ public class ECChronosInternals implements Closeable
 
         myCassandraMetrics = new CassandraMetrics(myJmxProxyFactory);
 
-        if (configuration.getStatisticsConfig().isEnabled())
+        // The periodic table-size (liveDiskSpaceUsed) JMX fetch is only consumed by target_repair_size sub-range
+        // splitting, so it is gated on whether a size target is configured - not on statistics.enabled. See #1968.
+        if (sizeTargetInUse)
         {
             myTableStorageStatesImpl = TableStorageStatesImpl.builder()
                     .withReplicatedTableProvider(myReplicatedTableProvider)
                     .withJmxProxyFactory(myJmxProxyFactory)
                     .withConnectionProvider(nativeConnectionProvider)
                     .build();
+        }
+        else
+        {
+            myTableStorageStatesImpl = null;
+        }
 
+        if (configuration.getStatisticsConfig().isEnabled())
+        {
             myTableRepairMetricsImpl = TableRepairMetricsImpl.builder()
                     .withMeterRegistry(meterRegistry)
                     .build();
@@ -156,7 +170,6 @@ public class ECChronosInternals implements Closeable
         }
         else
         {
-            myTableStorageStatesImpl = null;
             myTableRepairMetricsImpl = null;
             myMetricInspector = null;
         }

@@ -195,4 +195,39 @@ public class TestRepairSchedule
 
         assertThatExceptionOfType(DatabindException.class).isThrownBy(() -> objectMapper.readValue(file, RepairSchedule.class));
     }
+
+    @Test
+    public void testSizeTargetConfiguredIsDetected() throws Exception
+    {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource("repair/test_schedule.yml").getFile());
+
+        RepairSchedule schedule = new YAMLMapper().readValue(file, RepairSchedule.class);
+
+        // ks1.tb1 (15m) and ks2.tb1 (100m) both set a size target.
+        assertThat(schedule.isAnySizeTargetConfigured()).isTrue();
+    }
+
+    @Test
+    public void testNoSizeTargetConfigured() throws Exception
+    {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource("repair/regex_schedule.yml").getFile());
+
+        RepairSchedule schedule = new YAMLMapper().readValue(file, RepairSchedule.class);
+
+        assertThat(schedule.isAnySizeTargetConfigured()).isFalse();
+    }
+
+    @Test
+    public void testSizeTargetOnDisabledTableIsIgnored() throws Exception
+    {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource("repair/schedule_size_target_disabled_table.yml").getFile());
+
+        RepairSchedule schedule = new YAMLMapper().readValue(file, RepairSchedule.class);
+
+        // The only size_target is on a disabled table, which never repairs.
+        assertThat(schedule.isAnySizeTargetConfigured()).isFalse();
+    }
 }
