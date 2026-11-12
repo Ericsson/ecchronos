@@ -51,7 +51,7 @@ final class SchedulerMetrics
     static final String METRIC_LOCK_LATENCY = "ecc.scheduler.lock.latency";
 
     /** Consecutive no-progress passes (runnable work present but nothing executed) before warning. */
-    static final int FALLING_BEHIND_PASS_THRESHOLD = 10;
+    static final int FALLING_BEHIND_PASS_THRESHOLD = 100;
 
     private final MeterRegistry myMeterRegistry;
     private final AtomicInteger myConsecutiveNoProgressPasses = new AtomicInteger(0);
@@ -126,8 +126,8 @@ final class SchedulerMetrics
         int consecutive = myConsecutiveNoProgressPasses.incrementAndGet();
         if (consecutive >= FALLING_BEHIND_PASS_THRESHOLD)
         {
-            THROTTLED_LOGGER.warn("Scheduler for node {} has had runnable repair work but made no progress for {} "
-                    + "consecutive passes; the schedule may be falling behind (lock contention or saturation).",
+            THROTTLED_LOGGER.info("Scheduler for node {} has had runnable repair work but made no progress for {} "
+                    + "consecutive passes; the schedule may be falling behind.",
                     nodeID, consecutive);
         }
     }

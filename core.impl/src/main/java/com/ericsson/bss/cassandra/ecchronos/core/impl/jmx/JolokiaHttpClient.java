@@ -210,7 +210,12 @@ final class JolokiaHttpClient implements java.io.Closeable
         }
         catch (IOException | InterruptedException e)
         {
-            LOG.error("Error trying to remove NotificationListener with ID {} in node {}",
+            // Removing a notification listener is best-effort cleanup: the exception is swallowed (the repair
+            // outcome is unaffected) and the short-lived listener is reaped by Jolokia's own TTL if the remove does
+            // not land. A transient Jolokia transport failure here is therefore benign, so log it at DEBUG rather
+            // than ERROR to avoid misleading noise under concurrent load. Callers that care add their own WARN. See
+            // issue #1962 (related to #1473 / #1549).
+            LOG.debug("Error trying to remove NotificationListener with ID {} in node {}",
                     notificationID, nodeID, e);
         }
     }
