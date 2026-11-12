@@ -248,6 +248,12 @@ connection:
     # If a repair has not completed within this time, it is terminated on the ecchronos side and rescheduled.
     # Health checks run every minute to verify the repair is still active.
     maxWaitTimeInMinutes: 40
+    # certificateWatchIntervalInSeconds (optional, default 300) is how often the JMX/Jolokia client certificate
+    # files (certificate, key, CA) are polled for on-disk changes. On a detected change the managed JMX connectors
+    # are invalidated so the next JMX call reconnects with the rotated certificate, pre-empting the single
+    # handshake failure that would otherwise occur after a rotation. Only active when JMX TLS is enabled with PEM
+    # certificates; a handshake failure remains the reactive backstop regardless.
+    certificateWatchIntervalInSeconds: 300
 ## Repair configuration
 ## This section defines default repair behavior for all tables.
 ##
