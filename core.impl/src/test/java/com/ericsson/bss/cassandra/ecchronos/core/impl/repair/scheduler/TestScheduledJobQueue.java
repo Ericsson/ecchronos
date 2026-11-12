@@ -272,6 +272,113 @@ public class TestScheduledJobQueue
         assertThat(selected).hasSize(nJobs);
     }
 
+    @Test
+    public void testConcurrentAddRemoveDuringIterationIsSafe() throws Exception
+    {
+        // The iterator walks a per-pass snapshot, so concurrent schedule/deschedule (from node-lifecycle / REST
+        // threads) must neither corrupt the queue nor disturb an in-flight iteration (issue #1903). Hammer add/remove
+        // from several threads while repeatedly iterating; nothing must throw and the queue must stay consistent.
+        final int seedJobs = 200;
+        List<ScheduledJob> seeded = new ArrayList<>();
+        for (int i = 0; i < seedJobs; i++)
+        {
+            DummyJob job = new DummyJob(ScheduledJob.Priority.LOW, nodeId);
+            seeded.add(job);
+            queue.add(job);
+        }
+
+        final int threads = 6;
+        java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(threads);
+        java.util.concurrent.atomic.AtomicBoolean failed = new java.util.concurrent.atomic.AtomicBoolean(false);
+        java.util.concurrent.CountDownLatch done = new java.util.concurrent.CountDownLatch(threads);
+        try
+        {
+            for (int t = 0; t < threads; t++)
+            {
+                final int threadIndex = t;
+                pool.submit(() ->
+                {
+                    try
+                    {
+                        for (int i = 0; i < 2_000; i++)
+                        {
+                            if (threadIndex % 2 == 0)
+                            {
+                                DummyJob job = new DummyJob(ScheduledJob.Priority.HIGH, nodeId);
+                                queue.add(job);
+                                queue.remove(job);
+                            }
+                            else
+                            {
+                                // Drain an iterator concurrently with the mutations.
+                                queue.iterator().forEachRemaining(j -> { });
+                            }
+                        }
+                    }
+                    catch (RuntimeException e)
+                    {
+                        failed.set(true);
+                    }
+                    finally
+                    {
+                        done.countDown();
+                    }
+                });
+            }
+            assertThat(done.await(60, TimeUnit.SECONDS)).isTrue();
+        }
+        finally
+        {
+            pool.shutdownNow();
+        }
+
+        assertThat(failed.get()).isFalse();
+        // The seeded jobs are all still runnable and present (the add/remove churn added and removed the same jobs).
+        assertThat(queue.iterator()).toIterable().containsExactlyInAnyOrderElementsOf(seeded);
+    }
+
+    @Test
+    public void testFinishedJobIsFinishedExactlyOnce()
+    {
+        // purgeFinishedJobs() (before the snapshot) and RunnableJobIterator (during iteration) both deschedule
+        // finished jobs; a job finished before the pass must have finishJob() invoked exactly once, not twice
+        // (issue #1903 regression guard).
+        FinishCountingJob finished = new FinishCountingJob(ScheduledJob.Priority.LOW, ScheduledJob.State.FINISHED);
+        FinishCountingJob runnable = new FinishCountingJob(ScheduledJob.Priority.HIGH, ScheduledJob.State.RUNNABLE);
+        queue.add(finished);
+        queue.add(runnable);
+
+        queue.iterator().forEachRemaining(j -> { });
+
+        assertThat(finished.finishCount).isEqualTo(1);
+        assertThat(runnable.finishCount).isEqualTo(0);
+        assertThat(queue.iterator()).toIterable().containsExactly(runnable);
+    }
+
+    private class FinishCountingJob extends DummyJob
+    {
+        private final ScheduledJob.State myState;
+        private int finishCount = 0;
+
+        FinishCountingJob(Priority priority, ScheduledJob.State state)
+        {
+            super(priority, nodeId);
+            myState = state;
+        }
+
+        @Override
+        public State getState()
+        {
+            return myState;
+        }
+
+        @Override
+        public void finishJob()
+        {
+            finishCount++;
+        }
+    }
+
     private class MutatingPriorityJob extends DummyJob
     {
         private int myReads;
