@@ -17,7 +17,9 @@ package com.ericsson.bss.cassandra.ecchronos.application.spring;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.application.ReflectionUtils;
+import com.ericsson.bss.cassandra.ecchronos.application.JmxCertificateWatcher;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.Interval;
+import com.ericsson.bss.cassandra.ecchronos.application.config.security.JmxTLSConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.ReloadingCertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
@@ -38,6 +40,9 @@ import com.ericsson.bss.cassandra.ecchronos.utils.enums.sync.NodeStatus;
 import java.net.InetAddress;
 import java.io.IOException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -272,6 +277,57 @@ public class BeanConfigurator
     {
         return getDistributedJmxConnection(
                 config, jmxSecurity::get, distributedNativeConnectionProvider, eccNodesSync, ipTranslator);
+    }
+
+    /**
+     * Provides a {@link JmxCertificateWatcher} bean that proactively invalidates the managed JMX connectors when the
+     * JMX client-certificate files change on disk, so the next JMX call rebuilds the connector with the rotated
+     * certificate instead of failing the first handshake. Only created when JMX TLS is enabled and PEM certificates
+     * are configured (keystore-based TLS and plaintext need no watcher). See issue #1961.
+     *
+     * @param config                the application configuration (watch interval).
+     * @param jmxConnectionProvider the JMX connection provider whose connectors are invalidated on a change.
+     * @return a started {@link JmxCertificateWatcher}, or {@code null} when JMX certificate watching is not applicable.
+     */
+    @Bean(destroyMethod = "close")
+    public JmxCertificateWatcher jmxCertificateWatcher(
+            final Config config,
+            final DistributedJmxConnectionProvider jmxConnectionProvider)
+    {
+        JmxTLSConfig jmxTlsConfig = jmxSecurity.get().getJmxTlsConfig();
+        if (jmxTlsConfig == null || !jmxTlsConfig.isEnabled() || !jmxTlsConfig.isCertificateConfigured())
+        {
+            LOG.debug("JMX certificate watcher not started (JMX TLS disabled or not using PEM certificates)");
+            return null;
+        }
+
+        List<String> paths = new ArrayList<>();
+        jmxTlsConfig.getCertificatePath().ifPresent(paths::add);
+        jmxTlsConfig.getCertificatePrivateKeyPath().ifPresent(paths::add);
+        jmxTlsConfig.getTrustCertificatePath().ifPresent(paths::add);
+
+        int interval = config.getConnectionConfig().getJmxConnection().getCertificateWatchIntervalInSeconds();
+        JmxCertificateWatcher watcher = new JmxCertificateWatcher(paths, interval);
+        watcher.addRefreshListener(() -> invalidateAllJmxConnectors(jmxConnectionProvider));
+        return watcher;
+    }
+
+    private static void invalidateAllJmxConnectors(final DistributedJmxConnectionProvider jmxConnectionProvider)
+    {
+        for (UUID nodeID : jmxConnectionProvider.getJmxConnections().keySet())
+        {
+            try
+            {
+                // Closing the connector forces the next lazy getJmxConnector(nodeID) to rebuild it with the current
+                // certificate. Reconnection stays lazy, so there is no concurrency hazard with in-flight JMX calls.
+                jmxConnectionProvider.close(nodeID);
+                LOG.info("Invalidated JMX connection for node {} after certificate change", nodeID);
+            }
+            catch (IOException e)
+            {
+                LOG.warn("Failed to invalidate JMX connection for node {} after certificate change", nodeID, e);
+            }
+        }
     }
 
     /**

@@ -38,6 +38,8 @@ public class DistributedJmxConnection extends Connection<DistributedJmxConnectio
     public static final int DEFAULT_MAX_WAIT_TIME_IN_MINUTES = 40;
     /** Default JMX port. */
     public static final int DEFAULT_JMX_PORT = 7199;
+    /** Default interval, in seconds, for polling the JMX client-certificate files for on-disk changes. */
+    public static final int DEFAULT_CERTIFICATE_WATCH_INTERVAL_IN_SECONDS = 300;
     private RetryPolicyConfig myRetryPolicyConfig = new RetryPolicyConfig();
     private JolokiaConfig myJolokiaConfig = new JolokiaConfig();
     private boolean myReverseDNSResolution = false;
@@ -45,6 +47,7 @@ public class DistributedJmxConnection extends Connection<DistributedJmxConnectio
     private Integer myMaxWaitTimeInMinutes = DEFAULT_MAX_WAIT_TIME_IN_MINUTES;
     private boolean myUseBroadcastRPCAddress = true;
     private int myJmxPort = DEFAULT_JMX_PORT;
+    private int myCertificateWatchIntervalInSeconds = DEFAULT_CERTIFICATE_WATCH_INTERVAL_IN_SECONDS;
 
     /**
      * Default constructor. Sets the provider to {@link AgentJmxConnectionProvider}.
@@ -220,6 +223,30 @@ public class DistributedJmxConnection extends Connection<DistributedJmxConnectio
     public final boolean getReseverseDNSResolution()
     {
         return myReverseDNSResolution;
+    }
+
+    /**
+     * Gets the interval, in seconds, for polling the JMX client-certificate files for on-disk changes (used to
+     * proactively rebuild the JMX connectors after a certificate rotation). See issue #1961.
+     *
+     * @return the certificate watch interval in seconds.
+     */
+    @JsonProperty("certificateWatchIntervalInSeconds")
+    public final int getCertificateWatchIntervalInSeconds()
+    {
+        return myCertificateWatchIntervalInSeconds;
+    }
+
+    /**
+     * Sets the interval, in seconds, for polling the JMX client-certificate files for on-disk changes.
+     *
+     * @param certificateWatchIntervalInSeconds
+     *         the certificate watch interval in seconds to set.
+     */
+    @JsonProperty("certificateWatchIntervalInSeconds")
+    public final void setCertificateWatchIntervalInSeconds(final int certificateWatchIntervalInSeconds)
+    {
+        myCertificateWatchIntervalInSeconds = certificateWatchIntervalInSeconds;
     }
 
     /**
