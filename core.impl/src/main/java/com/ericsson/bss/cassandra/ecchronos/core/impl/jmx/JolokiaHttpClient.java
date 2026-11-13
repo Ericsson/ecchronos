@@ -19,6 +19,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.NotificationListe
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.NotificationRegisterResponse;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.connection.JolokiaHttpClientBuilder;
 import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
 import tools.jackson.databind.json.JsonMapper;
 import com.google.common.annotations.VisibleForTesting;
@@ -114,28 +115,25 @@ final class JolokiaHttpClient implements java.io.Closeable
         ExecutorService executor = Executors.newFixedThreadPool(HTTP_EXECUTOR_POOL_SIZE,
                 new ThreadFactoryBuilder().setNameFormat("JolokiaHttp-%d").setDaemon(true).build());
         myCurrentExecutor = executor;
-        // Pin to HTTP/1.1. The JDK HttpClient defaults to HTTP/2, which it attempts to negotiate via
-        // TLS ALPN. TLS-terminating proxies placed in front of the Jolokia agent may terminate TLS
-        // without advertising ALPN (observed: ALPN not negotiated), leaving the client unable to agree
-        // on HTTP/2 and the request failing or returning no/garbled response. Jolokia's HTTP API is a
-        // simple request/response protocol that gains nothing from HTTP/2, so force HTTP/1.1 to match
-        // what such proxies forward to the backend.
-        HttpClient.Builder builder = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .executor(executor)
-                .connectTimeout(java.time.Duration.ofSeconds(HTTP_TIMEOUT_SECONDS));
+        // HTTP/1.1 pin, SSLContext injection and connect timeout are defined once in JolokiaHttpClientBuilder and
+        // shared with the JMX adapter channel (issue #1972). The notification channel adds its own executor and TLS
+        // session tuning here. SSLContext comes from the reloadable CertificateHandler (rebuilt on cert change in
+        // getHttpClient()).
+        SSLContext sslContext = null;
         if (myCertificateHandler != null)
         {
-            SSLContext sslContext = myCertificateHandler.getSSLContext();
+            sslContext = myCertificateHandler.getSSLContext();
             if (sslContext != null)
             {
                 sslContext.getClientSessionContext().setSessionCacheSize(SSL_SESSION_CACHE_SIZE);
                 sslContext.getClientSessionContext().setSessionTimeout(SSL_SESSION_TIMEOUT_SECONDS);
-                builder.sslContext(sslContext);
                 myCurrentSSLContext = sslContext;
             }
         }
-        return builder.build();
+        return JolokiaHttpClientBuilder
+                .newBuilder(sslContext, java.time.Duration.ofSeconds(HTTP_TIMEOUT_SECONDS))
+                .executor(executor)
+                .build();
     }
 
     public String getClientId(final UUID nodeID)

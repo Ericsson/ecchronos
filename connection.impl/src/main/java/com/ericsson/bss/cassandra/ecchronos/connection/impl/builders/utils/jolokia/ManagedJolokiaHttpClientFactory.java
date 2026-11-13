@@ -26,6 +26,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
+import com.ericsson.bss.cassandra.ecchronos.connection.JolokiaHttpClientBuilder;
 import org.jolokia.client.JolokiaClientBuilder.Configuration;
 import org.jolokia.client.JolokiaClientBuilder.TlsConfiguration;
 import org.slf4j.Logger;
@@ -70,24 +71,20 @@ public final class ManagedJolokiaHttpClientFactory
      */
     public static HttpClient buildHttpClient(final Configuration configuration)
     {
-        HttpClient.Builder builder = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .cookieHandler(new CookieManager())
-                .priority(CLIENT_PRIORITY);
-
+        // The HTTP/1.1 pin, SSLContext injection and connect timeout are shared with the notification channel via
+        // JolokiaHttpClientBuilder (issue #1972). The adapter channel adds its own followRedirects/cookie/priority.
         SSLContext sslContext = createSslContext(configuration.tlsConfig());
-        if (sslContext != null)
-        {
-            builder.sslContext(sslContext);
-        }
-
+        Duration connectTimeout = null;
         if (configuration.connectionConfig() != null && configuration.connectionConfig().connectionTimeout() != -1)
         {
-            builder.connectTimeout(Duration.ofMillis(configuration.connectionConfig().connectionTimeout()));
+            connectTimeout = Duration.ofMillis(configuration.connectionConfig().connectionTimeout());
         }
 
-        return builder.build();
+        return JolokiaHttpClientBuilder.newBuilder(sslContext, connectTimeout)
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .cookieHandler(new CookieManager())
+                .priority(CLIENT_PRIORITY)
+                .build();
     }
 
     /**
