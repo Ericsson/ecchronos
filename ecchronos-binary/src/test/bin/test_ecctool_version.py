@@ -53,6 +53,26 @@ def test_get_client_version_ignores_unfiltered_placeholder(monkeypatch):
     assert version_mod.get_client_version() == version_mod.UNKNOWN_VERSION
 
 
+# --- client commit resolution --------------------------------------------------
+
+
+def test_get_client_commit_falls_back_to_unknown_from_source():
+    # No generated _version.py when running from source.
+    assert version_mod.get_client_commit() == version_mod.UNKNOWN_VERSION
+
+
+def test_get_client_commit_reads_generated_module(monkeypatch):
+    fake = SimpleNamespace(__version__="9.9.9", __git_commit__="abcd1234")
+    monkeypatch.setitem(sys.modules, "ecchronoslib._version", fake)
+    assert version_mod.get_client_commit() == "abcd1234"
+
+
+def test_get_client_commit_ignores_unfiltered_placeholder(monkeypatch):
+    fake = SimpleNamespace(__version__="9.9.9", __git_commit__="${git.commit.id.abbrev}")
+    monkeypatch.setitem(sys.modules, "ecchronoslib._version", fake)
+    assert version_mod.get_client_commit() == version_mod.UNKNOWN_VERSION
+
+
 # --- parser --------------------------------------------------------------------
 
 
@@ -91,15 +111,20 @@ def test_version_prints_client_and_node_version(monkeypatch):
     import ecctool  # pylint: disable=import-outside-toplevel
 
     monkeypatch.setattr(ecctool, "get_client_version", lambda: "1.1.2")
-    _install_fake_version_request(monkeypatch, rest.RequestResult(status_code=200, data={"version": "1.1.2"}))
+    monkeypatch.setattr(ecctool, "get_client_commit", lambda: "abcd1234")
+    _install_fake_version_request(
+        monkeypatch, rest.RequestResult(status_code=200, data={"version": "1.1.2", "commit": "ef567890"})
+    )
 
     output = io.StringIO()
     with redirect_stdout(output):
         ecctool.version(_version_args())
     rendered = output.getvalue()
     assert "ecctool version:   1.1.2" in rendered
+    assert "ecctool commit:    abcd1234" in rendered
     assert "Connected node:    http://localhost:8080" in rendered
     assert "Node version:      1.1.2" in rendered
+    assert "Node commit:       ef567890" in rendered
     assert "could not retrieve" not in rendered
 
 
@@ -107,15 +132,20 @@ def test_version_json_output_success(monkeypatch):
     import ecctool  # pylint: disable=import-outside-toplevel
 
     monkeypatch.setattr(ecctool, "get_client_version", lambda: "1.1.2")
-    _install_fake_version_request(monkeypatch, rest.RequestResult(status_code=200, data={"version": "1.1.2"}))
+    monkeypatch.setattr(ecctool, "get_client_commit", lambda: "abcd1234")
+    _install_fake_version_request(
+        monkeypatch, rest.RequestResult(status_code=200, data={"version": "1.1.2", "commit": "ef567890"})
+    )
 
     output = io.StringIO()
     with redirect_stdout(output):
         ecctool.version(_version_args(output="json"))
     payload = json.loads(output.getvalue())
     assert payload["version"]["ecctool_version"] == "1.1.2"
+    assert payload["version"]["ecctool_commit"] == "abcd1234"
     assert payload["version"]["connected_node"] == "http://localhost:8080"
     assert payload["version"]["node_version"] == "1.1.2"
+    assert payload["version"]["node_commit"] == "ef567890"
     assert "node_error" not in payload["version"]
 
 
@@ -126,6 +156,7 @@ def test_version_node_unavailable_old_agent_404(monkeypatch):
     import ecctool  # pylint: disable=import-outside-toplevel
 
     monkeypatch.setattr(ecctool, "get_client_version", lambda: "1.1.2")
+    monkeypatch.setattr(ecctool, "get_client_commit", lambda: "abcd1234")
     _install_fake_version_request(
         monkeypatch,
         rest.RequestResult(status_code=404, message="Unable to retrieve resource http://localhost:8080/..."),
@@ -137,7 +168,9 @@ def test_version_node_unavailable_old_agent_404(monkeypatch):
     rendered = output.getvalue()
     # Client version still printed; node version degraded; command does not exit non-zero.
     assert "ecctool version:   1.1.2" in rendered
+    assert "ecctool commit:    abcd1234" in rendered
     assert "Node version:      unavailable" in rendered
+    assert "Node commit:       unavailable" in rendered
     assert "could not retrieve node version" in rendered
 
 
@@ -145,6 +178,7 @@ def test_version_node_unreachable(monkeypatch):
     import ecctool  # pylint: disable=import-outside-toplevel
 
     monkeypatch.setattr(ecctool, "get_client_version", lambda: "1.1.2")
+    monkeypatch.setattr(ecctool, "get_client_commit", lambda: "abcd1234")
     _install_fake_version_request(
         monkeypatch,
         rest.RequestResult(status_code=404, message="Unable to connect to http://localhost:8080"),
@@ -155,14 +189,17 @@ def test_version_node_unreachable(monkeypatch):
         ecctool.version(_version_args(output="json"))
     payload = json.loads(output.getvalue())
     assert payload["version"]["node_version"] == "unavailable"
+    assert payload["version"]["node_commit"] == "unavailable"
     assert "node_error" in payload["version"]
     assert payload["version"]["ecctool_version"] == "1.1.2"
+    assert payload["version"]["ecctool_commit"] == "abcd1234"
 
 
 def test_version_uses_client_version_even_when_offline(monkeypatch):
     import ecctool  # pylint: disable=import-outside-toplevel
 
     monkeypatch.setattr(ecctool, "get_client_version", lambda: "7.7.7")
+    monkeypatch.setattr(ecctool, "get_client_commit", lambda: "deadbeef")
     _install_fake_version_request(
         monkeypatch,
         rest.RequestResult(status_code=404, message="Unable to connect"),
@@ -174,6 +211,7 @@ def test_version_uses_client_version_even_when_offline(monkeypatch):
         ecctool.version(_version_args(url="http://custom:9999"))
     rendered = output.getvalue()
     assert "ecctool version:   7.7.7" in rendered
+    assert "ecctool commit:    deadbeef" in rendered
     assert "Connected node:    http://custom:9999" in rendered
 
 

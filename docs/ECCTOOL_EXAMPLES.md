@@ -514,15 +514,18 @@ Terminated ecc with pid 12345.
 ## version
 
 The *version* subcommand shows the version of ecctool itself (the CLI client) and the version of the ecChronos node it
-connects to. This is useful to confirm client/agent versions match, or that an upgrade took effect.
+connects to, together with the abbreviated git commit SHA each was built from. This is useful to confirm client/agent
+versions match, or that an upgrade took effect.
 
 ```cmd
 ecctool version
 ```
 ```text
 ecctool version:   1.1.2
+ecctool commit:    abcd1234
 Connected node:    http://localhost:8080
 Node version:      1.1.2
+Node commit:       abcd1234
 ```
 
 With JSON output format selected:
@@ -535,25 +538,32 @@ ecctool version --output json
     "timestamp": "2026-10-16 09:30:00",
     "version": {
         "ecctool_version": "1.1.2",
+        "ecctool_commit": "abcd1234",
         "connected_node": "http://localhost:8080",
-        "node_version": "1.1.2"
+        "node_version": "1.1.2",
+        "node_commit": "abcd1234"
     }
 }
 ```
 
 The client version is always printed, even when the node cannot be reached. If the node is unavailable, or runs an
-older agent without the `/version` endpoint, the node version is shown as `unavailable` (and the connection detail is
-included) rather than failing the whole command:
+older agent without the `/version` endpoint, the node version and commit are shown as `unavailable` (and the connection
+detail is included) rather than failing the whole command:
 
 ```cmd
 ecctool version -u http://localhost:8080
 ```
 ```text
 ecctool version:   1.1.2
+ecctool commit:    abcd1234
 Connected node:    http://localhost:8080
 Node version:      unavailable
+Node commit:       unavailable
 Note: could not retrieve node version (Encountered issue (404) 'Unable to connect to http://localhost:8080/repair-management/version').
 ```
+
+The commit SHA is baked in at build time. When ecctool or the agent is run from a source checkout (no build) or built
+without a `.git` directory, the commit is reported as `unknown`.
 
 ## optionals
 

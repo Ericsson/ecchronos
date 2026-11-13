@@ -105,13 +105,32 @@
     </dependencies>
 
     <build>
+        <plugins>
+            <!-- Resolve the HEAD commit SHA into ${git.commit.id.abbrev} before
+                 resources are filtered, so ecchronos-version.properties can carry it. -->
+            <plugin>
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>resolve-git-commit</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
         <resources>
-            <!-- Filter version.properties so the controller can expose ${project.version}. -->
+            <!-- Filter ecchronos-version.properties so the controller can expose ${project.version}.
+                 The name is deliberately unique (not the generic version.properties) to avoid a
+                 classpath collision with version.properties shipped by third-party jars. -->
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
                 <includes>
-                    <include>version.properties</include>
+                    <include>ecchronos-version.properties</include>
                 </includes>
             </resource>
             <!-- Copy any other resources without filtering to avoid corrupting binaries. -->
@@ -119,7 +138,7 @@
                 <directory>src/main/resources</directory>
                 <filtering>false</filtering>
                 <excludes>
-                    <exclude>version.properties</exclude>
+                    <exclude>ecchronos-version.properties</exclude>
                 </excludes>
             </resource>
         </resources>

@@ -25,58 +25,87 @@ import org.springframework.http.ResponseEntity;
 public class TestVersionRESTImpl
 {
     @Test
-    public void testGetVersionReturnsConfiguredVersion()
+    public void testGetVersionReturnsConfiguredVersionAndCommit()
     {
-        VersionRESTImpl versionREST = new VersionRESTImpl("1.1.2");
+        VersionRESTImpl versionREST = new VersionRESTImpl("1.1.2", "abcd1234");
 
         ResponseEntity<Map<String, String>> response = versionREST.getVersion();
 
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
         assertThat(response.getBody()).containsEntry("version", "1.1.2");
+        assertThat(response.getBody()).containsEntry("commit", "abcd1234");
     }
 
     @Test
-    public void testGetVersionProducesJson()
+    public void testGetVersionProducesJsonWithVersionAndCommit()
     {
-        VersionRESTImpl versionREST = new VersionRESTImpl("1.1.2");
+        VersionRESTImpl versionREST = new VersionRESTImpl("1.1.2", "abcd1234");
 
         ResponseEntity<Map<String, String>> response = versionREST.getVersion();
 
-        assertThat(response.getBody()).hasSize(1);
-        assertThat(response.getBody().keySet()).containsExactly("version");
+        assertThat(response.getBody()).hasSize(2);
+        assertThat(response.getBody().keySet()).containsExactly("version", "commit");
     }
 
     @Test
     public void testGetVersionNullFallsBackToUnknown()
     {
-        VersionRESTImpl versionREST = new VersionRESTImpl(null);
+        VersionRESTImpl versionREST = new VersionRESTImpl(null, null);
 
         ResponseEntity<Map<String, String>> response = versionREST.getVersion();
 
         assertThat(response.getBody()).containsEntry("version", VersionRESTImpl.UNKNOWN_VERSION);
+        assertThat(response.getBody()).containsEntry("commit", VersionRESTImpl.UNKNOWN_VERSION);
     }
 
     @Test
     public void testGetVersionEmptyFallsBackToUnknown()
     {
-        VersionRESTImpl versionREST = new VersionRESTImpl("");
+        VersionRESTImpl versionREST = new VersionRESTImpl("", "");
 
         ResponseEntity<Map<String, String>> response = versionREST.getVersion();
 
         assertThat(response.getBody()).containsEntry("version", VersionRESTImpl.UNKNOWN_VERSION);
+        assertThat(response.getBody()).containsEntry("commit", VersionRESTImpl.UNKNOWN_VERSION);
     }
 
     @Test
-    public void testGetVersionUnfilteredPlaceholderIsNotTreatedAsReal()
+    public void testGetVersionStringReturnsConfiguredVersion()
     {
-        // If resource filtering did not run, the raw value would still be a non-empty
-        // string; this test documents that the controller returns whatever it is given
-        // (filtering correctness is covered by the build), so we only assert JSON shape.
-        VersionRESTImpl versionREST = new VersionRESTImpl("1.1.2-SNAPSHOT");
+        VersionRESTImpl versionREST = new VersionRESTImpl("1.1.2", "abcd1234");
+
+        assertThat(versionREST.getVersionString()).isEqualTo("1.1.2");
+    }
+
+    @Test
+    public void testGetCommitReturnsConfiguredCommit()
+    {
+        VersionRESTImpl versionREST = new VersionRESTImpl("1.1.2", "abcd1234");
+
+        assertThat(versionREST.getCommit()).isEqualTo("abcd1234");
+    }
+
+    @Test
+    public void testGetVersionStringNullFallsBackToUnknown()
+    {
+        VersionRESTImpl versionREST = new VersionRESTImpl(null, null);
+
+        assertThat(versionREST.getVersionString()).isEqualTo(VersionRESTImpl.UNKNOWN_VERSION);
+        assertThat(versionREST.getCommit()).isEqualTo(VersionRESTImpl.UNKNOWN_VERSION);
+    }
+
+    @Test
+    public void testUnfilteredPlaceholderIsTreatedAsUnknown()
+    {
+        // When resource filtering did not run (e.g. building without a .git directory),
+        // the injected values are still raw Maven placeholders. These must be normalized
+        // to "unknown" rather than leaked verbatim.
+        VersionRESTImpl versionREST = new VersionRESTImpl("${project.version}", "${git.commit.id.abbrev}");
 
         ResponseEntity<Map<String, String>> response = versionREST.getVersion();
 
-        assertThat(response.getBody()).containsEntry("version", "1.1.2-SNAPSHOT");
+        assertThat(response.getBody()).containsEntry("version", VersionRESTImpl.UNKNOWN_VERSION);
+        assertThat(response.getBody()).containsEntry("commit", VersionRESTImpl.UNKNOWN_VERSION);
         assertThat(response.getHeaders().getContentType()).isNull();
         // Content type is applied by the @GetMapping 'produces' at the framework layer;
         // direct method invocation does not set it, matching the other REST unit tests.

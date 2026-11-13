@@ -37,7 +37,7 @@ except ImportError:
 from ecchronoslib.metrics_filter import filter_metrics_text
 from ecchronoslib.argparse_types import comma_separated_ints, parse_duration_ms
 from ecchronoslib.rejections import rejections
-from ecchronoslib.version import get_client_version
+from ecchronoslib.version import get_client_version, get_client_commit
 
 DEFAULT_PID_FILE = "ecc.pid"
 SPRINGBOOT_MAIN_CLASS = "com.ericsson.bss.cassandra.ecchronos.application.SpringBooter"
@@ -894,22 +894,26 @@ def metrics(arguments):
 
 def version(arguments):
     client_version = get_client_version()
+    client_commit = get_client_commit()
     request = rest.VersionRequest(base_url=arguments.url, timeout=arguments.timeout)
     connected_url = request.base_url
     result = request.get_version()
 
-    node_version = "unavailable"
+    node_version = node_commit = "unavailable"
     node_error = None
     if result.is_successful() and isinstance(result.data, dict):
         node_version = result.data.get("version", "unknown")
+        node_commit = result.data.get("commit", "unknown")
     else:
         node_error = result.format_exception()
 
     if arguments.output == "json":
         payload = {
             "ecctool_version": client_version,
+            "ecctool_commit": client_commit,
             "connected_node": connected_url,
             "node_version": node_version,
+            "node_commit": node_commit,
         }
         if node_error is not None:
             payload["node_error"] = node_error
@@ -917,8 +921,10 @@ def version(arguments):
         return
 
     print("ecctool version:   {0}".format(client_version))
+    print("ecctool commit:    {0}".format(client_commit))
     print("Connected node:    {0}".format(connected_url))
     print("Node version:      {0}".format(node_version))
+    print("Node commit:       {0}".format(node_commit))
     if node_error is not None:
         print("Note: could not retrieve node version ({0}).".format(node_error))
 

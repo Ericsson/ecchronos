@@ -28,8 +28,12 @@
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>DEBUG</level>
         </filter>
-        <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        <!-- LayoutWrappingEncoder lets us use the custom header layout; the pattern is unchanged.
+             The layout writes a version/commit header at the top of each file, including on roll. -->
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="com.ericsson.bss.cassandra.ecchronos.application.logging.VersionLogbackHeaderLayout">
+                <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            </layout>
         </encoder>
     </appender>
 
@@ -50,8 +54,12 @@
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>TRACE</level>
         </filter>
-        <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        <!-- LayoutWrappingEncoder lets us use the custom header layout; the pattern is unchanged.
+             The layout writes a version/commit header at the top of each file, including on roll. -->
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="com.ericsson.bss.cassandra.ecchronos.application.logging.VersionLogbackHeaderLayout">
+                <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            </layout>
         </encoder>
     </appender>
 
@@ -66,8 +74,12 @@
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>INFO</level>
         </filter>
-        <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        <!-- LayoutWrappingEncoder lets us use the custom header layout; the pattern is unchanged.
+             The layout writes a version/commit header at the top of each file, including on roll. -->
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="com.ericsson.bss.cassandra.ecchronos.application.logging.VersionLogbackHeaderLayout">
+                <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            </layout>
         </encoder>
     </appender>
 

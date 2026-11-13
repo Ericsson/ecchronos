@@ -19,7 +19,7 @@ import static com.ericsson.bss.cassandra.ecchronos.rest.RestUtils.REPAIR_MANAGEM
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -34,29 +34,67 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Tag(name = "Version", description = "Retrieve the ecChronos agent version")
 @RestController
-@PropertySource("classpath:version.properties")
+@PropertySource("classpath:ecchronos-version.properties")
 public class VersionRESTImpl implements VersionREST
 {
     static final String UNKNOWN_VERSION = "unknown";
 
     private final String myVersion;
 
+    private final String myCommit;
+
     /**
      * Constructs the version REST controller.
      *
      * @param version the ecChronos agent version, injected from the build-filtered
      *                {@code ecchronos.version} property; defaults to {@code unknown}.
+     * @param commit  the abbreviated HEAD commit SHA at build time, injected from the
+     *                build-filtered {@code ecchronos.git.commit} property; defaults to
+     *                {@code unknown}.
      */
-    public VersionRESTImpl(@Value("${ecchronos.version:unknown}") final String version)
+    public VersionRESTImpl(
+            @Value("${ecchronos.version:unknown}") final String version,
+            @Value("${ecchronos.git.commit:unknown}") final String commit)
     {
-        if (version == null || version.isEmpty())
+        myVersion = normalize(version);
+        myCommit = normalize(commit);
+    }
+
+    /**
+     * Normalizes a build-filtered value. Null, empty, and unresolved Maven placeholders
+     * (values still starting with {@code ${}, e.g. when building without a {@code .git}
+     * directory or without resource filtering) are reported as {@link #UNKNOWN_VERSION}.
+     *
+     * @param value the raw injected value
+     * @return the normalized value, never null
+     */
+    private static String normalize(final String value)
+    {
+        if (value == null || value.isEmpty() || value.startsWith("${"))
         {
-            myVersion = UNKNOWN_VERSION;
+            return UNKNOWN_VERSION;
         }
-        else
-        {
-            myVersion = version;
-        }
+        return value;
+    }
+
+    /**
+     * Returns the resolved ecChronos agent version.
+     *
+     * @return the version string, or {@link #UNKNOWN_VERSION} if it could not be determined.
+     */
+    public final String getVersionString()
+    {
+        return myVersion;
+    }
+
+    /**
+     * Returns the abbreviated HEAD commit SHA the agent was built from.
+     *
+     * @return the commit SHA, or {@link #UNKNOWN_VERSION} if it could not be determined.
+     */
+    public final String getCommit()
+    {
+        return myCommit;
     }
 
     @Override
@@ -64,6 +102,9 @@ public class VersionRESTImpl implements VersionREST
     @Operation(operationId = "version", description = "Get the ecChronos agent version", summary = "Get version")
     public final ResponseEntity<Map<String, String>> getVersion()
     {
-        return ResponseEntity.ok(Collections.singletonMap("version", myVersion));
+        Map<String, String> body = new LinkedHashMap<>();
+        body.put("version", myVersion);
+        body.put("commit", myCommit);
+        return ResponseEntity.ok(body);
     }
 }

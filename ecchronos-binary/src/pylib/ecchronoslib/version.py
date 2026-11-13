@@ -33,3 +33,21 @@ def get_client_version():
     except ImportError:
         pass
     return UNKNOWN_VERSION
+
+
+def get_client_commit():
+    """Return the HEAD commit SHA ecctool was built from, or "unknown" from source.
+
+    Like the version, this is baked into the generated ``_version.py`` at build
+    time. It is absent when running from source, and stays an unfiltered Maven
+    placeholder when built without a ``.git`` directory; both are reported as
+    "unknown".
+    """
+    try:
+        from ecchronoslib._version import __git_commit__  # pylint: disable=import-outside-toplevel
+
+        if __git_commit__ and not __git_commit__.startswith("${"):
+            return __git_commit__
+    except ImportError:
+        pass
+    return UNKNOWN_VERSION

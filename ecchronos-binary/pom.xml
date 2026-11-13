@@ -58,6 +58,22 @@
 
     <build>
         <plugins>
+            <!-- Resolve the HEAD commit SHA into ${git.commit.id.abbrev} before the
+                 Python _version.py template is filtered, so ecctool can report it. -->
+            <plugin>
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>resolve-git-commit</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <executions>

@@ -27,8 +27,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.event.EventListener;
 
 @SpringBootApplication
 @Import(value = { RepairManagementRESTImpl.class, ScheduleRepairManagementRESTImpl.class,
@@ -38,6 +40,25 @@ import org.springframework.context.annotation.Import;
 public class SpringBooter extends SpringBootServletInitializer
 {
     private static final Logger LOG = LoggerFactory.getLogger(SpringBooter.class);
+
+    private final VersionRESTImpl myVersionREST;
+
+    public SpringBooter(final VersionRESTImpl versionREST)
+    {
+        myVersionREST = versionREST;
+    }
+
+    /**
+     * Logs the ecChronos agent version once the application context is fully started.
+     *
+     * @param event the application ready event
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    public final void logVersionOnStartup(final ApplicationReadyEvent event)
+    {
+        LOG.info("Started ecChronos agent version {} (commit {})",
+                myVersionREST.getVersionString(), myVersionREST.getCommit());
+    }
 
     public static void main(final String[] args)
     {
