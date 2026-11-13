@@ -15,16 +15,13 @@
 package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
-import com.ericsson.bss.cassandra.ecchronos.utils.converter.ManyToOneIterator;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.EnumMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -37,29 +34,33 @@ import com.google.common.annotations.VisibleForTesting;
 /**
  * Dynamic priority queue for scheduled jobs.
  * <p>
- * This queue is divided in several smaller queues, one for each {@link ScheduledJob.Priority priority type} and are
- * then retrieved using a
- * {@link ManyToOneIterator}.
+ * Jobs are held in a single list and the runnable-job ordering is produced on each {@link #iterator(Predicate)} call
+ * by building exactly one sorted snapshot, keyed on a per-pass-frozen {@link ScheduledJob#getRealPriority()} value.
+ * <p>
+ * Earlier revisions kept an {@code EnumMap<Priority, PriorityQueue>} and copied every per-priority heap on each pass
+ * before re-sorting; the heaps were vestigial because {@link ScheduledJob#getRealPriority()} is wall-clock dependent,
+ * so the real ordering was always produced by the fresh per-pass sort rather than by the heap invariant. Flattening
+ * to a single list removes that redundant per-pass snapshot copy (roughly halving per-pass allocation) while
+ * preserving selection order. See issue #1903 (comparator stability landed earlier as #1904).
  */
 public class ScheduledJobQueue implements Iterable<ScheduledJob>
 {
     private static final Logger LOG = LoggerFactory.getLogger(ScheduledJobQueue.class);
 
-    private final EnumMap<ScheduledJob.Priority, PriorityQueue<ScheduledJob>> myJobQueues
-            = new EnumMap<>(ScheduledJob.Priority.class);
+    private final List<ScheduledJob> myJobs = new ArrayList<>();
 
     /**
-     * Construct a new job queue that prioritizes the jobs based on the provided comparator.
+     * Construct a new job queue.
      *
      * @param comparator
-     *            The comparator used to determine the job with the highest priority.
+     *            Retained for API/backwards compatibility with callers (for example
+     *            {@link DefaultJobComparator}). The effective ordering is produced per pass from a frozen
+     *            {@link ScheduledJob#getRealPriority()} key (see {@link #frozenPriorityComparator(Collection)}),
+     *            which matches the configured comparator's ordering while being contract-safe during sorting.
      */
     public ScheduledJobQueue(final Comparator<ScheduledJob> comparator)
     {
-        for (ScheduledJob.Priority priority : ScheduledJob.Priority.values())
-        {
-            myJobQueues.put(priority, new PriorityQueue<>(1, comparator));
-        }
+        // The comparator is intentionally not stored: ordering is produced from a per-pass-frozen key (#1903/#1904).
     }
 
     /**
@@ -100,28 +101,22 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
             return;
         }
         LOG.debug("Removing job: {}", job);
-        myJobQueues.get(job.getPriority()).remove(job);
+        // Identity removal: jobs are compared by reference, matching the previous PriorityQueue.remove semantics for
+        // these (equals-less) job instances.
+        myJobs.removeIf(queued -> queued == job); // NOPMD CompareObjectsWithEquals - intentional identity removal
     }
 
     private void addJobInternal(final ScheduledJob job)
     {
         LOG.debug("Adding job: {}, Priority: {}, Node: {}", job, job.getPriority(), job.getNodeId());
-        PriorityQueue<ScheduledJob> queue = myJobQueues.get(job.getPriority());
-        queue.add(job);
-        LOG.debug("Size of {} Queue for Node: {} is {}", job.getPriority(), job.getNodeId(), queue.size());
+        myJobs.add(job);
+        LOG.debug("Size of queue for Node: {} is {}", job.getNodeId(), myJobs.size());
     }
 
     @VisibleForTesting
-    final int size()
+    final synchronized int size()
     {
-        int size = 0;
-
-        for (PriorityQueue<ScheduledJob> queue : myJobQueues.values())
-        {
-            size += queue.size();
-        }
-
-        return size;
+        return myJobs.size();
     }
 
     @Override
@@ -148,29 +143,23 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
         List<ScheduledJob> jobsToRefresh;
         synchronized (this)
         {
-            jobsToRefresh = myJobQueues.values().stream()
-                    .flatMap(Collection::stream)
+            jobsToRefresh = myJobs.stream()
                     .filter(shouldRefresh)
                     .collect(Collectors.toList());
         }
 
-        // Refresh state outside the lock — refreshState() may perform I/O
+        // Refresh state outside the lock — refreshState() may perform I/O.
         jobsToRefresh.forEach(ScheduledJob::refreshState);
 
         synchronized (this)
         {
             purgeFinishedJobs();
-            List<PriorityQueue<ScheduledJob>> snapshots = myJobQueues.values().stream()
-                    .map(PriorityQueue::new)
-                    .collect(Collectors.toList());
-            // Freeze each job's time-dependent real priority once for this pass. getRealPriority() reads
-            // System.currentTimeMillis() on every call, so sorting on it live can become non-transitive if the clock
-            // crosses a granularity boundary mid-sort, making List.sort (TimSort) throw "Comparison method violates
-            // its general contract". Sorting on the frozen key is contract-safe and preserves selection order for
-            // equivalent inputs. See issue #1904.
-            Comparator<ScheduledJob> frozenComparator = frozenPriorityComparator(snapshots);
-            Iterator<ScheduledJob> baseIterator = new ManyToOneIterator<>(snapshots, frozenComparator);
-            return new RunnableJobIterator(baseIterator);
+            // Build exactly one sorted snapshot for this pass. Iterating this copy (rather than the live list) keeps
+            // mutation-during-iteration safe: RunnableJobIterator and concurrent add/remove mutate myJobs without
+            // disturbing the iteration.
+            List<ScheduledJob> snapshot = new ArrayList<>(myJobs);
+            snapshot.sort(frozenPriorityComparator(snapshot));
+            return new RunnableJobIterator(snapshot.iterator());
         }
     }
 
@@ -178,21 +167,17 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
      * Build a comparator over a per-pass-stable priority key: each job's {@link ScheduledJob#getRealPriority()} is
      * read exactly once here and frozen, so no wall-clock reads occur during the subsequent sort. The tie-break on
      * configured {@link ScheduledJob#getPriority() priority} is time-independent and read live, matching the
-     * ordering of {@link DefaultJobComparator}. See issue #1904.
+     * ordering of {@link DefaultJobComparator}. See issues #1903 / #1904.
      *
-     * @param jobQueues the per-priority job collections to be merged and sorted this pass.
+     * @param jobs the jobs to be sorted this pass.
      * @return a comparator backed by the frozen real-priority values.
      */
-    private static Comparator<ScheduledJob> frozenPriorityComparator(
-            final Collection<? extends Collection<ScheduledJob>> jobQueues)
+    private static Comparator<ScheduledJob> frozenPriorityComparator(final Collection<ScheduledJob> jobs)
     {
         Map<ScheduledJob, Integer> frozenRealPriority = new IdentityHashMap<>();
-        for (Collection<ScheduledJob> queue : jobQueues)
+        for (ScheduledJob job : jobs)
         {
-            for (ScheduledJob job : queue)
-            {
-                frozenRealPriority.computeIfAbsent(job, ScheduledJob::getRealPriority);
-            }
+            frozenRealPriority.computeIfAbsent(job, ScheduledJob::getRealPriority);
         }
         return (j1, j2) ->
         {
@@ -208,20 +193,17 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
     private void purgeFinishedJobs()
     {
         List<ScheduledJob> finishedJobs = new ArrayList<>();
-        for (PriorityQueue<ScheduledJob> queue : myJobQueues.values())
+        myJobs.removeIf(job ->
         {
-            queue.removeIf(job ->
+            ScheduledJob.State state = job.getState();
+            if (state == ScheduledJob.State.FINISHED || state == ScheduledJob.State.FAILED)
             {
-                ScheduledJob.State state = job.getState();
-                if (state == ScheduledJob.State.FINISHED || state == ScheduledJob.State.FAILED)
-                {
-                    LOG.info("{}: {}, descheduling", job, state);
-                    finishedJobs.add(job);
-                    return true;
-                }
-                return false;
-            });
-        }
+                LOG.info("{}: {}, descheduling", job, state);
+                finishedJobs.add(job);
+                return true;
+            }
+            return false;
+        });
         finishedJobs.forEach(ScheduledJob::finishJob);
     }
 
@@ -260,5 +242,3 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
         }
     }
 }
-
-
