@@ -179,8 +179,7 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
     @Test
     public void repairSingleTable() throws Exception
     {
-        TableReference tableReference = myTableReferenceFactory.forTable(
-                TEST_KEYSPACE, createUniqueRepairTable(myAdminSession, getSession(), "incr_single"));
+        TableReference tableReference = createTableReference("incr_single");
         Node node = myLocalHost;
         getJmxConnectionProvider().add(node);
         assertThat(tableReference).isNotNull();
@@ -242,10 +241,8 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
         long startTime = System.currentTimeMillis();
         Node node = myLocalHost;
         getJmxConnectionProvider().add(node);
-        TableReference tableReference1 = myTableReferenceFactory.forTable(
-                TEST_KEYSPACE, createUniqueRepairTable(myAdminSession, getSession(), "incr_multi1"));
-        TableReference tableReference2 = myTableReferenceFactory.forTable(
-                TEST_KEYSPACE, createUniqueRepairTable(myAdminSession, getSession(), "incr_multi2"));
+        TableReference tableReference1 = createTableReference("incr_multi1");
+        TableReference tableReference2 = createTableReference("incr_multi2");
         assertThat(tableReference1).isNotNull();
         assertThat(tableReference2).isNotNull();
         insertSomeDataAndFlush(tableReference1, myAdminSession, node);
@@ -281,8 +278,7 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
         long startTime = System.currentTimeMillis();
         Node node = myLocalHost;
         getJmxConnectionProvider().add(node);
-        TableReference tableReference = myTableReferenceFactory.forTable(
-                TEST_KEYSPACE, createUniqueRepairTable(myAdminSession, getSession(), "incr_twice"));
+        TableReference tableReference = createTableReference("incr_twice");
         assertThat(tableReference).isNotNull();
         insertSomeDataAndFlush(tableReference, myAdminSession, node);
         UUID jobId1 = triggerRepair(tableReference, node);
@@ -322,5 +318,17 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
     {
         myRepairs.add(tableReference);
         return myOnDemandRepairSchedulerImpl.scheduleJob(tableReference, RepairType.INCREMENTAL, node.getHostId()).getJobId();
+    }
+
+    // Create a unique table and resolve its TableReference, awaiting on the exact forTable(...) lookup the
+    // test uses. createUniqueRepairTable already waits for schema agreement, but forTable reads the session
+    // metadata cache directly, so await here guards against any residual propagation lag returning null.
+    private TableReference createTableReference(String prefix)
+    {
+        String tableName = createUniqueRepairTable(myAdminSession, getSession(), prefix);
+        await().pollInterval(1, TimeUnit.SECONDS)
+                .atMost(30, TimeUnit.SECONDS)
+                .until(() -> myTableReferenceFactory.forTable(TEST_KEYSPACE, tableName) != null);
+        return myTableReferenceFactory.forTable(TEST_KEYSPACE, tableName);
     }
 }

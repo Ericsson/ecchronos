@@ -314,16 +314,27 @@ abstract public class TestBase
         // Block until all nodes agree on the new schema so the subsequent repair does not race ahead of
         // the table being visible cluster-wide. checkSchemaAgreement() is a point-in-time check, so poll
         // briefly until agreement is reached rather than trusting a single sample. Up to ~15s (30 x 500ms).
-        for (int attempt = 0; attempt < 30 && !adminSession.checkSchemaAgreement(); attempt++)
+        boolean adminAgreement = false;
+        for (int i = 0; i < 30 && !(adminAgreement = adminSession.checkSchemaAgreement()); i++)
         {
             sleepMillis(500);
         }
-        // The TableReferenceFactory used by the tests reads schema from readingSession (a different
-        // CqlSession than adminSession, with its own metadata cache). Wait until that session has the
-        // new table in its metadata, otherwise forTable(...) returns null and the test NPEs.
-        // Up to ~30s (60 x 500ms).
-        for (int attempt = 0; attempt < 60 && !tableVisible(readingSession, tableName); attempt++)
+        // The TableReferenceFactory used by the tests reads schema from readingSession, which has its own
+        // metadata cache. Wait until that session sees the new table, otherwise forTable(...) returns null
+        // and the test fails later with a misleading NPE. Fail fast with a clear message if it never shows
+        // (e.g. metadata propagation exceeding the budget on a loaded CI runner). Up to ~60s (120 x 500ms).
+        int attempt = 0;
+        while (!tableVisible(readingSession, tableName))
         {
+            if (++attempt > 120)
+            {
+                boolean keyspacePresent = readingSession.getMetadata().getKeyspace(TEST_KEYSPACE).isPresent();
+                throw new IllegalStateException("Table " + TEST_KEYSPACE + "." + tableName
+                        + " not visible in reading session metadata after 60s"
+                        + " [adminSchemaAgreement=" + adminAgreement
+                        + ", readingSchemaAgreement=" + readingSession.checkSchemaAgreement()
+                        + ", keyspacePresent=" + keyspacePresent + "]");
+            }
             sleepMillis(500);
         }
         return tableName;
