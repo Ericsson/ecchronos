@@ -17,6 +17,17 @@
 -->
 <configuration>
 
+    <!--
+      Propagate logback level changes back into java.util.logging. Embedded Tomcat logs via JUL,
+      which is bridged to SLF4J/logback by SLF4JBridgeHandler (installed in SpringBooter). Without
+      this listener every JUL record is created and bridged before logback filters it; with it, the
+      JUL logger levels are kept in sync so suppressed records (e.g. Tomcat INFO below) are dropped
+      cheaply at the source.
+    -->
+    <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
+        <resetJUL>true</resetJUL>
+    </contextListener>
+
     <appender name="FILE_DEBUG" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>ecc.debug.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
@@ -96,6 +107,15 @@
     <logger name="com.github.benmanes.caffeine" level="ERROR" />
     <logger name="io.netty" level="WARN" />
     <logger name="org.springframework.boot.autoconfigure.logging" level="INFO" />
+
+    <!--
+      Embedded Tomcat (bridged from java.util.logging). Keep at WARN so routine connector/TLS
+      certificate startup chatter (AbstractEndpoint.logCertificate, emitted at JUL INFO) stays out
+      of the logs while genuine problems are still reported.
+    -->
+    <logger name="org.apache.tomcat" level="WARN" />
+    <logger name="org.apache.catalina" level="WARN" />
+    <logger name="org.apache.coyote" level="WARN" />
 
     <!-- Enable DEBUG logging for ecChronos only; third-party libs remain at root level -->
     <logger name="com.ericsson.bss.cassandra.ecchronos" level="DEBUG" />
