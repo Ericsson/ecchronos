@@ -131,7 +131,7 @@
 
         <!-- Jackson -->
         <tools.jackson.core.version>3.3.0</tools.jackson.core.version>
-        <com.fasterxml.jackson.annotations.version>2.22</com.fasterxml.jackson.annotations.version>
+        <com.fasterxml.jackson.annotations.version>2.23</com.fasterxml.jackson.annotations.version>
 
         <!-- Other -->
         <io.netty.version>4.1.140.Final</io.netty.version>
