@@ -176,6 +176,7 @@
         <org.jacoco.jacoco-maven-plugin.version>0.8.16</org.jacoco.jacoco-maven-plugin.version>
         <org.sonatype.central-central-publishing-maven-plugin>0.12.0</org.sonatype.central-central-publishing-maven-plugin>
         <io.fabric8.docker-maven-plugin.version>0.49.0</io.fabric8.docker-maven-plugin.version>
+        <io.github.git-commit-id.git-commit-id-maven-plugin.version>9.0.2</io.github.git-commit-id.git-commit-id-maven-plugin.version>
 
         <jolokia.adapter.version>2.6.5</jolokia.adapter.version>
 
@@ -659,6 +660,31 @@
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>license-maven-plugin</artifactId>
                     <version>${org.codehaus.mojo.license-maven-plugin.version}</version>
+                </plugin>
+
+                <!--
+                    Resolves the HEAD commit SHA at build time into Maven properties
+                    (git.commit.id.abbrev). Modules that bake the SHA into a filtered
+                    resource (rest, ecchronos-binary) activate this via an execution.
+                    Configured to never fail the build when there is no .git directory
+                    (e.g. building from a released source tarball); in that case the
+                    properties simply stay unresolved and runtime code falls back to
+                    "unknown".
+                -->
+                <plugin>
+                    <groupId>io.github.git-commit-id</groupId>
+                    <artifactId>git-commit-id-maven-plugin</artifactId>
+                    <version>${io.github.git-commit-id.git-commit-id-maven-plugin.version}</version>
+                    <configuration>
+                        <offline>true</offline>
+                        <failOnNoGitDirectory>false</failOnNoGitDirectory>
+                        <failOnUnableToExtractRepoInfo>false</failOnUnableToExtractRepoInfo>
+                        <skipPoms>false</skipPoms>
+                        <abbrevLength>8</abbrevLength>
+                        <includeOnlyProperties>
+                            <includeOnlyProperty>^git\.commit\.id\.abbrev$</includeOnlyProperty>
+                        </includeOnlyProperties>
+                    </configuration>
                 </plugin>
 
                 <plugin>

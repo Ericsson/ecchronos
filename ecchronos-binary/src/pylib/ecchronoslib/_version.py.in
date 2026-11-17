@@ -17,3 +17,4 @@
 # the Maven ${project.version}. When running from source (no build), the
 # file is absent and callers fall back to "unknown".
 __version__ = "${project.version}"
+__git_commit__ = "${git.commit.id.abbrev}"

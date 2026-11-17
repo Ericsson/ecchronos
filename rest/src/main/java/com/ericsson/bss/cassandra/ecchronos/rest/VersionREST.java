@@ -28,7 +28,7 @@ public interface VersionREST
     /**
      * Get the version of the running ecChronos agent.
      *
-     * @return a JSON object of the form {@code {"version": "<version>"}}
+     * @return a JSON object of the form {@code {"version": "<version>", "commit": "<commit>"}}
      */
     ResponseEntity<Map<String, String>> getVersion();
 }

@@ -539,8 +539,8 @@ class VersionRequest(RestRequest):
         """Fetch the connected ecChronos agent version.
 
         Returns a RequestResult whose data is the parsed JSON object
-        ({"version": "..."}) on success, or carries the failure details
-        (e.g. 404 on an older agent without this endpoint, or a connection
+        ({"version": "...", "commit": "..."}) on success, or carries the failure
+        details (e.g. 404 on an older agent without this endpoint, or a connection
         error/timeout) so the caller can degrade gracefully.
         """
         return self.request(VersionRequest.VERSION)
