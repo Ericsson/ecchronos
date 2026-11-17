@@ -111,11 +111,11 @@ jobs:
       - name: install dependencies
         run: mvn install -Pbuild-cassandra-test-jar -DskipTests=true
 
-      - name: Set Cassandra memory limits for topology tests
-        if: contains(matrix.suite.name, 'Topology')
+      - name: Set memory limits
         run: |
           echo "MAX_HEAP_SIZE=1536M" >> $GITHUB_ENV
           echo "HEAP_NEWSIZE=200M" >> $GITHUB_ENV
+          echo "MAVEN_OPTS=$MAVEN_OPTS -Xmx1g" >> $GITHUB_ENV
 
       - name: Set up Docker Compose
         uses: KengoTODA/actions-setup-docker-compose@b09fb2b902df45b91982bc46858188f2a714ee5f # v1.2.11
@@ -129,6 +129,14 @@ jobs:
         env:
           MAVEN_GOALS: ${{ matrix.suite.goals }}
           JAVA_VERSION: ${{ matrix.java }}
+
+      - name: Diagnose OOM kills
+        if: ${{ failure() && steps.tests.conclusion == 'failure' }}
+        run: |
+          free -m
+          sudo dmesg | grep -i -E "killed process|out of memory" || echo "No OOM kills found in dmesg"
+          docker ps -a --format '{{.Names}}\t{{.Status}}' || true
+          docker inspect --format '{{.Name}} OOMKilled={{.State.OOMKilled}} ExitCode={{.State.ExitCode}}' $(docker ps -aq) 2>/dev/null || true
 
       - name: Upload artifacts
         if: ${{ failure() && steps.tests.conclusion == 'failure' }}
