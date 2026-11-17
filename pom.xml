@@ -108,7 +108,7 @@
 
         <!-- Spring boot -->
         <org.springframework.boot.spring-boot.version>4.1.2</org.springframework.boot.spring-boot.version>
-        <org.apache.tomcat.embed.version>11.0.27</org.apache.tomcat.embed.version>
+        <org.apache.tomcat.embed.version>11.0.29</org.apache.tomcat.embed.version>
         <org.springframework.spring.version>7.0.10</org.springframework.spring.version>
         <org.springdoc.openapi-starter-webmvc-api.version>3.2.0</org.springdoc.openapi-starter-webmvc-api.version>
         <jakarta.servlet-api.version>6.1.0</jakarta.servlet-api.version>
@@ -127,11 +127,11 @@
         <caffeine.version>3.3.1</caffeine.version>
         <slf4j.version>2.0.20</slf4j.version>
         <logback.version>1.6.6</logback.version>
-        <com.fasterxml.jackson.version>2.22.4</com.fasterxml.jackson.version>
+        <com.fasterxml.jackson.version>2.23.0</com.fasterxml.jackson.version>
 
         <!-- Jackson -->
-        <tools.jackson.core.version>3.2.4</tools.jackson.core.version>
-        <com.fasterxml.jackson.annotations.version>2.22</com.fasterxml.jackson.annotations.version>
+        <tools.jackson.core.version>3.3.0</tools.jackson.core.version>
+        <com.fasterxml.jackson.annotations.version>2.23</com.fasterxml.jackson.annotations.version>
 
         <!-- Other -->
         <io.netty.version>4.1.140.Final</io.netty.version>
@@ -148,7 +148,7 @@
         <jcip.version>1.0</jcip.version>
         <testcontainers.version>2.0.5</testcontainers.version>
         <testcontainers-cassandra.version>1.21.4</testcontainers-cassandra.version>
-        <org.bouncycastle.bcpkix-jdk18on.version>1.86</org.bouncycastle.bcpkix-jdk18on.version>
+        <org.bouncycastle.bcpkix-jdk18on.version>1.87</org.bouncycastle.bcpkix-jdk18on.version>
         <org.apache.httpcomponents.client5.httpclient5.version>5.6.5</org.apache.httpcomponents.client5.httpclient5.version>
 
         <!-- Plugin versions -->
@@ -171,8 +171,8 @@
         <org.apache.maven.plugins.maven-source-plugin.version>3.4.0</org.apache.maven.plugins.maven-source-plugin.version>
         <org.apache.maven.plugins.maven-surefire-plugin.version>3.6.1</org.apache.maven.plugins.maven-surefire-plugin.version>
         <org.apache.servicemix.tooling.depends-maven-plugin.version>1.5.0</org.apache.servicemix.tooling.depends-maven-plugin.version>
-        <org.codehaus.mojo.exec-maven-plugin.version>3.6.4</org.codehaus.mojo.exec-maven-plugin.version>
-        <org.codehaus.mojo.license-maven-plugin.version>2.8.0</org.codehaus.mojo.license-maven-plugin.version>
+        <org.codehaus.mojo.exec-maven-plugin.version>3.7.0</org.codehaus.mojo.exec-maven-plugin.version>
+        <org.codehaus.mojo.license-maven-plugin.version>2.9.0</org.codehaus.mojo.license-maven-plugin.version>
         <org.jacoco.jacoco-maven-plugin.version>0.8.16</org.jacoco.jacoco-maven-plugin.version>
         <org.sonatype.central-central-publishing-maven-plugin>0.12.0</org.sonatype.central-central-publishing-maven-plugin>
         <io.fabric8.docker-maven-plugin.version>0.49.0</io.fabric8.docker-maven-plugin.version>
