@@ -149,6 +149,12 @@
             <artifactId>slf4j-api</artifactId>
         </dependency>
 
+        <!-- Route java.util.logging (embedded Tomcat) through SLF4J/logback -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jul-to-slf4j</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>

@@ -25,6 +25,7 @@ import com.ericsson.bss.cassandra.ecchronos.rest.StateManagementRESTImpl;
 import com.ericsson.bss.cassandra.ecchronos.rest.VersionRESTImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -62,6 +63,15 @@ public class SpringBooter extends SpringBootServletInitializer
 
     public static void main(final String[] args)
     {
+        // Route embedded Tomcat's java.util.logging through SLF4J/logback so its output shares
+        // ecChronos' formatting and is controlled by logback.xml. Remove the default JUL handlers
+        // first to avoid duplicate console output, then install the bridge. Must run before Spring
+        // starts the embedded web server so the connector/TLS startup logs are captured.
+        // Works together with logback's LevelChangePropagator, which keeps the JUL level in sync so
+        // suppressed levels are dropped at the source rather than bridged and filtered.
+        SLF4JBridgeHandler.removeHandlersForRootLogger();
+        SLF4JBridgeHandler.install();
+
         try
         {
             SpringApplication.run(SpringBooter.class, args);
