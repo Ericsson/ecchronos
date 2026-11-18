@@ -137,6 +137,9 @@ jobs:
           sudo dmesg | grep -i -E "killed process|out of memory" || echo "No OOM kills found in dmesg"
           docker ps -a --format '{{.Names}}\t{{.Status}}' || true
           docker inspect --format '{{.Name}} OOMKilled={{.State.OOMKilled}} ExitCode={{.State.ExitCode}}' $(docker ps -aq) 2>/dev/null || true
+          echo "::group::Full dmesg"
+          sudo dmesg -T || true
+          echo "::endgroup::"
 
       - name: Upload artifacts
         if: ${{ failure() && steps.tests.conclusion == 'failure' }}
