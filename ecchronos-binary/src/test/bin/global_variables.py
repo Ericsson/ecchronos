@@ -18,6 +18,34 @@
 import os
 
 
+def _read_env_file_value(env_file, key):
+    """Return the value of key from a docker compose style .env file, or None."""
+    if not os.path.isfile(env_file):
+        return None
+    value = None
+    with open(env_file, encoding="utf-8") as file:
+        for line in file:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            name, _, raw = line.partition("=")
+            if name.strip() == key:
+                value = raw.strip().strip("\"'")
+    return value
+
+
+def _test_net_prefix(compose_dir):
+    """Test network prefix, from the environment or the compose .env file (same precedence as compose)."""
+    env_file = os.path.join(compose_dir, ".env")
+    prefix = os.environ.get("ECC_TEST_NET_PREFIX") or _read_env_file_value(env_file, "ECC_TEST_NET_PREFIX")
+    if not prefix:
+        raise RuntimeError(
+            f"ECC_TEST_NET_PREFIX is not set in the environment or in {env_file}. "
+            "It defines the integration test subnet."
+        )
+    return prefix
+
+
 def get():
     # pylint: disable=global-statement, global-variable-undefined, too-many-statements
     # fmt:off
@@ -31,7 +59,8 @@ def get():
         CONTAINER_APPLICATION_YAML_PATH, CONTAINER_SECURITY_YAML_PATH, CONTAINER_SCHEDULE_YAML_PATH, \
         CONTAINER_LOGBACK_FILE_PATH, CONTAINER_JVM_OPTION_PATH, CONTAINER_CERTIFICATE_PATH, CONTAINER_LOGS_PATH, \
         HOST_LOGS_PATH, JAVA_VERSION, ECC_CONTAINER_IP, DEFAULT_INITIAL_CONTACT_POINT, DC1, DC2, \
-        DEFAULT_AGENT_TYPE, DEFAULT_INSTANCE_NAME, DEFAULT_SEED_IP_DC2
+        DEFAULT_AGENT_TYPE, DEFAULT_INSTANCE_NAME, DEFAULT_SEED_IP_DC2, ECC_TEST_NET_PREFIX, \
+        EXTRA_NODE_IP, SECOND_AGENT_IP
     # fmt:on
 
     TEST_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -66,7 +95,9 @@ def get():
         )
     LOCAL = os.environ.get("LOCAL")
     PEM_ENABLED = os.environ.get("PEM_ENABLED")
-    ECC_CONTAINER_IP = "172.29.0.7"
+    # All test cluster addresses derive from the prefix in cassandra-test-image/src/main/docker/.env.
+    ECC_TEST_NET_PREFIX = _test_net_prefix(CASSANDRA_DOCKER_COMPOSE_FILE_PATH)
+    ECC_CONTAINER_IP = f"{ECC_TEST_NET_PREFIX}.7"
     BASE_URL = "http://{ip}:8080/repair-management/schedules"
     BASE_URL_TLS = "https://{ip}:8080/repair-management/schedules"
 
@@ -81,8 +112,11 @@ def get():
     CONTAINER_CERTIFICATE_PATH = "/etc/certificates"
     CONTAINER_LOGS_PATH = "/var/log/ecchronos"
     HOST_LOGS_PATH = f"{BASE_DIR}/logs"
-    DEFAULT_INITIAL_CONTACT_POINT = "172.29.0.2"
-    DEFAULT_SEED_IP_DC2 = "172.29.0.3"
+    DEFAULT_INITIAL_CONTACT_POINT = f"{ECC_TEST_NET_PREFIX}.2"
+    DEFAULT_SEED_IP_DC2 = f"{ECC_TEST_NET_PREFIX}.3"
+    # Extra Cassandra node added by the topology tests, and the second (dc2) agent.
+    EXTRA_NODE_IP = f"{ECC_TEST_NET_PREFIX}.6"
+    SECOND_AGENT_IP = f"{ECC_TEST_NET_PREFIX}.8"
     DC1 = "datacenter1"
     DC2 = "datacenter2"
     DEFAULT_AGENT_TYPE = "datacenterAware"

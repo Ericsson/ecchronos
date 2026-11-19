@@ -167,7 +167,7 @@ class CassandraCluster:
         cert_dir = global_vars.CERTIFICATE_DIRECTORY
         # '--ip' must go before the image name (docker treats args after the image as
         # the container command). It was previously appended after, so it was ignored.
-        static_ip = "172.29.0.6"
+        static_ip = global_vars.EXTRA_NODE_IP
 
         cmd = [
             "docker",

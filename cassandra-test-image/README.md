@@ -33,12 +33,36 @@ The Docker Compose file defines a 4-node cluster across 2 datacenters using `Gos
 
 | Node | Datacenter | Rack | IP |
 |---|---|---|---|
-| `cassandra-seed-dc1-rack1-node1` | datacenter1 | rack1 | 172.29.0.2 |
-| `cassandra-seed-dc2-rack1-node1` | datacenter2 | rack1 | 172.29.0.3 |
-| `cassandra-node-dc1-rack1-node2` | datacenter1 | rack1 | 172.29.0.4 |
-| `cassandra-node-dc2-rack1-node2` | datacenter2 | rack1 | 172.29.0.5 |
+| `cassandra-seed-dc1-rack1-node1` | datacenter1 | rack1 | `<prefix>.2` |
+| `cassandra-seed-dc2-rack1-node1` | datacenter2 | rack1 | `<prefix>.3` |
+| `cassandra-node-dc1-rack1-node2` | datacenter1 | rack1 | `<prefix>.4` |
+| `cassandra-node-dc2-rack1-node2` | datacenter2 | rack1 | `<prefix>.5` |
 
 **Configuration:** 16 vnodes per node, auto-snapshots disabled, JMX auth disabled, zero ring/gossip delays for fast startup.
+
+### Test network
+
+All test cluster addresses derive from one setting, `ECC_TEST_NET_PREFIX`, defined in
+[`src/main/docker/.env`](src/main/docker/.env) (default `172.24.0`). The network is `<prefix>.0/24`:
+
+| Address | Used by |
+|---|---|
+| `<prefix>.2` - `<prefix>.5` | Cassandra nodes (table above) |
+| `<prefix>.6` | Extra Cassandra node added by the topology tests |
+| `<prefix>.7` | ecChronos agent (default) |
+| `<prefix>.8` | Second ecChronos agent (multi-agent tests) |
+
+The value is read by docker compose, `generate_certificates.sh` (certificate IP SANs) and the Python
+integration tests. If the default subnet conflicts with something on your machine (for example a VPN
+or another Docker network), change the value in `.env`, or override it for a single run with an
+environment variable of the same name:
+
+```bash
+ECC_TEST_NET_PREFIX=10.250.0 mvn clean install -Dprecommit.tests
+```
+
+Run `mvn clean` after changing the prefix, so that no previously generated test certificates with the old
+addresses are left behind.
 
 ---
 
