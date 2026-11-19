@@ -27,7 +27,7 @@ connection:
     corePoolSize: 4
     ## Maximum number of threads in the pool
     maxPoolSize: 10
-    ## Queue capacity for pending tasks
+    ## Queue capacity for pending tasks. A value of zero or less disables queueing.
     queueCapacity: 20
     ## The time to keep idle threads alive, in seconds
     keepAliveSeconds: 60
@@ -663,4 +663,3 @@ lock_factory:
     ## the cluster can handle the additional parallel repair load.
     ##
     locks_per_resource: 3
-
