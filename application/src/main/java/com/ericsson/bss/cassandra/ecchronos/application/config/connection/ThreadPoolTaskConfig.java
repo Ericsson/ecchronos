@@ -127,4 +127,32 @@ public final class ThreadPoolTaskConfig
     {
         myKeepAliveSeconds = keepAliveSeconds;
     }
+
+    /**
+     * Validates thread pool settings after configuration binding.
+     */
+    void validate()
+    {
+        requireAtLeast("corePoolSize", myCorePoolSize, 0);
+        requireAtLeast("maxPoolSize", myMaxPoolSize, 1);
+        requireAtLeast("keepAliveSeconds", myKeepAliveSeconds, 0);
+        if (myQueueCapacity == null)
+        {
+            throw new IllegalArgumentException("connection.threadPool.queueCapacity must not be null");
+        }
+        if (myMaxPoolSize < myCorePoolSize)
+        {
+            throw new IllegalArgumentException("connection.threadPool.maxPoolSize (" + myMaxPoolSize
+                    + ") must be >= corePoolSize (" + myCorePoolSize + ")");
+        }
+    }
+
+    private static void requireAtLeast(final String property, final Integer value, final int minimum)
+    {
+        if (value == null || value < minimum)
+        {
+            throw new IllegalArgumentException("connection.threadPool." + property + " (" + value
+                    + ") must be >= " + minimum);
+        }
+    }
 }
