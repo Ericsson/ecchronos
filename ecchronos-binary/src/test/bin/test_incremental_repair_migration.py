@@ -20,6 +20,7 @@ import time
 import pytest
 from tenacity import retry, retry_if_result, stop_after_delay, wait_fixed
 
+import global_variables as global_vars
 import incremental_repair_lib as lib
 from ecc_config import EcchronosConfig
 
@@ -41,10 +42,10 @@ SCHEDULE_DISCOVERY_TIMEOUT_SECONDS = 300
 # The migration agent always runs on one fixed slot; each phase just stops the previous
 # container and recreates it here with the new repair_type (that is the whole point of the
 # migration - a restart with changed config on the same address). We reuse the default
-# 8080/172.29.0.7 slot and, in phase 1, first stop any agent another suite left running in
+# 8080/ECC_CONTAINER_IP (<prefix>.7) slot and, in phase 1, first stop any agent another suite left running in
 # the same pytest session (test_environment is session-scoped) so this slot is free.
 AGENT_BIND_PORT = 8080
-AGENT_IP = "172.29.0.7"
+AGENT_IP = global_vars.ECC_CONTAINER_IP
 
 
 def _config_for(repair_type, suffix):

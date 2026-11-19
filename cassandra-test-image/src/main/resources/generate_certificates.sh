@@ -41,6 +41,26 @@
 # cert/clientkey.pem - ecctool private key
 # cert/client.csr
 #
+# Usage: generate_certificates.sh [path/to/.env]
+#
+# The test network prefix (ECC_TEST_NET_PREFIX) is used for the certificate IP SANs. It is taken
+# from the environment if set, otherwise from the given .env file
+# (cassandra-test-image/src/main/docker/.env), which is the single source for the test subnet.
+#
+
+if [ -z "${ECC_TEST_NET_PREFIX}" ] && [ -n "$1" ]; then
+    if [ ! -f "$1" ]; then
+        echo "ERROR: env file '$1' does not exist." >&2
+        exit 1
+    fi
+    ECC_TEST_NET_PREFIX=$(sed -n 's/^[[:space:]]*ECC_TEST_NET_PREFIX[[:space:]]*=[[:space:]]*//p' "$1" \
+        | tail -n 1 | tr -d "\"'[:space:]")
+fi
+if [ -z "${ECC_TEST_NET_PREFIX}" ]; then
+    echo "ERROR: ECC_TEST_NET_PREFIX is not set. Set it in the environment or pass the path to" \
+        "cassandra-test-image/src/main/docker/.env as the first argument." >&2
+    exit 1
+fi
 
 # Remove any previously generated artifacts so re-runs start from a clean
 # state. Otherwise keytool prompts for keyboard input (e.g. "Existing entry
@@ -75,13 +95,13 @@ DNS.3 = cassandra-seed-dc2-rack1-node1
 DNS.4 = cassandra-node-dc1-rack1-node2
 DNS.5 = cassandra-node-dc2-rack1-node2
 IP.1 = 127.0.0.1
-IP.2 = 172.29.0.2
-IP.3 = 172.29.0.3
-IP.4 = 172.29.0.4
-IP.5 = 172.29.0.5
-IP.6 = 172.29.0.6
-IP.7 = 172.29.0.7
-IP.8 = 172.29.0.8
+IP.2 = ${ECC_TEST_NET_PREFIX}.2
+IP.3 = ${ECC_TEST_NET_PREFIX}.3
+IP.4 = ${ECC_TEST_NET_PREFIX}.4
+IP.5 = ${ECC_TEST_NET_PREFIX}.5
+IP.6 = ${ECC_TEST_NET_PREFIX}.6
+IP.7 = ${ECC_TEST_NET_PREFIX}.7
+IP.8 = ${ECC_TEST_NET_PREFIX}.8
 
 EOF
 

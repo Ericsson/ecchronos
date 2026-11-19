@@ -106,9 +106,9 @@ def test_install_ecchronos_dc2(install_cassandra_cluster, test_environment):
         cassandra_network=install_cassandra_cluster.network,
         ecchronos_config=ecchronos_config,
         bind_port=8081,
-        fixed_ipv4_address="172.29.0.8",
+        fixed_ipv4_address=global_vars.SECOND_AGENT_IP,
     )
-    test_environment.wait_for_ecchronos_ready(fixed_ipv4_address="172.29.0.8", bind_port=8081)
+    test_environment.wait_for_ecchronos_ready(fixed_ipv4_address=global_vars.SECOND_AGENT_IP, bind_port=8081)
     out, _ = run_ecctool_state_nodes(ECC_INSTANCE_NAME_DC2)
     assert_nodes_size_is_equal(out, 2)
 

@@ -9,7 +9,7 @@ services:
         JOLOKIA_VERSION: "${JOLOKIA_VERSION:?JOLOKIA_VERSION must be set (injected from pom jolokia.adapter.version)}"
     networks:
       cassandra-net:
-        ipv4_address: 172.29.0.2
+        ipv4_address: ${ECC_TEST_NET_PREFIX:?ECC_TEST_NET_PREFIX must be set (see .env)}.2
     expose:
       - "9042"
       - "7199"
@@ -50,7 +50,7 @@ services:
         JOLOKIA_VERSION: "${JOLOKIA_VERSION:?JOLOKIA_VERSION must be set (injected from pom jolokia.adapter.version)}"
     networks:
       cassandra-net:
-        ipv4_address: 172.29.0.3
+        ipv4_address: ${ECC_TEST_NET_PREFIX:?ECC_TEST_NET_PREFIX must be set (see .env)}.3
     expose:
       - "9042"
       - "7199"
@@ -91,7 +91,7 @@ services:
         JOLOKIA_VERSION: "${JOLOKIA_VERSION:?JOLOKIA_VERSION must be set (injected from pom jolokia.adapter.version)}"
     networks:
       cassandra-net:
-        ipv4_address: 172.29.0.4
+        ipv4_address: ${ECC_TEST_NET_PREFIX:?ECC_TEST_NET_PREFIX must be set (see .env)}.4
     expose:
       - "9042"
       - "7199"
@@ -132,7 +132,7 @@ services:
         JOLOKIA_VERSION: "${JOLOKIA_VERSION:?JOLOKIA_VERSION must be set (injected from pom jolokia.adapter.version)}"
     networks:
       cassandra-net:
-        ipv4_address: 172.29.0.5
+        ipv4_address: ${ECC_TEST_NET_PREFIX:?ECC_TEST_NET_PREFIX must be set (see .env)}.5
     expose:
       - "9042"
       - "7199"
@@ -176,4 +176,4 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.29.0.0/16
+        - subnet: ${ECC_TEST_NET_PREFIX:?ECC_TEST_NET_PREFIX must be set (see .env)}.0/24

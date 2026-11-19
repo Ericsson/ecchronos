@@ -318,6 +318,7 @@
                                     <executable>bash</executable>
                                     <arguments>
                                         <argument>generate_certificates.sh</argument>
+                                        <argument>${project.basedir}/../cassandra-test-image/src/main/docker/.env</argument>
                                     </arguments>
                                     <workingDirectory>${project.build.directory}/certificates</workingDirectory>
                                 </configuration>
@@ -929,6 +930,7 @@
                                     <executable>bash</executable>
                                     <arguments>
                                         <argument>generate_certificates.sh</argument>
+                                        <argument>${project.basedir}/../cassandra-test-image/src/main/docker/.env</argument>
                                     </arguments>
                                     <workingDirectory>${project.build.directory}/certificates</workingDirectory>
                                 </configuration>
@@ -1066,6 +1068,7 @@
                                     <executable>bash</executable>
                                     <arguments>
                                         <argument>generate_certificates.sh</argument>
+                                        <argument>${project.basedir}/../cassandra-test-image/src/main/docker/.env</argument>
                                     </arguments>
                                     <workingDirectory>${project.build.directory}/certificates</workingDirectory>
                                 </configuration>
@@ -1203,6 +1206,7 @@
                                     <executable>bash</executable>
                                     <arguments>
                                         <argument>generate_certificates.sh</argument>
+                                        <argument>${project.basedir}/../cassandra-test-image/src/main/docker/.env</argument>
                                     </arguments>
                                     <workingDirectory>${project.build.directory}/certificates</workingDirectory>
                                 </configuration>

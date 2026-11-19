@@ -2,6 +2,8 @@
 
 ## Version 1.1.4
 
+* Make the integration test cluster subnet configurable via ECC_TEST_NET_PREFIX in cassandra-test-image/src/main/docker/.env (default 172.24.0) - Issue #1990
+
 ## Version 1.1.3
 
 * Route embedded Tomcat's java.util.logging output through SLF4J/logback so it shares the ecChronos log format and is controlled centrally by logback.xml, instead of bypassing logback and printing in java.util.logging's default two-line SimpleFormatter style. A jul-to-slf4j bridge is installed at startup (SLF4JBridgeHandler) and a logback LevelChangePropagator keeps the java.util.logging levels in sync so suppressed records are dropped at the source. Routine connector/TLS certificate startup chatter (AbstractEndpoint.logCertificate, emitted at INFO) is quieted by defaulting org.apache.tomcat/org.apache.catalina/org.apache.coyote to WARN, while genuine Tomcat warnings and errors are still logged
