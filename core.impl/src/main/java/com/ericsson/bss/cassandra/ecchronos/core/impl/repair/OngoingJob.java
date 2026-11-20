@@ -269,7 +269,26 @@ public final class OngoingJob
                                       final Set<LongTokenRange> repairedRanges,
                                       final RepairType repairType)
     {
+        StoredRangeState rangeState = switch (repairType)
+        {
+            // Incremental repair is not tracked per token range.
+            case INCREMENTAL -> new StoredRangeState(0, Collections.emptySet());
+            case VNODE, PARALLEL_VNODE ->
+                    new StoredRangeState(allTokenRanges(remainingRanges, repairedRanges).hashCode(), repairedRanges);
+        };
 
+        myOnDemandStatus.addNewJob(
+                node.getId(),
+                myJobId,
+                myTableReference,
+                rangeState.tokenMapHash(),
+                rangeState.repairedRanges(),
+                repairType);
+    }
+
+    private static Set<LongTokenRange> allTokenRanges(final Set<LongTokenRange> remainingRanges,
+                                                      final Set<LongTokenRange> repairedRanges)
+    {
         Set<LongTokenRange> allTokenRanges = new HashSet<>();
         if (remainingRanges != null)
         {
@@ -279,27 +298,17 @@ public final class OngoingJob
         {
             allTokenRanges.addAll(repairedRanges);
         }
+        return allTokenRanges;
+    }
 
-        if (repairType == RepairType.INCREMENTAL)
-        {
-            myOnDemandStatus.addNewJob(
-                    node.getId(),
-                    myJobId,
-                    myTableReference,
-                    0,
-                    Collections.emptySet(),
-                    repairType);
-        }
-        else
-        {
-            myOnDemandStatus.addNewJob(
-                    node.getId(),
-                    myJobId,
-                    myTableReference,
-                    allTokenRanges.hashCode(),
-                    repairedRanges,
-                    repairType);
-        }
+    /**
+     * The token range state persisted when a cluster-wide job is created, which depends on the repair type.
+     *
+     * @param tokenMapHash the token map hash to store.
+     * @param repairedRanges the ranges already repaired, may be {@code null}.
+     */
+    private record StoredRangeState(int tokenMapHash, Set<LongTokenRange> repairedRanges)
+    {
     }
 
     /**

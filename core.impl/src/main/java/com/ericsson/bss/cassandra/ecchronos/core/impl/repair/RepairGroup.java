@@ -35,7 +35,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.state.TokenSubRangeUtil;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairPolicy;
-import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ScheduledJobException;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.TransientRepairException;
@@ -71,7 +70,7 @@ public class RepairGroup extends ScheduledTask
     private final DistributedJmxProxyFactory myJmxProxyFactory;
     private final TableRepairMetrics myTableRepairMetrics;
     private final List<TableRepairPolicy> myRepairPolicies;
-    private BigInteger myTokensPerRepair;
+    private final BigInteger myTokensPerRepair;
     private final UUID myJobId;
     private final Node myNode;
     private final RepairLockFactory myRepairLockFactory;
@@ -111,11 +110,11 @@ public class RepairGroup extends ScheduledTask
                     .checkNotNull(builder.myRepairHistory, "Repair History must be set");
         myNode = Preconditions
                     .checkNotNull(builder.myNode, "Node must be set");
-        if (RepairType.VNODE.equals(myRepairConfiguration.getRepairType()))
+        myTokensPerRepair = switch (myRepairConfiguration.getRepairType())
         {
-            myTokensPerRepair = Preconditions
-                    .checkNotNull(builder.myTokensPerRepair, "Tokens per repair must be set");
-        }
+            case VNODE -> Preconditions.checkNotNull(builder.myTokensPerRepair, "Tokens per repair must be set");
+            case PARALLEL_VNODE, INCREMENTAL -> null;
+        };
         myJobId = Preconditions
                 .checkNotNull(builder.myJobId, "Job id must be set");
     }
@@ -243,47 +242,59 @@ public class RepairGroup extends ScheduledTask
     @VisibleForTesting
     public Collection<RepairTask> getRepairTasks(final UUID nodeID)
     {
-        Collection<RepairTask> tasks = new ArrayList<>();
-        if (myRepairConfiguration.getRepairType().equals(RepairType.INCREMENTAL))
+        return switch (myRepairConfiguration.getRepairType())
         {
-            Set<DriverNode> replicas = myReplicaRepairGroup.replicas() != null
-                    ? new HashSet<>(myReplicaRepairGroup.replicas()) : Set.of();
-            tasks.add(new IncrementalRepairTask(
-                    nodeID,
-                    myJmxProxyFactory,
-                    myTableReference,
-                    myRepairConfiguration,
-                    myTableRepairMetrics,
-                    myRepairHistory,
-                    myNode,
-                    myJobId,
-                    replicas,
-                    myCassandraMetrics));
-        }
-        else if (myRepairConfiguration.getRepairType().equals(RepairType.VNODE))
-        {
-            Set<DriverNode> replicas = filterParticipants(myReplicaRepairGroup.replicas(), myTableReference);
+            case INCREMENTAL -> createIncrementalRepairTasks(nodeID);
+            case VNODE -> createVnodeRepairTasks();
+            case PARALLEL_VNODE -> createParallelVnodeRepairTasks();
+        };
+    }
 
-            for (LongTokenRange range : myReplicaRepairGroup)
+    private Collection<RepairTask> createIncrementalRepairTasks(final UUID nodeID)
+    {
+        Collection<RepairTask> tasks = new ArrayList<>();
+        Set<DriverNode> replicas = myReplicaRepairGroup.replicas() != null
+                ? new HashSet<>(myReplicaRepairGroup.replicas()) : Set.of();
+        tasks.add(new IncrementalRepairTask(
+                nodeID,
+                myJmxProxyFactory,
+                myTableReference,
+                myRepairConfiguration,
+                myTableRepairMetrics,
+                myRepairHistory,
+                myNode,
+                myJobId,
+                replicas,
+                myCassandraMetrics));
+        return tasks;
+    }
+
+    private Collection<RepairTask> createVnodeRepairTasks()
+    {
+        Collection<RepairTask> tasks = new ArrayList<>();
+        Set<DriverNode> replicas = filterParticipants(myReplicaRepairGroup.replicas(), myTableReference);
+
+        for (LongTokenRange range : myReplicaRepairGroup)
+        {
+            for (LongTokenRange subRange : new TokenSubRangeUtil(range).generateSubRanges(myTokensPerRepair))
             {
-                for (LongTokenRange subRange : new TokenSubRangeUtil(range).generateSubRanges(myTokensPerRepair))
-                {
-                    tasks.add(new VnodeRepairTask(myNode, myJmxProxyFactory, myTableReference, myRepairConfiguration,
-                            myTableRepairMetrics, myRepairHistory, Collections.singleton(subRange),
-                            replicas, myJobId));
-                }
+                tasks.add(new VnodeRepairTask(myNode, myJmxProxyFactory, myTableReference, myRepairConfiguration,
+                        myTableRepairMetrics, myRepairHistory, Collections.singleton(subRange),
+                        replicas, myJobId));
             }
         }
-        else
-        {
-            Set<DriverNode> replicas = filterParticipants(myReplicaRepairGroup.replicas(), myTableReference);
-            Set<LongTokenRange> combinedRanges = new LinkedHashSet<>();
-            myReplicaRepairGroup.iterator().forEachRemaining(combinedRanges::add);
-            tasks.add(new VnodeRepairTask(myNode, myJmxProxyFactory, myTableReference, myRepairConfiguration,
-                    myTableRepairMetrics, myRepairHistory, combinedRanges,
-                    replicas, myJobId));
-        }
+        return tasks;
+    }
 
+    private Collection<RepairTask> createParallelVnodeRepairTasks()
+    {
+        Collection<RepairTask> tasks = new ArrayList<>();
+        Set<DriverNode> replicas = filterParticipants(myReplicaRepairGroup.replicas(), myTableReference);
+        Set<LongTokenRange> combinedRanges = new LinkedHashSet<>();
+        myReplicaRepairGroup.iterator().forEachRemaining(combinedRanges::add);
+        tasks.add(new VnodeRepairTask(myNode, myJmxProxyFactory, myTableReference, myRepairConfiguration,
+                myTableRepairMetrics, myRepairHistory, combinedRanges,
+                replicas, myJobId));
         return tasks;
     }
 

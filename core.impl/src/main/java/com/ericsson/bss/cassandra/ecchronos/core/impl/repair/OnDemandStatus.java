@@ -347,7 +347,22 @@ public final class OnDemandStatus
         String repairTypeStr = row.getString(REPAIR_TYPE_COLUMN_NAME);
         if (repairTypeStr != null && !repairTypeStr.isEmpty())
         {
-            repairType = RepairType.valueOf(repairTypeStr);
+            try
+            {
+                repairType = RepairType.valueOf(repairTypeStr);
+            }
+            catch (IllegalArgumentException e)
+            {
+                // The row may have been written by a version that knows a repair type this version does not.
+                // Skip it instead of failing the whole listing, mirroring the defensive checks above. INFO matches
+                // those checks: this repeats on every poll for as long as the row exists.
+                LOG.info("Ignoring repair job with id {} and hostId {}: unknown repair type '{}'. This node will not "
+                        + "run it and the row is left unchanged, it is not retried until the type is known",
+                        jobId,
+                        hostId,
+                        repairTypeStr);
+                return;
+            }
         }
         Long completedTime = null;
         if (completed != null)

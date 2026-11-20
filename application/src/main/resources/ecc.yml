@@ -295,6 +295,10 @@ repair:
   ## "datacenter_and_vnode" will combine both options and allow a smooth transition between them without allowing
   ## multiple repairs to run concurrently on a single node.
   ##
+  ## This setting only applies to repair_type "vnode" and "parallel_vnode". Incremental repair always uses its own
+  ## fixed locks: a single lock per table, so that two incremental repairs of the same table never run
+  ## concurrently, plus one lock per replica node. It is not affected by lock_type.
+  ##
   lock_type: vnode
   ##
   ## Alarms are triggered when tables have not been repaired for a long amount of time.

@@ -461,6 +461,67 @@ public class TestRepairGroup
         throw new AssertionError("verifyRepair did not throw for the did-not-advance scenario");
     }
 
+    /**
+     * Pins how the same replica group is turned into tasks by each repair type: vnode repairs one task per
+     * sub-range, parallel vnode one combined task, incremental one task without token ranges. Part of the
+     * behavior that must not change when repair type dispatch is made explicit (issue #1989).
+     */
+    @Test
+    public void testSameReplicaGroupYieldsDifferentTasksPerRepairType()
+    {
+        DriverNode node = mockNode("DC1");
+        when(node.getId()).thenReturn(myNodeID);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(node),
+                ImmutableList.of(new LongTokenRange(0, 1), new LongTokenRange(3, 4), new LongTokenRange(6, 8)),
+                System.currentTimeMillis());
+
+        Collection<RepairTask> vnodeTasks = taskGroupFor(replicaRepairGroup, RepairType.VNODE)
+                .build(PRIORITY).getRepairTasks(myNodeID);
+        Collection<RepairTask> parallelTasks = taskGroupFor(replicaRepairGroup, RepairType.PARALLEL_VNODE)
+                .build(PRIORITY).getRepairTasks(myNodeID);
+        Collection<RepairTask> incrementalTasks = taskGroupFor(replicaRepairGroup, RepairType.INCREMENTAL)
+                .build(PRIORITY).getRepairTasks(myNodeID);
+
+        assertThat(vnodeTasks).hasSize(3).allSatisfy(task -> assertThat(task).isInstanceOf(VnodeRepairTask.class));
+        assertThat(parallelTasks).hasSize(1).allSatisfy(task -> assertThat(task).isInstanceOf(VnodeRepairTask.class));
+        assertThat(((VnodeRepairTask) parallelTasks.iterator().next()).getTokenRanges()).hasSize(3);
+        assertThat(incrementalTasks).hasSize(1)
+                .allSatisfy(task -> assertThat(task).isInstanceOf(IncrementalRepairTask.class));
+    }
+
+    @Test
+    public void testTokensPerRepairIsRequiredForVnodeOnly()
+    {
+        DriverNode node = mockNode("DC1");
+        when(node.getId()).thenReturn(myNodeID);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(node),
+                ImmutableList.of(new LongTokenRange(0, 1)), System.currentTimeMillis());
+
+        // VNODE needs tokensPerRepair to split ranges, so a missing value is rejected when the group is built.
+        assertThatExceptionOfType(NullPointerException.class)
+                .isThrownBy(() -> taskGroupFor(replicaRepairGroup, RepairType.VNODE)
+                        .withTokensPerRepair(null).build(PRIORITY))
+                .withMessageContaining("Tokens per repair must be set");
+
+        // The other types do not use it, so the same missing value is accepted.
+        assertThat(taskGroupFor(replicaRepairGroup, RepairType.PARALLEL_VNODE)
+                .withTokensPerRepair(null).build(PRIORITY)).isNotNull();
+        assertThat(taskGroupFor(replicaRepairGroup, RepairType.INCREMENTAL)
+                .withTokensPerRepair(null).build(PRIORITY)).isNotNull();
+    }
+
+    private RepairGroup.Builder taskGroupFor(final ReplicaRepairGroup replicaRepairGroup, final RepairType repairType)
+    {
+        RepairConfiguration configuration = RepairConfiguration.newBuilder()
+                .withParallelism(RepairParallelism.PARALLEL)
+                .withRepairType(repairType)
+                .build();
+        return builderFor(replicaRepairGroup)
+                .withRepairConfiguration(configuration)
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
+                .withRepairPolicies(myRepairPolicies);
+    }
+
     @Test
     public void testGetCombinedRepairTask()
     {

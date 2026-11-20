@@ -56,6 +56,45 @@ It is recommended to run all tests `mvn clean verify -Dprecommit.tests` before c
 If applicable, please add test cases to the appropriate test suites.
 More information can be found on the [tests page](TESTS.md).
 
+### Adding a repair type
+
+Behavior that depends on the repair type is selected by a `switch` expression over `RepairType` at each of the
+places listed below. They have no `default` branch on purpose: adding a value to the `RepairType` enum makes each of
+them fail to compile until the new type is handled explicitly, so a new type can not silently be treated as vnode.
+Do not add a `default` to these switches. If a dispatch point has to be written as a `switch` statement instead of an
+expression, checkstyle requires a `default`, and that `default` must throw rather than fall back to another type.
+
+1. Add the value to `RepairType` (`utils` module). The type is stored as text in `repair_history.repair_type` and
+   `on_demand_repair_status.repair_type`, so no schema change is needed. Versions that do not know the new value
+   can not use it: from the version that introduced this section on, on-demand rows with an unknown type are skipped
+   and left unchanged, so such a job stays pending until a node that knows the type picks it up. Older versions fail
+   to list on-demand jobs as long as such a row exists, so do not roll out a new type to a mixed-version cluster.
+2. Build `core.impl` and add a case at every compile error. The dispatch points are:
+   * `ScheduledRepairJobFactory.create()` - which scheduled job to create.
+   * `OnDemandRepairJobFactory.createFromOngoingJob()` - which on-demand job to create.
+   * `RepairGroup` - the constructor (whether `tokensPerRepair` is required) and `getRepairTasks()` (which
+     `RepairTask`s a repair group runs).
+   * `OngoingJob.createClusterWideJob()` - which token range state is stored for a cluster-wide on-demand job.
+3. Decide which locks the new type takes. A job hands a `RepairResourceFactory` to its `RepairGroup`, and the group
+   acquires all of its resources together, all or nothing:
+   * `VNODE` and `PARALLEL_VNODE` use the factory selected by `repair.lock_type` (`RepairLockType`).
+   * `INCREMENTAL` uses its own fixed `IncrementalRepairResourceFactory` and `repair.lock_type` does **not** apply to
+     it. It always takes a single-slot table lock plus one lock per replica node.
+   * Resource names are free-form strings and are shared by every repair type. Pick names that can not collide with
+     datacenter names, node ids (`RepairResource(dc, nodeId)`) or `keyspace.table`. If the new type reuses the
+     per-node locks it competes with vnode and incremental repair for the same slots, otherwise it gets an
+     independent lock and the per-node limit no longer covers it.
+4. Add the job class(es) and the `RepairTask`, modeled on `IncrementalRepairJob` / `TableRepairJob` and
+   `IncrementalRepairTask` / `VnodeRepairTask`.
+5. Update the tests:
+   * `TestRepairTypeDispatch` fails for any `RepairType` without an expectation, naming the dispatch point. Add the
+     new type to each expectation map.
+   * `TestRepairTypeLockSelection` and `TestRepairLockTypeResources` pin the lock sets per repair type and per
+     `lock_type`. They must keep passing unchanged for the existing types.
+6. Update what the compiler does not check: the accepted values in the `ecctool` help (`-r/--repair_type`) and the
+   [ecctool documentation](ECCTOOL_EXAMPLES.md), the REST API validation and OpenAPI specification if the type can be
+   requested there, and a changelog entry.
+
 ## Submit new Issues to ecChronos project
 
 To void ask the author basic questions by providing more detailed information in the user story. The template creation took into consideration the "INVEST" pattern, which is a set of criteria or principles commonly used to evaluate and describe the quality of user stories or product backlog items in agile and Scrum methodologies, as described in the table below.

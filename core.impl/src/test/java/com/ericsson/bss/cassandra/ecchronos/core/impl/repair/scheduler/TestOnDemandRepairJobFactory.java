@@ -106,6 +106,19 @@ public class TestOnDemandRepairJobFactory
     }
 
     @Test
+    public void testCreateParallelVnodeJobFromOngoingJob()
+    {
+        // PARALLEL_VNODE is not a separate on-demand job class: it is created as a VnodeOnDemandRepairJob like
+        // VNODE. Pinned so that making the factory dispatch explicit (issue #1989) does not change it.
+        when(myOngoingJob.getRepairType()).thenReturn(RepairType.PARALLEL_VNODE);
+
+        OnDemandRepairJob job = myFactory.createFromOngoingJob(myOngoingJob);
+
+        assertThat(job).isInstanceOf(VnodeOnDemandRepairJob.class);
+        assertThat(job.getOngoingJob()).isEqualTo(myOngoingJob);
+    }
+
+    @Test
     public void testCreateIncrementalJobFromOngoingJob()
     {
         when(myOngoingJob.getRepairType()).thenReturn(RepairType.INCREMENTAL);
