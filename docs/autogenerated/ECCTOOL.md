@@ -4,7 +4,7 @@ ecctool is a command line utility used to perform operations toward an ecChronos
 
 ```console
 usage: ecctool [-h]
-               {config,metrics,rejections,repair-info,repair-sessions,repairs,run-repair,running-job,schedules,start,state,status,stop,version}
+               {config,get-logging-level,set-logging-level,metrics,rejections,repair-info,repair-sessions,repairs,run-repair,running-job,schedules,start,state,status,stop,version}
                ...
 ```
 
@@ -67,6 +67,35 @@ bypass the coordinator check and send the fail command to all managed nodes
 
 ### --hung-repair-force {on,off}
 value of the force flag passed to failSession, used for all requests
+
+
+### -u &lt;url&gt;, --url &lt;url&gt;
+ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+
+
+### -T &lt;timeout&gt;, --timeout &lt;timeout&gt;
+request timeout in seconds (default: 30, or set ECCTOOL_TIMEOUT_SECONDS)
+
+## ecctool get-logging-level
+
+Show the log levels of a running ecChronos agent. Without a logger, all loggers with an explicitly configured level (and ROOT) are shown. With a logger, both its configured and its effective level are shown; the configured level is empty when the logger inherits its level.
+
+```console
+usage: ecctool get-logging-level [-h] [-o OUTPUT] [-u URL] [-T TIMEOUT]
+                                 [logger]
+```
+
+
+### logger
+logger name, ROOT for the root logger
+
+
+### -h, --help
+show this help message and exit
+
+
+### -o &lt;output&gt;, --output &lt;output&gt;
+output formats: json (defaults to no format)
 
 
 ### -u &lt;url&gt;, --url &lt;url&gt;
@@ -631,6 +660,39 @@ output formats: json, table (default)
 
 ### -t &lt;table&gt;, --table &lt;table&gt;
 table (requires -k/–keyspace and is mutually exclusive with -n/–node)
+
+
+### -u &lt;url&gt;, --url &lt;url&gt;
+ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+
+
+### -T &lt;timeout&gt;, --timeout &lt;timeout&gt;
+request timeout in seconds (default: 30, or set ECCTOOL_TIMEOUT_SECONDS)
+
+## ecctool set-logging-level
+
+Set the log level of a logger in a running ecChronos agent without restarting it. The change is applied to the running agent only and is lost when it restarts. Very verbose levels such as TRACE can produce a lot of output and fill the disk on a busy agent.
+
+```console
+usage: ecctool set-logging-level [-h] [-o OUTPUT] [-u URL] [-T TIMEOUT]
+                                 logger LEVEL
+```
+
+
+### logger
+logger name, ROOT for the root logger
+
+
+### level
+one of TRACE, DEBUG, INFO, WARN, ERROR, OFF, or ‘reset’ to clear the explicit level so the logger inherits again (not allowed for ROOT)
+
+
+### -h, --help
+show this help message and exit
+
+
+### -o &lt;output&gt;, --output &lt;output&gt;
+output formats: json (defaults to no format)
 
 
 ### -u &lt;url&gt;, --url &lt;url&gt;
