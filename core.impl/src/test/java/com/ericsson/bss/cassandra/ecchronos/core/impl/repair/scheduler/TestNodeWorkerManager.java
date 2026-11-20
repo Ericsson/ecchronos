@@ -43,6 +43,7 @@ import java.util.concurrent.Future;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -130,13 +131,37 @@ public class TestNodeWorkerManager
     @Test
     public void testRemoveNode()
     {
-        assertEquals(2, threadPool.getSubmittedTasks().size());
+        assertEquals(2, manager.getWorkers().size());
 
         manager.removeNode(node2);
-        assertEquals(1, threadPool.getSubmittedTasks().size());
+        assertEquals(1, manager.getWorkers().size());
+        assertEquals(1, threadPool.getCancelledFutures().size());
 
         manager.removeNode(node1);
-        assertEquals(0, threadPool.getSubmittedTasks().size());
+        assertEquals(0, manager.getWorkers().size());
+        assertEquals(2, threadPool.getCancelledFutures().size());
+    }
+
+    @Test
+    public void testRemoveNodeInterruptsOnlyThatWorkersFuture()
+    {
+        manager.removeNode(node2);
+
+        // Exactly one worker future was cancelled, with interruption (so NodeWorker.run() exits), and the pool was
+        // never paused via stop(Runnable) (issue #1992).
+        assertEquals(1, threadPool.getCancelledFutures().size());
+        assertTrue(threadPool.getCancelledFutures().get(0));
+        assertEquals(0, threadPool.getStopCalls());
+    }
+
+    @Test
+    public void testRemoveUnknownNodeDoesNothing()
+    {
+        manager.removeNode(node3);
+
+        assertEquals(2, manager.getWorkers().size());
+        assertEquals(0, threadPool.getCancelledFutures().size());
+        assertEquals(0, threadPool.getStopCalls());
     }
 
     @Test
@@ -162,6 +187,8 @@ public class TestNodeWorkerManager
     {
 
         private final List<Runnable> submittedTasks = new ArrayList<>();
+        private final List<Boolean> cancelledFutures = new ArrayList<>();
+        private int stopCalls = 0;
 
         @Override
         public void initialize()
@@ -173,7 +200,15 @@ public class TestNodeWorkerManager
         public Future<?> submit(Runnable task)
         {
             submittedTasks.add(task);
-            return CompletableFuture.completedFuture(null);
+            return new CompletableFuture<Object>()
+            {
+                @Override
+                public boolean cancel(boolean mayInterruptIfRunning)
+                {
+                    cancelledFutures.add(mayInterruptIfRunning);
+                    return super.cancel(mayInterruptIfRunning);
+                }
+            };
         }
 
         @Override
@@ -184,12 +219,23 @@ public class TestNodeWorkerManager
         @Override
         public void stop(Runnable task)
         {
-            submittedTasks.remove(task);
+            // Pauses the whole real executor, so it must never be used to remove a single worker (issue #1992).
+            stopCalls++;
         }
 
         public List<Runnable> getSubmittedTasks()
         {
             return submittedTasks;
+        }
+
+        public List<Boolean> getCancelledFutures()
+        {
+            return cancelledFutures;
+        }
+
+        public int getStopCalls()
+        {
+            return stopCalls;
         }
     }
 

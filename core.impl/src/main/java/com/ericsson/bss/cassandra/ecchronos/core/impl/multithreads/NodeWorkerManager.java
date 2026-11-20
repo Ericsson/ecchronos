@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
 
 /**
  * Manages a pool of {@link NodeWorker} instances, one per Cassandra node.
@@ -40,6 +41,7 @@ public class NodeWorkerManager
 {
     private static final Logger LOG = LoggerFactory.getLogger(NodeWorkerManager.class);
     private final Map<UUID, NodeWorker> myWorkers = new ConcurrentHashMap<>();
+    private final Map<UUID, Future<?>> myWorkerFutures = new ConcurrentHashMap<>();
     private final ThreadPoolTaskExecutor myThreadPool;
     private final SchemaRefresher mySchemaRefresher;
 
@@ -89,7 +91,7 @@ public class NodeWorkerManager
                     myThreadPool.getCorePoolSize(), requiredPoolSize);
             myThreadPool.setCorePoolSize(requiredPoolSize);
         }
-        myThreadPool.submit(worker);
+        myWorkerFutures.put(node.getHostId(), myThreadPool.submit(worker));
         Set<KeyspaceCreatedEvent> events = createKeyspacesEventsForNewNode();
         LOG.info("Created {} KeyspaceCreatedEvents for node {}", events.size(), node.getHostId());
         events.forEach(event ->
@@ -148,8 +150,16 @@ public class NodeWorkerManager
             {
                 LOG.info("Removing node {} and descheduling all its jobs", node.getHostId());
                 mySchemaRefresher.removeAllConfigurationsForNode(node.getHostId());
-                NodeWorker nodeWorker = myWorkers.remove(node.getHostId());
-                myThreadPool.stop(nodeWorker);
+                myWorkers.remove(node.getHostId());
+                // Cancel only this node's worker. ThreadPoolTaskExecutor.stop(Runnable) is the SmartLifecycle
+                // stop-with-callback: it pauses the whole executor (and nothing ever resumes it), so nodes added
+                // later would never get a running worker. Interrupting the worker's future ends NodeWorker.run()
+                // and returns its thread to the pool. See issue #1992.
+                Future<?> workerFuture = myWorkerFutures.remove(node.getHostId());
+                if (workerFuture != null)
+                {
+                    workerFuture.cancel(true);
+                }
                 int newSize = Math.max(1, myWorkers.size());
                 myThreadPool.setCorePoolSize(newSize);
                 myThreadPool.setMaxPoolSize(newSize);
@@ -174,6 +184,7 @@ public class NodeWorkerManager
     public final void shutdown()
     {
         myWorkers.clear();
+        myWorkerFutures.clear();
         myThreadPool.shutdown();
     }
 

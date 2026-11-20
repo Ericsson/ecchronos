@@ -2,6 +2,7 @@
 
 ## Version 1.1.4
 
+* Fix NodeWorkerManager.removeNode() permanently pausing the node-worker pool: it called ThreadPoolTaskExecutor.stop(Runnable), which is the SmartLifecycle stop-with-callback and pauses the whole executor (nothing ever resumes it), and it also left the removed node's worker thread blocked in its event queue occupying a pool slot. After the first node removal (driver topology event or the periodic node reconciliation), every node added later got a worker that never ran, so it received no repair schedules and nothing was logged. The manager now keeps each worker's Future and cancels (interrupts) only that node's worker on removal, which ends the worker and returns its thread to the pool; the pool is never paused - Issue #1992
 * Make the integration test cluster subnet configurable via ECC_TEST_NET_PREFIX in cassandra-test-image/src/main/docker/.env (default 172.24.0) - Issue #1990
 
 ## Version 1.1.3
