@@ -17,8 +17,8 @@ RUN if [ -z "${JOLOKIA_VERSION}" ]; then \
         exit 1; \
     fi \
     && echo "Using JOLOKIA_VERSION=${JOLOKIA_VERSION}" \
-    && curl -fL -o /opt/jolokia-jvm-agent.jar \
-    "https://search.maven.org/remotecontent?filepath=org/jolokia/jolokia-agent-jvm/${JOLOKIA_VERSION}/jolokia-agent-jvm-${JOLOKIA_VERSION}-javaagent.jar"
+    && curl -fL --retry 5 --retry-delay 3 --retry-all-errors -o /opt/jolokia-jvm-agent.jar \
+    "https://repo1.maven.org/maven2/org/jolokia/jolokia-agent-jvm/${JOLOKIA_VERSION}/jolokia-agent-jvm-${JOLOKIA_VERSION}-javaagent.jar"
 
 COPY nginx.conf /etc/nginx/nginx.conf.template
 COPY ecc-entrypoint.sh /usr/local/bin/
