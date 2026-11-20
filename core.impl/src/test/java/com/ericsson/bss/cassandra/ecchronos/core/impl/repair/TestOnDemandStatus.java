@@ -349,6 +349,38 @@ public class TestOnDemandStatus extends AbstractCassandraContainerTest
     }
 
     @Test
+    public void testGetAllClusterWideJobsSkipsRowWithUnknownRepairType()
+    {
+        // Regression test: a status row with a repair_type this version does not know (for example written by a
+        // newer version) must be skipped rather than throwing IllegalArgumentException out of the row parser, which
+        // would break listing of all on-demand jobs. Other jobs must still be returned.
+        //
+        // Known cost of skipping: this node never runs the job and never cleans up or updates the row. If every
+        // node runs a version that does not know the type, the job stays pending until a node that knows it picks
+        // it up (or the row expires through the table TTL). That is intended; the log line says so.
+        OnDemandStatus onDemandStatus = new OnDemandStatus(getNativeConnectionProvider());
+
+        TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
+        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenMap = new HashMap<>();
+        when(myReplicationState.getTokenRangeToReplicas(tableReference,
+                getNativeConnectionProvider().getNodes().get(0))).thenReturn(tokenMap);
+
+        UUID unknownTypeJobId = UUID.randomUUID();
+        UUID validJobId = UUID.randomUUID();
+        onDemandStatus.addNewJob(myHostId, unknownTypeJobId, tableReference, 1, RepairType.VNODE);
+        onDemandStatus.addNewJob(myHostId, validJobId, tableReference, 1, RepairType.VNODE);
+        mySession.execute(String.format("UPDATE %s.%s SET repair_type = 'SOME_FUTURE_TYPE' "
+                + "WHERE host_id = %s AND job_id = %s", KEYSPACE_NAME, TABLE_NAME, myHostId, unknownTypeJobId));
+
+        Set<OngoingJob> ongoingJobs = onDemandStatus.getAllClusterWideJobs();
+
+        assertThat(ongoingJobs).hasSize(1);
+        OngoingJob ongoingJob = ongoingJobs.iterator().next();
+        assertThat(ongoingJob.getJobId()).isEqualTo(validJobId);
+        assertThat(ongoingJob.getRepairType()).isEqualTo(RepairType.VNODE);
+    }
+
+    @Test
     public void testGetOngoingJobsNoJobs()
     {
         OnDemandStatus onDemandStatus = new OnDemandStatus(getNativeConnectionProvider());

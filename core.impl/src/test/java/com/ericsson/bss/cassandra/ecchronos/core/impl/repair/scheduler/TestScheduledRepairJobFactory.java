@@ -123,6 +123,22 @@ public class TestScheduledRepairJobFactory
     }
 
     @Test
+    public void testCreateParallelVnodeRepairJob()
+    {
+        // PARALLEL_VNODE is not a separate job class: it is created as a TableRepairJob like VNODE. Pinned so that
+        // making the factory dispatch explicit (issue #1989) does not change it.
+        RepairConfiguration parallelConfig = RepairConfiguration.newBuilder()
+                .withRepairType(RepairType.PARALLEL_VNODE)
+                .build();
+
+        ScheduledRepairJob job = myFactory.create(myNode, TABLE_REFERENCE, parallelConfig);
+
+        assertThat(job).isInstanceOf(TableRepairJob.class);
+        assertThat(job.getTableReference()).isEqualTo(TABLE_REFERENCE);
+        assertThat(job.getRepairConfiguration()).isEqualTo(parallelConfig);
+    }
+
+    @Test
     public void testCreateIncrementalRepairJob()
     {
         RepairConfiguration incrementalConfig = RepairConfiguration.newBuilder()

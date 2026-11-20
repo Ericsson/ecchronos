@@ -34,7 +34,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHistoryService;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
-import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,51 +95,65 @@ public final class ScheduledRepairJobFactory
                 .withBackoff(repairConfiguration.getBackoffInMs(), TimeUnit.MILLISECONDS)
                 .withPriorityGranularity(repairConfiguration.getPriorityGranularityUnit())
                 .build();
-        ScheduledRepairJob job;
-        if (repairConfiguration.getRepairType().equals(RepairType.INCREMENTAL))
+        ScheduledRepairJob job = switch (repairConfiguration.getRepairType())
         {
-            LOG.info("Creating IncrementalRepairJob for node {}", node.getHostId());
-            job = new IncrementalRepairJob.Builder()
-                    .withConfiguration(configuration)
-                    .withNode(node)
-                    .withJmxProxyFactory(myJmxProxyFactory)
-                    .withTableReference(tableReference)
-                    .withRepairConfiguration(repairConfiguration)
-                    .withTableRepairMetrics(myTableRepairMetrics)
-                    .withCassandraMetrics(myCassandraMetrics)
-                    .withReplicationState(myReplicationState)
-                    .withRepairPolices(myRepairPolicies)
-                    .withRepairLockType(myRepairLockType)
-                    .withRepairHistory(myRepairHistoryService)
-                    .withRepairHistoryProvider(myRepairHistoryService)
-                    .withFaultReporter(myFaultReporter)
-                    .build();
-        }
-        else
-        {
-            LOG.info("Creating TableRepairJob for table {}.{} in node {}",
-                    tableReference.getKeyspace(), tableReference.getTable(), node.getHostId());
-            AlarmPostUpdateHook alarmPostUpdateHook = new AlarmPostUpdateHook(tableReference, repairConfiguration,
-                    myFaultReporter);
-            RepairState repairState = myRepairStateFactory.create(node, tableReference, repairConfiguration,
-                    alarmPostUpdateHook);
-            job = new TableRepairJob.Builder()
-                    .withConfiguration(configuration)
-                    .withJmxProxyFactory(myJmxProxyFactory)
-                    .withTableReference(tableReference)
-                    .withRepairState(repairState)
-                    .withTableRepairMetrics(myTableRepairMetrics)
-                    .withRepairConfiguration(repairConfiguration)
-                    .withTableStorageStates(myTableStorageStates)
-                    .withRepairPolices(myRepairPolicies)
-                    .withRepairHistory(myRepairHistoryService)
-                    .withRepairLockType(myRepairLockType)
-                    .withNode(node)
-                    .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
-                    .build();
-        }
+            case INCREMENTAL -> createIncrementalJob(node, tableReference, repairConfiguration, configuration);
+            case VNODE, PARALLEL_VNODE -> createTableJob(node, tableReference, repairConfiguration, configuration);
+        };
         job.refreshState();
         return job;
+    }
+
+    private ScheduledRepairJob createIncrementalJob(
+            final Node node,
+            final TableReference tableReference,
+            final RepairConfiguration repairConfiguration,
+            final ScheduledJob.Configuration configuration)
+    {
+        LOG.info("Creating IncrementalRepairJob for node {}", node.getHostId());
+        return new IncrementalRepairJob.Builder()
+                .withConfiguration(configuration)
+                .withNode(node)
+                .withJmxProxyFactory(myJmxProxyFactory)
+                .withTableReference(tableReference)
+                .withRepairConfiguration(repairConfiguration)
+                .withTableRepairMetrics(myTableRepairMetrics)
+                .withCassandraMetrics(myCassandraMetrics)
+                .withReplicationState(myReplicationState)
+                .withRepairPolices(myRepairPolicies)
+                .withRepairLockType(myRepairLockType)
+                .withRepairHistory(myRepairHistoryService)
+                .withRepairHistoryProvider(myRepairHistoryService)
+                .withFaultReporter(myFaultReporter)
+                .build();
+    }
+
+    private ScheduledRepairJob createTableJob(
+            final Node node,
+            final TableReference tableReference,
+            final RepairConfiguration repairConfiguration,
+            final ScheduledJob.Configuration configuration)
+    {
+        LOG.info("Creating TableRepairJob for table {}.{} in node {}",
+                tableReference.getKeyspace(), tableReference.getTable(), node.getHostId());
+        AlarmPostUpdateHook alarmPostUpdateHook = new AlarmPostUpdateHook(tableReference, repairConfiguration,
+                myFaultReporter);
+        RepairState repairState = myRepairStateFactory.create(node, tableReference, repairConfiguration,
+                alarmPostUpdateHook);
+        return new TableRepairJob.Builder()
+                .withConfiguration(configuration)
+                .withJmxProxyFactory(myJmxProxyFactory)
+                .withTableReference(tableReference)
+                .withRepairState(repairState)
+                .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairConfiguration(repairConfiguration)
+                .withTableStorageStates(myTableStorageStates)
+                .withRepairPolices(myRepairPolicies)
+                .withRepairHistory(myRepairHistoryService)
+                .withRepairLockType(myRepairLockType)
+                .withNode(node)
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
+                .build();
     }
 
     /**

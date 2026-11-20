@@ -78,23 +78,39 @@ public final class OnDemandRepairJobFactory
         RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder(myRepairConfiguration)
                 .withRepairType(ongoingJob.getRepairType())
                 .build();
-        if (ongoingJob.getRepairType().equals(RepairType.INCREMENTAL))
+        return switch (ongoingJob.getRepairType())
         {
-            return new IncrementalOnDemandRepairJob.Builder()
-                    .withJmxProxyFactory(myJmxProxyFactory)
-                    .withTableRepairMetrics(myTableRepairMetrics)
-                    .withRepairLockType(myRepairLockType)
-                    .withOnFinished(id -> myOnFinishedHook.accept(id, ongoingJob.getHostId()))
-                    .withRepairConfiguration(repairConfiguration)
-                    .withReplicationState(myReplicationState)
-                    .withRepairHistory(myRepairHistory)
-                    .withCassandraMetrics(myCassandraMetrics)
-                    .withOngoingJob(ongoingJob)
-                    .withNode(node)
-                    .withRetryAttempts(myRetryAttempts)
-                    .withRetryBackoffMs(myRetryBackoffMs)
-                    .build();
-        }
+            case INCREMENTAL -> createIncrementalJob(ongoingJob, node, repairConfiguration);
+            case VNODE, PARALLEL_VNODE -> createVnodeJob(ongoingJob, node, repairConfiguration);
+        };
+    }
+
+    private OnDemandRepairJob createIncrementalJob(
+            final OngoingJob ongoingJob,
+            final Node node,
+            final RepairConfiguration repairConfiguration)
+    {
+        return new IncrementalOnDemandRepairJob.Builder()
+                .withJmxProxyFactory(myJmxProxyFactory)
+                .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairLockType(myRepairLockType)
+                .withOnFinished(id -> myOnFinishedHook.accept(id, ongoingJob.getHostId()))
+                .withRepairConfiguration(repairConfiguration)
+                .withReplicationState(myReplicationState)
+                .withRepairHistory(myRepairHistory)
+                .withCassandraMetrics(myCassandraMetrics)
+                .withOngoingJob(ongoingJob)
+                .withNode(node)
+                .withRetryAttempts(myRetryAttempts)
+                .withRetryBackoffMs(myRetryBackoffMs)
+                .build();
+    }
+
+    private OnDemandRepairJob createVnodeJob(
+            final OngoingJob ongoingJob,
+            final Node node,
+            final RepairConfiguration repairConfiguration)
+    {
         return new VnodeOnDemandRepairJob.Builder()
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .withTableRepairMetrics(myTableRepairMetrics)
