@@ -38,7 +38,7 @@ public final class UnitConverter
      *
      * @param value the size string to convert (e.g. "512M", "2G", "1024").
      * @return the size in bytes.
-     * @throws IllegalArgumentException if the value does not match the expected format.
+     * @throws IllegalArgumentException if the value is malformed or exceeds the maximum signed long byte count.
      */
     public static long toBytes(final String value)
     {
@@ -49,19 +49,17 @@ public final class UnitConverter
         }
         long baseValue = Long.parseLong(matcher.group(1));
 
-        switch (matcher.group(2))
+        long multiplier = switch (matcher.group(2))
         {
-        case "g":
-        case "G":
-            return baseValue * ONE_GIB;
-        case "m":
-        case "M":
-            return baseValue * ONE_MIB;
-        case "k":
-        case "K":
-            return baseValue * ONE_KIB;
-        default: // Bytes
-            return baseValue;
+            case "g", "G" -> ONE_GIB;
+            case "m", "M" -> ONE_MIB;
+            case "k", "K" -> ONE_KIB;
+            default -> 1L;
+        };
+        if (baseValue > Long.MAX_VALUE / multiplier)
+        {
+            throw new IllegalArgumentException("Size exceeds the maximum byte count: " + value);
         }
+        return baseValue * multiplier;
     }
 }
