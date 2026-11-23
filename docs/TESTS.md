@@ -110,6 +110,26 @@ Make sure to add test cases to the appropriate test suite.
 The unit tests are run by `mvn clean test`.
 They are running simple tests that sometimes utilize a single embedded Cassandra node.
 
+#### ecctool Python unit tests
+
+The ecctool unit tests in `ecchronos-binary/src/test/bin` that do not need a Cassandra cluster (`test_ecctool_*.py`
+and `test_rest_timeout.py`) are not part of the Maven build. They run in CI as the "Python unit tests" job, once per
+workflow run, and need neither Java, Maven nor Docker. To run them locally:
+
+```bash
+python3 -m pip install pytest==9.2.0
+cd ecchronos-binary
+python3 -m pytest --noconftest src/test/bin/test_ecctool_*.py src/test/bin/test_rest_timeout.py
+```
+
+`--noconftest` is required. `conftest.py` imports `global_variables.py`, which needs the cluster test environment
+(`BASE_DIR`, `JOLOKIA_VERSION`, `ECC_TEST_NET_PREFIX` and more) that these tests do not use.
+`scripts/run-ci.sh python-unit` runs the same command.
+
+The other files in that directory (`test_ecchronos.py`, `test_topology.py` and so on) are integration tests that need
+the cluster and are run by the Maven profiles described below. Do not name a test that needs the cluster
+`test_ecctool_*.py`, as the job above would then pick it up and fail.
+
 ### Docker tests
 
 The current test setup employs Testcontainers to create a simplified Cassandra instance for unit testing and a full Cassandra cluster for integration and manual tests. To conduct manual tests, you can utilize the template provided in the [cassandra-test-image](../cassandra-test-image/src/main/docker/docker-compose.yml). To set up the cluster, navigate to the directory containing the docker-compose.yml file and execute the following command:

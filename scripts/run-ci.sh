@@ -32,7 +32,7 @@
 #   ./run-ci.sh --no-black unit       # skip only the black check
 #
 # Suite keys (see --list for the full command each runs):
-#   unit, style,
+#   python-unit, unit, style,
 #   it-standalone-41, it-standalone-50, it-python, it-topology, it-multi-dc,
 #   it-jolokia-standalone, it-jolokia-python, it-jolokia-python-pem,
 #   it-jolokia-topology, it-jolokia-topology-pem, it-jolokia-multi-dc,
@@ -61,6 +61,11 @@ declare -A SUITE_GOALS
 
 add_suite() { SUITE_NAME["$1"]="$2"; SUITE_GOALS["$1"]="$3"; }
 
+# The cluster-free ecctool unit tests are plain pytest, not a Maven suite. This marker replaces the Maven goals and
+# makes the run loop below call run_python_unit_tests instead of mvn. It mirrors the "Python unit tests" job.
+PYTHON_UNIT_MARKER="@pytest"
+add_suite python-unit              "Python unit tests"                            "$PYTHON_UNIT_MARKER"
+
 add_suite unit                     "Unit tests"                                   'test jacoco:report'
 add_suite style                    "Style check"                                  'test-compile com.mycila:license-maven-plugin:check pmd:pmd pmd:cpd pmd:check pmd:cpd-check javadoc:jar'
 add_suite it-standalone-41         "Standalone integration 4.1"                   'verify -P standalone-integration-tests -Dit.cassandra.version=4.1 -DskipUTs'
@@ -77,12 +82,12 @@ add_suite it-jolokia-multi-dc      "Jolokia DatacenterAware Multi-Agent"        
 add_suite it-jolokia-multi-dc-pem  "Jolokia DatacenterAware Multi-Agent - PEM"    'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
 
 # Ordered list of all suite keys (matches workflow order)
-ALL_KEYS=(unit style it-standalone-41 it-standalone-50 it-python it-topology it-multi-dc \
+ALL_KEYS=(python-unit unit style it-standalone-41 it-standalone-50 it-python it-topology it-multi-dc \
           it-jolokia-standalone it-jolokia-python it-jolokia-python-pem \
           it-jolokia-topology it-jolokia-topology-pem it-jolokia-multi-dc it-jolokia-multi-dc-pem)
 
 # Default (when no suite given): the fast, Docker-free suites.
-DEFAULT_KEYS=(unit style)
+DEFAULT_KEYS=(python-unit unit style)
 
 usage() {
     sed -n '2,40p' "$0" | sed 's/^#//; s/^ //'
@@ -253,6 +258,21 @@ for key in "${SELECTED[@]}"; do
     if [[ "$name" == *Topology* ]]; then
         export MAX_HEAP_SIZE=1536M
         export HEAP_NEWSIZE=200M
+    fi
+
+    # The cluster-free Python unit tests are plain pytest, not a Maven suite. Keep this command in sync with the
+    # "Python unit tests" job in the workflow. --noconftest is required: conftest.py needs the cluster environment.
+    if [[ "$goals" == "$PYTHON_UNIT_MARKER" ]]; then
+        if ! python3 -c 'import pytest' >/dev/null 2>&1; then
+            # Fail rather than skip: a skipped gate must not look like a pass. CI always installs pytest.
+            echo "ERROR: pytest is not installed, so the ecctool unit tests cannot run: python3 -m pip install pytest==9.2.0"
+            RESULTS+=("FAIL  $name [$key]  (pytest not installed, the tests did not run)")
+            overall_rc=1
+            continue
+        fi
+        run_suite "$key" "$name [$key]" \
+            bash -c 'cd ecchronos-binary && python3 -m pytest --noconftest -p no:cacheprovider -v src/test/bin/test_ecctool_*.py src/test/bin/test_rest_timeout.py'
+        continue
     fi
 
     # shellcheck disable=SC2086  # goals is intentionally word-split into maven args
