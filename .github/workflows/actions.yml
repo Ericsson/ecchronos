@@ -17,6 +17,29 @@ env:
 permissions: read-all
 
 jobs:
+  python-unit-tests:
+    # The cluster-free ecctool unit tests. They need neither Java, Maven nor Docker, so they run once per
+    # workflow run in their own job instead of in every entry of the matrix below.
+    # --noconftest is required: conftest.py imports global_variables.py, which needs the cluster test environment.
+    # Keep the command in sync with the python-unit suite in scripts/run-ci.sh and with docs/TESTS.md.
+    name: "Python unit tests"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python 3
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.14'
+
+      - name: Install pytest
+        run: python -m pip install pytest==9.2.0
+
+      - name: Run the cluster-free ecctool unit tests
+        working-directory: ecchronos-binary
+        run: python -m pytest --noconftest -p no:cacheprovider -v src/test/bin/test_ecctool_*.py src/test/bin/test_rest_timeout.py
+
   tests:
     # Each job runs on JDK ${{ matrix.java }} and compiles to the matching
     # bytecode target (-Djava.version=${{ matrix.java }}). Runtime and target are
