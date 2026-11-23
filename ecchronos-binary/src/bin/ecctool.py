@@ -36,6 +36,8 @@ except ImportError:
     from ecchronoslib import rest, table_printer
 from ecchronoslib.metrics_filter import filter_metrics_text
 from ecchronoslib.argparse_types import comma_separated_ints, parse_duration_ms
+from ecchronoslib.common_args import ARG_OUTPUT_JSON, ARG_TIMEOUT, ARG_URL, add_common_arg
+from ecchronoslib.logging_level import add_logging_level_subcommands, get_logging_level, set_logging_level
 from ecchronoslib.rejections import rejections
 from ecchronoslib.version import get_client_version, get_client_commit
 
@@ -106,12 +108,6 @@ ARG_NODE_ID = {
     "type": str,
     "help": "only matching node id",
 }
-ARG_OUTPUT_JSON = {
-    "flags": ["-o", "--output"],
-    "type": str,
-    "help": "output formats: json (defaults to no format)",
-    "default": "",
-}
 ARG_OUTPUT_JSON_TABLE = {
     "flags": ["-o", "--output"],
     "type": str,
@@ -160,18 +156,6 @@ ARG_YES = {
     "required": False,
 }
 ARG_TABLE = {"flags": ["-t", "--table"], "type": str, "help": "table"}
-ARG_URL = {
-    "flags": ["-u", "--url"],
-    "type": str,
-    "help": "ecchronos host URL (format: http://<host>:<port>)",
-    "default": None,
-}
-ARG_TIMEOUT = {
-    "flags": ["-T", "--timeout"],
-    "type": float,
-    "help": "request timeout in seconds (default: 30, or set ECCTOOL_TIMEOUT_SECONDS)",
-    "default": None,
-}
 
 
 def get_parser():
@@ -182,6 +166,7 @@ def get_parser():
     sub_parsers = parser.add_subparsers(dest="subcommand", help="")
 
     add_config_subcommand(sub_parsers)
+    add_logging_level_subcommands(sub_parsers)
     add_metrics_subcommand(sub_parsers)
     add_rejections_subcommand(sub_parsers)
     add_repair_info_subcommand(sub_parsers)
@@ -456,14 +441,6 @@ def add_metrics_subcommand(sub_parsers):
     )
     add_common_arg(parser_metrics, ARG_URL)
     add_common_arg(parser_metrics, ARG_TIMEOUT)
-
-
-def add_common_arg(parser, arg_config, required=None):
-    """Helper function to add common arguments to parsers."""
-    kwargs = {k: v for k, v in arg_config.items() if k != "flags"}
-    if required is not None:
-        kwargs["required"] = required
-    parser.add_argument(*arg_config["flags"], **kwargs)
 
 
 def add_rejections_subcommand(sub_parsers):
@@ -943,6 +920,7 @@ def _with_status(handler):
 # first; start/stop/status are handled directly.
 SUBCOMMANDS = {
     "config": _with_status(config),
+    "get-logging-level": _with_status(get_logging_level),
     "metrics": _with_status(metrics),
     "rejections": _with_status(rejections),
     "repair-info": _with_status(repair_info),
@@ -951,6 +929,7 @@ SUBCOMMANDS = {
     "run-repair": _with_status(run_repair),
     "running-job": _with_status(running_job),
     "schedules": _with_status(schedules),
+    "set-logging-level": _with_status(set_logging_level),
     "start": start,
     "state": _with_status(state),
     "status": lambda arguments: status(arguments, print_running=True),

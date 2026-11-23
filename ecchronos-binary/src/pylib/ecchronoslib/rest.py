@@ -131,7 +131,7 @@ class RestRequest(object):
             try:
                 error_body = e.read().decode("utf-8")
                 error_json = json.loads(error_body)
-                error_msg = error_json.get("message", error_body)
+                error_msg = error_json.get("message") or error_json.get("error") or error_body
             except (ValueError, UnicodeDecodeError, OSError):
                 error_msg = error_body
             return RequestResult(
@@ -544,3 +544,25 @@ class VersionRequest(RestRequest):
         error/timeout) so the caller can degrade gracefully.
         """
         return self.request(VersionRequest.VERSION)
+
+
+class LoggingRequest(RestRequest):
+    URL = "repair-management/v2/logging"
+
+    def __init__(self, base_url=None, timeout=None):
+        RestRequest.__init__(self, base_url, timeout=timeout)
+
+    def _logger_url(self, logger):
+        # Quote everything, including '/', so a logger name cannot alter the request path.
+        return "{0}/{1}".format(LoggingRequest.URL, quote(logger, safe=""))
+
+    def get(self, logger=None):
+        """Get all explicitly configured loggers, or the configured and effective level of one logger."""
+        if logger is None:
+            return self.request(LoggingRequest.URL)
+        return self.request(self._logger_url(logger))
+
+    def put(self, logger, level):
+        """Set the level of a logger, or clear it with the level 'reset'."""
+        headers = {"Content-Type": "application/json"}
+        return self.request(self._logger_url(logger), "PUT", body={"level": level}, headers=headers)

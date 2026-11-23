@@ -344,6 +344,121 @@ No repair job running.
 Repair job with id cfffb267-b892-4980-965b-dffd12abc290 is running.
 ```
 
+## get-logging-level and set-logging-level
+
+Use *get-logging-level* and *set-logging-level* to read and change the log levels of a running agent without
+restarting it, similar to `nodetool getlogginglevel` and `nodetool setlogginglevel` in Cassandra. This is useful to
+raise a logger to DEBUG or TRACE while investigating a problem and lower it again afterwards.
+
+Things to be aware of:
+
+* The change is made in memory only. It is lost when the agent restarts, and the levels in `logback.xml` apply again.
+* The change is per agent. Each ecChronos agent runs next to one Cassandra node, use `--url` to select the agent.
+* Like the other REST endpoints, these are not restricted. A very verbose level such as TRACE on a busy agent can
+  produce a lot of log output and fill the disk, so lower it again when done.
+
+Without arguments *get-logging-level* shows every logger that has an explicitly configured level, together with `ROOT`:
+
+```cmd
+ecctool get-logging-level
+```
+```text
+LOGGER  CONFIGURED  EFFECTIVE
+ROOT    INFO        INFO
+```
+
+Set a logger to DEBUG. The levels are TRACE, DEBUG, INFO, WARN, ERROR and OFF, in any case. The new state is shown:
+
+```cmd
+ecctool set-logging-level com.ericsson.bss.cassandra.ecchronos.core DEBUG
+```
+```text
+LOGGER                                     CONFIGURED  EFFECTIVE
+com.ericsson.bss.cassandra.ecchronos.core  DEBUG       DEBUG
+```
+
+The logger now shows up in the list:
+
+```cmd
+ecctool get-logging-level
+```
+```text
+LOGGER                                     CONFIGURED  EFFECTIVE
+ROOT                                       INFO        INFO
+com.ericsson.bss.cassandra.ecchronos.core  DEBUG       DEBUG
+```
+
+For a single logger both the configured and the effective level are shown. A logger without an explicit level has
+no configured level (shown as `-`) and inherits its effective level from the closest parent logger, or from `ROOT`:
+
+```cmd
+ecctool get-logging-level com.ericsson.bss.cassandra.ecchronos.core.impl.repair
+```
+```text
+LOGGER                                                 CONFIGURED  EFFECTIVE
+com.ericsson.bss.cassandra.ecchronos.core.impl.repair  -           INFO
+```
+
+`ROOT` is the name of the root logger. It can be read and set, but not reset:
+
+```cmd
+ecctool set-logging-level ROOT WARN
+```
+```text
+LOGGER  CONFIGURED  EFFECTIVE
+ROOT    WARN        WARN
+```
+
+Use `reset` to remove the explicit level of a logger so that it inherits again:
+
+```cmd
+ecctool set-logging-level com.ericsson.bss.cassandra.ecchronos.core reset
+```
+```text
+LOGGER                                     CONFIGURED  EFFECTIVE
+com.ericsson.bss.cassandra.ecchronos.core  -           WARN
+```
+
+With JSON output format selected:
+
+```cmd
+ecctool get-logging-level --output json
+```
+```json
+{
+    "timestamp": "2026-11-20 14:30:00",
+    "logging": {
+        "loggers": [
+            {
+                "logger": "ROOT",
+                "configured_level": "WARN",
+                "effective_level": "WARN"
+            }
+        ]
+    }
+}
+```
+
+An invalid level or an empty logger name is rejected before anything is sent, with a non-zero exit code, and no level
+is changed:
+
+```cmd
+ecctool set-logging-level com.ericsson.bss.cassandra.ecchronos.core LOUD
+```
+```text
+ecctool.py set-logging-level: error: argument LEVEL: invalid level 'LOUD', must be one of TRACE, DEBUG, INFO, WARN, ERROR, OFF or reset
+```
+
+The same operations are available over REST, for example with curl:
+
+```cmd
+curl -X PUT -H "Content-Type: application/json" -d '{"level": "DEBUG"}' \
+  http://localhost:8080/repair-management/v2/logging/com.ericsson.bss.cassandra.ecchronos.core
+curl -X PUT -H "Content-Type: application/json" -d '{"level": "reset"}' \
+  http://localhost:8080/repair-management/v2/logging/com.ericsson.bss.cassandra.ecchronos.core
+curl http://localhost:8080/repair-management/v2/logging/ROOT
+```
+
 ## schedules
 
 Use *schedules* to check the status of schedules. The output shows all schedules the ecChronos instance has. For
