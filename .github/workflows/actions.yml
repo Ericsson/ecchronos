@@ -44,7 +44,7 @@ jobs:
 
       - name: Run the cluster-free ecctool unit tests
         working-directory: ecchronos-binary
-        run: python -m pytest --noconftest -p no:cacheprovider -v src/test/bin/test_ecctool_*.py src/test/bin/test_rest_timeout.py
+        run: python -m pytest --noconftest -p no:cacheprovider -v src/test/bin/test_ecctool_*.py src/test/bin/test_rest_timeout.py src/test/bin/test_primary_range_repair_lib.py
 
   warm-maven-cache:
     # Downloads all Maven dependencies once and saves ~/.m2/repository, so the matrix jobs below only restore it
@@ -127,6 +127,9 @@ jobs:
           - name: "Incremental Repair integration tests"
             goals: 'verify -P incremental-repair-integration-tests -Dit.cassandra.version=5.0 -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
+          - name: "Primary Range Repair integration tests"
+            goals: 'verify -P primary-range-repair-integration-tests -Dit.cassandra.version=5.0 -DskipUTs'
+            artifacts_dir: "ecchronos-binary/target"
           - name: "Jolokia Standalone integration 5.0"
             goals: 'verify -P standalone-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -DskipUTs'
             artifacts_dir: "standalone-integration/target"
@@ -151,8 +154,14 @@ jobs:
           - name: "Jolokia Incremental Repair integration tests"
             goals: 'verify -P incremental-repair-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
+          - name: "Jolokia Primary Range Repair integration tests"
+            goals: 'verify -P primary-range-repair-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -DskipUTs'
+            artifacts_dir: "ecchronos-binary/target"
           - name: "Jolokia Incremental Repair integration tests - PEM"
             goals: 'verify -P incremental-repair-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
+            artifacts_dir: "ecchronos-binary/target"
+          - name: "Jolokia Primary Range Repair integration tests - PEM"
+            goals: 'verify -P primary-range-repair-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
 
     steps:

@@ -16,8 +16,10 @@ package com.ericsson.bss.cassandra.ecchronos.core.state;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import java.util.Iterator;
+import java.util.OptionalLong;
 import com.google.common.base.Predicate;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 
 /**
  * Interface used to retrieve repair history.
@@ -48,5 +50,29 @@ public interface RepairHistoryProvider
      * @return A filtered iterator for the repair history of the table.
      */
     Iterator<RepairEntry> iterate(Node node, TableReference tableReference, long to, long from, Predicate<RepairEntry> predicate);
+
+    /**
+     * Get the time the latest successful repair of the given type finished, for repair types whose history is not
+     * tracked per token range (primary range repair).
+     * <p>
+     * This is separate from {@link #iterate}, which describes the repair state of token ranges and never returns
+     * entries of these repair types. The default implementation has no such history and returns empty.
+     *
+     * @param node The node the repair was started on.
+     * @param tableReference The table that was repaired.
+     * @param repairType The repair type to look for.
+     * @param from The earliest start time to consider, in epoch milliseconds.
+     * @param to The latest start time to consider, in epoch milliseconds.
+     * @return The finish time of the latest successful repair of the type, or empty if there is none.
+     */
+    default OptionalLong lastSuccessfulRepair(
+            final Node node,
+            final TableReference tableReference,
+            final RepairType repairType,
+            final long from,
+            final long to)
+    {
+        return OptionalLong.empty();
+    }
 }
 

@@ -21,6 +21,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.IncrementalOnDemand
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandStatus;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OngoingJob;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.PrimaryRangeOnDemandRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.VnodeOnDemandRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
@@ -82,7 +83,28 @@ public final class OnDemandRepairJobFactory
         {
             case INCREMENTAL -> createIncrementalJob(ongoingJob, node, repairConfiguration);
             case VNODE, PARALLEL_VNODE -> createVnodeJob(ongoingJob, node, repairConfiguration);
+            case PRIMARY_RANGE -> createPrimaryRangeJob(ongoingJob, node, repairConfiguration);
         };
+    }
+
+    private OnDemandRepairJob createPrimaryRangeJob(
+            final OngoingJob ongoingJob,
+            final Node node,
+            final RepairConfiguration repairConfiguration)
+    {
+        return new PrimaryRangeOnDemandRepairJob.Builder()
+                .withJmxProxyFactory(myJmxProxyFactory)
+                .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairLockType(myRepairLockType)
+                .withOnFinished(id -> myOnFinishedHook.accept(id, ongoingJob.getHostId()))
+                .withRepairConfiguration(repairConfiguration)
+                .withReplicationState(myReplicationState)
+                .withRepairHistory(myRepairHistory)
+                .withOngoingJob(ongoingJob)
+                .withNode(node)
+                .withRetryAttempts(myRetryAttempts)
+                .withRetryBackoffMs(myRetryBackoffMs)
+                .build();
     }
 
     private OnDemandRepairJob createIncrementalJob(

@@ -50,6 +50,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -173,7 +174,8 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
                         .build()
                         .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM));
         myIterateStatement = myCqlSession.prepare(QueryBuilder.selectFrom(KEYSPACE_NAME, TABLE_NAME)
-                .columns(COLUMN_STARTED_AT, COLUMN_FINISHED_AT, COLUMN_STATUS, COLUMN_RANGE_BEGIN, COLUMN_RANGE_END)
+                .columns(COLUMN_STARTED_AT, COLUMN_FINISHED_AT, COLUMN_STATUS, COLUMN_RANGE_BEGIN, COLUMN_RANGE_END,
+                        COLUMN_REPAIR_TYPE)
                 .whereColumn(COLUMN_TABLE_ID).isEqualTo(bindMarker())
                 .whereColumn(COLUMN_NODE_ID).isEqualTo(bindMarker())
                 .whereColumn(COLUMN_REPAIR_ID).isGreaterThanOrEqualTo(bindMarker())
@@ -379,6 +381,41 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
         ResultSet resultSet = myCqlSession.execute(statement);
 
         return new RepairEntryIterator(node, tableReference, resultSet, predicate);
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Reads the rows of the node and table in the time window and returns the latest finish time of a successful
+     * row of the given type. This does not map the rows to token ranges, so it works for types that have no token
+     * range, and it does not go through {@link #iterate}, which describes the repair state of token ranges.
+     */
+    @Override
+    public OptionalLong lastSuccessfulRepair(
+            final Node node,
+            final TableReference tableReference,
+            final RepairType repairType,
+            final long from,
+            final long to)
+    {
+        UUID start = Uuids.startOf(Math.max(0L, from));
+        UUID finish = Uuids.endOf(to);
+        ResultSet resultSet = myCqlSession.execute(
+                mySelectByTimeRangeStatement.bind(tableReference.getId(), node.getHostId(), start, finish));
+
+        long latest = -1L;
+        for (Row row : resultSet)
+        {
+            Instant finishedAt = row.getInstant(COLUMN_FINISHED_AT);
+            if (finishedAt != null
+                    && repairType.name().equals(row.getString(COLUMN_REPAIR_TYPE))
+                    && RepairStatus.SUCCESS.name().equalsIgnoreCase(row.getString(COLUMN_STATUS))
+                    && finishedAt.toEpochMilli() > latest)
+            {
+                latest = finishedAt.toEpochMilli();
+            }
+        }
+        return latest < 0 ? OptionalLong.empty() : OptionalLong.of(latest);
     }
 
     @Override
@@ -595,7 +632,17 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
             return !row.isNull(COLUMN_RANGE_BEGIN)
                     && !row.isNull(COLUMN_RANGE_END)
                     && !row.isNull(COLUMN_STARTED_AT)
-                    && !row.isNull(COLUMN_STATUS);
+                    && !row.isNull(COLUMN_STATUS)
+                    && !isRepairStateSeparateType(row);
+        }
+
+        /**
+         * Rows of repair types that are not tracked per token range are not repair state of token ranges. They are
+         * skipped explicitly, instead of relying on their range not being found in the token metadata.
+         */
+        private boolean isRepairStateSeparateType(final Row row)
+        {
+            return RepairType.PRIMARY_RANGE.name().equals(row.getString(COLUMN_REPAIR_TYPE));
         }
     }
 

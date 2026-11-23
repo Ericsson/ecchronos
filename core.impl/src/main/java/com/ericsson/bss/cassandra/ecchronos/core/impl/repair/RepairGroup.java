@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairTask;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.primaryrange.PrimaryRangeRepairTask;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.VnodeRepairTask;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
@@ -113,7 +114,7 @@ public class RepairGroup extends ScheduledTask
         myTokensPerRepair = switch (myRepairConfiguration.getRepairType())
         {
             case VNODE -> Preconditions.checkNotNull(builder.myTokensPerRepair, "Tokens per repair must be set");
-            case PARALLEL_VNODE, INCREMENTAL -> null;
+            case PARALLEL_VNODE, INCREMENTAL, PRIMARY_RANGE -> null;
         };
         myJobId = Preconditions
                 .checkNotNull(builder.myJobId, "Job id must be set");
@@ -247,7 +248,26 @@ public class RepairGroup extends ScheduledTask
             case INCREMENTAL -> createIncrementalRepairTasks(nodeID);
             case VNODE -> createVnodeRepairTasks();
             case PARALLEL_VNODE -> createParallelVnodeRepairTasks();
+            case PRIMARY_RANGE -> createPrimaryRangeRepairTasks(nodeID);
         };
+    }
+
+    private Collection<RepairTask> createPrimaryRangeRepairTasks(final UUID nodeID)
+    {
+        Collection<RepairTask> tasks = new ArrayList<>();
+        Set<DriverNode> participants = myReplicaRepairGroup.replicas() != null
+                ? new HashSet<>(myReplicaRepairGroup.replicas()) : Set.of();
+        tasks.add(new PrimaryRangeRepairTask(
+                nodeID,
+                myJmxProxyFactory,
+                myTableReference,
+                myRepairConfiguration,
+                myTableRepairMetrics,
+                myRepairHistory,
+                myNode,
+                myJobId,
+                participants));
+        return tasks;
     }
 
     private Collection<RepairTask> createIncrementalRepairTasks(final UUID nodeID)

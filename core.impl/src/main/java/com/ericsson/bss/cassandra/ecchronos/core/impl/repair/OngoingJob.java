@@ -206,6 +206,13 @@ public final class OngoingJob
      */
     public void startClusterWideJob(final RepairType repairType)
     {
+        if (!distributesTokenRanges(repairType))
+        {
+            // Nothing to distribute: the job of every managed node already exists (scheduleClusterWideJob creates
+            // one per node) and each node repairs its own ranges. Writing rows for other nodes as well would start
+            // additional repairs.
+            return;
+        }
         Map<LongTokenRange, ImmutableSet<DriverNode>> allTokenRanges =
                 myReplicationState.getTokenRanges(myTableReference, myCurrentNode);
 
@@ -221,6 +228,23 @@ public final class OngoingJob
             Set<LongTokenRange> repairedRanges = repairedRangesPerNode.get(node);
             createClusterWideJob(node, remainingRanges, repairedRanges, repairType);
         }
+    }
+
+    /**
+     * Whether a cluster-wide job of the given type hands out rows to other nodes, based on how the token ranges are
+     * assigned to them. Primary range repair does not: every managed node has its own job and repairs its own
+     * primary ranges, so extra rows would run extra repairs.
+     *
+     * @param repairType the repair type.
+     * @return true if rows are written for the nodes the token ranges are assigned to.
+     */
+    private static boolean distributesTokenRanges(final RepairType repairType)
+    {
+        return switch (repairType)
+        {
+            case VNODE, PARALLEL_VNODE, INCREMENTAL -> true;
+            case PRIMARY_RANGE -> false;
+        };
     }
 
     private void distributeTokenRanges(
@@ -271,8 +295,8 @@ public final class OngoingJob
     {
         StoredRangeState rangeState = switch (repairType)
         {
-            // Incremental repair is not tracked per token range.
-            case INCREMENTAL -> new StoredRangeState(0, Collections.emptySet());
+            // Incremental and primary range repair are not tracked per token range.
+            case INCREMENTAL, PRIMARY_RANGE -> new StoredRangeState(0, Collections.emptySet());
             case VNODE, PARALLEL_VNODE ->
                     new StoredRangeState(allTokenRanges(remainingRanges, repairedRanges).hashCode(), repairedRanges);
         };

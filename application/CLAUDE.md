@@ -125,7 +125,7 @@ keyspaces:
         alarm:
           warn: 8d
           error: 10d
-        repair_type: vnode      # vnode | parallel_vnode | incremental
+        repair_type: vnode      # vnode | parallel_vnode | incremental | primary_range
         size_target: 100m       # Optional: enables sub-range repair
 ```
 

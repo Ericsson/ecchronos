@@ -112,14 +112,14 @@ They are running simple tests that sometimes utilize a single embedded Cassandra
 
 #### ecctool Python unit tests
 
-The ecctool unit tests in `ecchronos-binary/src/test/bin` that do not need a Cassandra cluster (`test_ecctool_*.py`
-and `test_rest_timeout.py`) are not part of the Maven build. They run in CI as the "Python unit tests" job, once per
-workflow run, and need neither Java, Maven nor Docker. To run them locally:
+The ecctool unit tests in `ecchronos-binary/src/test/bin` that do not need a Cassandra cluster (`test_ecctool_*.py`,
+`test_rest_timeout.py` and `test_primary_range_repair_lib.py`) are not part of the Maven build. They run in CI as the
+"Python unit tests" job, once per workflow run, and need neither Java, Maven nor Docker. To run them locally:
 
 ```bash
 python3 -m pip install pytest==9.2.0
 cd ecchronos-binary
-python3 -m pytest --noconftest src/test/bin/test_ecctool_*.py src/test/bin/test_rest_timeout.py
+python3 -m pytest --noconftest src/test/bin/test_ecctool_*.py src/test/bin/test_rest_timeout.py src/test/bin/test_primary_range_repair_lib.py
 ```
 
 `--noconftest` is required. `conftest.py` imports `global_variables.py`, which needs the cluster test environment
@@ -195,6 +195,35 @@ This profile is optimized for local development:
 To run:
 ```bash
 mvn clean install -Dlocalprecommit.tests
+```
+
+#### Incremental repair tests (`incremental-repair-integration-tests`)
+These profiles run `test_incremental_repair.py` and `test_incremental_repair_migration.py` against a real 4 node,
+2 datacenter cluster. They are not part of `python-integration-tests`, which runs `test_ecchronos.py`.
+
+- `incremental-repair-integration-tests` is the CI profile, with TLS and authentication.
+- `local-incremental-repair-integration-tests` is the local one, without.
+
+```bash
+mvn verify -P local-incremental-repair-integration-tests -Dit.cassandra.version=5.0 -DskipUTs
+```
+
+#### Primary range repair tests (`primary-range-repair-integration-tests`)
+These profiles run `test_primary_range_repair.py` against the same kind of cluster, as a suite of its own so that it can
+be run, and fail, without the incremental repair tests.
+
+- `primary-range-repair-integration-tests` is the CI profile, with TLS and authentication.
+- `local-primary-range-repair-integration-tests` is the local one, without.
+
+```bash
+mvn verify -P local-primary-range-repair-integration-tests -Dit.cassandra.version=5.0 -DskipUTs
+```
+
+`test_primary_range_repair.py` creates its own keyspace and does not use the tables in `create_keyspaces.cql`. They are
+shared with the behave and topology tests, which assert the exact set of tables and schedules, so a table added there
+affects those suites. It takes the locks it needs to hold in `ecchronos.lock` itself, with a TTL, and releases them
+afterwards. The parsing and the checks it uses are in `primary_range_repair_lib.py`, which is unit tested without a
+cluster, see above.
 
 ### Running acceptance/integration tests towards local ccm cluster
 

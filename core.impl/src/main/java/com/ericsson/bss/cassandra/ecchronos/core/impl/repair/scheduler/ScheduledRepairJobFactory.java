@@ -19,6 +19,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.primaryrange.PrimaryRangeRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.AlarmPostUpdateHook;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TableRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
@@ -99,9 +100,33 @@ public final class ScheduledRepairJobFactory
         {
             case INCREMENTAL -> createIncrementalJob(node, tableReference, repairConfiguration, configuration);
             case VNODE, PARALLEL_VNODE -> createTableJob(node, tableReference, repairConfiguration, configuration);
+            case PRIMARY_RANGE -> createPrimaryRangeJob(node, tableReference, repairConfiguration, configuration);
         };
         job.refreshState();
         return job;
+    }
+
+    private ScheduledRepairJob createPrimaryRangeJob(
+            final Node node,
+            final TableReference tableReference,
+            final RepairConfiguration repairConfiguration,
+            final ScheduledJob.Configuration configuration)
+    {
+        LOG.info("Creating PrimaryRangeRepairJob for node {}", node.getHostId());
+        return new PrimaryRangeRepairJob.Builder()
+                .withConfiguration(configuration)
+                .withNode(node)
+                .withJmxProxyFactory(myJmxProxyFactory)
+                .withTableReference(tableReference)
+                .withRepairConfiguration(repairConfiguration)
+                .withTableRepairMetrics(myTableRepairMetrics)
+                .withReplicationState(myReplicationState)
+                .withRepairPolices(myRepairPolicies)
+                .withRepairLockType(myRepairLockType)
+                .withRepairHistory(myRepairHistoryService)
+                .withRepairHistoryProvider(myRepairHistoryService)
+                .withFaultReporter(myFaultReporter)
+                .build();
     }
 
     private ScheduledRepairJob createIncrementalJob(

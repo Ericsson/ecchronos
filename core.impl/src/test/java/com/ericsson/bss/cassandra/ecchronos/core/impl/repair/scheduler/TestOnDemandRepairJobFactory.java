@@ -20,6 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.IncrementalOnDemand
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandStatus;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OngoingJob;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.PrimaryRangeOnDemandRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.VnodeOnDemandRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.DriverNode;
@@ -116,6 +117,19 @@ public class TestOnDemandRepairJobFactory
 
         assertThat(job).isInstanceOf(VnodeOnDemandRepairJob.class);
         assertThat(job.getOngoingJob()).isEqualTo(myOngoingJob);
+    }
+
+    @Test
+    public void testCreatePrimaryRangeJobFromOngoingJob()
+    {
+        when(myOngoingJob.getRepairType()).thenReturn(RepairType.PRIMARY_RANGE);
+        when(myReplicationState.getReplicas(TABLE_REFERENCE, myNode)).thenReturn(ImmutableSet.of(mock(DriverNode.class)));
+
+        OnDemandRepairJob job = myFactory.createFromOngoingJob(myOngoingJob);
+
+        assertThat(job).isExactlyInstanceOf(PrimaryRangeOnDemandRepairJob.class);
+        assertThat(job.getOngoingJob()).isEqualTo(myOngoingJob);
+        assertThat(job.getRepairConfiguration().getRepairType()).isEqualTo(RepairType.PRIMARY_RANGE);
     }
 
     @Test

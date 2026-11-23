@@ -86,9 +86,11 @@ keyspaces:
 #      size_target:
 ##
 ## Specifies the default repair_type.
-## Possible values are: vnode, parallel_vnode, incremental
+## Possible values are: vnode, parallel_vnode, incremental, primary_range
 ## vnode = repair 1 vnode at a time (supports size_target to split the vnode further, in this case there will be 1 repair session per subrange)
 ## parallel_vnode = repair vnodes in parallel, this will combine vnodes into a single repair session per repair group
 ## incremental = repair vnodes incrementally (incremental repair)
+## primary_range = full repair of all the primary ranges of the node in one repair session, like 'nodetool repair -pr'.
+##                 Every managed node repairs its own primary ranges. size_target does not apply.
 ##
 #      repair_type: vnode
