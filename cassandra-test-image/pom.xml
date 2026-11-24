@@ -124,6 +124,36 @@
                 </executions>
             </plugin>
 
+            <!-- Fetch the Jolokia JVM agent through Maven (local repo cache / configured mirrors) and
+                 place it in the Docker build context, instead of curl-ing Maven Central from inside
+                 'docker build' (which gets rate limited with HTTP 429 when several nodes build at once). -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-jolokia-agent</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.jolokia</groupId>
+                                    <artifactId>jolokia-agent-jvm</artifactId>
+                                    <version>${jolokia.adapter.version}</version>
+                                    <classifier>javaagent</classifier>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.basedir}/src/main/docker</outputDirectory>
+                                    <destFileName>jolokia-jvm-agent-${jolokia.adapter.version}.jar</destFileName>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <artifactId>maven-install-plugin</artifactId>
                 <configuration>

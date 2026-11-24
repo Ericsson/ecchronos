@@ -24,3 +24,5 @@ ci-artifacts/
 application/statistics/
 statistics/
 .python-version
+# Jolokia agent copied by Maven into the docker build context
+cassandra-test-image/src/main/docker/jolokia-jvm-agent-*.jar
