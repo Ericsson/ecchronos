@@ -176,7 +176,7 @@
         <org.jacoco.jacoco-maven-plugin.version>0.8.16</org.jacoco.jacoco-maven-plugin.version>
         <org.sonatype.central-central-publishing-maven-plugin>0.12.0</org.sonatype.central-central-publishing-maven-plugin>
         <io.fabric8.docker-maven-plugin.version>0.49.0</io.fabric8.docker-maven-plugin.version>
-        <io.github.git-commit-id.git-commit-id-maven-plugin.version>9.0.2</io.github.git-commit-id.git-commit-id-maven-plugin.version>
+        <io.github.git-commit-id.git-commit-id-maven-plugin.version>10.0.1</io.github.git-commit-id.git-commit-id-maven-plugin.version>
 
         <jolokia.adapter.version>2.6.5</jolokia.adapter.version>
 
