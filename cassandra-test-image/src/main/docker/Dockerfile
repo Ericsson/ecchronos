@@ -15,10 +15,14 @@ RUN apt-get update \
 RUN if [ -z "${JOLOKIA_VERSION}" ]; then \
         echo "ERROR: JOLOKIA_VERSION build arg is not set. It must be injected from the pom's jolokia.adapter.version." >&2; \
         exit 1; \
-    fi \
-    && echo "Using JOLOKIA_VERSION=${JOLOKIA_VERSION}" \
-    && curl -fL --retry 5 --retry-delay 3 --retry-all-errors -o /opt/jolokia-jvm-agent.jar \
-    "https://repo1.maven.org/maven2/org/jolokia/jolokia-agent-jvm/${JOLOKIA_VERSION}/jolokia-agent-jvm-${JOLOKIA_VERSION}-javaagent.jar"
+    fi
+
+# The agent is fetched by Maven (maven-dependency-plugin in cassandra-test-image/pom.xml) as
+# jolokia-jvm-agent-<jolokia.adapter.version>.jar and copied here instead of being downloaded
+# during 'docker build' (avoids HTTP 429 rate limiting from Maven Central). The version is part
+# of the file name, so the build fails if no jar matching JOLOKIA_VERSION exists, rather than
+# silently using a stale one. If this COPY fails, build the cassandra-test-image module first.
+COPY jolokia-jvm-agent-${JOLOKIA_VERSION}.jar /opt/jolokia-jvm-agent.jar
 
 COPY nginx.conf /etc/nginx/nginx.conf.template
 COPY ecc-entrypoint.sh /usr/local/bin/
