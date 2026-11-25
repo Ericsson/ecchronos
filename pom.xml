@@ -766,12 +766,6 @@
                 </plugin>
 
                 <plugin>
-                    <groupId>org.apache.karaf.tooling</groupId>
-                    <artifactId>karaf-maven-plugin</artifactId>
-                    <version>${org.apache.karaf.tooling.karaf-maven-plugin.version}</version>
-                </plugin>
-
-                <plugin>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
                 </plugin>
