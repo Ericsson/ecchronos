@@ -40,7 +40,54 @@ jobs:
         working-directory: ecchronos-binary
         run: python -m pytest --noconftest -p no:cacheprovider -v src/test/bin/test_ecctool_*.py src/test/bin/test_rest_timeout.py
 
+  warm-maven-cache:
+    # Downloads all Maven dependencies once and saves ~/.m2/repository, so the matrix jobs below only restore it
+    # instead of each hitting Maven Central at the same time (HTTP 429 Too Many Requests).
+    #
+    # NOTE: this job runs on a single JDK (17) on purpose. The JDK version does not affect which dependencies
+    # Maven resolves: no profile is activated by JDK version, and java.version only selects the bytecode target.
+    # The cache is therefore shared by all JDKs in the matrix below, including any added later.
+    # If a <jdk> profile activation is ever added to a pom.xml, add the JDK to this job and to the cache key.
+    name: "Warm Maven cache"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          java-version: 17
+          distribution: 'temurin'
+
+      - name: Cache local Maven repository
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.m2/repository
+          key: build-${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            build-${{ runner.os }}-maven-
+
+      # All profiles used by the matrix are activated so their dependencies and plugins are downloaded too.
+      # The Jolokia agent is fetched by a dependency:copy execution (not a declared dependency), so go-offline
+      # does not see it and it is resolved explicitly.
+      # This reduces, but does not eliminate, downloads in the matrix jobs: some artifacts are only resolved
+      # when a plugin runs (e.g. the surefire JUnit provider) and are still fetched there.
+      # Retries wait between attempts, since an immediate retry does not help against rate limiting.
+      - name: Resolve all dependencies
+        run: |
+          for i in 1 2 3 4 5; do
+            mvn -B dependency:go-offline \
+              -P build-cassandra-test-jar,standalone-integration-tests,python-integration-tests,topology-integration-tests,multi-agent-datacenter-aware-integration-tests,incremental-repair-integration-tests \
+              && mvn -B dependency:copy@copy-jolokia-agent -pl cassandra-test-image \
+              && exit 0
+            echo "Attempt $i failed, waiting $((i * 30))s before retrying"
+            sleep $((i * 30))
+          done
+          exit 1
+
   tests:
+    needs: warm-maven-cache
     # Each job runs on JDK ${{ matrix.java }} and compiles to the matching
     # bytecode target (-Djava.version=${{ matrix.java }}). Runtime and target are
     # paired, so we test exactly: JDK 17 -> target 17 and JDK 21 -> target 21.
@@ -104,8 +151,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Cache local Maven repository
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      # Restore only: the cache is saved by the warm-maven-cache job (shared by all JDKs).
+      - name: Restore local Maven repository
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.m2/repository
           key: build-${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
