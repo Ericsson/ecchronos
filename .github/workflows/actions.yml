@@ -33,6 +33,12 @@ jobs:
         with:
           python-version: '3.14'
 
+      - name: Install black
+        run: python -m pip install black==24.10.0
+
+      - name: Run black in the check mode
+        run: black --check --verbose --line-length 120 ./ecchronos-binary/src
+
       - name: Install pytest
         run: python -m pip install pytest==9.2.0
 
@@ -173,12 +179,6 @@ jobs:
         with:
           python-version: '3.14'
 
-      - name: Install black
-        run: python -m pip install black==24.10.0
-
-      - name: Run black in the check mode
-        run: black --check --verbose --line-length 120 ./ecchronos-binary/src
-
       - name: install dependencies
         run: mvn install -Pbuild-cassandra-test-jar -DskipTests=true
 
@@ -219,18 +219,3 @@ jobs:
           name: ${{ matrix.suite.name }} - Java ${{ matrix.java }}-ecchronos-logs
           path: ./ecchronos-binary/target/test/ecchronos-binary-agent-*/logs/
           if-no-files-found: 'ignore'
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
-          files: >
-            ./rest/target/site/jacoco/jacoco.xml,
-            ./application/target/site/jacoco/jacoco.xml,
-            ./core/target/site/jacoco/jacoco.xml,
-            ./fault.manager.impl/target/site/jacoco/jacoco.xml,
-            ./connection.impl/target/site/jacoco/jacoco.xml,
-            ./core.impl/target/site/jacoco/jacoco.xml,
-            ./data/target/site/jacoco/jacoco.xml,
-            ./utils/target/site/jacoco/jacoco.xml
