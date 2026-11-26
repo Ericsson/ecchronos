@@ -297,8 +297,8 @@ repair:
   ##
   ## This setting only applies to repair_type "vnode" and "parallel_vnode". Incremental repair always uses its own
   ## fixed locks: a single lock per table, so that two incremental repairs of the same table never run
-  ## concurrently, plus one lock per replica node. Primary range repair also has its own fixed locks: the same
-  ## single lock per table plus one lock per datacenter. Neither is affected by lock_type.
+  ## concurrently, plus one lock per replica node. Primary range and all replicated ranges repair also have their own
+  ## fixed locks: the same single lock per table plus one lock per datacenter. None of them is affected by lock_type.
   ##
   lock_type: vnode
   ##
@@ -310,8 +310,9 @@ repair:
   ## if the table has not been properly repaired within one full day.
   ##
   ## The alarms apply to all repair types except incremental, which has its own alarm for repairs that do not
-  ## progress. For primary_range the alarms are raised for the node and table with the source PRIMARY_RANGE_ELAPSED,
-  ## so they are separate from the alarms of vnode repair of the same table.
+  ## progress. For primary_range and all_replicated_ranges the alarms are raised for the node and table with the
+  ## source PRIMARY_RANGE_ELAPSED and ALL_REPLICATED_RANGES_ELAPSED, so they are separate from the alarms of vnode repair
+  ## of the same table, and from each other.
   ##
   alarm:
     ##
@@ -418,7 +419,7 @@ repair:
     unit: MINUTES
   ##
   ## Specifies the default repair_type.
-  ## Possible values are: vnode, parallel_vnode, incremental, primary_range
+  ## Possible values are: vnode, parallel_vnode, incremental, primary_range, all_replicated_ranges
   ## vnode = repair 1 vnode at a time (supports size_target to split the vnode further, in this case there will be 1 repair session per subrange)
   ## parallel_vnode = repair vnodes in parallel, this will combine vnodes into a single repair session per repair group
   ## incremental = repair vnodes incrementally (incremental repair)
@@ -429,6 +430,14 @@ repair:
   ##                 repair history (within history_lookback_intervals) is taken for a new table, and its first repair
   ##                 waits for initial_delay, as for vnode repair. The warn and error alarms are raised when the last
   ##                 primary range repair is older than the alarm times, and ceased when a repair has succeeded.
+  ## all_replicated_ranges = full repair of every range the node replicates in one repair session, with the replicas in
+  ##                 all datacenters, like 'nodetool repair' without -pr. Use it to repair a table from one ecChronos
+  ##                 instance: it is enough to run it on nodes that together replicate every range of the keyspace, for
+  ##                 example all nodes of a datacenter that holds replicas. A range that none of the nodes managed by this
+  ##                 instance replicates is not repaired, and a warning is logged for the keyspace. A range is repaired
+  ##                 once for every managed node that replicates it, so it costs up to replication factor times the work
+  ##                 of primary_range when it runs on all nodes. Same locks, history handling, initial_delay and alarms
+  ##                 as primary_range, kept apart from it (alarm source ALL_REPLICATED_RANGES_ELAPSED).
   ##
   repair_type: vnode
   ##

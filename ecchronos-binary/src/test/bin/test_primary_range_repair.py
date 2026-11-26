@@ -19,8 +19,8 @@
 What it shows, in order:
   * a table configured as primary_range is scheduled as PRIMARY_RANGE on every node, and a scheduled cycle runs to
     completion
-  * Cassandra repaired primary ranges only: the ranges repaired by the 4 coordinators, as recorded by Cassandra in
-    system_distributed.repair_history, do not overlap
+  * Cassandra repaired primary ranges only: every repair was started with primaryRange=true, and the ranges the 4
+    coordinators repaired, as recorded by Cassandra in system_distributed.parent_repair_history, do not overlap
   * ecChronos recorded the repairs in ecchronos.repair_history as PRIMARY_RANGE rows with the whole ring marker
   * after a restart the last repair is read back from that history, so the table is not taken for never repaired
   * an on-demand primary range repair is not coordinated with vnode repair: it completes while every lock a vnode
@@ -189,13 +189,65 @@ def _history_rows_by_node(cluster, table_id, node_ids):
     return rows
 
 
-def _cassandra_repair_rows(cluster):
-    """The repairs Cassandra itself recorded for the test table, one row per repaired token range."""
+def _history_rows(cluster):
+    """The repair sessions Cassandra recorded for the test table in system_distributed.repair_history, with the repair
+    they belong to, its coordinator, and the replicas that took part in the session.
+
+    This is not a list of the repaired ranges. A session has one row for each of its ranges, but they all have the id of
+    the session as key, so only the last range written is left. A node with vnodes repairs hundreds of ranges in a few
+    sessions, so the ranges are read from the parent repair history, see _cassandra_repairs.
+    """
     out = cluster.run_cql(
-        "CONSISTENCY ALL; SELECT JSON coordinator, range_begin, range_end, status FROM "
+        "CONSISTENCY ALL; SELECT JSON id, parent_id, coordinator, participants, status FROM "
         f"system_distributed.repair_history WHERE keyspace_name='{KEYSPACE}' AND columnfamily_name='{TABLE}';"
     )
     return lib.parse_json_rows(out)
+
+
+def _parent_rows(cluster, parent_ids):
+    """The parent repairs of parent_ids in system_distributed.parent_repair_history: all the ranges that were requested
+    and the ones that were repaired, and the options the repair was started with, such as primaryRange."""
+    if not parent_ids:
+        return []
+    ids = ", ".join(lib.require_uuid(parent_id) for parent_id in parent_ids)
+    out = cluster.run_cql(
+        "CONSISTENCY ALL; SELECT JSON parent_id, requested_ranges, successful_ranges, options FROM "
+        f"system_distributed.parent_repair_history WHERE parent_id IN ({ids});"
+    )
+    return lib.parse_json_rows(out)
+
+
+def _cassandra_repairs(cluster):
+    """The repairs of the test table that Cassandra recorded, as (repairs, sessions): the repairs with coordinator,
+    ranges and options, see lib.parent_repairs, and the rows of their sessions, for who took part."""
+    sessions = _history_rows(cluster)
+    parents = _parent_rows(cluster, sorted({row["parent_id"] for row in sessions}))
+    return lib.parent_repairs(sessions, parents), sessions
+
+
+def _scheduled_repairs(cluster):
+    """The repairs of the scheduled cycle, once every node has coordinated one that repaired all it asked for and
+    nothing changes any more. Cassandra writes its history while and just after a repair, so a read straight after the
+    last repair may not have all of it."""
+    previous = {"repairs": None}
+
+    def produce():
+        repairs, _ = _cassandra_repairs(cluster)
+        done = [repair for repair in repairs if repair["requested"] and repair["requested"] == repair["successful"]]
+        for repair in repairs:
+            if repair not in done:
+                logger.info(
+                    "Repair %s by %s has repaired %s of the %s ranges it requested so far",
+                    repair["parent_id"],
+                    repair["coordinator"],
+                    len(repair["successful"]),
+                    len(repair["requested"]),
+                )
+        stable = len({repair["coordinator"] for repair in done}) >= EXPECTED_NODES and done == previous["repairs"]
+        previous["repairs"] = done
+        return done if stable else None
+
+    return _wait_until(produce, HISTORY_TIMEOUT_SECONDS, f"the repairs of {EXPECTED_NODES} coordinators in the history")
 
 
 # --- locks held by the test -------------------------------------------------------
@@ -374,7 +426,8 @@ def test_scheduled_cycle_completes():
 
 @pytest.mark.dependency(name="pr_history", depends=["pr_cycle"])
 def test_repairs_are_recorded_as_primary_range_history(install_cassandra_cluster):
-    """ecChronos kept the history apart from the repair state of vnodes, and Cassandra repaired primary ranges only."""
+    """ecChronos kept the history apart from the repair state of vnodes, and Cassandra repaired primary ranges only:
+    every repair was started as a primary range repair, and no range was repaired by two coordinators."""
     node_ids = _STATE["node_ids"]
     table_id = _STATE["table_id"]
     cluster = install_cassandra_cluster
@@ -387,19 +440,23 @@ def test_repairs_are_recorded_as_primary_range_history(install_cassandra_cluster
 
     _wait_until(ecchronos_history_ok, HISTORY_TIMEOUT_SECONDS, "PRIMARY_RANGE rows in ecchronos.repair_history")
 
-    def cassandra_history():
-        by_coordinator = lib.successful_ranges_by_coordinator(_cassandra_repair_rows(cluster))
-        return by_coordinator if len(by_coordinator) >= EXPECTED_NODES else None
+    repairs = _scheduled_repairs(cluster)
+    # The options ecChronos sent are the ones Cassandra started the repairs with.
+    wrong = lib.repairs_not_started_as(repairs, primaryRange="true", incremental="false")
+    assert not wrong, f"Repairs started with other options: {[(r['coordinator'], k, v) for r, k, v in wrong]}"
 
-    by_coordinator = _wait_until(
-        cassandra_history, HISTORY_TIMEOUT_SECONDS, f"repairs by {EXPECTED_NODES} coordinators in system_distributed"
-    )
+    by_coordinator = lib.repaired_ranges_by_coordinator(repairs)
     assert (
         len(by_coordinator) == EXPECTED_NODES
     ), f"Expected {EXPECTED_NODES} coordinators, got {sorted(by_coordinator)}"
+    logger.info("Ranges repaired per coordinator: %s", {a: len(r) for a, r in by_coordinator.items()})
+    assert all(by_coordinator.values()), f"A coordinator repaired no ranges: {by_coordinator}"
     # With vnodes, a repair of everything a node replicates would overlap the ranges of the other coordinators.
     overlaps = lib.overlapping_ranges(by_coordinator)
-    assert not overlaps, f"Coordinators repaired the same token ranges, so more than the primary ranges: {overlaps}"
+    assert not overlaps, (
+        "Coordinators repaired the same token ranges, so more than the primary ranges: "
+        f"{[(first, second, len(shared)) for first, second, shared in overlaps]}"
+    )
 
 
 @pytest.mark.dependency(name="pr_restart", depends=["pr_history"])

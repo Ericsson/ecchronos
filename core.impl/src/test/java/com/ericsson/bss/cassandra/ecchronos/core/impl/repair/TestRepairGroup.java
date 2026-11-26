@@ -34,7 +34,7 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.DummyLock;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairTask;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.primaryrange.PrimaryRangeRepairTask;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.singlesession.SingleSessionRepairTask;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.VnodeRepairTask;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
@@ -219,7 +219,7 @@ public class TestRepairGroup
     }
 
     @Test
-    public void testPrimaryRangeRepairTaskWritesRepairHistoryAsPrimaryRange()
+    public void testSingleSessionRepairTaskWritesRepairHistoryAsPrimaryRange()
     {
         DriverNode node = mockNode("DC1");
         when(node.getId()).thenReturn(myNodeID);
@@ -236,7 +236,7 @@ public class TestRepairGroup
         Collection<RepairTask> repairTasks = repairGroup.getRepairTasks(myNodeID);
 
         assertThat(repairTasks).hasSize(1);
-        assertThat(repairTasks.iterator().next()).isInstanceOf(PrimaryRangeRepairTask.class);
+        assertThat(repairTasks.iterator().next()).isInstanceOf(SingleSessionRepairTask.class);
         // The history row is typed as primary range and keyed by the coordinator node, so it is not vnode state.
         verify(myRepairHistoryService).newSession(any(), eq(TABLE_REFERENCE), eq(myJobId), any(), any(),
                 eq(RepairType.PRIMARY_RANGE));

@@ -12,12 +12,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.primaryrange;
+package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.singlesession;
 
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.AlarmPostUpdateHook;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,7 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Raises and ceases the alarms of a primary range repaired table, based on the time since it was last repaired.
+ * Raises and ceases the alarms of a table repaired with one session per node (primary range or all replicated ranges), based on the time since it was last repaired.
  * <p>
  * The thresholds are the ones of vnode repair: a warning alarm at {@code alarm.warn} and an error alarm at
  * {@code alarm.error}. The decision is shared with vnode repair, see {@link AlarmPostUpdateHook#faultCodeFor}.
@@ -37,23 +38,20 @@ import org.slf4j.LoggerFactory;
  * this is not needed for correctness, but it keeps a table that stays late from calling the reporter on every
  * scheduler pass.
  * <p>
- * One instance is held per {@link PrimaryRangeRepairJob}, that is per node per table.
+ * One instance is held per {@link SingleSessionRepairJob}, that is per node per table. The source of the alarm is
+ * the repair type of the job followed by {@code _ELAPSED}, so the two repair types do not share alarms.
  */
-final class PrimaryRangeRepairAlarm
+final class SingleSessionRepairAlarm
 {
-    private static final Logger LOG = LoggerFactory.getLogger(PrimaryRangeRepairAlarm.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SingleSessionRepairAlarm.class);
 
-    /**
-     * Marker value identifying the alarms raised here. A table can have a vnode schedule and a primary range
-     * schedule at the same time, which would otherwise raise alarms with identical keyspace, table and node data
-     * that reporters keying on the data would take for one alarm.
-     */
-    static final String FAULT_SOURCE_PRIMARY_RANGE_ELAPSED = "PRIMARY_RANGE_ELAPSED";
+    private static final String FAULT_SOURCE_SUFFIX = "_ELAPSED";
 
     private final RepairFaultReporter myFaultReporter;
     private final TableReference myTableReference;
     private final UUID myNodeId;
     private final RepairConfiguration myRepairConfiguration;
+    private final String myFaultSource;
 
     /** The alarm that is currently raised, if any. */
     private Optional<RepairFaultReporter.FaultCode> myRaisedCode = Optional.empty();
@@ -65,16 +63,32 @@ final class PrimaryRangeRepairAlarm
      * @param tableReference the table.
      * @param nodeId the node the table is repaired by.
      * @param repairConfiguration the repair configuration, with the alarm thresholds.
+     * @param repairType the repair type of the job, which gives the source of the alarm.
      */
-    PrimaryRangeRepairAlarm(final RepairFaultReporter faultReporter,
+    SingleSessionRepairAlarm(final RepairFaultReporter faultReporter,
             final TableReference tableReference,
             final UUID nodeId,
-            final RepairConfiguration repairConfiguration)
+            final RepairConfiguration repairConfiguration,
+            final RepairType repairType)
     {
         myFaultReporter = faultReporter;
         myTableReference = tableReference;
         myNodeId = nodeId;
         myRepairConfiguration = repairConfiguration;
+        myFaultSource = faultSourceOf(repairType);
+    }
+
+    /**
+     * The marker value identifying the alarms of a repair type. A table can have a vnode schedule and a schedule of
+     * this kind at the same time, or both of the repair types handled here, which would otherwise raise alarms with
+     * identical keyspace, table and node data that reporters keying on the data would take for one alarm.
+     *
+     * @param repairType the repair type.
+     * @return the value of {@link RepairFaultReporter#FAULT_SOURCE}, for example {@code PRIMARY_RANGE_ELAPSED}.
+     */
+    static String faultSourceOf(final RepairType repairType)
+    {
+        return repairType.name() + FAULT_SOURCE_SUFFIX;
     }
 
     /**
@@ -96,14 +110,14 @@ final class PrimaryRangeRepairAlarm
         {
             if (!due.equals(myRaisedCode))
             {
-                LOG.debug("{} - primary range repair alarm {} (was {})", myTableReference, due.get(), myRaisedCode);
+                LOG.debug("{} - {} alarm {} (was {})", myTableReference, myFaultSource, due.get(), myRaisedCode);
                 myFaultReporter.raise(due.get(), buildFaultData());
                 myRaisedCode = due;
             }
         }
         else if (myRaisedCode.isPresent())
         {
-            LOG.debug("{} - primary range repair alarm {} is gone", myTableReference, myRaisedCode);
+            LOG.debug("{} - {} alarm {} is gone", myTableReference, myFaultSource, myRaisedCode);
             // Always with the warning code, like vnode repair does, also when an error was raised. Reporters are
             // known to match alarms on the data and not on the code, and a reporter written for vnode repair may
             // only look at the warning code when ceasing.
@@ -118,7 +132,7 @@ final class PrimaryRangeRepairAlarm
         data.put(RepairFaultReporter.FAULT_NODE_ID, myNodeId);
         data.put(RepairFaultReporter.FAULT_KEYSPACE, myTableReference.getKeyspace());
         data.put(RepairFaultReporter.FAULT_TABLE, myTableReference.getTable());
-        data.put(RepairFaultReporter.FAULT_SOURCE, FAULT_SOURCE_PRIMARY_RANGE_ELAPSED);
+        data.put(RepairFaultReporter.FAULT_SOURCE, myFaultSource);
         return data;
     }
 

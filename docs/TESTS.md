@@ -225,6 +225,24 @@ affects those suites. It takes the locks it needs to hold in `ecchronos.lock` it
 afterwards. The parsing and the checks it uses are in `primary_range_repair_lib.py`, which is unit tested without a
 cluster, see above.
 
+#### All replicated ranges repair tests (`all-replicated-ranges-repair-integration-tests`)
+These profiles run `test_all_replicated_ranges_repair.py`, in the same way and as a suite of its own, so that it can be
+run, and fail, without the other repair tests.
+
+- `all-replicated-ranges-repair-integration-tests` is the CI profile, with TLS and authentication.
+- `local-all-replicated-ranges-repair-integration-tests` is the local one, without.
+
+```bash
+mvn verify -P local-all-replicated-ranges-repair-integration-tests -Dit.cassandra.version=5.0 -DskipUTs
+```
+
+The test relies on the topology of the test cluster: two nodes in each datacenter, and a test keyspace replicated
+`{datacenter1: 2, datacenter2: 1}`. Every node of `datacenter1` then replicates every token range, and every range has
+one replica in `datacenter2`. That is what lets it show that a repair of one node covers the whole table, with the other
+datacenter taking part, by reading `system_distributed.repair_history`. Like the primary range test it creates its own
+keyspace, takes the locks it holds itself, and keeps its parsing and checks in `primary_range_repair_lib.py`, which both
+tests share. The two repair types take the same locks, so the lock tests are the same.
+
 ### Running acceptance/integration tests towards local ccm cluster
 
 Running acceptance and integration tests towards local ccm cluster will save a lot of time because the Cassandra instances

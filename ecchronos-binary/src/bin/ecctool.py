@@ -119,7 +119,8 @@ ARG_PIDFILE_WRITE = {"flags": ["-p", "--pidfile"], "type": str, "help": "file fo
 ARG_REPAIR_TYPE = {
     "flags": ["-r", "--repair_type"],
     "type": str,
-    "help": "type of repair (accepted values: vnode, parallel_vnode, incremental and primary_range)",
+    "help": "type of repair (accepted values: vnode, parallel_vnode, incremental, primary_range and "
+    "all_replicated_ranges)",
     "required": False,
 }
 ARG_RUN_ALL = {

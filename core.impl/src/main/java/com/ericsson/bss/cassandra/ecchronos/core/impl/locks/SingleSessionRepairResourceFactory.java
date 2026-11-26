@@ -23,21 +23,22 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Repair resource factory for primary range repair.
+ * Repair resource factory for single session repair: the repair types PRIMARY_RANGE and ALL_REPLICATED_RANGES.
  * <p>
- * A primary range repair repairs all the primary ranges of one node in a single repair session, like
- * {@code nodetool repair -pr}. It produces two kinds of single slot locks:
+ * Both repair a node in a single repair session, the primary ranges like {@code nodetool repair -pr} and everything the
+ * node replicates like {@code nodetool repair}, so they take the same locks. It produces two kinds of single slot locks:
  * <ul>
- *     <li>A table lock, {@code keyspace.table}, which is the same lock incremental repair takes. Two primary range
- *     repairs of the same table, and a primary range repair and an incremental repair of the same table, can
+ *     <li>A table lock, {@code keyspace.table}, which is the same lock incremental repair takes. Two single session
+ *     repairs of the same table, and a single session repair and an incremental repair of the same table, can
  *     therefore not run at the same time, regardless of datacenter.</li>
  *     <li>One lock per datacenter involved in the repair. It has its own name prefix, so it is a different lock than
- *     the datacenter lock vnode repair takes (named after the datacenter only). Primary range repair and vnode
- *     repair are intentionally not coordinated with each other.</li>
+ *     the datacenter lock vnode repair takes (named after the datacenter only). Single session repair and vnode
+ *     repair are intentionally not coordinated with each other. The prefix is {@code PrimaryRange-}, after the first
+ *     repair type that used it. It is the name of a lock in the lock table and must not change.</li>
  * </ul>
  * Locks are never taken per node. The locks of one repair are acquired together, all or nothing.
  */
-public class PrimaryRangeRepairResourceFactory implements RepairResourceFactory
+public class SingleSessionRepairResourceFactory implements RepairResourceFactory
 {
     /**
      * Datacenter placeholder for the table lock, shared with {@link IncrementalRepairResourceFactory}. The lock
@@ -60,7 +61,7 @@ public class PrimaryRangeRepairResourceFactory implements RepairResourceFactory
      *
      * @param tableReference the table being repaired; used to build the table lock resource.
      */
-    public PrimaryRangeRepairResourceFactory(final TableReference tableReference)
+    public SingleSessionRepairResourceFactory(final TableReference tableReference)
     {
         myTableReference = Preconditions.checkNotNull(tableReference, "Table reference must be set");
     }

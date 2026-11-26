@@ -26,7 +26,7 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairJob;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.primaryrange.PrimaryRangeRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.singlesession.SingleSessionRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TableRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
@@ -216,7 +216,7 @@ public class TestRepairTypeLockSelection
      * The fixed lock set primary range jobs use: the table lock incremental repair also takes, plus one single slot
      * lock per datacenter, named so it does not collide with the vnode datacenter lock. No per-node locks.
      */
-    private static Set<String> expectedPrimaryRangeLocks()
+    private static Set<String> expectedSingleSessionLocks()
     {
         return Set.of(
                 INCREMENTAL_TABLE_LOCK,
@@ -224,16 +224,21 @@ public class TestRepairTypeLockSelection
                 "DC2/RepairResource-PrimaryRange-DC2-1/1");
     }
 
-    private PrimaryRangeRepairJob primaryRangeJob(final RepairLockType lockType)
+    private SingleSessionRepairJob singleSessionJob(final RepairLockType lockType)
+    {
+        return singleSessionJob(lockType, RepairType.PRIMARY_RANGE);
+    }
+
+    private SingleSessionRepairJob singleSessionJob(final RepairLockType lockType, final RepairType repairType)
     {
         RepairConfiguration configuration = RepairConfiguration.newBuilder()
-                .withRepairType(RepairType.PRIMARY_RANGE)
+                .withRepairType(repairType)
                 .build();
         ScheduledJob.Configuration jobConfiguration = new ScheduledJob.ConfigurationBuilder()
                 .withPriority(ScheduledJob.Priority.LOW)
                 .withRunInterval(1, TimeUnit.DAYS)
                 .build();
-        return new PrimaryRangeRepairJob.Builder()
+        return new SingleSessionRepairJob.Builder()
                 .withConfiguration(jobConfiguration)
                 .withTableReference(TABLE_REFERENCE)
                 .withJmxProxyFactory(myJmxProxyFactory)
@@ -247,12 +252,19 @@ public class TestRepairTypeLockSelection
                 .build();
     }
 
-    private PrimaryRangeOnDemandRepairJob primaryRangeOnDemandJob(final RepairLockType lockType)
+    private SingleSessionOnDemandRepairJob singleSessionOnDemandJob(final RepairLockType lockType)
     {
-        stubOngoingJob(RepairType.PRIMARY_RANGE);
-        return new PrimaryRangeOnDemandRepairJob.Builder()
+        return singleSessionOnDemandJob(lockType, RepairType.PRIMARY_RANGE);
+    }
+
+    private SingleSessionOnDemandRepairJob singleSessionOnDemandJob(final RepairLockType lockType,
+            final RepairType repairType)
+    {
+        stubOngoingJob(repairType);
+        return new SingleSessionOnDemandRepairJob.Builder()
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairConfiguration(RepairConfiguration.newBuilder().withRepairType(repairType).build())
                 .withRepairLockType(lockType)
                 .withReplicationState(myReplicationState)
                 .withRepairHistory(myRepairHistory)
@@ -407,9 +419,9 @@ public class TestRepairTypeLockSelection
     {
         for (RepairLockType lockType : RepairLockType.values())
         {
-            assertThat(resourcesOfFirstTask(primaryRangeJob(lockType).iterator()))
+            assertThat(resourcesOfFirstTask(singleSessionJob(lockType).iterator()))
                     .as("scheduled PRIMARY_RANGE job, lock type %s", lockType)
-                    .containsExactlyInAnyOrderElementsOf(expectedPrimaryRangeLocks());
+                    .containsExactlyInAnyOrderElementsOf(expectedSingleSessionLocks());
         }
     }
 
@@ -418,16 +430,71 @@ public class TestRepairTypeLockSelection
     {
         for (RepairLockType lockType : RepairLockType.values())
         {
-            assertThat(resourcesOfFirstTask(primaryRangeOnDemandJob(lockType).iterator()))
+            assertThat(resourcesOfFirstTask(singleSessionOnDemandJob(lockType).iterator()))
                     .as("on-demand PRIMARY_RANGE job, lock type %s", lockType)
-                    .containsExactlyInAnyOrderElementsOf(expectedPrimaryRangeLocks());
+                    .containsExactlyInAnyOrderElementsOf(expectedSingleSessionLocks());
         }
+    }
+
+    @Test
+    public void testScheduledAllReplicatedRangesJobHasTheLocksOfPrimaryRangeForEveryLockType()
+    {
+        for (RepairLockType lockType : RepairLockType.values())
+        {
+            assertThat(resourcesOfFirstTask(singleSessionJob(lockType, RepairType.ALL_REPLICATED_RANGES).iterator()))
+                    .as("scheduled ALL_REPLICATED_RANGES job, lock type %s", lockType)
+                    .containsExactlyInAnyOrderElementsOf(expectedSingleSessionLocks());
+        }
+    }
+
+    @Test
+    public void testOnDemandAllReplicatedRangesJobHasTheLocksOfPrimaryRangeForEveryLockType()
+    {
+        for (RepairLockType lockType : RepairLockType.values())
+        {
+            assertThat(resourcesOfFirstTask(
+                    singleSessionOnDemandJob(lockType, RepairType.ALL_REPLICATED_RANGES).iterator()))
+                    .as("on-demand ALL_REPLICATED_RANGES job, lock type %s", lockType)
+                    .containsExactlyInAnyOrderElementsOf(expectedSingleSessionLocks());
+        }
+    }
+
+    @Test
+    public void testAllReplicatedRangesTakesNoPerNodeLockAndSharesTheTableLockWithIncremental()
+    {
+        Set<String> allReplicatedRanges = resourcesOfFirstTask(
+                singleSessionJob(RepairLockType.VNODE, RepairType.ALL_REPLICATED_RANGES).iterator());
+
+        assertThat(allReplicatedRanges).doesNotContainAnyElementsOf(nodeLocks());
+        assertThat(allReplicatedRanges).contains(INCREMENTAL_TABLE_LOCK);
+    }
+
+    @Test
+    public void testAllReplicatedRangesAndPrimaryRangeExcludeEachOther()
+    {
+        Set<String> allReplicatedRanges = resourcesOfFirstTask(
+                singleSessionJob(RepairLockType.VNODE, RepairType.ALL_REPLICATED_RANGES).iterator());
+        Set<String> primaryRange = resourcesOfFirstTask(singleSessionJob(RepairLockType.VNODE).iterator());
+
+        // The same locks, so the two cannot run on a table at the same time, neither per table nor per datacenter.
+        assertThat(allReplicatedRanges).isEqualTo(primaryRange);
+    }
+
+    @Test
+    public void testAllReplicatedRangesDataCenterLocksDoNotCollideWithVnodeDataCenterLocks()
+    {
+        Set<String> allReplicatedRanges = resourcesOfFirstTask(
+                singleSessionJob(RepairLockType.DATACENTER, RepairType.ALL_REPLICATED_RANGES).iterator());
+        Set<String> vnodeDataCenterLocks =
+                resourcesOfFirstTask(vnodeJob(RepairLockType.DATACENTER, RepairType.VNODE).iterator());
+
+        assertThat(allReplicatedRanges).doesNotContainAnyElementsOf(vnodeDataCenterLocks);
     }
 
     @Test
     public void testPrimaryRangeTakesNoPerNodeLockAndSharesTheTableLockWithIncremental()
     {
-        Set<String> primaryRange = resourcesOfFirstTask(primaryRangeJob(RepairLockType.VNODE).iterator());
+        Set<String> primaryRange = resourcesOfFirstTask(singleSessionJob(RepairLockType.VNODE).iterator());
         Set<String> incremental = resourcesOfFirstTask(incrementalJob(RepairLockType.VNODE).iterator());
 
         assertThat(primaryRange).doesNotContainAnyElementsOf(nodeLocks());
@@ -439,7 +506,7 @@ public class TestRepairTypeLockSelection
     @Test
     public void testPrimaryRangeDataCenterLocksDoNotCollideWithVnodeDataCenterLocks()
     {
-        Set<String> primaryRange = resourcesOfFirstTask(primaryRangeJob(RepairLockType.DATACENTER).iterator());
+        Set<String> primaryRange = resourcesOfFirstTask(singleSessionJob(RepairLockType.DATACENTER).iterator());
         Set<String> vnodeDataCenterLocks =
                 resourcesOfFirstTask(vnodeJob(RepairLockType.DATACENTER, RepairType.VNODE).iterator());
 

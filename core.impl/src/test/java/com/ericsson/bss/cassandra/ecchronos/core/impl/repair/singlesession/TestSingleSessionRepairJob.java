@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.primaryrange;
+package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.singlesession;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.impl.table.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,7 +57,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
-public class TestPrimaryRangeRepairJob
+public class TestSingleSessionRepairJob
 {
     private static final long RUN_INTERVAL_IN_DAYS = 1;
     private static final long WARNING_IN_DAYS = 7;
@@ -114,13 +114,13 @@ public class TestPrimaryRangeRepairJob
                 eq(RepairType.PRIMARY_RANGE), anyLong(), anyLong())).thenReturn(OptionalLong.of(timestamp));
     }
 
-    private PrimaryRangeRepairJob job()
+    private SingleSessionRepairJob job()
     {
         ScheduledJob.Configuration configuration = new ScheduledJob.ConfigurationBuilder()
                 .withPriority(ScheduledJob.Priority.LOW)
                 .withRunInterval(RUN_INTERVAL_IN_DAYS, TimeUnit.DAYS)
                 .build();
-        return new PrimaryRangeRepairJob.Builder()
+        return new SingleSessionRepairJob.Builder()
                 .withConfiguration(configuration)
                 .withTableReference(myTableReference)
                 .withJmxProxyFactory(myJmxProxyFactory)
@@ -137,7 +137,7 @@ public class TestPrimaryRangeRepairJob
     @Test
     public void testWithoutHistoryAndWithoutInitialDelayTheJobIsDueRightAway()
     {
-        PrimaryRangeRepairJob job = job();
+        SingleSessionRepairJob job = job();
 
         assertThat(job.getRealPriority()).isGreaterThan(0);
         assertThat(job.runnable()).isTrue();
@@ -149,7 +149,7 @@ public class TestPrimaryRangeRepairJob
         withInitialDelay(2);
         long before = System.currentTimeMillis();
 
-        PrimaryRangeRepairJob job = job();
+        SingleSessionRepairJob job = job();
 
         // Like vnode repair: the table is taken for a new one, last repaired one interval minus the delay ago.
         long expected = before - TimeUnit.DAYS.toMillis(RUN_INTERVAL_IN_DAYS) + TimeUnit.HOURS.toMillis(2);
@@ -178,7 +178,7 @@ public class TestPrimaryRangeRepairJob
         long lastRepairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(RUN_INTERVAL_IN_DAYS) - 1000;
         lastRepairedAt(lastRepairedAt);
 
-        PrimaryRangeRepairJob job = job();
+        SingleSessionRepairJob job = job();
 
         // A repair that is found is used as it is. It is overdue, so it is not delayed by the initial delay.
         assertThat(job.getLastSuccessfulRun()).isEqualTo(lastRepairedAt);
@@ -192,7 +192,7 @@ public class TestPrimaryRangeRepairJob
         when(myRepairHistoryProvider.lastSuccessfulRepair(any(), any(), any(), anyLong(), anyLong()))
                 .thenThrow(new IllegalStateException("history unavailable"));
 
-        PrimaryRangeRepairJob job = job();
+        SingleSessionRepairJob job = job();
 
         // A failing read says nothing about the table, so it must not be taken for a new one. It is repaired now.
         assertThat(job.runnable()).isTrue();
@@ -206,7 +206,7 @@ public class TestPrimaryRangeRepairJob
                 .withHistoryLookbackIntervals(0)
                 .build();
 
-        PrimaryRangeRepairJob job = job();
+        SingleSessionRepairJob job = job();
 
         // Like vnode repair: history_lookback_intervals 0 makes the table appear never repaired.
         verify(myRepairHistoryProvider, never()).lastSuccessfulRepair(any(), any(), any(), anyLong(), anyLong());
@@ -222,7 +222,7 @@ public class TestPrimaryRangeRepairJob
                 .withRunInterval(RUN_INTERVAL_IN_DAYS, TimeUnit.DAYS)
                 .build();
 
-        PrimaryRangeRepairJob job = new PrimaryRangeRepairJob.Builder()
+        SingleSessionRepairJob job = new SingleSessionRepairJob.Builder()
                 .withConfiguration(configuration)
                 .withTableReference(myTableReference)
                 .withJmxProxyFactory(myJmxProxyFactory)
@@ -240,7 +240,7 @@ public class TestPrimaryRangeRepairJob
     @Test
     public void testRefreshStateDoesNotApplyTheInitialDelayAgain() throws InterruptedException
     {
-        PrimaryRangeRepairJob job = job();
+        SingleSessionRepairJob job = job();
         long lastRun = job.getLastSuccessfulRun();
         assertThat(job.runnable()).isTrue();
         Thread.sleep(5);
@@ -257,7 +257,7 @@ public class TestPrimaryRangeRepairJob
         long lastRepairedAt = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1);
         lastRepairedAt(lastRepairedAt);
 
-        PrimaryRangeRepairJob job = job();
+        SingleSessionRepairJob job = job();
 
         assertThat(job.getLastSuccessfulRun()).isEqualTo(lastRepairedAt);
         assertThat(job.getRealPriority()).isEqualTo(-1);
@@ -279,6 +279,52 @@ public class TestPrimaryRangeRepairJob
 
         verify(myRepairHistoryProvider).lastSuccessfulRepair(eq(myNode), eq(myTableReference),
                 eq(RepairType.PRIMARY_RANGE), anyLong(), anyLong());
+    }
+
+    @Test
+    public void testHistoryOfAnAllReplicatedRangesJobIsReadForItsOwnType()
+    {
+        myRepairConfiguration = RepairConfiguration.newBuilder(myRepairConfiguration)
+                .withRepairType(RepairType.ALL_REPLICATED_RANGES).build();
+
+        job();
+
+        verify(myRepairHistoryProvider).lastSuccessfulRepair(eq(myNode), eq(myTableReference),
+                eq(RepairType.ALL_REPLICATED_RANGES), anyLong(), anyLong());
+        verify(myRepairHistoryProvider, never()).lastSuccessfulRepair(any(), any(), eq(RepairType.PRIMARY_RANGE),
+                anyLong(), anyLong());
+    }
+
+    @Test
+    public void testAllReplicatedRangesJobIsNotDueBecauseOfAPrimaryRangeRepair()
+    {
+        myRepairConfiguration = RepairConfiguration.newBuilder(myRepairConfiguration)
+                .withRepairType(RepairType.ALL_REPLICATED_RANGES).build();
+        // Only a primary range repair is recent.
+        when(myRepairHistoryProvider.lastSuccessfulRepair(eq(myNode), eq(myTableReference),
+                eq(RepairType.PRIMARY_RANGE), anyLong(), anyLong()))
+                .thenReturn(OptionalLong.of(System.currentTimeMillis()));
+
+        assertThat(job().runnable()).isTrue();
+    }
+
+    @Test
+    public void testAllReplicatedRangesJobViewShowsItsType()
+    {
+        myRepairConfiguration = RepairConfiguration.newBuilder(myRepairConfiguration)
+                .withRepairType(RepairType.ALL_REPLICATED_RANGES).build();
+
+        assertThat(job().getView().getRepairType()).isEqualTo(RepairType.ALL_REPLICATED_RANGES);
+    }
+
+    @Test
+    public void testAJobOfAnotherRepairTypeIsRejected()
+    {
+        myRepairConfiguration = RepairConfiguration.newBuilder(myRepairConfiguration)
+                .withRepairType(RepairType.VNODE).build();
+
+        org.assertj.core.api.Assertions.assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(this::job);
     }
 
     @Test
@@ -307,7 +353,7 @@ public class TestPrimaryRangeRepairJob
                 .withHistoryLookbackIntervals(0)
                 .build();
 
-        PrimaryRangeRepairJob job = job();
+        SingleSessionRepairJob job = job();
 
         verify(myRepairHistoryProvider, never()).lastSuccessfulRepair(any(), any(), any(), anyLong(), anyLong());
         // The fixture has no initial delay, so a table that appears never repaired is due.
@@ -318,7 +364,7 @@ public class TestPrimaryRangeRepairJob
     public void testRefreshStateDoesNotReadHistoryWhileNotDue()
     {
         lastRepairedAt(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1));
-        PrimaryRangeRepairJob job = job();
+        SingleSessionRepairJob job = job();
 
         job.refreshState();
         job.refreshState();
@@ -330,7 +376,7 @@ public class TestPrimaryRangeRepairJob
     @Test
     public void testRefreshStatePicksUpARepairThatFinishedElsewhere()
     {
-        PrimaryRangeRepairJob job = job();
+        SingleSessionRepairJob job = job();
         assertThat(job.runnable()).isTrue();
 
         // An on-demand primary range repair finished after the job was created.
@@ -347,7 +393,7 @@ public class TestPrimaryRangeRepairJob
     {
         long lastRepairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(RUN_INTERVAL_IN_DAYS) - 10_000;
         lastRepairedAt(lastRepairedAt);
-        PrimaryRangeRepairJob job = job();
+        SingleSessionRepairJob job = job();
 
         lastRepairedAt(lastRepairedAt - TimeUnit.DAYS.toMillis(3));
         job.refreshState();
@@ -358,7 +404,7 @@ public class TestPrimaryRangeRepairJob
     @Test
     public void testSuccessfulExecutionMakesTheJobNotDue()
     {
-        PrimaryRangeRepairJob job = job();
+        SingleSessionRepairJob job = job();
         ScheduledTask task = job.iterator().next();
         assertThat(job.runnable()).isTrue();
 
@@ -371,7 +417,7 @@ public class TestPrimaryRangeRepairJob
     @Test
     public void testFailedExecutionLeavesTheJobDue()
     {
-        PrimaryRangeRepairJob job = job();
+        SingleSessionRepairJob job = job();
         ScheduledTask task = job.iterator().next();
 
         job.postExecute(TaskExecutionResult.TERMINAL, task);
@@ -382,7 +428,7 @@ public class TestPrimaryRangeRepairJob
     @Test
     public void testSuccessDoesNotWriteHistoryRowsForOtherReplicas()
     {
-        PrimaryRangeRepairJob job = job();
+        SingleSessionRepairJob job = job();
 
         job.postExecute(TaskExecutionResult.SUCCESS, job.iterator().next());
 
@@ -399,7 +445,7 @@ public class TestPrimaryRangeRepairJob
         when(replica.getId()).thenReturn(myNodeId);
         when(replica.getDatacenter()).thenReturn("DC1");
         when(myReplicationState.getReplicas(myTableReference, myNode)).thenReturn(ImmutableSet.of(replica));
-        PrimaryRangeRepairJob job = job();
+        SingleSessionRepairJob job = job();
 
         Iterator<ScheduledTask> iterator = job.iterator();
         ScheduledTask task = iterator.next();
@@ -408,7 +454,7 @@ public class TestPrimaryRangeRepairJob
         assertThat(task).isInstanceOf(RepairGroup.class);
         Collection<RepairTask> repairTasks = ((RepairGroup) task).getRepairTasks(myNodeId);
         assertThat(repairTasks).hasSize(1);
-        assertThat(repairTasks.iterator().next()).isInstanceOf(PrimaryRangeRepairTask.class);
+        assertThat(repairTasks.iterator().next()).isInstanceOf(SingleSessionRepairTask.class);
         assertThat(task.getPriority()).isEqualTo(job.getRealPriority());
     }
 
@@ -452,7 +498,7 @@ public class TestPrimaryRangeRepairJob
     @Test
     public void testViewStatusBlockedWhenDueButParked()
     {
-        PrimaryRangeRepairJob job = job();
+        SingleSessionRepairJob job = job();
         job.setRunnableIn(TimeUnit.HOURS.toMillis(1));
 
         assertThat(job.getView().getStatus()).isEqualTo(ScheduledRepairJobView.Status.BLOCKED);

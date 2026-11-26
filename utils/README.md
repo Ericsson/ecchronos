@@ -42,7 +42,7 @@ com.ericsson.bss.cassandra.ecchronos.utils
 | Enum | Values | Purpose |
 |---|---|---|
 | `RepairStatus` | `STARTED`, `SUCCESS`, `FAILED`, `UNKNOWN` | Repair session lifecycle tracking |
-| `RepairType` | `VNODE`, `PARALLEL_VNODE`, `INCREMENTAL`, `PRIMARY_RANGE` | Repair strategy selection |
+| `RepairType` | `VNODE`, `PARALLEL_VNODE`, `INCREMENTAL`, `PRIMARY_RANGE`, `ALL_REPLICATED_RANGES` | Repair strategy selection |
 | `RepairParallelism` | `PARALLEL` | Repair concurrency model |
 | `RepairHistoryProvider` | `CASSANDRA`, `UPGRADE`, `ECC` | Source of repair history data |
 

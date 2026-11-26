@@ -31,8 +31,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairTask;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.primaryrange.PrimaryRangeRepairJob;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.primaryrange.PrimaryRangeRepairTask;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.singlesession.SingleSessionRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.singlesession.SingleSessionRepairTask;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.OnDemandRepairJobFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.ScheduledRepairJobFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.VnodeRepairStatesImpl;
@@ -101,36 +101,41 @@ public class TestRepairTypeDispatch
             RepairType.VNODE, TableRepairJob.class,
             RepairType.PARALLEL_VNODE, TableRepairJob.class,
             RepairType.INCREMENTAL, IncrementalRepairJob.class,
-            RepairType.PRIMARY_RANGE, PrimaryRangeRepairJob.class);
+            RepairType.PRIMARY_RANGE, SingleSessionRepairJob.class,
+            RepairType.ALL_REPLICATED_RANGES, SingleSessionRepairJob.class);
 
     private static final Map<RepairType, Class<?>> ON_DEMAND_JOB = Map.of(
             RepairType.VNODE, VnodeOnDemandRepairJob.class,
             RepairType.PARALLEL_VNODE, VnodeOnDemandRepairJob.class,
             RepairType.INCREMENTAL, IncrementalOnDemandRepairJob.class,
-            RepairType.PRIMARY_RANGE, PrimaryRangeOnDemandRepairJob.class);
+            RepairType.PRIMARY_RANGE, SingleSessionOnDemandRepairJob.class,
+            RepairType.ALL_REPLICATED_RANGES, SingleSessionOnDemandRepairJob.class);
 
     private static final Map<RepairType, List<Class<?>>> REPAIR_TASKS_FOR_THREE_RANGES = Map.of(
             RepairType.VNODE, List.of(VnodeRepairTask.class, VnodeRepairTask.class, VnodeRepairTask.class),
             RepairType.PARALLEL_VNODE, List.of(VnodeRepairTask.class),
             RepairType.INCREMENTAL, List.of(IncrementalRepairTask.class),
-            RepairType.PRIMARY_RANGE, List.of(PrimaryRangeRepairTask.class));
+            RepairType.PRIMARY_RANGE, List.of(SingleSessionRepairTask.class),
+            RepairType.ALL_REPLICATED_RANGES, List.of(SingleSessionRepairTask.class));
 
     private static final Map<RepairType, Boolean> REQUIRES_TOKENS_PER_REPAIR = Map.of(
             RepairType.VNODE, true,
             RepairType.PARALLEL_VNODE, false,
             RepairType.INCREMENTAL, false,
-            RepairType.PRIMARY_RANGE, false);
+            RepairType.PRIMARY_RANGE, false,
+            RepairType.ALL_REPLICATED_RANGES, false);
 
     /**
      * The token map hash persisted for the rows a cluster-wide job writes for other nodes: 0 for incremental, the
      * hash of all ranges for vnode types. Absent means no rows are written: every managed node already has its own
-     * job and repairs its own primary ranges, so primary range repair must not hand out rows.
+     * job and repairs its own ranges, so primary range and all replicated ranges repair must not hand out rows.
      */
     private static final Map<RepairType, Optional<Integer>> STORED_TOKEN_MAP_HASH = Map.of(
             RepairType.VNODE, Optional.of(Set.of(RANGE_A).hashCode()),
             RepairType.PARALLEL_VNODE, Optional.of(Set.of(RANGE_A).hashCode()),
             RepairType.INCREMENTAL, Optional.of(0),
-            RepairType.PRIMARY_RANGE, Optional.empty());
+            RepairType.PRIMARY_RANGE, Optional.empty(),
+            RepairType.ALL_REPLICATED_RANGES, Optional.empty());
 
     @Mock
     private DistributedJmxProxyFactory myJmxProxyFactory;

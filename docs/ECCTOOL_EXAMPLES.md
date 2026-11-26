@@ -221,8 +221,9 @@ Datacenter Exclusion added successfully.
 Use *repair-info* to check how much each table is repaired. The following example output shows the cluster wide repair
 information for all tables in the past 5 minutes.
 
-*repair-info* is based on the repair history of token ranges. A table repaired with `PRIMARY_RANGE` is listed, but is
-shown as not repaired (0.00), because its history is not recorded per token range. Use *schedules* and *repairs* to see
+*repair-info* is based on the repair history of token ranges. A table repaired with `PRIMARY_RANGE` or
+`ALL_REPLICATED_RANGES` is listed, but is shown as not repaired (0.00), because its history is not recorded per token
+range. Use *schedules* and *repairs* to see
 how those tables are repaired.
 
 ```cmd
@@ -289,7 +290,7 @@ The `Repaired(%)` is the number of ranges repaired vs total ranges. For manual r
 
 The `Completed at` is the time when the manual repair did finish.
 
-The `Repair type` of the repair. Can be `VNODE`, `PARALLEL_VNODE`, `INCREMENTAL` or `PRIMARY_RANGE`.
+The `Repair type` of the repair. Can be `VNODE`, `PARALLEL_VNODE`, `INCREMENTAL`, `PRIMARY_RANGE` or `ALL_REPLICATED_RANGES`.
 
 ## run-repair
 
@@ -506,6 +507,7 @@ The `Status` of the repair, where possible states are:
   - `VNODE` The schedule is completed and all ranges have been repaired within the interval.
   - `INCREMENTAL` All data is repaired, i.e. Repaired(%) is 100%.
   - `PRIMARY_RANGE` The primary ranges of the node have been repaired within the interval.
+  - `ALL_REPLICATED_RANGES` All the ranges the node replicates have been repaired within the interval.
 * `BLOCKED` The schedule is blocked. Occurs if a schedule should be executing but is blocked by a run-policy or if a\
   repair task has failed and triggered a backoff (30 minutes).
 
@@ -513,25 +515,25 @@ The `Repaired(%)` depends on the repair type used:
 * `VNODE` The number of ranges repaired within the interval vs total ranges. For schedules this value can go up and\
   down as ranges become unrepaired.
 * `INCREMENTAL` The amount of data repaired. 100% means all data is repaired.
-* `PRIMARY_RANGE` Either 0% or 100%. The primary ranges are repaired in one repair session, so it is 100% if the\
-  last successful repair finished within the interval, and 0% otherwise.
+* `PRIMARY_RANGE` and `ALL_REPLICATED_RANGES` Either 0% or 100%. The ranges are repaired in one repair session, so it\
+  is 100% if the last successful repair finished within the interval, and 0% otherwise.
 
 The `Completed at` depends on the repair type used:
 * `VNODE` The time when the all ranges for the schedule are repaired. ecChronos assumes all ranges are repaired if\
   there is no repair history available.
 * `INCREMENTAL` The last known point in time all data was repaired. If `Repaired(%)` is at 100% this will normally be\
   the current time.
-* `PRIMARY_RANGE` The time the last successful primary range repair of the node finished, according to the repair\
-  history.
+* `PRIMARY_RANGE` and `ALL_REPLICATED_RANGES` The time the last successful repair of that type of the node finished,\
+  according to the repair history.
 
 The `Next repair` depends on the repair type used:
 * `VNODE` The time the schedule will be made ready for execution. This is based on the "oldest range repair time" +\
   "interval" - "repair time taken" for the ranges. This is updated each time a repair group is completed.
 * `INCREMENTAL` If there is something to repair, i.e. `Repaired(%)` is not 100%, this is the time it will be made ready\
   for execution. This will always be "completed at" + "interval".
-* `PRIMARY_RANGE` "completed at" + "interval".
+* `PRIMARY_RANGE` and `ALL_REPLICATED_RANGES` "completed at" + "interval".
 
-The `Repair type` is the type of the schedule. Can be `VNODE`, `PARALLEL_VNODE`, `INCREMENTAL` or `PRIMARY_RANGE`.
+The `Repair type` is the type of the schedule. Can be `VNODE`, `PARALLEL_VNODE`, `INCREMENTAL`, `PRIMARY_RANGE` or `ALL_REPLICATED_RANGES`.
 
 ## start
 

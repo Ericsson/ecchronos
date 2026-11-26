@@ -80,11 +80,14 @@ expression, checkstyle requires a `default`, and that `default` must throw rathe
    * `VNODE` and `PARALLEL_VNODE` use the factory selected by `repair.lock_type` (`RepairLockType`).
    * `INCREMENTAL` uses its own fixed `IncrementalRepairResourceFactory` and `repair.lock_type` does **not** apply to
      it. It always takes a single-slot table lock plus one lock per replica node.
-   * `PRIMARY_RANGE` uses its own fixed `PrimaryRangeRepairResourceFactory` and `repair.lock_type` does **not**
+   * `PRIMARY_RANGE` uses its own fixed `SingleSessionRepairResourceFactory` and `repair.lock_type` does **not**
      apply to it either. It takes the same single-slot table lock as `INCREMENTAL`, so the two exclude each other
      per table, plus one single-slot lock per datacenter involved, named `PrimaryRange-<datacenter>` so it is a
      different lock than the vnode datacenter lock. It takes no per-node locks and is not coordinated with vnode
      repair.
+   * `ALL_REPLICATED_RANGES` uses the same `SingleSessionRepairResourceFactory`, so the same locks as `PRIMARY_RANGE`:
+     the two exclude each other per table and per datacenter. The datacenters come from the replica group, which holds
+     every replica of every range the node replicates, so they cover the datacenters the session takes part in.
    * Resource names are free-form strings and are shared by every repair type. Pick names that can not collide with
      datacenter names, node ids (`RepairResource(dc, nodeId)`) or `keyspace.table`. If the new type reuses the
      per-node locks it competes with vnode and incremental repair for the same slots, otherwise it gets an

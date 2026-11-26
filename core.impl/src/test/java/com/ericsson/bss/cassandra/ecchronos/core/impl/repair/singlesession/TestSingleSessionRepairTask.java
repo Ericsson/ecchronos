@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.primaryrange;
+package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.singlesession;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.impl.table.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,7 +57,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
-public class TestPrimaryRangeRepairTask
+public class TestSingleSessionRepairTask
 {
     private final TableReference myTableReference = tableReference("keyspace", "table");
     private final UUID myNodeId = UUID.randomUUID();
@@ -93,16 +93,21 @@ public class TestPrimaryRangeRepairTask
         myParticipants = ImmutableSet.of(mock(DriverNode.class));
     }
 
-    private PrimaryRangeRepairTask newTask()
+    private SingleSessionRepairTask newTask()
     {
-        return new PrimaryRangeRepairTask(myNodeId, myJmxProxyFactory, myTableReference, myRepairConfiguration,
+        return newTask(RepairType.PRIMARY_RANGE);
+    }
+
+    private SingleSessionRepairTask newTask(final RepairType repairType)
+    {
+        return new SingleSessionRepairTask(repairType, myNodeId, myJmxProxyFactory, myTableReference, myRepairConfiguration,
                 myTableRepairMetrics, myRepairHistory, myHistoryNode, myJobId, myParticipants);
     }
 
     @SuppressWarnings("unchecked")
-    private static Map<String, String> optionsOf(final PrimaryRangeRepairTask task) throws Exception
+    private static Map<String, String> optionsOf(final SingleSessionRepairTask task) throws Exception
     {
-        Method getOptions = PrimaryRangeRepairTask.class.getDeclaredMethod("getOptions");
+        Method getOptions = SingleSessionRepairTask.class.getDeclaredMethod("getOptions");
         getOptions.setAccessible(true);
         return (Map<String, String>) getOptions.invoke(task);
     }
@@ -130,9 +135,59 @@ public class TestPrimaryRangeRepairTask
     }
 
     @Test
+    public void testAllReplicatedRangesIsNotAPrimaryRangeRepair() throws Exception
+    {
+        Map<String, String> options = optionsOf(newTask(RepairType.ALL_REPLICATED_RANGES));
+
+        assertThat(options)
+                .containsEntry(RepairOptions.PRIMARY_RANGE_KEY, "false")
+                .containsEntry(RepairOptions.INCREMENTAL_KEY, "false")
+                .containsEntry(RepairOptions.COLUMNFAMILIES_KEY, "table")
+                .containsEntry(RepairOptions.PARALLELISM_KEY, RepairParallelism.PARALLEL.getName())
+                .containsEntry(RepairOptions.UNREPLICATED_KEY, "true");
+    }
+
+    @Test
+    public void testAllReplicatedRangesHasNoRangesAndNoHosts() throws Exception
+    {
+        // Without them Cassandra repairs the ranges of the node, with the replicas in all datacenters.
+        Map<String, String> options = optionsOf(newTask(RepairType.ALL_REPLICATED_RANGES));
+
+        assertThat(options).doesNotContainKeys(RepairOptions.RANGES_KEY, RepairOptions.HOSTS_KEY);
+    }
+
+    @Test
+    public void testAllReplicatedRangesSessionHasItsOwnType()
+    {
+        newTask(RepairType.ALL_REPLICATED_RANGES);
+
+        verify(myRepairHistory).newSession(eq(myHistoryNode), eq(myTableReference), eq(myJobId),
+                eq(LongTokenRange.of(Long.MIN_VALUE, Long.MAX_VALUE)), eq(myParticipants),
+                eq(RepairType.ALL_REPLICATED_RANGES));
+    }
+
+    @Test
+    public void testOnlyThePrimaryRangeTypeIsPrimaryRange() throws Exception
+    {
+        assertThat(optionsOf(newTask(RepairType.PRIMARY_RANGE)))
+                .containsEntry(RepairOptions.PRIMARY_RANGE_KEY, "true");
+        assertThat(optionsOf(newTask(RepairType.ALL_REPLICATED_RANGES)))
+                .containsEntry(RepairOptions.PRIMARY_RANGE_KEY, "false");
+    }
+
+    @Test
+    public void testTheOtherRepairTypesAreRejected()
+    {
+        for (RepairType repairType : new RepairType[] {RepairType.VNODE, RepairType.PARALLEL_VNODE, RepairType.INCREMENTAL})
+        {
+            assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> newTask(repairType));
+        }
+    }
+
+    @Test
     public void testSessionIsTypedPrimaryRangeAndKeyedByTheHistoryNode()
     {
-        // The session type is fixed by the task, whatever repair type the configuration says.
+        // The session type is given by the task, whatever repair type the configuration says.
         myRepairConfiguration = RepairConfiguration.newBuilder().withRepairType(RepairType.VNODE).build();
 
         newTask();
@@ -145,7 +200,7 @@ public class TestPrimaryRangeRepairTask
     @Test
     public void testOnExecuteStartsAndOnFinishFinishesTheSession() throws Exception
     {
-        PrimaryRangeRepairTask task = newTask();
+        SingleSessionRepairTask task = newTask();
 
         invoke(task, "onExecute");
         verify(mySession).start();
@@ -172,7 +227,7 @@ public class TestPrimaryRangeRepairTask
     {
         when(myJmxProxy.repairAsync(eq(myNodeId), anyString(), any())).thenReturn(0);
 
-        PrimaryRangeRepairTask task = newTask();
+        SingleSessionRepairTask task = newTask();
 
         assertThatExceptionOfType(TransientRepairException.class).isThrownBy(task::execute);
         verify(mySession).start();
@@ -183,7 +238,7 @@ public class TestPrimaryRangeRepairTask
     @Test
     public void testFailedRangesFailTheTask() throws Exception
     {
-        PrimaryRangeRepairTask task = newTask();
+        SingleSessionRepairTask task = newTask();
         invoke(task, "onRangeFinished", new Class<?>[] {LongTokenRange.class, RepairStatus.class},
                 LongTokenRange.of(1, 100), RepairStatus.FAILED);
 
@@ -198,16 +253,16 @@ public class TestPrimaryRangeRepairTask
         invokeVerify(newTask());
     }
 
-    private static Object invoke(final PrimaryRangeRepairTask task, final String method) throws Exception
+    private static Object invoke(final SingleSessionRepairTask task, final String method) throws Exception
     {
         return invoke(task, method, new Class<?>[0]);
     }
 
     /** Invokes a protected method, looking it up on the class that declares it. */
-    private static Object invoke(final PrimaryRangeRepairTask task, final String method, final Class<?>[] types,
+    private static Object invoke(final SingleSessionRepairTask task, final String method, final Class<?>[] types,
             final Object... args) throws Exception
     {
-        Class<?> declaring = PrimaryRangeRepairTask.class;
+        Class<?> declaring = SingleSessionRepairTask.class;
         while (true)
         {
             try
@@ -227,12 +282,12 @@ public class TestPrimaryRangeRepairTask
         }
     }
 
-    private static void invokeOnFinish(final PrimaryRangeRepairTask task, final RepairStatus status) throws Exception
+    private static void invokeOnFinish(final SingleSessionRepairTask task, final RepairStatus status) throws Exception
     {
         invoke(task, "onFinish", new Class<?>[] {RepairStatus.class}, status);
     }
 
-    private void invokeVerify(final PrimaryRangeRepairTask task) throws Exception
+    private void invokeVerify(final SingleSessionRepairTask task) throws Exception
     {
         try
         {

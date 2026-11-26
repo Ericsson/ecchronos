@@ -232,8 +232,8 @@ public final class OngoingJob
 
     /**
      * Whether a cluster-wide job of the given type hands out rows to other nodes, based on how the token ranges are
-     * assigned to them. Primary range repair does not: every managed node has its own job and repairs its own
-     * primary ranges, so extra rows would run extra repairs.
+     * assigned to them. Primary range and all replicated ranges repair do not: every managed node has its own job
+     * and repairs its own ranges, so extra rows would run extra repairs.
      *
      * @param repairType the repair type.
      * @return true if rows are written for the nodes the token ranges are assigned to.
@@ -243,7 +243,7 @@ public final class OngoingJob
         return switch (repairType)
         {
             case VNODE, PARALLEL_VNODE, INCREMENTAL -> true;
-            case PRIMARY_RANGE -> false;
+            case PRIMARY_RANGE, ALL_REPLICATED_RANGES -> false;
         };
     }
 
@@ -295,8 +295,8 @@ public final class OngoingJob
     {
         StoredRangeState rangeState = switch (repairType)
         {
-            // Incremental and primary range repair are not tracked per token range.
-            case INCREMENTAL, PRIMARY_RANGE -> new StoredRangeState(0, Collections.emptySet());
+            // Incremental, primary range and all replicated ranges repair are not tracked per token range.
+            case INCREMENTAL, PRIMARY_RANGE, ALL_REPLICATED_RANGES -> new StoredRangeState(0, Collections.emptySet());
             case VNODE, PARALLEL_VNODE ->
                     new StoredRangeState(allTokenRanges(remainingRanges, repairedRanges).hashCode(), repairedRanges);
         };
