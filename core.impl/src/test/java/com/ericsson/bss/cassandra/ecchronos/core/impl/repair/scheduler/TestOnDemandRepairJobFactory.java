@@ -20,7 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.IncrementalOnDemand
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandStatus;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OngoingJob;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.PrimaryRangeOnDemandRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.SingleSessionOnDemandRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.VnodeOnDemandRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.DriverNode;
@@ -44,7 +44,10 @@ import java.util.function.BiConsumer;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.impl.table.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
@@ -127,9 +130,41 @@ public class TestOnDemandRepairJobFactory
 
         OnDemandRepairJob job = myFactory.createFromOngoingJob(myOngoingJob);
 
-        assertThat(job).isExactlyInstanceOf(PrimaryRangeOnDemandRepairJob.class);
+        assertThat(job).isExactlyInstanceOf(SingleSessionOnDemandRepairJob.class);
         assertThat(job.getOngoingJob()).isEqualTo(myOngoingJob);
         assertThat(job.getRepairConfiguration().getRepairType()).isEqualTo(RepairType.PRIMARY_RANGE);
+    }
+
+    @Test
+    public void testCreateAllReplicatedRangesJobFromOngoingJob()
+    {
+        when(myOngoingJob.getRepairType()).thenReturn(RepairType.ALL_REPLICATED_RANGES);
+        when(myReplicationState.getReplicas(TABLE_REFERENCE, myNode)).thenReturn(ImmutableSet.of(mock(DriverNode.class)));
+
+        OnDemandRepairJob job = myFactory.createFromOngoingJob(myOngoingJob);
+
+        assertThat(job).isExactlyInstanceOf(SingleSessionOnDemandRepairJob.class);
+        assertThat(job.getRepairConfiguration().getRepairType()).isEqualTo(RepairType.ALL_REPLICATED_RANGES);
+    }
+
+    @Test
+    public void testNewAllReplicatedRangesJobChecksWhichRangesTheManagedNodesReach()
+    {
+        when(myReplicationState.getReplicas(any(), any())).thenReturn(ImmutableSet.of(mock(DriverNode.class)));
+
+        myFactory.createNewJob(TABLE_REFERENCE, false, RepairType.ALL_REPLICATED_RANGES, myNodeId);
+
+        verify(myReplicationState).getTokenRanges(TABLE_REFERENCE, myNode);
+    }
+
+    @Test
+    public void testNewJobsOfOtherRepairTypesDoNotCheckWhichRangesAreReached()
+    {
+        when(myReplicationState.getReplicas(any(), any())).thenReturn(ImmutableSet.of(mock(DriverNode.class)));
+
+        myFactory.createNewJob(TABLE_REFERENCE, false, RepairType.PRIMARY_RANGE, myNodeId);
+
+        verify(myReplicationState, never()).getTokenRanges(any(), any());
     }
 
     @Test

@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.primaryrange;
+package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.singlesession;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.impl.table.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,6 +27,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfigurati
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter.FaultCode;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -38,7 +39,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
-public class TestPrimaryRangeRepairAlarm
+public class TestSingleSessionRepairAlarm
 {
     private static final long NOW = TimeUnit.DAYS.toMillis(100);
     private static final long WARNING_MS = TimeUnit.DAYS.toMillis(8);
@@ -50,7 +51,7 @@ public class TestPrimaryRangeRepairAlarm
     @Mock
     private RepairFaultReporter myFaultReporter;
 
-    private PrimaryRangeRepairAlarm myAlarm;
+    private SingleSessionRepairAlarm myAlarm;
 
     @Before
     public void setup()
@@ -60,7 +61,8 @@ public class TestPrimaryRangeRepairAlarm
                 .withRepairWarningTime(8, TimeUnit.DAYS)
                 .withRepairErrorTime(10, TimeUnit.DAYS)
                 .build();
-        myAlarm = new PrimaryRangeRepairAlarm(myFaultReporter, myTableReference, myNodeId, configuration);
+        myAlarm = new SingleSessionRepairAlarm(myFaultReporter, myTableReference, myNodeId, configuration,
+                RepairType.PRIMARY_RANGE);
     }
 
     private Map<String, Object> expectedData()
@@ -175,8 +177,34 @@ public class TestPrimaryRangeRepairAlarm
 
         assertThat(expectedData()).isNotEqualTo(vnodeData);
         assertThat(expectedData().hashCode()).isNotEqualTo(vnodeData.hashCode());
-        assertThat(expectedData()).containsEntry(RepairFaultReporter.FAULT_SOURCE,
-                PrimaryRangeRepairAlarm.FAULT_SOURCE_PRIMARY_RANGE_ELAPSED);
+        assertThat(expectedData()).containsEntry(RepairFaultReporter.FAULT_SOURCE, "PRIMARY_RANGE_ELAPSED");
+    }
+
+    @Test
+    public void testTheSourceDependsOnTheRepairType()
+    {
+        assertThat(SingleSessionRepairAlarm.faultSourceOf(RepairType.PRIMARY_RANGE)).isEqualTo("PRIMARY_RANGE_ELAPSED");
+        assertThat(SingleSessionRepairAlarm.faultSourceOf(RepairType.ALL_REPLICATED_RANGES))
+                .isEqualTo("ALL_REPLICATED_RANGES_ELAPSED");
+    }
+
+    @Test
+    public void testAllReplicatedRangesRaisesItsOwnAlarmOfTheSameTableAndNode()
+    {
+        // Both can be scheduled for a table, and must not be one alarm to a reporter that keys on the data.
+        SingleSessionRepairAlarm alarm = new SingleSessionRepairAlarm(myFaultReporter, myTableReference, myNodeId,
+                RepairConfiguration.newBuilder().withRepairInterval(7, TimeUnit.DAYS)
+                        .withRepairWarningTime(8, TimeUnit.DAYS).withRepairErrorTime(10, TimeUnit.DAYS).build(),
+                RepairType.ALL_REPLICATED_RANGES);
+
+        alarm.evaluate(NOW - WARNING_MS, NOW);
+
+        Map<String, Object> primaryRangeData = expectedData();
+        Map<String, Object> expected = new HashMap<>(primaryRangeData);
+        expected.put(RepairFaultReporter.FAULT_SOURCE, "ALL_REPLICATED_RANGES_ELAPSED");
+        verify(myFaultReporter).raise(FaultCode.REPAIR_WARNING, expected);
+        assertThat(expected).isNotEqualTo(primaryRangeData);
+        assertThat(expected.hashCode()).isNotEqualTo(primaryRangeData.hashCode());
     }
 
     @Test
@@ -184,7 +212,8 @@ public class TestPrimaryRangeRepairAlarm
     {
         RepairConfiguration configuration = RepairConfiguration.newBuilder()
                 .withRepairInterval(7, TimeUnit.DAYS).build();
-        PrimaryRangeRepairAlarm alarm = new PrimaryRangeRepairAlarm(null, myTableReference, myNodeId, configuration);
+        SingleSessionRepairAlarm alarm = new SingleSessionRepairAlarm(null, myTableReference, myNodeId, configuration,
+                RepairType.PRIMARY_RANGE);
 
         alarm.evaluate(0, NOW);
         alarm.evaluate(NOW, NOW);

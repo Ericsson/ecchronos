@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.primaryrange;
+package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.singlesession;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.impl.table.MockTableReferenceFactory.tableReference;
 import static org.mockito.ArgumentMatchers.any;
@@ -50,11 +50,11 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 /**
- * When a {@link PrimaryRangeRepairJob} evaluates its alarm. The thresholds and transitions are in
- * {@link TestPrimaryRangeRepairAlarm}.
+ * When a {@link SingleSessionRepairJob} evaluates its alarm. The thresholds and transitions are in
+ * {@link TestSingleSessionRepairAlarm}.
  */
 @RunWith(MockitoJUnitRunner.Silent.class)
-public class TestPrimaryRangeRepairJobAlarm
+public class TestSingleSessionRepairJobAlarm
 {
     private static final long DAY = TimeUnit.DAYS.toMillis(1);
 
@@ -100,13 +100,13 @@ public class TestPrimaryRangeRepairJobAlarm
                 .thenReturn(OptionalLong.of(System.currentTimeMillis() - days * DAY));
     }
 
-    private PrimaryRangeRepairJob job(final RepairFaultReporter faultReporter)
+    private SingleSessionRepairJob job(final RepairFaultReporter faultReporter)
     {
         ScheduledJob.Configuration configuration = new ScheduledJob.ConfigurationBuilder()
                 .withPriority(ScheduledJob.Priority.LOW)
                 .withRunInterval(1, TimeUnit.DAYS)
                 .build();
-        return new PrimaryRangeRepairJob.Builder()
+        return new SingleSessionRepairJob.Builder()
                 .withConfiguration(configuration)
                 .withTableReference(myTableReference)
                 .withJmxProxyFactory(myJmxProxyFactory)
@@ -125,7 +125,7 @@ public class TestPrimaryRangeRepairJobAlarm
     public void testALateTableRaisesTheWarningWhenTheStateIsRefreshed()
     {
         lastRepairedDaysAgo(8);
-        PrimaryRangeRepairJob job = job(myFaultReporter);
+        SingleSessionRepairJob job = job(myFaultReporter);
 
         job.refreshState();
 
@@ -136,6 +136,21 @@ public class TestPrimaryRangeRepairJobAlarm
                 .containsEntry(RepairFaultReporter.FAULT_KEYSPACE, "keyspace")
                 .containsEntry(RepairFaultReporter.FAULT_TABLE, "table")
                 .containsEntry(RepairFaultReporter.FAULT_SOURCE, "PRIMARY_RANGE_ELAPSED");
+    }
+
+    @Test
+    public void testAnAllReplicatedRangesJobRaisesItsOwnSource()
+    {
+        myRepairConfiguration = RepairConfiguration.newBuilder(myRepairConfiguration)
+                .withRepairType(RepairType.ALL_REPLICATED_RANGES).build();
+        lastRepairedDaysAgo(8);
+
+        job(myFaultReporter).refreshState();
+
+        ArgumentCaptor<Map<String, Object>> data = ArgumentCaptor.forClass(Map.class);
+        verify(myFaultReporter).raise(eq(FaultCode.REPAIR_WARNING), data.capture());
+        org.assertj.core.api.Assertions.assertThat(data.getValue())
+                .containsEntry(RepairFaultReporter.FAULT_SOURCE, "ALL_REPLICATED_RANGES_ELAPSED");
     }
 
     @Test
@@ -152,7 +167,7 @@ public class TestPrimaryRangeRepairJobAlarm
     public void testRefreshingAgainDoesNotRaiseAgain()
     {
         lastRepairedDaysAgo(8);
-        PrimaryRangeRepairJob job = job(myFaultReporter);
+        SingleSessionRepairJob job = job(myFaultReporter);
 
         job.refreshState();
         job.refreshState();
@@ -195,7 +210,7 @@ public class TestPrimaryRangeRepairJobAlarm
     public void testASuccessfulRepairCeasesTheAlarm()
     {
         lastRepairedDaysAgo(8);
-        PrimaryRangeRepairJob job = job(myFaultReporter);
+        SingleSessionRepairJob job = job(myFaultReporter);
         job.refreshState();
 
         job.postExecute(TaskExecutionResult.SUCCESS, job.iterator().next());
@@ -207,7 +222,7 @@ public class TestPrimaryRangeRepairJobAlarm
     public void testAFailedRepairKeepsTheAlarm()
     {
         lastRepairedDaysAgo(8);
-        PrimaryRangeRepairJob job = job(myFaultReporter);
+        SingleSessionRepairJob job = job(myFaultReporter);
         job.refreshState();
 
         job.postExecute(TaskExecutionResult.TERMINAL, job.iterator().next());
@@ -220,7 +235,7 @@ public class TestPrimaryRangeRepairJobAlarm
     {
         // For example an on demand repair, that finished since the alarm was raised.
         lastRepairedDaysAgo(8);
-        PrimaryRangeRepairJob job = job(myFaultReporter);
+        SingleSessionRepairJob job = job(myFaultReporter);
         job.refreshState();
         lastRepairedDaysAgo(0);
 
@@ -233,7 +248,7 @@ public class TestPrimaryRangeRepairJobAlarm
     public void testAJobWithoutAFaultReporterWorks()
     {
         lastRepairedDaysAgo(11);
-        PrimaryRangeRepairJob job = job(null);
+        SingleSessionRepairJob job = job(null);
 
         job.refreshState();
         job.postExecute(TaskExecutionResult.SUCCESS, job.iterator().next());

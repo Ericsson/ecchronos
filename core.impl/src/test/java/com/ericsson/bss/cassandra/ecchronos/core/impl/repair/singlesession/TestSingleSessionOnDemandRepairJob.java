@@ -12,10 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.primaryrange;
+package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.singlesession;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.impl.table.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.ignoreStubs;
 import static org.mockito.Mockito.mock;
@@ -26,9 +27,10 @@ import static org.mockito.Mockito.when;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OngoingJob;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.PrimaryRangeOnDemandRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.SingleSessionOnDemandRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.RepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.RepairTask;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairJobView;
@@ -55,7 +57,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
-public class TestPrimaryRangeOnDemandRepairJob
+public class TestSingleSessionOnDemandRepairJob
 {
     private final TableReference myTableReference = tableReference("keyspace", "table");
     private final UUID myHostId = UUID.randomUUID();
@@ -91,14 +93,14 @@ public class TestPrimaryRangeOnDemandRepairJob
         verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
     }
 
-    private PrimaryRangeOnDemandRepairJob job()
+    private SingleSessionOnDemandRepairJob job()
     {
         return job(3, 1000L);
     }
 
-    private PrimaryRangeOnDemandRepairJob job(final int retryAttempts, final long retryBackoffMs)
+    private SingleSessionOnDemandRepairJob job(final int retryAttempts, final long retryBackoffMs)
     {
-        return new PrimaryRangeOnDemandRepairJob.Builder()
+        return new SingleSessionOnDemandRepairJob.Builder()
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withRepairLockType(RepairLockType.VNODE)
@@ -115,7 +117,7 @@ public class TestPrimaryRangeOnDemandRepairJob
     @Test
     public void testViewOfAJobInTheQueue()
     {
-        PrimaryRangeOnDemandRepairJob repairJob = job();
+        SingleSessionOnDemandRepairJob repairJob = job();
 
         OnDemandRepairJobView view = repairJob.getView();
 
@@ -128,9 +130,44 @@ public class TestPrimaryRangeOnDemandRepairJob
     }
 
     @Test
+    public void testAllReplicatedRangesJobRepairsWithAnAllReplicatedRangesTask() throws Exception
+    {
+        when(myOngoingJob.getRepairType()).thenReturn(RepairType.ALL_REPLICATED_RANGES);
+        when(myReplicationState.getReplicas(myTableReference, myNode)).thenReturn(ImmutableSet.of(mock(DriverNode.class)));
+        when(myJmxProxyFactory.getMaxWaitTimeInMinutes()).thenReturn(40);
+        SingleSessionOnDemandRepairJob repairJob = new SingleSessionOnDemandRepairJob.Builder()
+                .withJmxProxyFactory(myJmxProxyFactory)
+                .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairConfiguration(RepairConfiguration.newBuilder()
+                        .withRepairType(RepairType.ALL_REPLICATED_RANGES).build())
+                .withRepairLockType(RepairLockType.VNODE)
+                .withReplicationState(myReplicationState)
+                .withRepairHistory(myRepairHistory)
+                .withOngoingJob(myOngoingJob)
+                .withNode(myNode)
+                .build();
+
+        assertThat(repairJob.getView().getRepairType()).isEqualTo(RepairType.ALL_REPLICATED_RANGES);
+        RepairGroup group = (RepairGroup) repairJob.iterator().next();
+        Collection<RepairTask> repairTasks = group.getRepairTasks(myHostId);
+        assertThat(repairTasks).hasSize(1);
+        assertThat(repairTasks.iterator().next().toString()).startsWith("ALL_REPLICATED_RANGES");
+    }
+
+    @Test
+    public void testJobWhoseRepairTypeDiffersFromTheOngoingJobIsRejected()
+    {
+        // The repair group takes its type from the configuration. A mismatch would run another repair than the one
+        // that was asked for and recorded.
+        when(myOngoingJob.getRepairType()).thenReturn(RepairType.ALL_REPLICATED_RANGES);
+
+        assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(this::job);
+    }
+
+    @Test
     public void testViewOfAFailedAndOfAFinishedJob()
     {
-        PrimaryRangeOnDemandRepairJob repairJob = job();
+        SingleSessionOnDemandRepairJob repairJob = job();
 
         when(myOngoingJob.getStatus()).thenReturn(OngoingJob.Status.failed);
         assertThat(repairJob.getView().getStatus()).isEqualTo(OnDemandRepairJobView.Status.ERROR);
@@ -144,7 +181,7 @@ public class TestPrimaryRangeOnDemandRepairJob
     {
         DriverNode replica = mock(DriverNode.class);
         when(myReplicationState.getReplicas(myTableReference, myNode)).thenReturn(ImmutableSet.of(replica));
-        PrimaryRangeOnDemandRepairJob repairJob = job();
+        SingleSessionOnDemandRepairJob repairJob = job();
 
         Iterator<ScheduledTask> iterator = repairJob.iterator();
         ScheduledTask task = iterator.next();
@@ -155,13 +192,13 @@ public class TestPrimaryRangeOnDemandRepairJob
         when(myJmxProxyFactory.getMaxWaitTimeInMinutes()).thenReturn(40);
         Collection<RepairTask> repairTasks = ((RepairGroup) task).getRepairTasks(myHostId);
         assertThat(repairTasks).hasSize(1);
-        assertThat(repairTasks.iterator().next()).isInstanceOf(PrimaryRangeRepairTask.class);
+        assertThat(repairTasks.iterator().next()).isInstanceOf(SingleSessionRepairTask.class);
     }
 
     @Test
     public void testJobIsRunnableUntilItsTaskHasRun()
     {
-        PrimaryRangeOnDemandRepairJob repairJob = job();
+        SingleSessionOnDemandRepairJob repairJob = job();
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
 
         repairJob.postExecute(TaskExecutionResult.SUCCESS, repairJob.iterator().next());
@@ -172,7 +209,7 @@ public class TestPrimaryRangeOnDemandRepairJob
     @Test
     public void testTerminalFailureFailsTheJob()
     {
-        PrimaryRangeOnDemandRepairJob repairJob = job();
+        SingleSessionOnDemandRepairJob repairJob = job();
 
         repairJob.postExecute(TaskExecutionResult.TERMINAL, repairJob.iterator().next());
 
@@ -183,7 +220,7 @@ public class TestPrimaryRangeOnDemandRepairJob
     @Test
     public void testProgress()
     {
-        PrimaryRangeOnDemandRepairJob repairJob = job();
+        SingleSessionOnDemandRepairJob repairJob = job();
         assertThat(repairJob.getProgress()).isEqualTo(0);
 
         repairJob.postExecute(TaskExecutionResult.SUCCESS, repairJob.iterator().next());
@@ -194,7 +231,7 @@ public class TestPrimaryRangeOnDemandRepairJob
     @Test
     public void testProgressWhenTheOngoingJobIsFinished()
     {
-        PrimaryRangeOnDemandRepairJob repairJob = job();
+        SingleSessionOnDemandRepairJob repairJob = job();
         when(myOngoingJob.getStatus()).thenReturn(OngoingJob.Status.finished);
 
         assertThat(repairJob.getProgress()).isEqualTo(1);
@@ -203,7 +240,7 @@ public class TestPrimaryRangeOnDemandRepairJob
     @Test
     public void testFinishingASuccessfulJobFinishesTheOngoingJob()
     {
-        PrimaryRangeOnDemandRepairJob repairJob = job();
+        SingleSessionOnDemandRepairJob repairJob = job();
         repairJob.postExecute(TaskExecutionResult.SUCCESS, repairJob.iterator().next());
 
         repairJob.finishJob();
@@ -215,7 +252,7 @@ public class TestPrimaryRangeOnDemandRepairJob
     @Test
     public void testFinishingAFailedJobFailsTheOngoingJob()
     {
-        PrimaryRangeOnDemandRepairJob repairJob = job();
+        SingleSessionOnDemandRepairJob repairJob = job();
         repairJob.postExecute(TaskExecutionResult.TERMINAL, repairJob.iterator().next());
 
         repairJob.finishJob();
@@ -227,7 +264,7 @@ public class TestPrimaryRangeOnDemandRepairJob
     @Test
     public void testRetryableFailureReschedulesWithAFreshTask()
     {
-        PrimaryRangeOnDemandRepairJob repairJob = job(3, 1000L);
+        SingleSessionOnDemandRepairJob repairJob = job(3, 1000L);
         ScheduledTask firstTask = repairJob.iterator().next();
 
         repairJob.postExecute(TaskExecutionResult.RETRYABLE, firstTask);
@@ -240,7 +277,7 @@ public class TestPrimaryRangeOnDemandRepairJob
     @Test
     public void testRetrySucceedsOnTheSecondAttempt()
     {
-        PrimaryRangeOnDemandRepairJob repairJob = job(3, 1000L);
+        SingleSessionOnDemandRepairJob repairJob = job(3, 1000L);
         repairJob.postExecute(TaskExecutionResult.RETRYABLE, repairJob.iterator().next());
 
         repairJob.postExecute(TaskExecutionResult.SUCCESS, repairJob.iterator().next());
@@ -251,7 +288,7 @@ public class TestPrimaryRangeOnDemandRepairJob
     @Test
     public void testExhaustedRetriesFailTheJob()
     {
-        PrimaryRangeOnDemandRepairJob repairJob = job(2, 1000L);
+        SingleSessionOnDemandRepairJob repairJob = job(2, 1000L);
         repairJob.postExecute(TaskExecutionResult.RETRYABLE, repairJob.iterator().next());
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
 
@@ -263,7 +300,7 @@ public class TestPrimaryRangeOnDemandRepairJob
     @Test
     public void testNoRetryWhenOnlyOneAttemptIsAllowed()
     {
-        PrimaryRangeOnDemandRepairJob repairJob = job(1, 1000L);
+        SingleSessionOnDemandRepairJob repairJob = job(1, 1000L);
 
         repairJob.postExecute(TaskExecutionResult.RETRYABLE, repairJob.iterator().next());
 

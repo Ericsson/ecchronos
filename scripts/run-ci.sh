@@ -34,11 +34,12 @@
 # Suite keys (see --list for the full command each runs):
 #   python-unit, unit, style,
 #   it-standalone-41, it-standalone-50, it-python, it-topology, it-multi-dc,
-#   it-incremental, it-primary-range,
+#   it-incremental, it-primary-range, it-all-replicated-ranges,
 #   it-jolokia-standalone, it-jolokia-python, it-jolokia-python-pem,
 #   it-jolokia-topology, it-jolokia-topology-pem, it-jolokia-multi-dc,
 #   it-jolokia-multi-dc-pem, it-jolokia-incremental, it-jolokia-primary-range,
-#   it-jolokia-incremental-pem, it-jolokia-primary-range-pem
+#   it-jolokia-all-replicated-ranges,
+#   it-jolokia-incremental-pem, it-jolokia-primary-range-pem, it-jolokia-all-replicated-ranges-pem
 
 set -euo pipefail
 
@@ -77,6 +78,7 @@ add_suite it-topology              "Topology integration"                       
 add_suite it-multi-dc              "DatacenterAware Multi-Agent integration"      'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=5.0 -DskipUTs'
 add_suite it-incremental               "Incremental Repair integration" 'verify -P incremental-repair-integration-tests -Dit.cassandra.version=5.0 -DskipUTs'
 add_suite it-primary-range             "Primary Range Repair integration" 'verify -P primary-range-repair-integration-tests -Dit.cassandra.version=5.0 -DskipUTs'
+add_suite it-all-replicated-ranges     "All Replicated Ranges Repair integration" 'verify -P all-replicated-ranges-repair-integration-tests -Dit.cassandra.version=5.0 -DskipUTs'
 add_suite it-jolokia-standalone    "Jolokia Standalone integration 5.0"           'verify -P standalone-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -DskipUTs'
 add_suite it-jolokia-python        "Jolokia Python integration"                   'verify -P python-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -DskipUTs'
 add_suite it-jolokia-python-pem    "Jolokia Python integration - PEM"             'verify -P python-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
@@ -86,16 +88,18 @@ add_suite it-jolokia-multi-dc      "Jolokia DatacenterAware Multi-Agent"        
 add_suite it-jolokia-multi-dc-pem  "Jolokia DatacenterAware Multi-Agent - PEM"    'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
 add_suite it-jolokia-incremental       "Jolokia Incremental Repair integration" 'verify -P incremental-repair-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -DskipUTs'
 add_suite it-jolokia-primary-range     "Jolokia Primary Range Repair integration" 'verify -P primary-range-repair-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -DskipUTs'
+add_suite it-jolokia-all-replicated-ranges "Jolokia All Replicated Ranges Repair integration" 'verify -P all-replicated-ranges-repair-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -DskipUTs'
 add_suite it-jolokia-incremental-pem   "Jolokia Incremental Repair integration - PEM" 'verify -P incremental-repair-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
 add_suite it-jolokia-primary-range-pem "Jolokia Primary Range Repair integration - PEM" 'verify -P primary-range-repair-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
+add_suite it-jolokia-all-replicated-ranges-pem "Jolokia All Replicated Ranges Repair integration - PEM" 'verify -P all-replicated-ranges-repair-integration-tests -Dit.cassandra.version=5.0 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
 
 # Ordered list of all suite keys (matches workflow order)
 ALL_KEYS=(python-unit unit style it-standalone-41 it-standalone-50 it-python it-topology it-multi-dc \
-          it-incremental it-primary-range \
+          it-incremental it-primary-range it-all-replicated-ranges \
           it-jolokia-standalone it-jolokia-python it-jolokia-python-pem \
           it-jolokia-topology it-jolokia-topology-pem it-jolokia-multi-dc it-jolokia-multi-dc-pem \
-          it-jolokia-incremental it-jolokia-primary-range \
-          it-jolokia-incremental-pem it-jolokia-primary-range-pem)
+          it-jolokia-incremental it-jolokia-primary-range it-jolokia-all-replicated-ranges \
+          it-jolokia-incremental-pem it-jolokia-primary-range-pem it-jolokia-all-replicated-ranges-pem)
 
 # Default (when no suite given): the fast, Docker-free suites.
 DEFAULT_KEYS=(python-unit unit style)

@@ -51,6 +51,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,6 +109,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
                 .withTableStorageStates(builder.myTableStorageStates)
                 .withRepairLockType(builder.myRepairLockType)
                 .withTimeBasedRunPolicy(builder.myTimeBasedRunPolicy)
+                .withManagedNodes(builder.myManagedNodes)
                 .build();
     }
 
@@ -385,6 +387,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         private TableStorageStates myTableStorageStates;
         private RepairLockType myRepairLockType;
         private TimeBasedRunPolicy myTimeBasedRunPolicy;
+        private Supplier<Collection<Node>> myManagedNodes;
 
         /**
          * Default constructor.
@@ -392,6 +395,20 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         public Builder()
         {
             // Default constructor
+        }
+
+        /**
+         * RepairSchedulerImpl build with the nodes managed by this instance, read each time a job is created. They
+         * are used to warn when a repair of type ALL_REPLICATED_RANGES does not reach all the token ranges of a
+         * keyspace.
+         *
+         * @param managedNodes supplies the nodes managed by this instance.
+         * @return Builder
+         */
+        public Builder withManagedNodes(final Supplier<Collection<Node>> managedNodes)
+        {
+            myManagedNodes = managedNodes;
+            return this;
         }
 
         /**

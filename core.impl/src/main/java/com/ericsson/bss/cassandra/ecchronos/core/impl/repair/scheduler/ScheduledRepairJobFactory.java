@@ -19,7 +19,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairJob;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.primaryrange.PrimaryRangeRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.singlesession.SingleSessionRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.singlesession.ReplicatedRangesCoverage;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.AlarmPostUpdateHook;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TableRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
@@ -35,13 +36,16 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHistoryService;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  * Factory responsible for creating {@link ScheduledRepairJob} instances.
@@ -61,6 +65,7 @@ public final class ScheduledRepairJobFactory
     private final TableStorageStates myTableStorageStates;
     private final RepairLockType myRepairLockType;
     private final TimeBasedRunPolicy myTimeBasedRunPolicy;
+    private final Optional<ReplicatedRangesCoverage> myReplicatedRangesCoverage;
 
     private ScheduledRepairJobFactory(final Builder builder)
     {
@@ -73,6 +78,8 @@ public final class ScheduledRepairJobFactory
         myCassandraMetrics = builder.myCassandraMetrics;
         myRepairPolicies = new ArrayList<>(builder.myRepairPolicies);
         myTableStorageStates = builder.myTableStorageStates;
+        myReplicatedRangesCoverage = Optional.ofNullable(builder.myManagedNodes)
+                .map(managedNodes -> new ReplicatedRangesCoverage(builder.myReplicationState, managedNodes));
         myRepairLockType = builder.myRepairLockType;
         myTimeBasedRunPolicy = builder.myTimeBasedRunPolicy;
     }
@@ -96,24 +103,37 @@ public final class ScheduledRepairJobFactory
                 .withBackoff(repairConfiguration.getBackoffInMs(), TimeUnit.MILLISECONDS)
                 .withPriorityGranularity(repairConfiguration.getPriorityGranularityUnit())
                 .build();
+        warnIfRangesAreNotReached(node, tableReference, repairConfiguration);
         ScheduledRepairJob job = switch (repairConfiguration.getRepairType())
         {
             case INCREMENTAL -> createIncrementalJob(node, tableReference, repairConfiguration, configuration);
             case VNODE, PARALLEL_VNODE -> createTableJob(node, tableReference, repairConfiguration, configuration);
-            case PRIMARY_RANGE -> createPrimaryRangeJob(node, tableReference, repairConfiguration, configuration);
+            case PRIMARY_RANGE, ALL_REPLICATED_RANGES ->
+                    createSingleSessionJob(node, tableReference, repairConfiguration, configuration);
         };
         job.refreshState();
         return job;
     }
 
-    private ScheduledRepairJob createPrimaryRangeJob(
+    private void warnIfRangesAreNotReached(
+            final Node node,
+            final TableReference tableReference,
+            final RepairConfiguration repairConfiguration)
+    {
+        if (repairConfiguration.getRepairType() == RepairType.ALL_REPLICATED_RANGES)
+        {
+            myReplicatedRangesCoverage.ifPresent(coverage -> coverage.warnIfUncovered(node, tableReference));
+        }
+    }
+
+    private ScheduledRepairJob createSingleSessionJob(
             final Node node,
             final TableReference tableReference,
             final RepairConfiguration repairConfiguration,
             final ScheduledJob.Configuration configuration)
     {
-        LOG.info("Creating PrimaryRangeRepairJob for node {}", node.getHostId());
-        return new PrimaryRangeRepairJob.Builder()
+        LOG.info("Creating SingleSessionRepairJob for node {}", node.getHostId());
+        return new SingleSessionRepairJob.Builder()
                 .withConfiguration(configuration)
                 .withNode(node)
                 .withJmxProxyFactory(myJmxProxyFactory)
@@ -207,6 +227,7 @@ public final class ScheduledRepairJobFactory
         private TableStorageStates myTableStorageStates;
         private RepairLockType myRepairLockType;
         private TimeBasedRunPolicy myTimeBasedRunPolicy;
+        private Supplier<Collection<Node>> myManagedNodes;
 
         /**
          * Default constructor.
@@ -237,6 +258,20 @@ public final class ScheduledRepairJobFactory
         public Builder withRepairHistoryService(final RepairHistoryService repairHistoryService)
         {
             myRepairHistoryService = repairHistoryService;
+            return this;
+        }
+
+        /**
+         * Set the nodes managed by this instance, read each time a job is created. They are used to warn when a
+         * repair of type ALL_REPLICATED_RANGES does not reach all the token ranges of a keyspace. Without them
+         * there is no such warning.
+         *
+         * @param managedNodes supplies the nodes managed by this instance.
+         * @return this builder.
+         */
+        public Builder withManagedNodes(final Supplier<Collection<Node>> managedNodes)
+        {
+            myManagedNodes = managedNodes;
             return this;
         }
 

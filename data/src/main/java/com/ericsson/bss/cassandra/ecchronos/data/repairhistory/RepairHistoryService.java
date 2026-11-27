@@ -642,7 +642,9 @@ public final class RepairHistoryService implements RepairHistory, RepairHistoryP
          */
         private boolean isRepairStateSeparateType(final Row row)
         {
-            return RepairType.PRIMARY_RANGE.name().equals(row.getString(COLUMN_REPAIR_TYPE));
+            String repairType = row.getString(COLUMN_REPAIR_TYPE);
+            return RepairType.PRIMARY_RANGE.name().equals(repairType)
+                    || RepairType.ALL_REPLICATED_RANGES.name().equals(repairType);
         }
     }
 

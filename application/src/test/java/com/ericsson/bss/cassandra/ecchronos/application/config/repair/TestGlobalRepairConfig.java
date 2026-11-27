@@ -98,6 +98,19 @@ public class TestGlobalRepairConfig
     }
 
     @Test
+    public void testAllReplicatedRangesRepairTypeIsAcceptedInTheConfigurationFile()
+    {
+        for (String value : new String[] {"all_replicated_ranges", "ALL_REPLICATED_RANGES"})
+        {
+            GlobalRepairConfig config = new YAMLMapper().readValue("repair_type: " + value,
+                    GlobalRepairConfig.class);
+
+            assertThat(config.getRepairType()).isEqualTo(RepairType.ALL_REPLICATED_RANGES);
+            assertThat(config.asRepairConfiguration().getRepairType()).isEqualTo(RepairType.ALL_REPLICATED_RANGES);
+        }
+    }
+
+    @Test
     public void testWarnsWhenInitialDelayBelowRepairInterval()
     {
         GlobalRepairConfig config = new GlobalRepairConfig();

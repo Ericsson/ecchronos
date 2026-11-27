@@ -16,7 +16,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.PrimaryRangeRepairResourceFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.SingleSessionRepairResourceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
@@ -41,15 +41,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
- * An on-demand repair job that repairs the primary ranges of one node of a table in one repair session, like
- * {@code nodetool repair -pr}.
+ * An on-demand repair job that repairs one node of a table in one repair session. It is used for two repair types:
+ * {@link RepairType#PRIMARY_RANGE} repairs the primary ranges of the node, like {@code nodetool repair -pr}, and
+ * {@link RepairType#ALL_REPLICATED_RANGES} repairs every range the node replicates.
  * <p>
- * A cluster-wide request creates one such job for every managed node, and each node repairs its own primary ranges.
+ * A cluster-wide request creates one such job for every managed node, and each node repairs its own ranges.
  * Nothing is distributed between nodes.
  */
-public final class PrimaryRangeOnDemandRepairJob extends OnDemandRepairJob // CPD-OFF: deliberately mirrors IncrementalOnDemandRepairJob (task, retry, finish plumbing and builder), a shared base class is out of scope
+public final class SingleSessionOnDemandRepairJob extends OnDemandRepairJob // CPD-OFF: deliberately mirrors IncrementalOnDemandRepairJob (task, retry, finish plumbing and builder), a shared base class is out of scope
 {
-    private static final Logger LOG = LoggerFactory.getLogger(PrimaryRangeOnDemandRepairJob.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SingleSessionOnDemandRepairJob.class);
     private final ReplicationState myReplicationState;
     private final RepairHistory myRepairHistory;
     private final List<ScheduledTask> myTasks;
@@ -58,15 +59,22 @@ public final class PrimaryRangeOnDemandRepairJob extends OnDemandRepairJob // CP
     private int myAttempts;
 
     /**
-     * Constructs a primary range on-demand repair job from the provided builder.
+     * Constructs a single session on-demand repair job from the provided builder.
      *
      * @param builder the builder containing all configuration.
      */
-    public PrimaryRangeOnDemandRepairJob(final Builder builder)
+    public SingleSessionOnDemandRepairJob(final Builder builder)
     {
         super(builder.myConfiguration, builder.myJmxProxyFactory, builder.myRepairConfiguration,
                 builder.myRepairLockType, builder.myOnFinishedHook, builder.myTableRepairMetrics, builder.myOngoingJob,
                 builder.myCurrentNode, builder.myRetryAttempts, builder.myRetryBackoffMs);
+        RepairType ongoingJobType = builder.myOngoingJob.getRepairType();
+        RepairType configuredType = builder.myRepairConfiguration.getRepairType();
+        Preconditions.checkArgument(
+                (ongoingJobType == RepairType.PRIMARY_RANGE || ongoingJobType == RepairType.ALL_REPLICATED_RANGES)
+                        && ongoingJobType == configuredType,
+                "The repair configuration (%s) must have the repair type of the on demand job (%s), which must be a "
+                        + "repair type of one session per node", configuredType, ongoingJobType);
         myReplicationState = Preconditions.checkNotNull(builder.myReplicationState,
                 "Replication state must be set");
         myRepairHistory = Preconditions.checkNotNull(builder.myRepairHistory,
@@ -98,7 +106,7 @@ public final class PrimaryRangeOnDemandRepairJob extends OnDemandRepairJob // CP
                 .withReplicaRepairGroup(replicaRepairGroup)
                 .withJmxProxyFactory(getJmxProxyFactory())
                 .withTableRepairMetrics(getTableRepairMetrics())
-                .withRepairResourceFactory(new PrimaryRangeRepairResourceFactory(getTableReference()))
+                .withRepairResourceFactory(new SingleSessionRepairResourceFactory(getTableReference()))
                 .withRepairLockFactory(REPAIR_LOCK_FACTORY)
                 .withRepairHistory(myRepairHistory)
                 .withJobId(getJobId())
@@ -171,12 +179,12 @@ public final class PrimaryRangeOnDemandRepairJob extends OnDemandRepairJob // CP
         if (myTasks.isEmpty())
         {
             getOngoingJob().finishJob();
-            LOG.info("Completed primary range on demand repair: {}", id);
+            LOG.info("Completed {} on demand repair: {}", getRepairConfiguration().getRepairType(), id);
         }
         if (hasFailed())
         {
             getOngoingJob().failJob();
-            LOG.error("Failed primary range on demand repair: {}", id);
+            LOG.error("Failed {} on demand repair: {}", getRepairConfiguration().getRepairType(), id);
         }
         getOnFinishedHook().accept(id);
         super.finishJob();
@@ -201,11 +209,11 @@ public final class PrimaryRangeOnDemandRepairJob extends OnDemandRepairJob // CP
     @Override
     public String toString()
     {
-        return String.format("Primary range On Demand Repair job of %s", getTableReference());
+        return String.format("%s on demand repair job of %s", getRepairConfiguration().getRepairType(), getTableReference());
     }
 
     /**
-     * Builder for constructing {@link PrimaryRangeOnDemandRepairJob} instances.
+     * Builder for constructing {@link SingleSessionOnDemandRepairJob} instances.
      */
     public static class Builder
     {
@@ -273,7 +281,7 @@ public final class PrimaryRangeOnDemandRepairJob extends OnDemandRepairJob // CP
         }
 
         /**
-         * Sets the repair lock type. It is required by the base class and not used for primary range repair, which
+         * Sets the repair lock type. It is required by the base class and not used for single session repair, which
          * has its own fixed locks.
          *
          * @param repairLockType the repair lock type.
@@ -370,13 +378,13 @@ public final class PrimaryRangeOnDemandRepairJob extends OnDemandRepairJob // CP
         }
 
         /**
-         * Builds the {@link PrimaryRangeOnDemandRepairJob} instance.
+         * Builds the {@link SingleSessionOnDemandRepairJob} instance.
          *
          * @return the constructed job.
          */
-        public final PrimaryRangeOnDemandRepairJob build()
+        public final SingleSessionOnDemandRepairJob build()
         {
-            return new PrimaryRangeOnDemandRepairJob(this);
+            return new SingleSessionOnDemandRepairJob(this);
         }
     }
 }

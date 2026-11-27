@@ -16,7 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairTask;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.primaryrange.PrimaryRangeRepairTask;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.singlesession.SingleSessionRepairTask;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.VnodeRepairTask;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
@@ -36,6 +36,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.state.TokenSubRangeUtil;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairPolicy;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ScheduledJobException;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.TransientRepairException;
@@ -114,7 +115,7 @@ public class RepairGroup extends ScheduledTask
         myTokensPerRepair = switch (myRepairConfiguration.getRepairType())
         {
             case VNODE -> Preconditions.checkNotNull(builder.myTokensPerRepair, "Tokens per repair must be set");
-            case PARALLEL_VNODE, INCREMENTAL, PRIMARY_RANGE -> null;
+            case PARALLEL_VNODE, INCREMENTAL, PRIMARY_RANGE, ALL_REPLICATED_RANGES -> null;
         };
         myJobId = Preconditions
                 .checkNotNull(builder.myJobId, "Job id must be set");
@@ -248,16 +249,18 @@ public class RepairGroup extends ScheduledTask
             case INCREMENTAL -> createIncrementalRepairTasks(nodeID);
             case VNODE -> createVnodeRepairTasks();
             case PARALLEL_VNODE -> createParallelVnodeRepairTasks();
-            case PRIMARY_RANGE -> createPrimaryRangeRepairTasks(nodeID);
+            case PRIMARY_RANGE, ALL_REPLICATED_RANGES ->
+                    createSingleSessionRepairTasks(myRepairConfiguration.getRepairType(), nodeID);
         };
     }
 
-    private Collection<RepairTask> createPrimaryRangeRepairTasks(final UUID nodeID)
+    private Collection<RepairTask> createSingleSessionRepairTasks(final RepairType repairType, final UUID nodeID)
     {
         Collection<RepairTask> tasks = new ArrayList<>();
         Set<DriverNode> participants = myReplicaRepairGroup.replicas() != null
                 ? new HashSet<>(myReplicaRepairGroup.replicas()) : Set.of();
-        tasks.add(new PrimaryRangeRepairTask(
+        tasks.add(new SingleSessionRepairTask(
+                repairType,
                 nodeID,
                 myJmxProxyFactory,
                 myTableReference,

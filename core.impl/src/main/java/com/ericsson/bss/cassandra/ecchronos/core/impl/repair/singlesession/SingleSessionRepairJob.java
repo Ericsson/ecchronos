@@ -12,10 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.primaryrange;
+package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.singlesession;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.PrimaryRangeRepairResourceFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.SingleSessionRepairResourceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.RepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.ScheduledRepairJob;
@@ -50,22 +50,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A scheduled job that repairs the primary ranges of one node of a table in one repair session, like
- * {@code nodetool repair -pr}.
+ * A scheduled job that repairs one node of a table in one repair session. It is used for two repair types, which
+ * differ in what the session repairs: {@link RepairType#PRIMARY_RANGE} repairs the primary ranges of the node, like
+ * {@code nodetool repair -pr}, and {@link RepairType#ALL_REPLICATED_RANGES} repairs every range the node replicates.
  * <p>
  * One job is created per managed node per table. The job is due when the repair interval has passed since the last
- * successful primary range repair of the node. That time comes from {@code ecchronos.repair_history}, where the
- * repair task records a row typed {@link RepairType#PRIMARY_RANGE} keyed by this node. The row is read with
- * {@link RepairHistoryProvider#lastSuccessfulRepair}, which does not map it to token ranges, so primary range
- * history is kept apart from the repair state that vnode repair uses.
+ * successful repair of its type of the node. That time comes from {@code ecchronos.repair_history}, where the
+ * repair task records a row typed with the repair type, keyed by this node. The row is read with
+ * {@link RepairHistoryProvider#lastSuccessfulRepair}, which does not map it to token ranges, so this history is
+ * kept apart from the repair state that vnode repair uses, and the two repair types do not see each other's rows.
  * <p>
  * A table with no such row is taken for a new table, as for vnode repair: its first repair waits for the initial
  * delay. A history that cannot be read is not taken for no history, because that says nothing about the table, so
  * the repair is not delayed.
  */
-public class PrimaryRangeRepairJob extends ScheduledRepairJob // CPD-OFF: the builder is deliberately near-identical to IncrementalRepairJob.Builder; the two jobs share no state worth a common base class
+public class SingleSessionRepairJob extends ScheduledRepairJob // CPD-OFF: the builder is deliberately near-identical to IncrementalRepairJob.Builder; the two jobs share no state worth a common base class
 {
-    private static final Logger LOG = LoggerFactory.getLogger(PrimaryRangeRepairJob.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SingleSessionRepairJob.class);
     private static final int DAYS_IN_A_WEEK = 7;
     private static final int NOT_DUE = -1;
 
@@ -73,9 +74,10 @@ public class PrimaryRangeRepairJob extends ScheduledRepairJob // CPD-OFF: the bu
     private final ReplicationState myReplicationState;
     private final RepairHistory myRepairHistory;
     private final RepairHistoryProvider myRepairHistoryProvider;
-    private final PrimaryRangeRepairAlarm myAlarm;
+    private final SingleSessionRepairAlarm myAlarm;
+    private final RepairType myRepairType;
 
-    PrimaryRangeRepairJob(final Builder builder)
+    SingleSessionRepairJob(final Builder builder)
     {
         super(builder.myConfiguration, builder.myNodeId, builder.myTableReference, builder.myJmxProxyFactory,
                 builder.myRepairConfiguration, builder.myRepairPolicies, builder.myTableRepairMetrics,
@@ -84,8 +86,12 @@ public class PrimaryRangeRepairJob extends ScheduledRepairJob // CPD-OFF: the bu
         myReplicationState = Preconditions.checkNotNull(builder.myReplicationState, "Replication state must be set");
         myRepairHistory = Preconditions.checkNotNull(builder.myRepairHistory, "Repair history must be set");
         myRepairHistoryProvider = builder.myRepairHistoryProvider;
-        myAlarm = new PrimaryRangeRepairAlarm(builder.myFaultReporter, builder.myTableReference, builder.myNodeId,
-                builder.myRepairConfiguration);
+        myRepairType = builder.myRepairConfiguration.getRepairType();
+        Preconditions.checkArgument(
+                myRepairType == RepairType.PRIMARY_RANGE || myRepairType == RepairType.ALL_REPLICATED_RANGES,
+                "Not a repair type of one session per node: %s", myRepairType);
+        myAlarm = new SingleSessionRepairAlarm(builder.myFaultReporter, builder.myTableReference, builder.myNodeId,
+                builder.myRepairConfiguration, myRepairType);
         HistoryLookup lookup = lookupLastSuccessfulRun(builder.myTableReference,
                 builder.myRepairConfiguration.getColdStartLookbackInMs());
         myLastSuccessfulRun = initialLastSuccessfulRun(lookup, builder.myRepairConfiguration.getInitialDelayInMs());
@@ -137,7 +143,7 @@ public class PrimaryRangeRepairJob extends ScheduledRepairJob // CPD-OFF: the bu
     }
 
     /**
-     * A primary range repair has no partial progress: the table is either repaired within the interval or not.
+     * A single session repair has no partial progress: the table is either repaired within the interval or not.
      */
     private double getProgress(final long now)
     {
@@ -146,7 +152,7 @@ public class PrimaryRangeRepairJob extends ScheduledRepairJob // CPD-OFF: the bu
 
     /**
      * Iterator for scheduled tasks built up by repair groups. There is always one group with one task, that repairs
-     * all the primary ranges of the node.
+     * the node in one repair session.
      *
      * @return Scheduled task iterator
      */
@@ -163,7 +169,7 @@ public class PrimaryRangeRepairJob extends ScheduledRepairJob // CPD-OFF: the bu
                 .withTableRepairMetrics(getTableRepairMetrics())
                 .withReplicaRepairGroup(replicaRepairGroup)
                 .withRepairLockFactory(REPAIR_LOCK_FACTORY)
-                .withRepairResourceFactory(new PrimaryRangeRepairResourceFactory(getTableReference()))
+                .withRepairResourceFactory(new SingleSessionRepairResourceFactory(getTableReference()))
                 .withRepairPolicies(getRepairPolicies())
                 .withJobId(getJobId())
                 .withRepairHistory(myRepairHistory)
@@ -175,7 +181,7 @@ public class PrimaryRangeRepairJob extends ScheduledRepairJob // CPD-OFF: the bu
     }
 
     /**
-     * Pick up a primary range repair that finished since the last refresh, for example one run on demand, so the job
+     * Pick up a repair of this type that finished since the last refresh, for example one run on demand, so the job
      * does not repeat it within the interval. The history is only read when the job is due, so a job that is not due
      * costs nothing.
      */
@@ -195,7 +201,7 @@ public class PrimaryRangeRepairJob extends ScheduledRepairJob // CPD-OFF: the bu
                 getRepairConfiguration().getColdStartLookbackInMs());
         if (lookup.outcome() == LookupOutcome.FOUND && lookup.finishedAt() > myLastSuccessfulRun)
         {
-            LOG.info("{} - primary range repair of {} already completed at {}, skipping.",
+            LOG.info("{} - repair of {} already completed at {}, skipping.",
                     this, getTableReference(), lookup.finishedAt());
             myLastSuccessfulRun = lookup.finishedAt();
             myAlarm.evaluate(myLastSuccessfulRun, System.currentTimeMillis());
@@ -216,7 +222,7 @@ public class PrimaryRangeRepairJob extends ScheduledRepairJob // CPD-OFF: the bu
     }
 
     /**
-     * Looks up the last successful primary range repair of this node in {@code ecchronos.repair_history}.
+     * Looks up the last successful repair of the type of this job, of this node, in {@code ecchronos.repair_history}.
      *
      * @param tableReference the table to look up.
      * @param coldStartLookbackMs how far back to look, in milliseconds. {@code 0} disables reading the history, which
@@ -234,15 +240,15 @@ public class PrimaryRangeRepairJob extends ScheduledRepairJob // CPD-OFF: the bu
         {
             long now = System.currentTimeMillis();
             OptionalLong latest = myRepairHistoryProvider.lastSuccessfulRepair(myNode, tableReference,
-                    RepairType.PRIMARY_RANGE, Math.max(0L, now - coldStartLookbackMs), now);
+                    myRepairType, Math.max(0L, now - coldStartLookbackMs), now);
             return latest.isPresent()
                     ? new HistoryLookup(LookupOutcome.FOUND, latest.getAsLong())
                     : new HistoryLookup(LookupOutcome.NONE, 0L);
         }
         catch (Exception e)
         {
-            LOG.warn("Unable to read repair history of {}, the primary range repair is not delayed",
-                    tableReference, e);
+            LOG.warn("Unable to read repair history of {}, the {} repair is not delayed",
+                    tableReference, myRepairType, e);
             return new HistoryLookup(LookupOutcome.UNAVAILABLE, 0L);
         }
     }
@@ -270,7 +276,7 @@ public class PrimaryRangeRepairJob extends ScheduledRepairJob // CPD-OFF: the bu
     @Override
     public String toString()
     {
-        return String.format("Primary range repair job of %s (coordinator node %s)", getTableReference(),
+        return String.format("%s repair job of %s (coordinator node %s)", myRepairType, getTableReference(),
                 myNode.getHostId());
     }
 
@@ -289,7 +295,7 @@ public class PrimaryRangeRepairJob extends ScheduledRepairJob // CPD-OFF: the bu
         {
             return false;
         }
-        PrimaryRangeRepairJob that = (PrimaryRangeRepairJob) o;
+        SingleSessionRepairJob that = (SingleSessionRepairJob) o;
         return Objects.equals(myReplicationState, that.myReplicationState)
                 && Objects.equals(myNode, that.myNode)
                 && Objects.equals(myRepairHistory, that.myRepairHistory)
@@ -303,7 +309,7 @@ public class PrimaryRangeRepairJob extends ScheduledRepairJob // CPD-OFF: the bu
     }
 
     /**
-     * Builder class to construct PrimaryRangeRepairJob.
+     * Builder class to construct SingleSessionRepairJob.
      */
     @SuppressWarnings("VisibilityModifier")
     public static class Builder
@@ -333,7 +339,7 @@ public class PrimaryRangeRepairJob extends ScheduledRepairJob // CPD-OFF: the bu
         }
 
         /**
-         * Build with repair lock type. It is required by the base class and not used for primary range repair,
+         * Build with repair lock type. It is required by the base class and not used for single session repair,
          * which has its own fixed locks.
          *
          * @param repairLockType Repair lock type.
@@ -456,7 +462,7 @@ public class PrimaryRangeRepairJob extends ScheduledRepairJob // CPD-OFF: the bu
         }
 
         /**
-         * Build with the repair history provider used to read the last successful primary range repair.
+         * Build with the repair history provider used to read the last successful repair of the type of the job.
          *
          * @param repairHistoryProvider The repair history provider.
          * @return Builder
@@ -481,15 +487,15 @@ public class PrimaryRangeRepairJob extends ScheduledRepairJob // CPD-OFF: the bu
         }
 
         /**
-         * Build primary range repair job.
+         * Build single session repair job.
          *
-         * @return PrimaryRangeRepairJob
+         * @return SingleSessionRepairJob
          */
-        public PrimaryRangeRepairJob build()
+        public SingleSessionRepairJob build()
         {
             Preconditions.checkNotNull(myTableReference, "Table reference must be set");
 
-            return new PrimaryRangeRepairJob(this);
+            return new SingleSessionRepairJob(this);
         }
     }
 }

@@ -215,6 +215,7 @@ public class TestRepairHistoryService extends AbstractCassandraTest
 
         insertRow(tableId, nodeId, "-100", "100", RepairStatus.SUCCESS, RepairType.VNODE.name());
         insertRow(tableId, nodeId, "-200", "200", RepairStatus.SUCCESS, RepairType.PRIMARY_RANGE.name());
+        insertRow(tableId, nodeId, "-400", "400", RepairStatus.SUCCESS, RepairType.ALL_REPLICATED_RANGES.name());
         insertRow(tableId, nodeId, "-300", "300", RepairStatus.SUCCESS, null);
 
         long now = System.currentTimeMillis();
@@ -227,6 +228,30 @@ public class TestRepairHistoryService extends AbstractCassandraTest
         assertTrue(ranges.contains(LongTokenRange.of(-100, 100)));
         assertTrue(ranges.contains(LongTokenRange.of(-300, 300)));
         assertFalse(ranges.contains(LongTokenRange.of(-200, 200)));
+        assertFalse(ranges.contains(LongTokenRange.of(-400, 400)));
+    }
+
+    @Test
+    public void testLastSuccessfulRepairOfAllReplicatedRangesIgnoresThePrimaryRangeRowsAndTheOtherWayAround()
+    {
+        UUID tableId = UUID.randomUUID();
+        UUID nodeId = UUID.randomUUID();
+        TableReference tableReference = mock(TableReference.class);
+        when(tableReference.getId()).thenReturn(tableId);
+        Node node = mock(Node.class);
+        when(node.getHostId()).thenReturn(nodeId);
+
+        Instant allReplicated = Instant.now().minusSeconds(300);
+        Instant primaryRange = Instant.now().minusSeconds(100);
+        insertRow(tableId, nodeId, "-1", "1", RepairStatus.SUCCESS, RepairType.ALL_REPLICATED_RANGES.name(),
+                allReplicated);
+        insertRow(tableId, nodeId, "-1", "1", RepairStatus.SUCCESS, RepairType.PRIMARY_RANGE.name(), primaryRange);
+
+        long now = System.currentTimeMillis();
+        assertEquals(allReplicated.toEpochMilli(), myRepairHistoryService.lastSuccessfulRepair(node, tableReference,
+                RepairType.ALL_REPLICATED_RANGES, now - 3_600_000L, now + 60_000L).getAsLong());
+        assertEquals(primaryRange.toEpochMilli(), myRepairHistoryService.lastSuccessfulRepair(node, tableReference,
+                RepairType.PRIMARY_RANGE, now - 3_600_000L, now + 60_000L).getAsLong());
     }
 
     @Test

@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 
 import org.junit.Test;
 
-public class TestPrimaryRangeRepairResourceFactory
+public class TestSingleSessionRepairResourceFactory
 {
     private static DriverNode mockNode(final String dataCenter)
     {
@@ -64,7 +64,7 @@ public class TestPrimaryRangeRepairResourceFactory
     @Test
     public void testTableLockAndOneLockPerDataCenterAllSingleSlot()
     {
-        Set<RepairResource> resources = new PrimaryRangeRepairResourceFactory(mockTable("ks", "tbl"))
+        Set<RepairResource> resources = new SingleSessionRepairResourceFactory(mockTable("ks", "tbl"))
                 .getRepairResources(group(mockNode("DC1"), mockNode("DC1"), mockNode("DC2")));
 
         assertThat(describe(resources)).containsExactlyInAnyOrder(
@@ -79,7 +79,7 @@ public class TestPrimaryRangeRepairResourceFactory
         DriverNode nodeA = mockNode("DC1");
         DriverNode nodeB = mockNode("DC1");
 
-        Set<RepairResource> resources = new PrimaryRangeRepairResourceFactory(mockTable("ks", "tbl"))
+        Set<RepairResource> resources = new SingleSessionRepairResourceFactory(mockTable("ks", "tbl"))
                 .getRepairResources(group(nodeA, nodeB));
 
         // The table lock and the single datacenter lock only, however many replicas the group has.
@@ -94,7 +94,7 @@ public class TestPrimaryRangeRepairResourceFactory
         ReplicaRepairGroup group = group(mockNode("DC1"));
         TableReference table = mockTable("ks", "tbl");
 
-        RepairResource primaryRangeTableLock = new PrimaryRangeRepairResourceFactory(table)
+        RepairResource primaryRangeTableLock = new SingleSessionRepairResourceFactory(table)
                 .getRepairResources(group).stream().filter(r -> "global".equals(r.getDataCenter())).findFirst()
                 .orElseThrow();
         RepairResource incrementalTableLock = new IncrementalRepairResourceFactory(table)
@@ -111,7 +111,7 @@ public class TestPrimaryRangeRepairResourceFactory
     {
         ReplicaRepairGroup group = group(mockNode("DC1"), mockNode("DC2"));
 
-        Set<String> primaryRangeLockNames = new PrimaryRangeRepairResourceFactory(mockTable("ks", "tbl"))
+        Set<String> primaryRangeLockNames = new SingleSessionRepairResourceFactory(mockTable("ks", "tbl"))
                 .getRepairResources(group).stream()
                 .filter(r -> !"global".equals(r.getDataCenter()))
                 .map(r -> r.getResourceName(1)).collect(Collectors.toSet());
@@ -127,10 +127,10 @@ public class TestPrimaryRangeRepairResourceFactory
     {
         TableReference table = mockTable("ks", "tbl");
 
-        RepairResource tableLockDc1 = new PrimaryRangeRepairResourceFactory(table)
+        RepairResource tableLockDc1 = new SingleSessionRepairResourceFactory(table)
                 .getRepairResources(group(mockNode("DC1"))).stream()
                 .filter(r -> "global".equals(r.getDataCenter())).findFirst().orElseThrow();
-        RepairResource tableLockDc2 = new PrimaryRangeRepairResourceFactory(table)
+        RepairResource tableLockDc2 = new SingleSessionRepairResourceFactory(table)
                 .getRepairResources(group(mockNode("DC2"))).stream()
                 .filter(r -> "global".equals(r.getDataCenter())).findFirst().orElseThrow();
 
@@ -142,11 +142,11 @@ public class TestPrimaryRangeRepairResourceFactory
     {
         ReplicaRepairGroup group = group(mockNode("DC1"));
 
-        Set<String> ks1Tbl1 = describe(new PrimaryRangeRepairResourceFactory(mockTable("ks1", "tbl1"))
+        Set<String> ks1Tbl1 = describe(new SingleSessionRepairResourceFactory(mockTable("ks1", "tbl1"))
                 .getRepairResources(group));
-        Set<String> ks1Tbl2 = describe(new PrimaryRangeRepairResourceFactory(mockTable("ks1", "tbl2"))
+        Set<String> ks1Tbl2 = describe(new SingleSessionRepairResourceFactory(mockTable("ks1", "tbl2"))
                 .getRepairResources(group));
-        Set<String> ks2Tbl1 = describe(new PrimaryRangeRepairResourceFactory(mockTable("ks2", "tbl1"))
+        Set<String> ks2Tbl1 = describe(new SingleSessionRepairResourceFactory(mockTable("ks2", "tbl1"))
                 .getRepairResources(group));
 
         assertThat(ks1Tbl1).contains("global/RepairResource-ks1.tbl1-1/1");

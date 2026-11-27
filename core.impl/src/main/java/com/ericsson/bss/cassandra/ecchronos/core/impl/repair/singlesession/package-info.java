@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 /**
- * Contains the implementations and resources for primary range repairs.
+ * Contains the implementations and resources for single session repairs: repairs of one node in one repair session, with
+ * the ranges chosen by Cassandra. They are used for the repair types PRIMARY_RANGE and ALL_REPLICATED_RANGES.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.primaryrange;
+package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.singlesession;

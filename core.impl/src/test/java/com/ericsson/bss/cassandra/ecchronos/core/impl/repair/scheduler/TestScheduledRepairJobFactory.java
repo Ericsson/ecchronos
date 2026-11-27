@@ -20,7 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.TestUtils;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairJob;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.primaryrange.PrimaryRangeRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.singlesession.SingleSessionRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.VnodeRepairStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TableRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
@@ -143,7 +143,7 @@ public class TestScheduledRepairJobFactory
     }
 
     @Test
-    public void testCreatePrimaryRangeRepairJob()
+    public void testCreateSingleSessionRepairJob()
     {
         RepairConfiguration primaryRangeConfig = RepairConfiguration.newBuilder()
                 .withRepairType(RepairType.PRIMARY_RANGE)
@@ -151,14 +151,14 @@ public class TestScheduledRepairJobFactory
 
         ScheduledRepairJob job = myFactory.create(myNode, TABLE_REFERENCE, primaryRangeConfig);
 
-        assertThat(job).isExactlyInstanceOf(PrimaryRangeRepairJob.class);
+        assertThat(job).isExactlyInstanceOf(SingleSessionRepairJob.class);
         assertThat(job.getTableReference()).isEqualTo(TABLE_REFERENCE);
         assertThat(job.getRepairConfiguration()).isEqualTo(primaryRangeConfig);
         assertThat(job.getView().getRepairType()).isEqualTo(RepairType.PRIMARY_RANGE);
     }
 
     @Test
-    public void testPrimaryRangeRepairJobRaisesAlarmsInTheFaultReporterOfTheFactory()
+    public void testSingleSessionRepairJobRaisesAlarmsInTheFaultReporterOfTheFactory()
     {
         RepairConfiguration primaryRangeConfig = RepairConfiguration.newBuilder()
                 .withRepairType(RepairType.PRIMARY_RANGE)
@@ -174,6 +174,70 @@ public class TestScheduledRepairJobFactory
         job.refreshState();
 
         Mockito.verify(myFaultReporter).raise(eq(RepairFaultReporter.FaultCode.REPAIR_WARNING), any());
+    }
+
+    @Test
+    public void testCreateAllReplicatedRangesRepairJob()
+    {
+        RepairConfiguration config = RepairConfiguration.newBuilder()
+                .withRepairType(RepairType.ALL_REPLICATED_RANGES)
+                .build();
+
+        ScheduledRepairJob job = myFactory.create(myNode, TABLE_REFERENCE, config);
+
+        assertThat(job).isExactlyInstanceOf(SingleSessionRepairJob.class);
+        assertThat(job.getRepairConfiguration()).isEqualTo(config);
+        assertThat(job.getView().getRepairType()).isEqualTo(RepairType.ALL_REPLICATED_RANGES);
+    }
+
+    private ScheduledRepairJobFactory factoryWithManagedNodes()
+    {
+        return ScheduledRepairJobFactory.builder()
+                .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairHistoryService(myRepairHistoryService)
+                .withFaultReporter(myFaultReporter)
+                .withJmxProxyFactory(myJmxProxyFactory)
+                .withRepairStateFactory(myRepairStateFactory)
+                .withReplicationState(myReplicationState)
+                .withCassandraMetrics(myCassandraMetrics)
+                .withRepairPolicies(new ArrayList<>())
+                .withTableStorageStates(myTableStorageStates)
+                .withRepairLockType(RepairLockType.VNODE)
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
+                .withManagedNodes(() -> java.util.List.of(myNode))
+                .build();
+    }
+
+    @Test
+    public void testAllReplicatedRangesJobChecksWhichRangesTheManagedNodesReach()
+    {
+        RepairConfiguration config = RepairConfiguration.newBuilder()
+                .withRepairType(RepairType.ALL_REPLICATED_RANGES).build();
+
+        factoryWithManagedNodes().create(myNode, TABLE_REFERENCE, config);
+
+        Mockito.verify(myReplicationState).getTokenRanges(TABLE_REFERENCE, myNode);
+    }
+
+    @Test
+    public void testJobsOfOtherRepairTypesDoNotCheckWhichRangesAreReached()
+    {
+        for (RepairType type : new RepairType[] {RepairType.PRIMARY_RANGE, RepairType.VNODE})
+        {
+            factoryWithManagedNodes().create(myNode, TABLE_REFERENCE,
+                    RepairConfiguration.newBuilder().withRepairType(type).build());
+        }
+
+        Mockito.verify(myReplicationState, Mockito.never()).getTokenRanges(any(), any());
+    }
+
+    @Test
+    public void testWithoutManagedNodesThereIsNoCheck()
+    {
+        myFactory.create(myNode, TABLE_REFERENCE,
+                RepairConfiguration.newBuilder().withRepairType(RepairType.ALL_REPLICATED_RANGES).build());
+
+        Mockito.verify(myReplicationState, Mockito.never()).getTokenRanges(any(), any());
     }
 
     @Test

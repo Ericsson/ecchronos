@@ -21,8 +21,9 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.IncrementalOnDemand
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandStatus;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OngoingJob;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.PrimaryRangeOnDemandRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.SingleSessionOnDemandRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.VnodeOnDemandRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.singlesession.ReplicatedRangesCoverage;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairHistory;
@@ -32,6 +33,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 
@@ -51,6 +53,7 @@ public final class OnDemandRepairJobFactory
     private final CassandraMetrics myCassandraMetrics;
     private final int myRetryAttempts;
     private final long myRetryBackoffMs;
+    private final Optional<ReplicatedRangesCoverage> myReplicatedRangesCoverage;
 
     private OnDemandRepairJobFactory(final Builder builder)
     {
@@ -65,6 +68,9 @@ public final class OnDemandRepairJobFactory
         myCassandraMetrics = builder.myCassandraMetrics;
         myRetryAttempts = builder.myRetryAttempts;
         myRetryBackoffMs = builder.myRetryBackoffMs;
+        myReplicatedRangesCoverage = Optional.ofNullable(builder.myOnDemandStatus)
+                .map(status -> new ReplicatedRangesCoverage(builder.myReplicationState,
+                        () -> status.getNodes().values()));
     }
 
     /**
@@ -83,16 +89,16 @@ public final class OnDemandRepairJobFactory
         {
             case INCREMENTAL -> createIncrementalJob(ongoingJob, node, repairConfiguration);
             case VNODE, PARALLEL_VNODE -> createVnodeJob(ongoingJob, node, repairConfiguration);
-            case PRIMARY_RANGE -> createPrimaryRangeJob(ongoingJob, node, repairConfiguration);
+            case PRIMARY_RANGE, ALL_REPLICATED_RANGES -> createSingleSessionJob(ongoingJob, node, repairConfiguration);
         };
     }
 
-    private OnDemandRepairJob createPrimaryRangeJob(
+    private OnDemandRepairJob createSingleSessionJob(
             final OngoingJob ongoingJob,
             final Node node,
             final RepairConfiguration repairConfiguration)
     {
-        return new PrimaryRangeOnDemandRepairJob.Builder()
+        return new SingleSessionOnDemandRepairJob.Builder()
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withRepairLockType(myRepairLockType)
@@ -161,6 +167,11 @@ public final class OnDemandRepairJobFactory
                                           final RepairType repairType,
                                           final UUID hostId)
     {
+        if (repairType == RepairType.ALL_REPLICATED_RANGES)
+        {
+            myReplicatedRangesCoverage.ifPresent(
+                    coverage -> coverage.warnIfUncovered(getNodeByHostId(hostId), tableReference));
+        }
         OngoingJob ongoingJob = new OngoingJob.Builder()
                 .withOnDemandStatus(myOnDemandStatus)
                 .withTableReference(tableReference)

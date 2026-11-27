@@ -166,6 +166,7 @@ public class ECChronos implements Closeable
                 .withTableStorageStates(myECChronosInternals.getTableStorageStates())
                 .withRepairLockType(configuration.getRepairConfig().getRepairLockType())
                 .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
+                .withManagedNodes(() -> nativeConnectionProvider.getNodes().values())
                 .build();
 
         myOnDemandRepairSchedulerImpl = OnDemandRepairSchedulerImpl.builder()

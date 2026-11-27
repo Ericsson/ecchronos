@@ -29,5 +29,12 @@ public enum RepairType
      * Full repair of all the primary ranges of a node in one go, like {@code nodetool repair -pr}. Every managed
      * node repairs its own primary ranges, so repairing all nodes covers the whole ring once.
      */
-    PRIMARY_RANGE
+    PRIMARY_RANGE,
+    /**
+     * Full repair of every range a node replicates in one go, with the replicas in all datacenters. It is the
+     * counterpart of {@link #PRIMARY_RANGE}: a node also repairs the ranges it holds for other nodes, so repairing
+     * the nodes that together replicate every range of a keyspace covers the whole keyspace, at the cost of
+     * repairing a range once for every such node that replicates it.
+     */
+    ALL_REPLICATED_RANGES
 }
