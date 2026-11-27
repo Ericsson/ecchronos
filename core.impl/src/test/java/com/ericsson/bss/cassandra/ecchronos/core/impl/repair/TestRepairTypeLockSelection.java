@@ -26,6 +26,7 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.primaryrange.PrimaryRangeRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TableRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
@@ -211,6 +212,55 @@ public class TestRepairTypeLockSelection
         return expected;
     }
 
+    /**
+     * The fixed lock set primary range jobs use: the table lock incremental repair also takes, plus one single slot
+     * lock per datacenter, named so it does not collide with the vnode datacenter lock. No per-node locks.
+     */
+    private static Set<String> expectedPrimaryRangeLocks()
+    {
+        return Set.of(
+                INCREMENTAL_TABLE_LOCK,
+                "DC1/RepairResource-PrimaryRange-DC1-1/1",
+                "DC2/RepairResource-PrimaryRange-DC2-1/1");
+    }
+
+    private PrimaryRangeRepairJob primaryRangeJob(final RepairLockType lockType)
+    {
+        RepairConfiguration configuration = RepairConfiguration.newBuilder()
+                .withRepairType(RepairType.PRIMARY_RANGE)
+                .build();
+        ScheduledJob.Configuration jobConfiguration = new ScheduledJob.ConfigurationBuilder()
+                .withPriority(ScheduledJob.Priority.LOW)
+                .withRunInterval(1, TimeUnit.DAYS)
+                .build();
+        return new PrimaryRangeRepairJob.Builder()
+                .withConfiguration(jobConfiguration)
+                .withTableReference(TABLE_REFERENCE)
+                .withJmxProxyFactory(myJmxProxyFactory)
+                .withReplicationState(myReplicationState)
+                .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairConfiguration(configuration)
+                .withNode(myNode)
+                .withRepairLockType(lockType)
+                .withRepairHistory(myRepairHistory)
+                .withRepairHistoryProvider(myRepairHistoryProvider)
+                .build();
+    }
+
+    private PrimaryRangeOnDemandRepairJob primaryRangeOnDemandJob(final RepairLockType lockType)
+    {
+        stubOngoingJob(RepairType.PRIMARY_RANGE);
+        return new PrimaryRangeOnDemandRepairJob.Builder()
+                .withJmxProxyFactory(myJmxProxyFactory)
+                .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairLockType(lockType)
+                .withReplicationState(myReplicationState)
+                .withRepairHistory(myRepairHistory)
+                .withOngoingJob(myOngoingJob)
+                .withNode(myNode)
+                .build();
+    }
+
     private IncrementalRepairJob incrementalJob(final RepairLockType lockType)
     {
         RepairConfiguration configuration = RepairConfiguration.newBuilder()
@@ -350,6 +400,50 @@ public class TestRepairTypeLockSelection
                     .as("on-demand INCREMENTAL job, lock type %s", lockType)
                     .containsExactlyInAnyOrderElementsOf(expectedIncrementalLocks());
         }
+    }
+
+    @Test
+    public void testScheduledPrimaryRangeJobIgnoresLockType()
+    {
+        for (RepairLockType lockType : RepairLockType.values())
+        {
+            assertThat(resourcesOfFirstTask(primaryRangeJob(lockType).iterator()))
+                    .as("scheduled PRIMARY_RANGE job, lock type %s", lockType)
+                    .containsExactlyInAnyOrderElementsOf(expectedPrimaryRangeLocks());
+        }
+    }
+
+    @Test
+    public void testOnDemandPrimaryRangeJobIgnoresLockType()
+    {
+        for (RepairLockType lockType : RepairLockType.values())
+        {
+            assertThat(resourcesOfFirstTask(primaryRangeOnDemandJob(lockType).iterator()))
+                    .as("on-demand PRIMARY_RANGE job, lock type %s", lockType)
+                    .containsExactlyInAnyOrderElementsOf(expectedPrimaryRangeLocks());
+        }
+    }
+
+    @Test
+    public void testPrimaryRangeTakesNoPerNodeLockAndSharesTheTableLockWithIncremental()
+    {
+        Set<String> primaryRange = resourcesOfFirstTask(primaryRangeJob(RepairLockType.VNODE).iterator());
+        Set<String> incremental = resourcesOfFirstTask(incrementalJob(RepairLockType.VNODE).iterator());
+
+        assertThat(primaryRange).doesNotContainAnyElementsOf(nodeLocks());
+        // One and the same table lock, so the two repair types exclude each other for a table.
+        assertThat(primaryRange).contains(INCREMENTAL_TABLE_LOCK);
+        assertThat(incremental).contains(INCREMENTAL_TABLE_LOCK);
+    }
+
+    @Test
+    public void testPrimaryRangeDataCenterLocksDoNotCollideWithVnodeDataCenterLocks()
+    {
+        Set<String> primaryRange = resourcesOfFirstTask(primaryRangeJob(RepairLockType.DATACENTER).iterator());
+        Set<String> vnodeDataCenterLocks =
+                resourcesOfFirstTask(vnodeJob(RepairLockType.DATACENTER, RepairType.VNODE).iterator());
+
+        assertThat(primaryRange).doesNotContainAnyElementsOf(vnodeDataCenterLocks);
     }
 
     @Test

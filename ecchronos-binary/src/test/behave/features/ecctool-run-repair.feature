@@ -9,6 +9,15 @@ Feature: ecctool run-repair
     And the output should not contain more rows
     And the output should contain a valid repair summary
 
+  Scenario: Run local primary_range repair for keyspace test2 and table table2
+    Given we have access to ecctool
+    And we have a nodeid
+    When we run local repair for keyspace test2 and table table2 with type primary_range
+    Then the output should contain a valid repair header
+    And the output should contain a repair row for test2.table2 with type PRIMARY_RANGE
+    And the output should not contain more rows
+    And the output should contain a valid repair summary
+
   Scenario: Run local repair for keyspace test2
     Given we have access to ecctool
     And we have a nodeid

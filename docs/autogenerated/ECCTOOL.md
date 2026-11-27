@@ -569,7 +569,7 @@ output formats: json, table (default)
 
 
 ### -r &lt;repair_type&gt;, --repair_type &lt;repair_type&gt;
-type of repair (accepted values: vnode, parallel_vnode and incremental)
+type of repair (accepted values: vnode, parallel_vnode, incremental and primary_range)
 
 
 ### -f, --forceRepairTWCS

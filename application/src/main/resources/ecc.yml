@@ -297,7 +297,8 @@ repair:
   ##
   ## This setting only applies to repair_type "vnode" and "parallel_vnode". Incremental repair always uses its own
   ## fixed locks: a single lock per table, so that two incremental repairs of the same table never run
-  ## concurrently, plus one lock per replica node. It is not affected by lock_type.
+  ## concurrently, plus one lock per replica node. Primary range repair also has its own fixed locks: the same
+  ## single lock per table plus one lock per datacenter. Neither is affected by lock_type.
   ##
   lock_type: vnode
   ##
@@ -307,6 +308,10 @@ repair:
   ##
   ## With the defaults where repairs triggers once every 7 days for each table a warning alarm would be raised
   ## if the table has not been properly repaired within one full day.
+  ##
+  ## The alarms apply to all repair types except incremental, which has its own alarm for repairs that do not
+  ## progress. For primary_range the alarms are raised for the node and table with the source PRIMARY_RANGE_ELAPSED,
+  ## so they are separate from the alarms of vnode repair of the same table.
   ##
   alarm:
     ##
@@ -413,10 +418,17 @@ repair:
     unit: MINUTES
   ##
   ## Specifies the default repair_type.
-  ## Possible values are: vnode, parallel_vnode, incremental
+  ## Possible values are: vnode, parallel_vnode, incremental, primary_range
   ## vnode = repair 1 vnode at a time (supports size_target to split the vnode further, in this case there will be 1 repair session per subrange)
   ## parallel_vnode = repair vnodes in parallel, this will combine vnodes into a single repair session per repair group
   ## incremental = repair vnodes incrementally (incremental repair)
+  ## primary_range = full repair of all the primary ranges of the node in one repair session, like 'nodetool repair -pr'.
+  ##                 Every managed node repairs its own primary ranges. size_target does not apply. Locks: a single lock per
+  ##                 table (shared with incremental repair) and a single lock per datacenter involved. It does not use
+  ##                 lock_type and is not coordinated with vnode repair. A table with no primary range repair in the
+  ##                 repair history (within history_lookback_intervals) is taken for a new table, and its first repair
+  ##                 waits for initial_delay, as for vnode repair. The warn and error alarms are raised when the last
+  ##                 primary range repair is older than the alarm times, and ceased when a repair has succeeded.
   ##
   repair_type: vnode
   ##

@@ -20,6 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.TestUtils;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.primaryrange.PrimaryRangeRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.VnodeRepairStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TableRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
@@ -45,12 +46,15 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.Mockito;
 
 import java.util.ArrayList;
+import java.util.OptionalLong;
+import java.util.concurrent.TimeUnit;
 import java.util.Arrays;
 import java.util.UUID;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.impl.table.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
@@ -136,6 +140,40 @@ public class TestScheduledRepairJobFactory
         assertThat(job).isInstanceOf(TableRepairJob.class);
         assertThat(job.getTableReference()).isEqualTo(TABLE_REFERENCE);
         assertThat(job.getRepairConfiguration()).isEqualTo(parallelConfig);
+    }
+
+    @Test
+    public void testCreatePrimaryRangeRepairJob()
+    {
+        RepairConfiguration primaryRangeConfig = RepairConfiguration.newBuilder()
+                .withRepairType(RepairType.PRIMARY_RANGE)
+                .build();
+
+        ScheduledRepairJob job = myFactory.create(myNode, TABLE_REFERENCE, primaryRangeConfig);
+
+        assertThat(job).isExactlyInstanceOf(PrimaryRangeRepairJob.class);
+        assertThat(job.getTableReference()).isEqualTo(TABLE_REFERENCE);
+        assertThat(job.getRepairConfiguration()).isEqualTo(primaryRangeConfig);
+        assertThat(job.getView().getRepairType()).isEqualTo(RepairType.PRIMARY_RANGE);
+    }
+
+    @Test
+    public void testPrimaryRangeRepairJobRaisesAlarmsInTheFaultReporterOfTheFactory()
+    {
+        RepairConfiguration primaryRangeConfig = RepairConfiguration.newBuilder()
+                .withRepairType(RepairType.PRIMARY_RANGE)
+                .withRepairInterval(1, TimeUnit.DAYS)
+                .withRepairWarningTime(2, TimeUnit.DAYS)
+                .withRepairErrorTime(3, TimeUnit.DAYS)
+                .build();
+        long lastRepaired = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(2);
+        when(myRepairHistoryService.lastSuccessfulRepair(any(), any(), any(), anyLong(), anyLong()))
+                .thenReturn(OptionalLong.of(lastRepaired));
+        ScheduledRepairJob job = myFactory.create(myNode, TABLE_REFERENCE, primaryRangeConfig);
+
+        job.refreshState();
+
+        Mockito.verify(myFaultReporter).raise(eq(RepairFaultReporter.FaultCode.REPAIR_WARNING), any());
     }
 
     @Test

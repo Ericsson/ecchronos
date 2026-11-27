@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.application.config.repair;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 
 import java.util.concurrent.TimeUnit;
 
@@ -27,6 +28,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 /**
  * Verifies the global-only history_lookback_intervals config and the initial_delay &lt; repair_interval startup
@@ -66,6 +68,33 @@ public class TestGlobalRepairConfig
         config.setHistoryLookbackIntervals(5);
         RepairConfiguration repairConfiguration = config.asRepairConfiguration();
         assertThat(repairConfiguration.getHistoryLookbackIntervals()).isEqualTo(5);
+    }
+
+    @Test
+    public void testRepairTypeIsParsedFromYamlForEveryRepairType()
+    {
+        YAMLMapper mapper = new YAMLMapper();
+
+        for (RepairType type : RepairType.values())
+        {
+            // Both lower case, as written in ecc.yml, and upper case must be accepted.
+            for (String written : new String[] {type.name().toLowerCase(java.util.Locale.US), type.name()})
+            {
+                GlobalRepairConfig config = mapper.readValue("repair_type: " + written, GlobalRepairConfig.class);
+
+                assertThat(config.getRepairType()).as("repair_type: %s", written).isEqualTo(type);
+                assertThat(config.asRepairConfiguration().getRepairType()).isEqualTo(type);
+            }
+        }
+    }
+
+    @Test
+    public void testPrimaryRangeRepairTypeIsAcceptedInTheConfigurationFile()
+    {
+        GlobalRepairConfig config = new YAMLMapper().readValue("repair_type: primary_range",
+                GlobalRepairConfig.class);
+
+        assertThat(config.getRepairType()).isEqualTo(RepairType.PRIMARY_RANGE);
     }
 
     @Test

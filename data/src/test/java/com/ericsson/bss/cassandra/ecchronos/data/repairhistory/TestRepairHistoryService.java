@@ -18,7 +18,11 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.uuid.Uuids;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.metadata.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.NodeResolver;
+import com.ericsson.bss.cassandra.ecchronos.core.state.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.state.RepairEntry;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.data.utils.AbstractCassandraTest;
@@ -26,8 +30,12 @@ import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairStatus;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import java.io.IOException;
 import java.time.Instant;
+import com.google.common.collect.ImmutableSet;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.OptionalLong;
 import java.util.UUID;
 import org.junit.After;
 import org.junit.Before;
@@ -37,8 +45,10 @@ import org.mockito.Mock;
 import static com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHistoryData.Builder;
 import static com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHistoryData.copyOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -182,6 +192,124 @@ public class TestRepairHistoryService extends AbstractCassandraTest
             assertEquals(RepairStatus.SUCCESS.name(), row.get(COLUMN_STATUS, String.class));
             assertEquals(RepairType.INCREMENTAL.name(), row.get(COLUMN_REPAIR_TYPE, String.class));
         }
+    }
+
+    @Test
+    public void testIterateSkipsPrimaryRangeRowsAndKeepsOtherRows()
+    {
+        UUID tableId = UUID.randomUUID();
+        UUID nodeId = UUID.randomUUID();
+        TableReference tableReference = mock(TableReference.class);
+        when(tableReference.getId()).thenReturn(tableId);
+        Node node = mock(Node.class);
+        when(node.getHostId()).thenReturn(nodeId);
+
+        // Every range resolves to a replica set, so a row is dropped only if it is skipped on purpose and not because
+        // its range is missing from the token metadata.
+        // The @Mock fields of this class are not initialised, so use a service built on local mocks.
+        DriverNode replica = mock(DriverNode.class);
+        ReplicationState replicationState = mock(ReplicationState.class);
+        when(replicationState.getNodesClusterWide(any(), any(), any())).thenReturn(ImmutableSet.of(replica));
+        RepairHistoryService service = new RepairHistoryService(AbstractCassandraTest.mySession, replicationState,
+                mock(NodeResolver.class), 1L);
+
+        insertRow(tableId, nodeId, "-100", "100", RepairStatus.SUCCESS, RepairType.VNODE.name());
+        insertRow(tableId, nodeId, "-200", "200", RepairStatus.SUCCESS, RepairType.PRIMARY_RANGE.name());
+        insertRow(tableId, nodeId, "-300", "300", RepairStatus.SUCCESS, null);
+
+        long now = System.currentTimeMillis();
+        Iterator<RepairEntry> iterator = service.iterate(node, tableReference, now + 60_000,
+                now - 60_000, entry -> true);
+        List<LongTokenRange> ranges = new ArrayList<>();
+        iterator.forEachRemaining(entry -> ranges.add(entry.getRange()));
+
+        assertEquals(2, ranges.size());
+        assertTrue(ranges.contains(LongTokenRange.of(-100, 100)));
+        assertTrue(ranges.contains(LongTokenRange.of(-300, 300)));
+        assertFalse(ranges.contains(LongTokenRange.of(-200, 200)));
+    }
+
+    @Test
+    public void testLastSuccessfulRepairReturnsLatestSuccessOfTheRequestedType()
+    {
+        UUID tableId = UUID.randomUUID();
+        UUID nodeId = UUID.randomUUID();
+        TableReference tableReference = mock(TableReference.class);
+        when(tableReference.getId()).thenReturn(tableId);
+        Node node = mock(Node.class);
+        when(node.getHostId()).thenReturn(nodeId);
+
+        Instant older = Instant.now().minusSeconds(600);
+        Instant newer = Instant.now().minusSeconds(300);
+        Instant newest = Instant.now().minusSeconds(100);
+        insertRow(tableId, nodeId, "-1", "1", RepairStatus.SUCCESS, RepairType.PRIMARY_RANGE.name(), older);
+        insertRow(tableId, nodeId, "-1", "1", RepairStatus.SUCCESS, RepairType.PRIMARY_RANGE.name(), newer);
+        // Not counted: failed, a different type, and a type-less (legacy) row, all newer than the answer.
+        insertRow(tableId, nodeId, "-1", "1", RepairStatus.FAILED, RepairType.PRIMARY_RANGE.name(), newest);
+        insertRow(tableId, nodeId, "-1", "1", RepairStatus.SUCCESS, RepairType.VNODE.name(), newest);
+        insertRow(tableId, nodeId, "-1", "1", RepairStatus.SUCCESS, RepairType.INCREMENTAL.name(), newest);
+        insertRow(tableId, nodeId, "-1", "1", RepairStatus.SUCCESS, null, newest);
+
+        long now = System.currentTimeMillis();
+        OptionalLong result = myRepairHistoryService.lastSuccessfulRepair(node, tableReference,
+                RepairType.PRIMARY_RANGE, now - 3_600_000L, now + 60_000L);
+
+        assertTrue(result.isPresent());
+        assertEquals(newer.toEpochMilli(), result.getAsLong());
+    }
+
+    @Test
+    public void testLastSuccessfulRepairIsEmptyWithoutAMatchingRow()
+    {
+        UUID tableId = UUID.randomUUID();
+        UUID nodeId = UUID.randomUUID();
+        TableReference tableReference = mock(TableReference.class);
+        when(tableReference.getId()).thenReturn(tableId);
+        Node node = mock(Node.class);
+        when(node.getHostId()).thenReturn(nodeId);
+
+        insertRow(tableId, nodeId, "-1", "1", RepairStatus.SUCCESS, RepairType.VNODE.name());
+        insertRow(tableId, nodeId, "-1", "1", RepairStatus.FAILED, RepairType.PRIMARY_RANGE.name());
+
+        long now = System.currentTimeMillis();
+        assertFalse(myRepairHistoryService.lastSuccessfulRepair(node, tableReference, RepairType.PRIMARY_RANGE,
+                now - 3_600_000L, now + 60_000L).isPresent());
+    }
+
+    @Test
+    public void testLastSuccessfulRepairOnlyLooksAtTheGivenNodeAndTable()
+    {
+        UUID tableId = UUID.randomUUID();
+        UUID nodeId = UUID.randomUUID();
+        UUID otherNodeId = UUID.randomUUID();
+        TableReference tableReference = mock(TableReference.class);
+        when(tableReference.getId()).thenReturn(tableId);
+        Node node = mock(Node.class);
+        when(node.getHostId()).thenReturn(nodeId);
+
+        insertRow(tableId, otherNodeId, "-1", "1", RepairStatus.SUCCESS, RepairType.PRIMARY_RANGE.name());
+
+        long now = System.currentTimeMillis();
+        assertFalse(myRepairHistoryService.lastSuccessfulRepair(node, tableReference, RepairType.PRIMARY_RANGE,
+                now - 3_600_000L, now + 60_000L).isPresent());
+    }
+
+    private void insertRow(final UUID tableId, final UUID nodeId, final String rangeBegin, final String rangeEnd,
+            final RepairStatus status, final String repairType)
+    {
+        insertRow(tableId, nodeId, rangeBegin, rangeEnd, status, repairType, Instant.now());
+    }
+
+    private void insertRow(final UUID tableId, final UUID nodeId, final String rangeBegin, final String rangeEnd,
+            final RepairStatus status, final String repairType, final Instant finishedAt)
+    {
+        Instant startedAt = finishedAt.minusSeconds(5);
+        AbstractCassandraTest.mySession.execute(SimpleStatement.newInstance(
+                "INSERT INTO ecchronos.repair_history (table_id, node_id, repair_id, job_id, coordinator_id, "
+                        + "range_begin, range_end, participants, status, started_at, finished_at, repair_type) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                tableId, nodeId, Uuids.startOf(startedAt.toEpochMilli()), UUID.randomUUID(), nodeId, rangeBegin,
+                rangeEnd, Collections.emptySet(), status.name(), startedAt, finishedAt, repairType));
     }
 
     @Test

@@ -24,6 +24,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -74,29 +75,46 @@ public class AlarmPostUpdateHook implements PostUpdateHook
     private void sendOrCeaseAlarm(final long lastRepairedAt, final UUID hostId)
     {
         long msSinceLastRepair = myClock.get().millis() - lastRepairedAt;
-        RepairFaultReporter.FaultCode faultCode = null;
-
-        if (msSinceLastRepair >= myRepairConfiguration.getRepairErrorTimeInMs())
-        {
-            faultCode = RepairFaultReporter.FaultCode.REPAIR_ERROR;
-        }
-        else if (msSinceLastRepair >= myRepairConfiguration.getRepairWarningTimeInMs())
-        {
-            faultCode = RepairFaultReporter.FaultCode.REPAIR_WARNING;
-        }
+        Optional<RepairFaultReporter.FaultCode> faultCode = faultCodeFor(msSinceLastRepair, myRepairConfiguration);
         Map<String, Object> data = new HashMap<>();
         data.put(RepairFaultReporter.FAULT_NODE_ID, hostId);
         data.put(RepairFaultReporter.FAULT_KEYSPACE, myTableReference.getKeyspace());
         data.put(RepairFaultReporter.FAULT_TABLE, myTableReference.getTable());
 
-        if (faultCode != null)
+        if (faultCode.isPresent())
         {
-            myFaultReporter.raise(faultCode, data);
+            myFaultReporter.raise(faultCode.get(), data);
         }
         else
         {
             myFaultReporter.cease(RepairFaultReporter.FaultCode.REPAIR_WARNING, data);
         }
+    }
+
+    /**
+     * Decides which alarm, if any, a table calls for when it was last repaired the given time ago. The error alarm
+     * is raised at {@code alarm.error} and the warning alarm at {@code alarm.warn}, which are also the times a
+     * schedule is reported as overdue and late. It is shared by every repair type that raises time based alarms, so
+     * that they all use the same thresholds.
+     *
+     * @param msSinceLastRepair the time since the last repair, in milliseconds.
+     * @param repairConfiguration the repair configuration with the alarm thresholds.
+     * @return the alarm to raise, or empty if the table is repaired often enough.
+     */
+    public static Optional<RepairFaultReporter.FaultCode> faultCodeFor(final long msSinceLastRepair,
+            final RepairConfiguration repairConfiguration)
+    {
+        Optional<RepairFaultReporter.FaultCode> faultCode = Optional.empty();
+
+        if (msSinceLastRepair >= repairConfiguration.getRepairErrorTimeInMs())
+        {
+            faultCode = Optional.of(RepairFaultReporter.FaultCode.REPAIR_ERROR);
+        }
+        else if (msSinceLastRepair >= repairConfiguration.getRepairWarningTimeInMs())
+        {
+            faultCode = Optional.of(RepairFaultReporter.FaultCode.REPAIR_WARNING);
+        }
+        return faultCode;
     }
 
     /**

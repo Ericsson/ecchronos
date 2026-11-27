@@ -24,5 +24,10 @@ public enum RepairType
     /** Parallel vnode-based repair, repairing multiple vnode ranges concurrently. */
     PARALLEL_VNODE,
     /** Incremental repair, repairing only data that has changed since last repair. */
-    INCREMENTAL
+    INCREMENTAL,
+    /**
+     * Full repair of all the primary ranges of a node in one go, like {@code nodetool repair -pr}. Every managed
+     * node repairs its own primary ranges, so repairing all nodes covers the whole ring once.
+     */
+    PRIMARY_RANGE
 }

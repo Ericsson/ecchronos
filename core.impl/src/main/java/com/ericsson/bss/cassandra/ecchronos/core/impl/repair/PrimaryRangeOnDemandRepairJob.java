@@ -1,0 +1,382 @@
+/*
+ * Copyright 2026 Telefonaktiebolaget LM Ericsson
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
+
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.PrimaryRangeRepairResourceFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
+import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairJobView;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.TaskExecutionResult;
+import com.ericsson.bss.cassandra.ecchronos.core.state.RepairHistory;
+import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicaRepairGroup;
+import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
+import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+
+/**
+ * An on-demand repair job that repairs the primary ranges of one node of a table in one repair session, like
+ * {@code nodetool repair -pr}.
+ * <p>
+ * A cluster-wide request creates one such job for every managed node, and each node repairs its own primary ranges.
+ * Nothing is distributed between nodes.
+ */
+public final class PrimaryRangeOnDemandRepairJob extends OnDemandRepairJob // CPD-OFF: deliberately mirrors IncrementalOnDemandRepairJob (task, retry, finish plumbing and builder), a shared base class is out of scope
+{
+    private static final Logger LOG = LoggerFactory.getLogger(PrimaryRangeOnDemandRepairJob.class);
+    private final ReplicationState myReplicationState;
+    private final RepairHistory myRepairHistory;
+    private final List<ScheduledTask> myTasks;
+    private final int myTotalTasks;
+    private final ReplicaRepairGroup myReplicaRepairGroup;
+    private int myAttempts;
+
+    /**
+     * Constructs a primary range on-demand repair job from the provided builder.
+     *
+     * @param builder the builder containing all configuration.
+     */
+    public PrimaryRangeOnDemandRepairJob(final Builder builder)
+    {
+        super(builder.myConfiguration, builder.myJmxProxyFactory, builder.myRepairConfiguration,
+                builder.myRepairLockType, builder.myOnFinishedHook, builder.myTableRepairMetrics, builder.myOngoingJob,
+                builder.myCurrentNode, builder.myRetryAttempts, builder.myRetryBackoffMs);
+        myReplicationState = Preconditions.checkNotNull(builder.myReplicationState,
+                "Replication state must be set");
+        myRepairHistory = Preconditions.checkNotNull(builder.myRepairHistory,
+                "Repair History must be set");
+        myReplicaRepairGroup = new ReplicaRepairGroup(
+                myReplicationState.getReplicas(getTableReference(), getCurrentNode()),
+                ImmutableList.of(), -1L);
+        myTasks = initializeTasks();
+        myTotalTasks = myTasks.size();
+    }
+
+    private List<ScheduledTask> initializeTasks()
+    {
+        List<ScheduledTask> taskList = new ArrayList<>();
+        taskList.add(buildTask());
+        return taskList;
+    }
+
+    private ScheduledTask buildTask()
+    {
+        return createRepairGroupBuilder(myReplicaRepairGroup).build(Priority.HIGHEST.getValue());
+    }
+
+    private RepairGroup.Builder createRepairGroupBuilder(final ReplicaRepairGroup replicaRepairGroup)
+    {
+        return RepairGroup.newBuilder()
+                .withTableReference(getTableReference())
+                .withRepairConfiguration(getRepairConfiguration())
+                .withReplicaRepairGroup(replicaRepairGroup)
+                .withJmxProxyFactory(getJmxProxyFactory())
+                .withTableRepairMetrics(getTableRepairMetrics())
+                .withRepairResourceFactory(new PrimaryRangeRepairResourceFactory(getTableReference()))
+                .withRepairLockFactory(REPAIR_LOCK_FACTORY)
+                .withRepairHistory(myRepairHistory)
+                .withJobId(getJobId())
+                .withNode(getCurrentNode());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Iterator<ScheduledTask> iterator()
+    {
+        return new ArrayList<>(myTasks).iterator();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public OnDemandRepairJobView getView()
+    {
+        return new OnDemandRepairJobView(
+                getJobId(),
+                getOngoingJob().getHostId(),
+                getOngoingJob().getTableReference(),
+                getStatus(),
+                getProgress(),
+                getOngoingJob().getCompletedTime(), getOngoingJob().getRepairType());
+    }
+
+    /**
+     * Gets the current progress of the repair as a ratio between 0.0 and 1.0. There is a single task, so the
+     * progress is 0.0 until it has run.
+     *
+     * @return the progress ratio.
+     */
+    public double getProgress()
+    {
+        int finishedTasks = myTotalTasks - myTasks.size();
+        return myTotalTasks == 0 || OngoingJob.Status.finished.equals(getOngoingJob().getStatus())
+                ? 1
+                : (double) finishedTasks / myTotalTasks;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void postExecute(final TaskExecutionResult result, final ScheduledTask task)
+    {
+        myTasks.remove(task);
+        TaskOutcome outcome = decideTaskOutcome(result, task, myAttempts);
+        if (outcome == TaskOutcome.RETRY)
+        {
+            // Rebuild a fresh single-use task for the same repair group, then defer via backoff. See #1848.
+            myAttempts++;
+            myTasks.add(buildTask());
+            applyRetryBackoff();
+        }
+        super.postExecute(result, task);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void finishJob()
+    {
+        UUID id = getJobId();
+        if (myTasks.isEmpty())
+        {
+            getOngoingJob().finishJob();
+            LOG.info("Completed primary range on demand repair: {}", id);
+        }
+        if (hasFailed())
+        {
+            getOngoingJob().failJob();
+            LOG.error("Failed primary range on demand repair: {}", id);
+        }
+        getOnFinishedHook().accept(id);
+        super.finishJob();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public State getState()
+    {
+        if (hasFailed())
+        {
+            return State.FAILED;
+        }
+        return myTasks.isEmpty() ? State.FINISHED : State.RUNNABLE;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString()
+    {
+        return String.format("Primary range On Demand Repair job of %s", getTableReference());
+    }
+
+    /**
+     * Builder for constructing {@link PrimaryRangeOnDemandRepairJob} instances.
+     */
+    public static class Builder
+    {
+        private final Configuration myConfiguration = new ConfigurationBuilder()
+                .withPriority(Priority.HIGHEST)
+                .withRunInterval(0, TimeUnit.DAYS)
+                .build();
+        private DistributedJmxProxyFactory myJmxProxyFactory;
+        private TableRepairMetrics myTableRepairMetrics = null;
+        private RepairConfiguration myRepairConfiguration = RepairConfiguration.newBuilder()
+                .withRepairType(RepairType.PRIMARY_RANGE).build();
+        private RepairLockType myRepairLockType;
+        private Consumer<UUID> myOnFinishedHook = table ->
+        {
+        };
+        private Node myCurrentNode;
+        private OngoingJob myOngoingJob;
+        private ReplicationState myReplicationState;
+        private RepairHistory myRepairHistory;
+        private int myRetryAttempts = OnDemandRepairJob.DEFAULT_RETRY_ATTEMPTS;
+        private long myRetryBackoffMs = OnDemandRepairJob.DEFAULT_RETRY_BACKOFF_MS;
+
+        /**
+         * Default constructor.
+         */
+        public Builder()
+        {
+            // Default constructor
+        }
+
+        /**
+         * Sets the current Cassandra node for the repair job.
+         *
+         * @param node the current node.
+         * @return this builder.
+         */
+        public final Builder withNode(final Node node)
+        {
+            this.myCurrentNode = node;
+            return this;
+        }
+
+        /**
+         * Sets the JMX proxy factory.
+         *
+         * @param jmxProxyFactory the JMX proxy factory.
+         * @return this builder.
+         */
+        public final Builder withJmxProxyFactory(final DistributedJmxProxyFactory jmxProxyFactory)
+        {
+            this.myJmxProxyFactory = jmxProxyFactory;
+            return this;
+        }
+
+        /**
+         * Sets the table repair metrics.
+         *
+         * @param tableRepairMetrics the table repair metrics.
+         * @return this builder.
+         */
+        public final Builder withTableRepairMetrics(final TableRepairMetrics tableRepairMetrics)
+        {
+            this.myTableRepairMetrics = tableRepairMetrics;
+            return this;
+        }
+
+        /**
+         * Sets the repair lock type. It is required by the base class and not used for primary range repair, which
+         * has its own fixed locks.
+         *
+         * @param repairLockType the repair lock type.
+         * @return this builder.
+         */
+        public final Builder withRepairLockType(final RepairLockType repairLockType)
+        {
+            this.myRepairLockType = repairLockType;
+            return this;
+        }
+
+        /**
+         * Sets the callback to invoke when the job finishes.
+         *
+         * @param onFinishedHook the on-finished callback.
+         * @return this builder.
+         */
+        public final Builder withOnFinished(final Consumer<UUID> onFinishedHook)
+        {
+            this.myOnFinishedHook = onFinishedHook;
+            return this;
+        }
+
+        /**
+         * Sets the repair configuration.
+         *
+         * @param repairConfiguration the repair configuration.
+         * @return this builder.
+         */
+        public final Builder withRepairConfiguration(final RepairConfiguration repairConfiguration)
+        {
+            this.myRepairConfiguration = repairConfiguration;
+            return this;
+        }
+
+        /**
+         * Sets the ongoing job reference.
+         *
+         * @param ongoingJob the ongoing job.
+         * @return this builder.
+         */
+        public final Builder withOngoingJob(final OngoingJob ongoingJob)
+        {
+            this.myOngoingJob = ongoingJob;
+            return this;
+        }
+
+        /**
+         * Sets the replication state.
+         *
+         * @param replicationState the replication state.
+         * @return this builder.
+         */
+        public final Builder withReplicationState(final ReplicationState replicationState)
+        {
+            this.myReplicationState = replicationState;
+            return this;
+        }
+
+        /**
+         * Sets the repair history.
+         *
+         * @param repairHistory the repair history.
+         * @return this builder.
+         */
+        public final Builder withRepairHistory(final RepairHistory repairHistory)
+        {
+            this.myRepairHistory = repairHistory;
+            return this;
+        }
+
+        /**
+         * Sets the maximum number of attempts per task (1 = no retry). Values below 1 are treated as 1.
+         *
+         * @param attempts the maximum attempts per task.
+         * @return this builder.
+         */
+        public final Builder withRetryAttempts(final int attempts)
+        {
+            this.myRetryAttempts = Math.max(1, attempts);
+            return this;
+        }
+
+        /**
+         * Sets the delay between retry attempts, in milliseconds.
+         *
+         * @param backoffMs the backoff in milliseconds.
+         * @return this builder.
+         */
+        public final Builder withRetryBackoffMs(final long backoffMs)
+        {
+            this.myRetryBackoffMs = backoffMs;
+            return this;
+        }
+
+        /**
+         * Builds the {@link PrimaryRangeOnDemandRepairJob} instance.
+         *
+         * @return the constructed job.
+         */
+        public final PrimaryRangeOnDemandRepairJob build()
+        {
+            return new PrimaryRangeOnDemandRepairJob(this);
+        }
+    }
+}

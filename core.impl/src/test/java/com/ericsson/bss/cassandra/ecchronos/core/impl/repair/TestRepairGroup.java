@@ -34,6 +34,7 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.DummyLock;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairTask;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.primaryrange.PrimaryRangeRepairTask;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.VnodeRepairTask;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
@@ -215,6 +216,30 @@ public class TestRepairGroup
         assertThat(repairTask.getTableReference()).isEqualTo(TABLE_REFERENCE);
         assertThat(repairTask.getRepairConfiguration().getRepairParallelism()).isEqualTo(RepairParallelism.PARALLEL);
         assertThat(repairTask.getRepairConfiguration().getRepairType()).isEqualTo(RepairType.INCREMENTAL);
+    }
+
+    @Test
+    public void testPrimaryRangeRepairTaskWritesRepairHistoryAsPrimaryRange()
+    {
+        DriverNode node = mockNode("DC1");
+        when(node.getId()).thenReturn(myNodeID);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(node),
+                ImmutableList.of(), System.currentTimeMillis());
+        RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
+                .withParallelism(RepairParallelism.PARALLEL)
+                .withRepairType(RepairType.PRIMARY_RANGE)
+                .build();
+
+        RepairGroup repairGroup = builderFor(replicaRepairGroup).withRepairConfiguration(repairConfiguration)
+                .build(PRIORITY);
+
+        Collection<RepairTask> repairTasks = repairGroup.getRepairTasks(myNodeID);
+
+        assertThat(repairTasks).hasSize(1);
+        assertThat(repairTasks.iterator().next()).isInstanceOf(PrimaryRangeRepairTask.class);
+        // The history row is typed as primary range and keyed by the coordinator node, so it is not vnode state.
+        verify(myRepairHistoryService).newSession(any(), eq(TABLE_REFERENCE), eq(myJobId), any(), any(),
+                eq(RepairType.PRIMARY_RANGE));
     }
 
     @Test
