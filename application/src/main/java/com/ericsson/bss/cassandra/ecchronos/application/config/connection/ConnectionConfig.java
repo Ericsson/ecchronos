@@ -91,6 +91,11 @@ public class ConnectionConfig
     @JsonProperty("threadPool")
     public final void setThreadPoolTaskConfig(final ThreadPoolTaskConfig threadPoolTaskConfig)
     {
+        if (threadPoolTaskConfig == null)
+        {
+            throw new IllegalArgumentException("connection.threadPool must not be null");
+        }
+        threadPoolTaskConfig.validate();
         myThreadPoolTaskConfig = threadPoolTaskConfig;
     }
 
